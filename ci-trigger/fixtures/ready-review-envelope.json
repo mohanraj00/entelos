@@ -1,0 +1,22 @@
+{
+  "headers": {
+    "X-GitHub-Event": [
+      "pull_request"
+    ],
+    "X-GitHub-Delivery": [
+      "neutral-delivery-review-001"
+    ]
+  },
+  "body": {
+    "action": "ready_for_review",
+    "pull_request": {
+      "draft": false,
+      "base": {
+        "ref": "release"
+      }
+    },
+    "repository": {
+      "full_name": "example/widgets"
+    }
+  }
+}

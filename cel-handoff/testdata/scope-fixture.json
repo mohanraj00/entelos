@@ -1,0 +1,133 @@
+{
+  "kind": "NeutralCallableFixture",
+  "status": "expected_example_cases",
+  "workflow_source": "https://github.com/cel-expr/cel-go/issues/1257",
+  "requirement_origin": "Invented neutral record filter with independently stated expected cases.",
+  "requirement": "A record is visible when its state equals the host's allowed_state and archived is false.",
+  "function_id": "record.visible",
+  "environment": {
+    "name": "record-filter",
+    "variables": [
+      {
+        "name": "state",
+        "type": "string",
+        "description": "The record state supplied by the caller."
+      },
+      {
+        "name": "archived",
+        "type": "bool",
+        "description": "Whether the caller's record is archived."
+      },
+      {
+        "name": "allowed_state",
+        "type": "string",
+        "description": "The host's fixed allowed state."
+      }
+    ]
+  },
+  "caller_variables": [
+    "state",
+    "archived"
+  ],
+  "fixed_bindings": {
+    "allowed_state": "ready"
+  },
+  "expression": "state == allowed_state && !archived",
+  "expected_cel_output_type": "bool",
+  "proposed_profile": {
+    "wire_types": [
+      "string",
+      "boolean"
+    ],
+    "all_caller_fields_required": true,
+    "additional_properties": false,
+    "null_allowed": false,
+    "coercion": false,
+    "numeric_wire_types": "unsupported_in_initial_slice",
+    "custom_functions_and_extensions": "unsupported_in_initial_slice",
+    "resource_budgets": {
+      "status": "configured_example_limits_not_production_defaults",
+      "max_request_bytes": "4096",
+      "max_string_utf8_bytes": "256",
+      "max_source_utf8_bytes": "4096",
+      "parser_recursion_limit": "64",
+      "evaluation_cost_limit": "1000",
+      "cost_model": "pinned_CEL_default_model"
+    }
+  },
+  "expected_calls": [
+    {
+      "case": "matching-current-record",
+      "inputs": {
+        "state": "ready",
+        "archived": false
+      },
+      "status": "ok",
+      "value": true
+    },
+    {
+      "case": "other-state",
+      "inputs": {
+        "state": "closed",
+        "archived": false
+      },
+      "status": "ok",
+      "value": false
+    },
+    {
+      "case": "archived-match",
+      "inputs": {
+        "state": "ready",
+        "archived": true
+      },
+      "status": "ok",
+      "value": false
+    },
+    {
+      "case": "missing-field",
+      "inputs": {
+        "state": "ready"
+      },
+      "status": "needs_input",
+      "field": "/archived"
+    },
+    {
+      "case": "mistyped-bool",
+      "inputs": {
+        "state": "ready",
+        "archived": "false"
+      },
+      "status": "invalid_input",
+      "field": "/archived"
+    },
+    {
+      "case": "null-bool",
+      "inputs": {
+        "state": "ready",
+        "archived": null
+      },
+      "status": "invalid_input",
+      "field": "/archived"
+    },
+    {
+      "case": "extra-field",
+      "inputs": {
+        "state": "ready",
+        "archived": false,
+        "extra": true
+      },
+      "status": "invalid_input",
+      "field": "/extra"
+    },
+    {
+      "case": "fixed-binding-override",
+      "inputs": {
+        "state": "closed",
+        "archived": false,
+        "allowed_state": "closed"
+      },
+      "status": "invalid_input",
+      "field": "/allowed_state"
+    }
+  ]
+}

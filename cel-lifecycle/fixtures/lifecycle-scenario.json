@@ -1,0 +1,33 @@
+{
+  "kind": "NeutralLifecycleScenario",
+  "status": "expected_example_cases",
+  "origin": "Invented source table for the sourced CEL handoff workflow; not private product data.",
+  "function": "record.visible",
+  "scope": "demo",
+  "initial": {
+    "from": "2026-10-01",
+    "until": "2026-12-01",
+    "allowed_state": "ready"
+  },
+  "amendment": {
+    "from": "2026-11-01",
+    "until": "2026-12-01",
+    "allowed_state": "reviewed"
+  },
+  "correction": {
+    "from": "2026-11-01",
+    "until": "2026-12-01",
+    "allowed_state": "approved"
+  },
+  "original_input": {
+    "state": "reviewed",
+    "archived": false
+  },
+  "expected": {
+    "initial_october_ready": true,
+    "future_november_reviewed": true,
+    "corrected_november_reviewed": false,
+    "pinned_replay": true,
+    "later_restatement": false
+  }
+}

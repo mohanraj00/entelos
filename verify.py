@@ -1,0 +1,91 @@
+#!/usr/bin/env python3
+"""Build public pinned tools and run this source-only reference in an external work directory."""
+import argparse
+import hashlib
+import json
+import os
+from pathlib import Path
+import subprocess
+import sys
+
+ROOT=Path(__file__).resolve().parent
+PIN='5eac36c53cd8971fa1e5548374238183e0d8b302'
+p=argparse.ArgumentParser(description=__doc__)
+p.add_argument('--work',type=Path,required=True)
+p.add_argument('--skills',type=Path,help='optional clean public author-tools checkout at the pinned revision')
+a=p.parse_args();w=a.work.resolve()
+if w==ROOT or ROOT in w.parents:p.error('work must be outside this source tree')
+if w.exists():p.error('use a fresh work directory; prior runs are preserved')
+for name in ['runs','bin','tmp','cache/build','cache/mod','cache/gopath','cache/telemetry']:(w/name).mkdir(parents=True,exist_ok=True)
+(w/'cache/telemetry/mode').write_text('off\n')
+env={k:v for k,v in os.environ.items() if not k.startswith('GIT_')}|{
+ 'GIT_CONFIG_NOSYSTEM':'1','GIT_CONFIG_GLOBAL':os.devnull,'GIT_TERMINAL_PROMPT':'0',
+ 'GOCACHE':str(w/'cache/build'),'GOMODCACHE':str(w/'cache/mod'),'GOPATH':str(w/'cache/gopath'),
+ 'GOTMPDIR':str(w/'tmp'),'TMPDIR':str(w/'tmp'),'TEST_TELEMETRY_DIR':str(w/'cache/telemetry'),
+ 'GOENV':'off','GOWORK':'off','GOFLAGS':'','GOTOOLCHAIN':'local','PYTHONDONTWRITEBYTECODE':'1',
+ 'CEL_LIFECYCLE_SOURCE':str(ROOT/'cel-lifecycle'),
+ 'LIFECYCLE_TEST_WORK':str(w/'conformance'),'LIFECYCLE_CEL_BINARY':str(w/'bin/cel-handoff'),
+ 'LIFECYCLE_CEL_BUNDLE':str(w/'record-bundle'),'LIFECYCLE_FIXTURE':str(ROOT/'cel-lifecycle/fixtures/lifecycle-scenario.json'),
+ 'EXPORT_TEST_WORK':str(w/'boundaries'),'DECISION_EXPORT_SOURCE':str(ROOT)}
+for key in list(os.environ):
+ if key.startswith('GIT_'):os.environ.pop(key)
+os.environ.update(env)
+commands=[];checks=[]
+def inventory():
+ return {str(p.relative_to(ROOT)):hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted(ROOT.rglob('*')) if p.is_file()}
+def write(path,value):path.write_text(json.dumps(value,indent=2,ensure_ascii=False)+'\n')
+def run(name,args,cwd=ROOT):
+ result=subprocess.run([str(x) for x in args],cwd=cwd,env=env,capture_output=True,text=True)
+ record={'name':name,'args':[str(x) for x in args],'cwd':str(cwd),'exit_code':result.returncode,'stdout':result.stdout,'stderr':result.stderr}
+ commands.append(record);write(w/'runs'/(name+'.json'),record);return result
+def check(name,question,passed,actual):
+ checks.append({'name':name,'question':question,'passed':bool(passed),'actual':actual})
+ if not passed:raise AssertionError(name)
+before=inventory()
+try:
+ expected=json.loads((ROOT/'checksums.json').read_text())
+ check('source-inventory','Do all reviewed source bytes match the candidate inventory?',all(before.get(k)==v for k,v in expected.items()),{'checked_files':len(expected)})
+ version=run('go-storage',['go','env','-json','GOCACHE','GOMODCACHE','GOPATH','GOTMPDIR','GOTELEMETRYDIR','GOTELEMETRY','GOENV','GOWORK','GOFLAGS'])
+ observed=json.loads(version.stdout);required={k:env[k] for k in ['GOCACHE','GOMODCACHE','GOPATH','GOTMPDIR','GOWORK','GOFLAGS']};required|={'GOENV':'','GOTELEMETRY':'off','GOTELEMETRYDIR':str(w/'cache/telemetry')}
+ check('storage','Are build/cache/temp/config/telemetry paths controlled?',version.returncode==0 and observed==required,observed)
+ skills=a.skills.resolve() if a.skills else w/'tools/skills'
+ if not a.skills:
+  clone=run('fetch-author-tools',['git','clone','--no-checkout','https://github.com/cel-expr/skills.git',skills])
+  check('fetch-author-tools','Can author tools be fetched from their public source?',clone.returncode==0,{'exit_code':clone.returncode})
+  checkout=run('pin-author-tools',['git','checkout','--detach',PIN],skills)
+  check('checkout-author-tools','Does the public author checkout resolve the chosen revision?',checkout.returncode==0,{'exit_code':checkout.returncode})
+ pin=run('author-revision',['git','rev-parse','HEAD'],skills);clean=run('author-clean',['git','status','--porcelain'],skills)
+ check('author-source','Is the author source clean and pinned?',pin.stdout.strip()==PIN and clean.returncode==0 and not clean.stdout,{'revision':pin.stdout.strip(),'status':clean.stdout})
+ build=run('build-host',['go','build','-mod=readonly','-trimpath','-buildvcs=false','-o',w/'bin/cel-handoff','./cmd/cel-handoff'],ROOT/'cel-handoff')
+ check('build-host','Does the exported host build from its lockfiles?',build.returncode==0,{'exit_code':build.returncode})
+ author=run('build-author',['go','build','-mod=readonly','-trimpath','-buildvcs=false','-o',w/'bin/cel-expr','./cmd/cel-expr'],skills)
+ check('build-author','Do the pinned author tools build independently?',author.returncode==0,{'exit_code':author.returncode})
+ identity=run('host-identity',[w/'bin/cel-handoff','-build']);host_build=json.loads(identity.stdout)
+ deps={x['Path']:x['Version'] for x in host_build['build']['Deps']}
+ check('engine-pins','Does the actual host use the pinned CEL engine/expressions?',deps.get('cel.dev/cel-go')=='v0.32.0' and deps.get('cel.dev/expr')=='v0.25.3',host_build)
+ go_tests=run('go-tests',['go','test','-mod=readonly','-count=1','-json','./...'],ROOT/'cel-handoff')
+ check('go-contracts','Do the exported Go contract tests pass?',go_tests.returncode==0,{'exit_code':go_tests.returncode})
+ vet=run('go-vet',['go','vet','-mod=readonly','./...'],ROOT/'cel-handoff')
+ check('go-vet','Does Go static analysis pass?',vet.returncode==0,{'exit_code':vet.returncode})
+ prepared=run('prepare-record',[sys.executable,'-B',ROOT/'cel-handoff/tools/prepare.py','--bundle',w/'record-bundle','--binary',w/'bin/cel-handoff'])
+ check('prepare-record','Can a fresh bundle bind the exported build identity?',prepared.returncode==0,{'exit_code':prepared.returncode})
+ syntax=run('python-syntax',[sys.executable,'-B','-c','import pathlib; [compile(p.read_bytes(),str(p),"exec") for p in pathlib.Path(".").rglob("*.py")]'])
+ check('syntax','Are the exported Python sources syntactically valid?',syntax.returncode==0,{'exit_code':syntax.returncode})
+ boundaries=run('export-boundaries',[sys.executable,'-B',ROOT/'test_export_boundaries.py'])
+ boundary_results=json.loads((w/'boundaries/test-results.json').read_text())
+ check('export-boundaries','Do oversized stream and audit-identity regressions pass?',boundaries.returncode==0 and boundary_results['successful'],boundary_results)
+ tests=run('lifecycle-tests',[sys.executable,'-B',ROOT/'cel-lifecycle/test_lifecycle.py'])
+ test_results=json.loads((w/'conformance/test-results.json').read_text())
+ check('lifecycle','Do local lifecycle/concurrency/recovery/replay checks pass from the export alone?',tests.returncode==0 and test_results['successful'],test_results)
+ demo=run('consumer-reuse',[sys.executable,'-B',ROOT/'ci-trigger/run.py','--work',w/'reuse','--cel-binary',w/'bin/cel-handoff','--author-binary',w/'bin/cel-expr','--record-bundle',w/'record-bundle'])
+ reuse=json.loads((w/'reuse/results.json').read_text())
+ check('two-consumers-and-baseline','Do both consumer loops and the ordinary-code comparison pass?',demo.returncode==0 and reuse['status']=='passed',{'status':reuse['status'],'checks':reuse['checks'],'measurements':reuse['measurements'],'errors':reuse['errors']})
+ check('source-unchanged','Did verification leave every candidate byte unchanged?',inventory()==before,{'unchanged':inventory()==before})
+except Exception as error:checks.append({'name':'runner-completion','question':'Did standalone verification finish?','passed':False,'actual':repr(error)})
+finally:
+ write(w/'commands.json',commands)
+ result={'kind':'StandaloneDecisionReferenceAcceptance','checks':checks,'summary':{'passed':sum(x['passed'] for x in checks),'failed':sum(not x['passed'] for x in checks)},
+         'candidate_before':before,'candidate_after':inventory(),'python_version':sys.version,
+         'environment':{k:env[k] for k in ['TMPDIR','GOCACHE','GOMODCACHE','GOPATH','GOTMPDIR','GOENV','GOWORK','GOTOOLCHAIN','TEST_TELEMETRY_DIR']},
+         'limits':'Local reference checks only; no model/performance/deployment benchmark.'}
+ write(w/'results.json',result);print(json.dumps(result['summary']));raise SystemExit(bool(result['summary']['failed']))

@@ -1,0 +1,634 @@
+{
+  "kind": "SecondConsumerPolicyFixture",
+  "status": "pre_execution_expectations",
+  "workflow_source": "https://github.com/tektoncd/triggers/blob/d187d9b6398deef09c0ac9fa4d7c7d5a47202113/examples/v1beta1/github/github-eventlistener-interceptor.yaml",
+  "origin": "Invented policy choices and event data for an official Tekton workflow; not actual project policy.",
+  "function": "ci.pr_should_run",
+  "scope": "ci-demo",
+  "worker": "ci-worker",
+  "repository": "example/widgets",
+  "environment": {
+    "name": "pr-ci-gate",
+    "variables": [
+      {
+        "name": "action",
+        "type": "string",
+        "description": "Pull-request event action."
+      },
+      {
+        "name": "base_branch",
+        "type": "string",
+        "description": "Pull-request target/base branch."
+      },
+      {
+        "name": "draft",
+        "type": "bool",
+        "description": "Whether the pull request is a draft."
+      },
+      {
+        "name": "target_branch",
+        "type": "string",
+        "description": "Host-owned permitted target branch."
+      }
+    ]
+  },
+  "caller_variables": [
+    "action",
+    "base_branch",
+    "draft"
+  ],
+  "policies": {
+    "initial": {
+      "from": "2026-10-01",
+      "until": "2026-12-01",
+      "target_branch": "main",
+      "allowed_actions": [
+        "opened",
+        "synchronize"
+      ],
+      "expression": "!draft && base_branch == target_branch && action in [\"opened\", \"synchronize\"]",
+      "cases": [
+        {
+          "case": "main-open",
+          "inputs": {
+            "action": "opened",
+            "base_branch": "main",
+            "draft": false
+          },
+          "status": "ok",
+          "value": true
+        },
+        {
+          "case": "release-open",
+          "inputs": {
+            "action": "opened",
+            "base_branch": "release",
+            "draft": false
+          },
+          "status": "ok",
+          "value": false
+        },
+        {
+          "case": "main-sync",
+          "inputs": {
+            "action": "synchronize",
+            "base_branch": "main",
+            "draft": false
+          },
+          "status": "ok",
+          "value": true
+        },
+        {
+          "case": "release-sync",
+          "inputs": {
+            "action": "synchronize",
+            "base_branch": "release",
+            "draft": false
+          },
+          "status": "ok",
+          "value": false
+        },
+        {
+          "case": "main-reopened",
+          "inputs": {
+            "action": "reopened",
+            "base_branch": "main",
+            "draft": false
+          },
+          "status": "ok",
+          "value": false
+        },
+        {
+          "case": "release-reopened",
+          "inputs": {
+            "action": "reopened",
+            "base_branch": "release",
+            "draft": false
+          },
+          "status": "ok",
+          "value": false
+        },
+        {
+          "case": "main-ready",
+          "inputs": {
+            "action": "ready_for_review",
+            "base_branch": "main",
+            "draft": false
+          },
+          "status": "ok",
+          "value": false
+        },
+        {
+          "case": "release-ready",
+          "inputs": {
+            "action": "ready_for_review",
+            "base_branch": "release",
+            "draft": false
+          },
+          "status": "ok",
+          "value": false
+        },
+        {
+          "case": "release-closed",
+          "inputs": {
+            "action": "closed",
+            "base_branch": "release",
+            "draft": false
+          },
+          "status": "ok",
+          "value": false
+        },
+        {
+          "case": "draft-open",
+          "inputs": {
+            "action": "opened",
+            "base_branch": "release",
+            "draft": true
+          },
+          "status": "ok",
+          "value": false
+        },
+        {
+          "case": "draft-ready",
+          "inputs": {
+            "action": "ready_for_review",
+            "base_branch": "release",
+            "draft": true
+          },
+          "status": "ok",
+          "value": false
+        },
+        {
+          "case": "other-branch",
+          "inputs": {
+            "action": "opened",
+            "base_branch": "other",
+            "draft": false
+          },
+          "status": "ok",
+          "value": false
+        },
+        {
+          "case": "missing-draft",
+          "inputs": {
+            "action": "opened",
+            "base_branch": "main"
+          },
+          "status": "needs_input",
+          "field": "/draft"
+        },
+        {
+          "case": "null-draft",
+          "inputs": {
+            "action": "opened",
+            "base_branch": "main",
+            "draft": null
+          },
+          "status": "invalid_input",
+          "field": "/draft"
+        },
+        {
+          "case": "mistyped-draft",
+          "inputs": {
+            "action": "opened",
+            "base_branch": "main",
+            "draft": "false"
+          },
+          "status": "invalid_input",
+          "field": "/draft"
+        },
+        {
+          "case": "extra-input",
+          "inputs": {
+            "action": "opened",
+            "base_branch": "main",
+            "draft": false,
+            "extra": true
+          },
+          "status": "invalid_input",
+          "field": "/extra"
+        },
+        {
+          "case": "fixed-override",
+          "inputs": {
+            "action": "opened",
+            "base_branch": "other",
+            "draft": false,
+            "target_branch": "other"
+          },
+          "status": "invalid_input",
+          "field": "/target_branch"
+        },
+        {
+          "case": "numeric-branch",
+          "inputs": {
+            "action": "opened",
+            "base_branch": 1,
+            "draft": false
+          },
+          "status": "invalid_input",
+          "field": "/base_branch"
+        }
+      ],
+      "source_text": "Invented CI policy: non-draft PRs targeting main; allowed actions are opened, synchronize."
+    },
+    "amendment": {
+      "from": "2026-11-01",
+      "until": "2026-12-01",
+      "target_branch": "release",
+      "allowed_actions": [
+        "opened",
+        "synchronize",
+        "reopened"
+      ],
+      "expression": "!draft && base_branch == target_branch && action in [\"opened\", \"synchronize\", \"reopened\"]",
+      "cases": [
+        {
+          "case": "main-open",
+          "inputs": {
+            "action": "opened",
+            "base_branch": "main",
+            "draft": false
+          },
+          "status": "ok",
+          "value": false
+        },
+        {
+          "case": "release-open",
+          "inputs": {
+            "action": "opened",
+            "base_branch": "release",
+            "draft": false
+          },
+          "status": "ok",
+          "value": true
+        },
+        {
+          "case": "main-sync",
+          "inputs": {
+            "action": "synchronize",
+            "base_branch": "main",
+            "draft": false
+          },
+          "status": "ok",
+          "value": false
+        },
+        {
+          "case": "release-sync",
+          "inputs": {
+            "action": "synchronize",
+            "base_branch": "release",
+            "draft": false
+          },
+          "status": "ok",
+          "value": true
+        },
+        {
+          "case": "main-reopened",
+          "inputs": {
+            "action": "reopened",
+            "base_branch": "main",
+            "draft": false
+          },
+          "status": "ok",
+          "value": false
+        },
+        {
+          "case": "release-reopened",
+          "inputs": {
+            "action": "reopened",
+            "base_branch": "release",
+            "draft": false
+          },
+          "status": "ok",
+          "value": true
+        },
+        {
+          "case": "main-ready",
+          "inputs": {
+            "action": "ready_for_review",
+            "base_branch": "main",
+            "draft": false
+          },
+          "status": "ok",
+          "value": false
+        },
+        {
+          "case": "release-ready",
+          "inputs": {
+            "action": "ready_for_review",
+            "base_branch": "release",
+            "draft": false
+          },
+          "status": "ok",
+          "value": false
+        },
+        {
+          "case": "release-closed",
+          "inputs": {
+            "action": "closed",
+            "base_branch": "release",
+            "draft": false
+          },
+          "status": "ok",
+          "value": false
+        },
+        {
+          "case": "draft-open",
+          "inputs": {
+            "action": "opened",
+            "base_branch": "release",
+            "draft": true
+          },
+          "status": "ok",
+          "value": false
+        },
+        {
+          "case": "draft-ready",
+          "inputs": {
+            "action": "ready_for_review",
+            "base_branch": "release",
+            "draft": true
+          },
+          "status": "ok",
+          "value": false
+        },
+        {
+          "case": "other-branch",
+          "inputs": {
+            "action": "opened",
+            "base_branch": "other",
+            "draft": false
+          },
+          "status": "ok",
+          "value": false
+        },
+        {
+          "case": "missing-draft",
+          "inputs": {
+            "action": "opened",
+            "base_branch": "release"
+          },
+          "status": "needs_input",
+          "field": "/draft"
+        },
+        {
+          "case": "null-draft",
+          "inputs": {
+            "action": "opened",
+            "base_branch": "release",
+            "draft": null
+          },
+          "status": "invalid_input",
+          "field": "/draft"
+        },
+        {
+          "case": "mistyped-draft",
+          "inputs": {
+            "action": "opened",
+            "base_branch": "release",
+            "draft": "false"
+          },
+          "status": "invalid_input",
+          "field": "/draft"
+        },
+        {
+          "case": "extra-input",
+          "inputs": {
+            "action": "opened",
+            "base_branch": "release",
+            "draft": false,
+            "extra": true
+          },
+          "status": "invalid_input",
+          "field": "/extra"
+        },
+        {
+          "case": "fixed-override",
+          "inputs": {
+            "action": "opened",
+            "base_branch": "other",
+            "draft": false,
+            "target_branch": "other"
+          },
+          "status": "invalid_input",
+          "field": "/target_branch"
+        },
+        {
+          "case": "numeric-branch",
+          "inputs": {
+            "action": "opened",
+            "base_branch": 1,
+            "draft": false
+          },
+          "status": "invalid_input",
+          "field": "/base_branch"
+        }
+      ],
+      "source_text": "Invented CI policy: non-draft PRs targeting release; allowed actions are opened, synchronize, reopened."
+    },
+    "correction": {
+      "from": "2026-11-01",
+      "until": "2026-12-01",
+      "target_branch": "release",
+      "allowed_actions": [
+        "opened",
+        "synchronize",
+        "reopened",
+        "ready_for_review"
+      ],
+      "expression": "!draft && base_branch == target_branch && action in [\"opened\", \"synchronize\", \"reopened\", \"ready_for_review\"]",
+      "cases": [
+        {
+          "case": "main-open",
+          "inputs": {
+            "action": "opened",
+            "base_branch": "main",
+            "draft": false
+          },
+          "status": "ok",
+          "value": false
+        },
+        {
+          "case": "release-open",
+          "inputs": {
+            "action": "opened",
+            "base_branch": "release",
+            "draft": false
+          },
+          "status": "ok",
+          "value": true
+        },
+        {
+          "case": "main-sync",
+          "inputs": {
+            "action": "synchronize",
+            "base_branch": "main",
+            "draft": false
+          },
+          "status": "ok",
+          "value": false
+        },
+        {
+          "case": "release-sync",
+          "inputs": {
+            "action": "synchronize",
+            "base_branch": "release",
+            "draft": false
+          },
+          "status": "ok",
+          "value": true
+        },
+        {
+          "case": "main-reopened",
+          "inputs": {
+            "action": "reopened",
+            "base_branch": "main",
+            "draft": false
+          },
+          "status": "ok",
+          "value": false
+        },
+        {
+          "case": "release-reopened",
+          "inputs": {
+            "action": "reopened",
+            "base_branch": "release",
+            "draft": false
+          },
+          "status": "ok",
+          "value": true
+        },
+        {
+          "case": "main-ready",
+          "inputs": {
+            "action": "ready_for_review",
+            "base_branch": "main",
+            "draft": false
+          },
+          "status": "ok",
+          "value": false
+        },
+        {
+          "case": "release-ready",
+          "inputs": {
+            "action": "ready_for_review",
+            "base_branch": "release",
+            "draft": false
+          },
+          "status": "ok",
+          "value": true
+        },
+        {
+          "case": "release-closed",
+          "inputs": {
+            "action": "closed",
+            "base_branch": "release",
+            "draft": false
+          },
+          "status": "ok",
+          "value": false
+        },
+        {
+          "case": "draft-open",
+          "inputs": {
+            "action": "opened",
+            "base_branch": "release",
+            "draft": true
+          },
+          "status": "ok",
+          "value": false
+        },
+        {
+          "case": "draft-ready",
+          "inputs": {
+            "action": "ready_for_review",
+            "base_branch": "release",
+            "draft": true
+          },
+          "status": "ok",
+          "value": false
+        },
+        {
+          "case": "other-branch",
+          "inputs": {
+            "action": "opened",
+            "base_branch": "other",
+            "draft": false
+          },
+          "status": "ok",
+          "value": false
+        },
+        {
+          "case": "missing-draft",
+          "inputs": {
+            "action": "opened",
+            "base_branch": "release"
+          },
+          "status": "needs_input",
+          "field": "/draft"
+        },
+        {
+          "case": "null-draft",
+          "inputs": {
+            "action": "opened",
+            "base_branch": "release",
+            "draft": null
+          },
+          "status": "invalid_input",
+          "field": "/draft"
+        },
+        {
+          "case": "mistyped-draft",
+          "inputs": {
+            "action": "opened",
+            "base_branch": "release",
+            "draft": "false"
+          },
+          "status": "invalid_input",
+          "field": "/draft"
+        },
+        {
+          "case": "extra-input",
+          "inputs": {
+            "action": "opened",
+            "base_branch": "release",
+            "draft": false,
+            "extra": true
+          },
+          "status": "invalid_input",
+          "field": "/extra"
+        },
+        {
+          "case": "fixed-override",
+          "inputs": {
+            "action": "opened",
+            "base_branch": "other",
+            "draft": false,
+            "target_branch": "other"
+          },
+          "status": "invalid_input",
+          "field": "/target_branch"
+        },
+        {
+          "case": "numeric-branch",
+          "inputs": {
+            "action": "opened",
+            "base_branch": 1,
+            "draft": false
+          },
+          "status": "invalid_input",
+          "field": "/base_branch"
+        }
+      ],
+      "source_text": "Invented CI policy: non-draft PRs targeting release; allowed actions are opened, synchronize, reopened, ready_for_review."
+    }
+  },
+  "original_inputs": {
+    "action": "ready_for_review",
+    "base_branch": "release",
+    "draft": false
+  },
+  "expected_replay": false,
+  "expected_restatement": true
+}
