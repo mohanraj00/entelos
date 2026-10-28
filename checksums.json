@@ -1,9 +1,19 @@
 {
+  ".agents/skills/decision-workflow/SKILL.md": "7b6b0390ad8a54d29d0793f0d083e809a6ee28d4196056f091f7325c989b5915",
+  ".github/ISSUE_TEMPLATE/bug.yml": "dfbc9243d7717821db00ea312ddbc1246a1a724aaa540fcec79ee9c70a2ffbe8",
+  ".github/ISSUE_TEMPLATE/config.yml": "33eee4b6ea70df4bb34b983901c7a30de3e03c6482f61fcc1f91d5505ce2b184",
+  ".github/ISSUE_TEMPLATE/workflow.yml": "cdff1879bc4c2f7a08b21847578d0c2a9289291d74f7603b9b3611192a871f07",
+  ".github/workflows/source-checks.yml": "bceb1376019ebd03c69ec70f9971477c8fffc617e59e0f4a8789fa309345e268",
+  ".gitignore": "00256b4fddd74373bd31f7726469936deee31f171515a2e0e1b2364a5c543223",
+  "AGENTS.md": "a066e0f8bcf629404ad4b3c5944b0990a827b63eadc13c82da2857c929be2fbf",
+  "Agent.md": "6991fd9fd8dddef97f774d0dba3cc20f4bfa4cd1a6d435e75330905c1dd9eeb6",
+  "CLAUDE.md": "f9f03d7b8d2da0f0d463f64853e87d8831525ade0b7189e041d4fd45aa88f719",
+  "CONSTITUTION.md": "564864398a8f14d56791aa6ed90fc73dd41ae4eced6aeeb8261131ade934fa45",
   "CONTRIBUTING.md": "6bf5e94be3a99f61a934684313dd43b8a71878f8b876205a6423531591bae5e7",
   "INTEGRATION.md": "0cfa4d97a511d6280bc7b6cc67c0a75e6d3895d5896cee3b9a3803e613ee79f2",
   "LICENSE": "148e9b9c455a1f2be4b791450281924feec2e154f964514b6abf44d06353d7fb",
   "PROVENANCE.md": "daa305b97a18754eeb0553aed0eea4a8a625f9ae5a365d536db72743814e4065",
-  "README.md": "7300f1c03bd8a975a39f8937939374f92800b5c053a419fbb8ca6435cf89beaf",
+  "README.md": "c5172b240607906944c5ee422049cb181bcf5c7ebf040348c3180061f4f6b346",
   "SECURITY.md": "d91d9a0aee4a9ae3cf2158793fbb6bcdb76bf271ecf3519e553451202fc5cab7",
   "SUPPORT.md": "d98adee3bbe40fe9da55f572bb843cbb2139eb96e25ec577c805691dd1004494",
   "THIRD_PARTY.md": "630bfae7ec85da41af725b300e9915b31a4ac1cb1b49e146c5ca9a0486f91266",
@@ -36,6 +46,9 @@
   "ci-trigger/ordinary.py": "6a59074effff3a10f6cd75abe216d61a8382f2218ef23aa5f6e8ce6e8bf38f17",
   "ci-trigger/run.py": "9205aaa5bdf6028d7f083a5d439d69e546f021060e7d02867108157b93540fb3",
   "ci-trigger/support.py": "d38541c55fadbb27daef2e7065f3b030dc98e04aa0c84390ce88dce7e12c27d1",
+  "docs/BACKLOG.md": "f15f96a5bb3f5283712bc20738a89c750a086f450cee3d951c399b89a71839cf",
+  "docs/CONTRACTS.md": "8001a0b069fd910a301251944ccbb345fa8b2d8beff1dc8c3d8c77314c76236a",
+  "docs/STATUS.md": "9f492b8590cc8f8df4a1c393353bffa6ed1f5c52955f44412c11c0eaa12ab3e8",
   "licenses/dependencies/cel.dev__cel-go__LICENSE.txt": "4cdb9af102dfbb0ca03d87d6f650a505df098646a4080f4665b389ad9c6caa02",
   "licenses/dependencies/cel.dev__expr__LICENSE.txt": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
   "licenses/dependencies/github.com__antlr4-go__antlr__v4__LICENSE.txt": "683fcd416d83b64781e229a3c2a598462fbf55c5c9fea54be244766b22c033cf",
@@ -46,5 +59,6 @@
   "licenses/dependencies/google.golang.org__genproto__googleapis__rpc__LICENSE.txt": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
   "licenses/dependencies/google.golang.org__protobuf__LICENSE.txt": "4835612df0098ca95f8e7d9e3bffcb02358d435dbb38057c844c99d7f725eb20",
   "test_export_boundaries.py": "022e3c7e09a2ac151ccb55ee1f936060d5ee31d23d30b540cc1bdf91d16af655",
-  "verify.py": "5b5e1263be0de6de39eb861ad8998362e5bfc83bb373706456c485273ee7af3a"
+  "tools/check_project.py": "0e8fee5cb953ef5995bdc97306d3be7b3812ae97274b700054a19b6065c1312e",
+  "verify.py": "11c619e5becf0b1a25b343d7a9f9e4df818fb83591d3b80ab249720184c5e5ee"
 }

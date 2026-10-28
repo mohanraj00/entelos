@@ -4,6 +4,10 @@ I built this reference to keep an authored decision, its approval, and its recor
 
 The reference combines a typed CEL callable with a local Git history. A second example models pull-request CI eligibility and compares CEL with ordinary typed functions. I reuse CEL and Git; I do not implement another expression language.
 
+## Work in this project
+
+Start with [CONSTITUTION.md](CONSTITUTION.md), [AGENTS.md](AGENTS.md) and [current work](docs/STATUS.md). Codex and Claude Code share those rules and the same skill source. [Tracked issues](docs/BACKLOG.md) define the bounded next work. [Contract map](docs/CONTRACTS.md) points to the executable interfaces.
+
 ## Run
 
 Use Python, Go and Git. See [SUPPORT.md](SUPPORT.md) for the tested toolchain and limits. Choose a new scratch directory outside this checkout:

@@ -1,0 +1,24 @@
+name: Workflow or integration question
+description: Describe a concrete workflow and the useful missing contract.
+title: "Workflow: "
+labels: [question]
+body:
+  - type: textarea
+    id: workflow
+    attributes:
+      label: User and workflow
+      description: What decision changes, who authors/calls it, and what answer/history must be preserved?
+    validations:
+      required: true
+  - type: textarea
+    id: gap
+    attributes:
+      label: Existing tools and remaining gap
+      description: Explain what ordinary code, CEL or the existing reference already supplies and the smallest useful addition. No adoption commitment is required.
+    validations:
+      required: true
+  - type: textarea
+    id: example
+    attributes:
+      label: Neutral example and expectations
+      description: Keep application policy/private data out. State expected behavior and which parts are not implemented or tested.

@@ -1,0 +1,24 @@
+name: Reproducible defect
+description: Report behavior that differs from the documented reference contract.
+title: "Bug: "
+labels: [bug]
+body:
+  - type: textarea
+    id: behavior
+    attributes:
+      label: Expected and actual behavior
+      description: Name the contract/example and the concrete difference.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Neutral reproducer and versions
+      description: Include the source commit, Python/Go/Git versions, OS and smallest commands/input. Use invented data. Do not post credentials, customer material or private source.
+    validations:
+      required: true
+  - type: textarea
+    id: checks
+    attributes:
+      label: Checks and diagnostics
+      description: State what actually ran, including failures and skipped checks. Follow SECURITY.md for a possible vulnerability.

@@ -45,6 +45,8 @@ before=inventory()
 try:
  expected=json.loads((ROOT/'checksums.json').read_text())
  check('source-inventory','Do all reviewed source bytes match the candidate inventory?',all(before.get(k)==v for k,v in expected.items()),{'checked_files':len(expected)})
+ project=run('project-layout',[sys.executable,'-B',ROOT/'tools/check_project.py'])
+ check('project-layout','Do the shared harness layout, links and source inventory validate?',project.returncode==0,{'exit_code':project.returncode,'stdout':project.stdout})
  version=run('go-storage',['go','env','-json','GOCACHE','GOMODCACHE','GOPATH','GOTMPDIR','GOTELEMETRYDIR','GOTELEMETRY','GOENV','GOWORK','GOFLAGS'])
  observed=json.loads(version.stdout);required={k:env[k] for k in ['GOCACHE','GOMODCACHE','GOPATH','GOTMPDIR','GOWORK','GOFLAGS']};required|={'GOENV':'','GOTELEMETRY':'off','GOTELEMETRYDIR':str(w/'cache/telemetry')}
  check('storage','Are build/cache/temp/config/telemetry paths controlled?',version.returncode==0 and observed==required,observed)
