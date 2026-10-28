@@ -1,5 +1,7 @@
 # Third-party source and notices
 
+Project source uses [Apache-2.0](LICENSE), with project attribution in [NOTICE](NOTICE). This does not replace any dependency licence or notice.
+
 This source-only reference does not vendor dependencies or distribute compiled binaries. The Go lockfiles select the runtime closure. The observed upstream license texts are retained below. They keep their own terms.
 
 | Module | Version | Observed license | Retained text |

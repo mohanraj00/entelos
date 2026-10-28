@@ -50,4 +50,4 @@ The complete source-to-correction workflow is reproducible here. Production adap
 
 ## Source and license
 
-The source is MIT licensed; keep the existing copyright notice. Dependencies retain their own licenses. See [THIRD_PARTY.md](THIRD_PARTY.md). The workflow examples are neutral invented policies informed by the public sources listed in [PROVENANCE.md](PROVENANCE.md).
+The project source is licensed under [Apache-2.0](LICENSE). Keep the [project attribution](NOTICE) and required notices. Dependencies retain their own licenses; see [THIRD_PARTY.md](THIRD_PARTY.md). The [licence decision](docs/LICENSING.md) records the change from MIT. The workflow examples are neutral invented policies informed by the public sources listed in [PROVENANCE.md](PROVENANCE.md).

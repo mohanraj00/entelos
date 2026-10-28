@@ -2,6 +2,10 @@
 
 The source reference contains a primitive typed CEL callable, a local qualified Git lifecycle, record-filter and PR CI examples, and an ordinary-function comparison. APIs and record formats are unstable. See [SUPPORT.md](../SUPPORT.md) for the tested environment and operating limits.
 
+## Licence
+
+Project source uses [Apache-2.0](../LICENSE); [NOTICE](../NOTICE) retains project attribution. The [licence decision](LICENSING.md) records the maintainer choice and earlier MIT publication. Runtime/example/dependency bytes are unchanged by that change.
+
 ## Shared workflow
 
 Purpose is in [CONSTITUTION.md](../CONSTITUTION.md), workflow in [AGENTS.md](../AGENTS.md). Codex, Claude Code and other agent entry points share those files and the same skill source. `tools/check_project.py` checks that layout, links and source checksums.

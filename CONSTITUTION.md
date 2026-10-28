@@ -18,6 +18,6 @@ Distinguish proposed, implemented, tested and deployed behavior. Preserve meanin
 
 Compare competent existing tools and ordinary code. Concrete workflow value is sufficient; adoption commitments are not a prerequisite. Do not infer speed, hours saved, maintenance reduction or general superiority from test counts or code size. Run a benchmark only when it answers a named unresolved question.
 
-Keep examples neutral and invented. Private application modules, domain packs, customer data, credentials and raw private evaluations do not belong in this repository. Preserve MIT attribution and dependency notices.
+Keep examples neutral and invented. Private application modules, domain packs, customer data, credentials and raw private evaluations do not belong in this repository. Use Apache-2.0 for project source. Preserve project copyright, licence and NOTICE attribution, plus dependency licences and notices.
 
 This file owns purpose and boundaries. [AGENTS.md](AGENTS.md) owns workflow. Harness entry points must import those shared rules rather than copy them.

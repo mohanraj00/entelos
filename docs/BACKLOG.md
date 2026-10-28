@@ -4,6 +4,7 @@ GitHub issues own live status. This map identifies bounded work for this source 
 
 | Issue | Scope |
 |---|---|
+| [Switch project licensing to Apache-2.0](https://github.com/mohanraj00/versioned-decision-reference/issues/5) | Licence, attribution, documentation and verification; prior history and dependency terms retained. |
 | [Bootstrap the runnable reference and shared agent workflow](https://github.com/mohanraj00/versioned-decision-reference/issues/1) | Initial publication, shared project workflow and verification. |
 | [Run the full standalone reference suite in GitHub Actions](https://github.com/mohanraj00/versioned-decision-reference/issues/2) | Next: reproduce the full suite on a documented Linux CI runner. |
 | [Add a clean-run typed caller and correction walkthrough](https://github.com/mohanraj00/versioned-decision-reference/issues/3) | Existing neutral author-to-caller and correction/replay commands. |
