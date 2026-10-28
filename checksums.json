@@ -3,6 +3,7 @@
   ".github/ISSUE_TEMPLATE/bug.yml": "dfbc9243d7717821db00ea312ddbc1246a1a724aaa540fcec79ee9c70a2ffbe8",
   ".github/ISSUE_TEMPLATE/config.yml": "33eee4b6ea70df4bb34b983901c7a30de3e03c6482f61fcc1f91d5505ce2b184",
   ".github/ISSUE_TEMPLATE/workflow.yml": "cdff1879bc4c2f7a08b21847578d0c2a9289291d74f7603b9b3611192a871f07",
+  ".github/workflows/full-suite.yml": "6b28eedf7d6d3ade6bd60d2b8f45d9954da0f59c738c255858198f337088364c",
   ".github/workflows/source-checks.yml": "bceb1376019ebd03c69ec70f9971477c8fffc617e59e0f4a8789fa309345e268",
   ".gitignore": "00256b4fddd74373bd31f7726469936deee31f171515a2e0e1b2364a5c543223",
   "AGENTS.md": "a066e0f8bcf629404ad4b3c5944b0990a827b63eadc13c82da2857c929be2fbf",
