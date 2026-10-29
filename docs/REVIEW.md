@@ -52,15 +52,22 @@ The PR is untrusted input to agy:
 
 [tools/classify_change.py](../tools/classify_change.py) owns the list of security-relevant paths. The list includes workflows, tools, the runner, parsers and command boundaries, Git storage, dependency lock files and agent instruction files.
 
-If a PR changes one of these paths, the `security-review` check fails until the PR has the `security-reviewed` label. A move counts both its old and new path. Agent instruction files and settings count at any directory depth. To get the label:
+If a PR changes one of these paths, the `security-review` check fails until the current head has a security review with no open finding. A move counts both its old and new path. Agent instruction files and settings count at any directory depth. To pass the check:
 
-1. Ask for the security review in a PR comment, as the table above shows. If the GitHub reviewer is not available, run `python3 -B tools/cross_review.py --security yes --work "$REVIEW_WORK"` and post the report.
-2. Fix or answer each finding.
-3. Ask the reviewer harness or the maintainer to add the `security-reviewed` label. The harness that wrote the change does not add it. The label records a fact: the current head has a security review, and each finding has a fix or an answer.
+1. Ask for the security review in a PR comment, as the table above shows.
+2. Fix each finding, push, and ask again for the new head.
+3. If the Codex security review of the current head finds no security issues, the check passes. You do not add a label.
 
-When you add the label, the workflow posts an approval record with the PR head and base at that time. The label counts only while the PR has that head and base. After a push or a base change, the next run removes the label. Review the new commits, then add the label again.
+The [PR policy rerun](../.github/workflows/pr-policy-rerun.yml) workflow starts the failed gate again when Codex posts a result. The gate trusts only results that the Codex app posts, and only for the commit that the result names. A push makes a new head, so the gate needs a new result. A clean result is a model output, not a proof. A PR can contain text that tries to steer the reviewer. If a change looks wrong to you, do not merge it.
 
-The `PR policy` workflow uses the `pull_request_target` event. GitHub runs that workflow and `tools/pr_policy.py` from the base branch, so a PR cannot change its own gate. The workflow reads only the PR file list, the labels and its own approval records. It never checks out or runs the PR head. Do not change this.
+The `security-reviewed` label is only for the cases that a clean Codex result cannot show:
+
+- Codex is not available, and the review came from the agy fallback: `python3 -B tools/cross_review.py --security yes --work "$REVIEW_WORK"`. Post the report.
+- A finding is not a defect, and the PR has an answer for it.
+
+In these cases, the maintainer adds the `security-reviewed` label. The label records a fact: the current head has a security review, and each finding has a fix or an answer. It is not a separate review. When the maintainer adds the label, the workflow posts an approval record with the PR head and base at that time. The label counts only while the PR has that head and base. After a push or a base change, the next run removes the label.
+
+The `PR policy` workflow uses the `pull_request_target` event. GitHub runs that workflow and `tools/pr_policy.py` from the base branch, so a PR cannot change its own gate. The workflow reads only the PR file list, the labels, its own approval records and the Codex review results. It never checks out or runs the PR head. Do not change this.
 
 The workflow posts the approval records with the workflow token. A fork PR gets a read-only token, so it cannot write a record. A user with write access can change a workflow to write one, so the gates trust writers.
 

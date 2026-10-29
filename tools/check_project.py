@@ -11,7 +11,7 @@ ROOT=Path(__file__).resolve().parents[1]
 p=argparse.ArgumentParser(description=__doc__);p.add_argument('--write-checksums',action='store_true');a=p.parse_args()
 required=['CONSTITUTION.md','AGENTS.md','CLAUDE.md','GEMINI.md','README.md','docs/SUPPORT.md','SECURITY.md',
     'docs/STATUS.md','docs/BACKLOG.md','docs/CONTRACTS.md','.agents/skills/decision-workflow/SKILL.md',
-    'docs/REVIEW.md','.github/CODEOWNERS','.github/workflows/ci.yml','.github/workflows/pr-policy.yml','.github/workflows/claude-review.yml','.github/ISSUE_TEMPLATE/bug.yml','.github/ISSUE_TEMPLATE/workflow.yml','.github/ISSUE_TEMPLATE/config.yml']
+    'docs/REVIEW.md','.github/CODEOWNERS','.github/workflows/ci.yml','.github/workflows/pr-policy.yml','.github/workflows/pr-policy-rerun.yml','.github/workflows/claude-review.yml','.github/ISSUE_TEMPLATE/bug.yml','.github/ISSUE_TEMPLATE/workflow.yml','.github/ISSUE_TEMPLATE/config.yml']
 errors=[];inventory={};links=0
 for path in sorted(ROOT.rglob('*')):
     relative=path.relative_to(ROOT)
@@ -74,6 +74,12 @@ for check,case,paths,complete,found,want in [('acceptance',event([]),[],True,{},
         ('security',event(['security-reviewed']),['tools/pr_policy.py'],True,{'accepted':{('aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa','main')}},(False,'security-reviewed'))]:
     passed,_,drop=decide(check,case,paths,complete,found)
     if (passed,drop)!=want:errors.append('PR gate changed: %s %s %s'%(check,case['pull_request']['head']['sha'][:1],paths))
+# A Codex security review counts only if it names the current head and found no security issues.
+for case,reviews,want in [(event([]),[('aaaaaaaaaa',True)],(True,None)),(event([]),[('bbbbbbbbbb',True)],(False,None)),(event([]),[('aaaaaaaaaa',False)],(False,None)),
+        (event([]),[('aaaaaaaaaa',True),('aaaaaaa',False)],(False,None)),(event([]),[('aaaaaaaaaa',False),('aaaaaaaaaa',True)],(True,None)),
+        (event(['security-reviewed'],sha='a'*39+'b'),[('aaaaaaaaaa',True)],(True,'security-reviewed'))]:
+    passed,_,drop=decide('security',case,['tools/pr_policy.py'],True,ok,reviews)
+    if (passed,drop)!=want:errors.append('PR gate changed for a Codex security review: %s'%reviews)
 checksum=ROOT/'checksums.json'
 if a.write_checksums:
     if errors:raise SystemExit(json.dumps({'passed':False,'errors':errors}))
