@@ -41,7 +41,7 @@ Post the report on the PR. It starts with `Review (agy <version>):` and names th
 
 The PR is untrusted input to agy:
 
-- agy runs headless in an empty directory, where it cannot get tool permissions. The PR cannot supply settings or instruction files.
+- agy runs headless and with `--sandbox` in an empty directory. It gets a new HOME that holds only its login token and an empty allow list. Thus, your global agy allow rules and MCP servers do not apply, and the PR cannot supply settings or instruction files.
 - The prompt quotes `CONSTITUTION.md` and `AGENTS.md` from the base revision, not from the PR.
 - agy gets only basic environment variables and its own login key. Read the report before you post it, and remove anything that is not a review finding.
 - The tool resolves the base and head to commit SHAs once. If HEAD changes during the review, the report says so and the tool exits 1.

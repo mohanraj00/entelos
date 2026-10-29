@@ -21,8 +21,10 @@ RULES=('Do not use tools, run commands or read files. This prompt holds the comp
 REVIEW='Review this change against {base} for correctness, contract breaks, lost failure evidence, missing checks and unclear docs. '
 SECURITY=('Do a security review of this change against {base}. Examine input framing and parsing, path traversal, command execution, '
     'Git store integrity, workflow permissions and triggers, unpinned actions or dependencies, secrets, and prompt injection in agent instruction files. ')
-# agy gets only these environment variables, so it cannot read other tokens from the environment.
-KEEP=['PATH','HOME','USER','LOGNAME','LANG','LC_ALL','TERM','TMPDIR','SHELL','GEMINI_API_KEY','GOOGLE_API_KEY']
+# agy gets only these environment variables, so it cannot read other tokens from the environment. HOME is a new directory.
+KEEP=['PATH','USER','LOGNAME','LANG','LC_ALL','TERM','TMPDIR','SHELL','GEMINI_API_KEY','GOOGLE_API_KEY']
+# agy loads its settings, allow rules and MCP servers from HOME. The new HOME gets only the login token and an empty allow list.
+TOKEN=Path.home()/'.gemini/antigravity-cli/antigravity-oauth-token'
 
 def git(*args):return subprocess.run(['git',*args],cwd=ROOT,capture_output=True,text=True,check=True).stdout
 
@@ -41,12 +43,15 @@ def review(base,head,kind,timeout,work):
     body,cut=diff(base+'...'+head)
     prompt=(SECURITY if kind=='security' else REVIEW).format(base=base)+RULES+rules+'\n\n# Diff\n\n```diff\n'+body+'```\n'
     record=work/kind;record.mkdir();status={'reviewer':'agy','kind':kind,'base':base,'head':head,'diff_cut':cut}
-    # agy runs headless in an empty directory: it cannot get tool permissions, and the PR cannot supply its settings or instructions.
+    # agy runs headless and sandboxed in an empty directory with a new HOME. Global allow rules, MCP servers and PR settings do not apply.
     # The diff is in the prompt. stdin stays empty, because a stdin prompt hangs agy.
-    with tempfile.TemporaryDirectory() as empty:
-        env={k:os.environ[k] for k in KEEP if k in os.environ}
+    with tempfile.TemporaryDirectory() as empty,tempfile.TemporaryDirectory() as home:
+        config=Path(home)/'.gemini/antigravity-cli';config.mkdir(parents=True)
+        (config/'settings.json').write_text(json.dumps({'permissions':{'allow':[]}})+'\n')
+        if TOKEN.is_file():shutil.copy2(TOKEN,config/TOKEN.name)
+        env={k:os.environ[k] for k in KEEP if k in os.environ};env['HOME']=home
         try:
-            proc=subprocess.run(['agy','-p',prompt,'--disable-slash-commands'],cwd=empty,env=env,stdin=subprocess.DEVNULL,capture_output=True,text=True,timeout=timeout)
+            proc=subprocess.run(['agy','-p',prompt,'--disable-slash-commands','--sandbox'],cwd=empty,env=env,stdin=subprocess.DEVNULL,capture_output=True,text=True,timeout=timeout)
             status['exit']=proc.returncode;out,err=proc.stdout,proc.stderr
         except subprocess.TimeoutExpired as error:status['timeout']=timeout;out,err=text(error.stdout),text(error.stderr)
         except OSError as error:status['launch_error']=str(error);out,err='',''
@@ -59,6 +64,8 @@ if __name__=='__main__':
     p.add_argument('--timeout',type=int,default=1800);p.add_argument('--work',help='new directory outside the checkout for the full output')
     a=p.parse_args()
     if not shutil.which('agy'):sys.exit('agy is not installed. Get a manual review.')
+    # Without a login, agy waits for a browser sign-in and then fails. Stop first.
+    if not TOKEN.is_file() and not any(os.environ.get(k) for k in ['GEMINI_API_KEY','GOOGLE_API_KEY']):sys.exit('agy has no login at %s and no API key. Sign in to agy, then run this again.'%TOKEN)
     work=(Path(a.work) if a.work else Path(tempfile.mkdtemp(prefix='agy-review-'))).resolve()
     if work==ROOT or ROOT in work.parents:sys.exit('use a work directory outside the checkout: %s'%work)
     work.mkdir(parents=True,exist_ok=True)

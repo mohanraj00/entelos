@@ -55,6 +55,11 @@ if 'ref: ${{ github.event.repository.default_branch }}' not in claude:errors.app
 for need in ["CLAUDE_CODE_SUBPROCESS_ENV_SCRUB: '1'",'bubblewrap','Read(//proc/**)']:
     if need not in claude:errors.append('claude-review.yml must keep '+need)
 if 'Bash(gh' in claude:errors.append('claude-review.yml must not allow gh commands')
+# The agy fallback must not load the maintainer's global allow rules or MCP servers.
+review=(ROOT/'tools/cross_review.py').read_text()
+for need in ["env['HOME']=home","'--sandbox'","'allow':[]"]:
+    if need not in review:errors.append('cross_review.py must keep '+need)
+if "'HOME'," in review:errors.append('cross_review.py must not pass the real HOME to agy')
 # PR gate regressions: a fork needs acceptance, and a label counts only with an approval record for the current head and base.
 from pr_policy import decide
 def event(labels,head='o/r',sha='aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',base='main'):return {'action':'edited','repository':{'full_name':'o/r'},'pull_request':{'labels':[{'name':x} for x in labels],'head':{'sha':sha,'repo':{'full_name':head}},'base':{'ref':base}}}

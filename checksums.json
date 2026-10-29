@@ -23,7 +23,7 @@
   "docs/INTEGRATION.md": "0cfa4d97a511d6280bc7b6cc67c0a75e6d3895d5896cee3b9a3803e613ee79f2",
   "docs/LICENSING.md": "d440a6c0a62e8a868d80a960031ca62015b7e9ac73d3e893678a0f626136ec09",
   "docs/PROVENANCE.md": "daa305b97a18754eeb0553aed0eea4a8a625f9ae5a365d536db72743814e4065",
-  "docs/REVIEW.md": "91077c2185fbaf3847c644641e3b6285057d489f14f1268ceb720d5f107f4dd1",
+  "docs/REVIEW.md": "652e2952cdb0fc7060ebc46c5d95e87e1e9e87739b1e7ed45e1ef2cde6b5642d",
   "docs/STATUS.md": "23ab9ea115819bbc871cdee73cad45092db4e01537d1b2be077624a076ebcc42",
   "docs/SUPPORT.md": "75b156f84b26dfe2197680de149b244825fa3115fef5247d0b594c8e476bf2f1",
   "docs/brand/README.md": "3cf6ed18dc8d1eeafd46a50641424e519f352ed41c55a3e2c2dd397f78846d93",
@@ -72,9 +72,9 @@
   "src/cel-lifecycle/storage-port.md": "755a88379bbe093451910a4b44639853d757f449352f02dd6eeb74ad155de25d",
   "src/cel-lifecycle/test_lifecycle.py": "3edaa3c4f575a48ac1b1623f2204aa86233c2c25a320c902fc10deab85ae752e",
   "tests/test_export_boundaries.py": "1834479efde85731ba75041342884e0da9f6462cdcdab8d66c02e5d2ec238540",
-  "tools/check_project.py": "8272817a04465217753e0ac4d94352b7bf28b99e07ebf16924ee9fc2f10d6c54",
+  "tools/check_project.py": "7fd4cdbf54b4faf106ac28073f2528f2062b1fcb797c204f3d3d5bb43fa218c9",
   "tools/classify_change.py": "be24b68b179d2a45189a0a1b55dde0cd8df73d9004fd1ec53ffccc26ab7b7d2c",
-  "tools/cross_review.py": "4b6be831dc18712db10ab6024f2aa6fcd5c07cc9bbcd62807440869000890842",
+  "tools/cross_review.py": "0bec93cc24cfcb649edb915ab7f88462ce5ba8fdea8e7bd5e663d3a6224b5ab8",
   "tools/pr_policy.py": "e8b5bd3d1feecabbfe518af880852bcb1cea64f406be1bb39fa75d0fce875fd5",
   "verify.py": "70275b9af0051041c16d0762d865bb557add1a83316732afd2d89a0bbed1f2e0"
 }
