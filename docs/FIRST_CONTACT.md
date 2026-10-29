@@ -15,7 +15,7 @@ This kit is for the exit test of milestone M1 ([issue #10](https://github.com/mo
 
 Give the engineer the clone URL `https://github.com/mohanraj00/entelos.git` and the commit of the round. Then say only this text:
 
-> Clone this repository at this commit and try to run the demo. Use only the repository and its docs, but do not read `docs/FIRST_CONTACT.md` or `.github/ISSUE_TEMPLATE/`. They hold the rules for this session. Speak your thoughts while you work. I will not help, but I will write notes. You have 30 minutes. You can stop at any time.
+> Clone this repository at this commit and try to run the demo. Use only the repository and its docs, but do not read `docs/FIRST_CONTACT.md` or `.github/ISSUE_TEMPLATE/first-contact.yml`. They hold the rules for this session. Speak your thoughts while you work. I will not help, but I will write notes. You have 30 minutes. You can stop at any time.
 
 At the end, ask these three questions in this sequence:
 
@@ -33,7 +33,7 @@ At the end, ask these three questions in this sequence:
 
 ### Words for the session end and a failure
 
-In this kit, "stop" and "end" mean only the end of the session. A failure is a point before the demo completes where the engineer cannot continue without help. The demo completes when `examples/quickstart/demo.py` prints `Result: passed` and exits with status 0.
+In this kit, "stop" and "end" mean only the end of the session. A failure is a point before the demo completes where the engineer cannot continue alone. Examples are an error, a missing tool, a step that the engineer cannot do, help from the maintainer, and the session end before the demo completes. Record each failure, also if the engineer continues after it. The demo completes when `examples/quickstart/demo.py` prints `Result: passed` and exits with status 0.
 
 ### Time limit
 
@@ -49,14 +49,15 @@ Open one issue for each session with the [first-contact form](https://github.com
 - the toolchain: Go, Python and Git versions, or "not installed";
 - the demo result: "completed" or "did not complete";
 - the maintainer help: "no help" or "gave help";
-- the first failure, or "None" if the demo completed without a failure;
+- each failure in sequence, with the step and the help that the maintainer gave, or "None" if the demo completed without a failure;
 - the answer to end question 3, as the engineer said it;
 - the time to the session end, in minutes;
 - the one-sentence problem statement, as the engineer said it;
 - the check of that statement ("correct" or "not correct", see [Result](#result)) and its reason;
+- the kit check: "did not open the kit files" or "opened a kit file";
 - the questions that the engineer asked during the session, in sequence;
 - the first three questions at the end, as the engineer said them, with "None" for each missing question;
-- the errors and other failures, with the exact message, or "None".
+- each error message, exactly as it occurred, or "None".
 
 Milestone M2 ([issue #11](https://github.com/mohanraj00/entelos/issues/11)) uses the first three questions as its first input.
 
@@ -71,12 +72,12 @@ A round is two or three sessions on the same commit of `main`. Select the number
 - rules that change inside a service, or the decisions of those rules;
 - the earlier answers stay tied to their exact inputs and rule revisions, or a correction keeps the earlier answer.
 
-The maintainer compares each statement with these two points and writes "correct" or "not correct" in the record, with the reason. If the engineer opened `docs/FIRST_CONTACT.md` or a file in `.github/ISSUE_TEMPLATE/` during the session, write "not correct" and give this reason.
+The maintainer compares each statement with these two points and writes "correct" or "not correct" in the record, with the reason. The kit files are `docs/FIRST_CONTACT.md` and `.github/ISSUE_TEMPLATE/first-contact.yml`. If the engineer opened a kit file during the session, select "opened a kit file" in the kit check. Do not change the statement check for this reason.
 
 ### Why the expected answer stays in this file
 
-Method: this file keeps the expected answer, and the maintainer tells the engineer not to read this file or the form. The maintainer watches the screen and records each view of these files.
+Method: this file keeps the expected answer, and the maintainer tells the engineer not to read the two kit files. The maintainer watches the screen and records each view of these files in the kit check. The text names the two files, so the engineer knows which files to avoid.
 
 Reason: the expected answer must be fixed in a commit before the first session, so that it is independent of the engineer statements. If the answer is kept outside the repository until the round ends, no commit shows that it was not changed after the sessions.
 
-The exit test of M1 passes for a commit if each engineer of the round completes the demo without help and gives a correct problem statement. If the demo of one engineer does not complete, the maintainer gives help, or the statement is not correct, the round fails for that commit. Keep each record of a failed round. A failure is evidence. If the docs change after a failed round, run a new round on the new commit with new engineers. Do not combine results from different commits. Do not run the same engineer again and call it a new first contact.
+The exit test of M1 passes for a commit if each engineer of the round completes the demo without help, gives a correct problem statement and did not open a kit file. If one of these is not true for one engineer, the round fails for that commit. Keep each record of a failed round. A failure is evidence. If the docs change after a failed round, run a new round on the new commit with new engineers. Do not combine results from different commits. Do not run the same engineer again and call it a new first contact.

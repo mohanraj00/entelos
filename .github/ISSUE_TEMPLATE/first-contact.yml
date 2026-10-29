@@ -52,17 +52,17 @@ body:
     id: help
     attributes:
       label: Maintainer help
-      description: Any help from the maintainer during the session is "gave help". Write the help in "First failure".
+      description: Any help from the maintainer during the session is "gave help". Write each help in "Failures".
       options:
         - no help
         - gave help
     validations:
       required: true
   - type: textarea
-    id: failure
+    id: failures
     attributes:
-      label: First failure
-      description: The first point before the demo completed where the engineer could not continue without help. Write "None" if the demo completed without a failure.
+      label: Failures
+      description: Each point before the demo completed where the engineer could not continue alone, in sequence. Give the step, and the help that the maintainer gave. An error, a missing tool, a step that the engineer could not do, help and the session end before the demo completed are failures. Write "None" only if the demo completed without a failure and without help.
     validations:
       required: true
   - type: textarea
@@ -90,7 +90,7 @@ body:
     id: verdict
     attributes:
       label: Problem statement check
-      description: Compare the statement with the expected answer in docs/FIRST_CONTACT.md, section Result. If the engineer opened docs/FIRST_CONTACT.md or a file in .github/ISSUE_TEMPLATE/ during the session, select "not correct".
+      description: Compare the statement with the expected answer in docs/FIRST_CONTACT.md, section Result. Record a view of a kit file in "Kit check", not here.
       options:
         - correct
         - not correct
@@ -101,6 +101,16 @@ body:
     attributes:
       label: Reason for the check
       description: Which of the two expected points the statement gives, and which it does not give.
+    validations:
+      required: true
+  - type: dropdown
+    id: kit-check
+    attributes:
+      label: Kit check
+      description: The kit files are docs/FIRST_CONTACT.md and .github/ISSUE_TEMPLATE/first-contact.yml. Did the engineer open a kit file during the session?
+      options:
+        - did not open the kit files
+        - opened a kit file
     validations:
       required: true
   - type: textarea
@@ -124,8 +134,8 @@ body:
   - type: textarea
     id: errors
     attributes:
-      label: Errors and other failures
-      description: Each error or failure, with the exact message, after you remove private data. Write "None" if no error or failure occurred.
+      label: Error messages
+      description: Each error message, exactly as it occurred, after you remove private data. Write "None" if no error occurred.
       render: text
     validations:
       required: true
