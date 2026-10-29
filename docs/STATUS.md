@@ -24,7 +24,7 @@ On 2026-10-29, the code moved to `src/` and `examples/`, the boundary test moved
 
 ## Next work
 
-Use [BACKLOG.md](BACKLOG.md) and the linked GitHub issues. Full-suite CI reproduction ([issue #2](https://github.com/mohanraj00/entelos/issues/2)) is complete. Start with the clean-run caller and correction walkthrough. Keep caller walkthrough and input-correction documentation bounded to the existing examples. Numeric/structured profiles, production DBs, authentication gateways and resident-worker coordination are outside the current implemented scope.
+Use [BACKLOG.md](BACKLOG.md) and the linked GitHub issues. Full-suite CI reproduction ([issue #2](https://github.com/mohanraj00/entelos/issues/2)) is complete. Start with the clean-run caller and correction walkthrough. It is the first item of milestone M1 in [BACKLOG.md](BACKLOG.md#milestones-to-a-public-announcement). Keep caller walkthrough and input-correction documentation bounded to the existing examples. Numeric/structured profiles, production DBs, authentication gateways and resident-worker coordination are outside the current implemented scope.
 
 ## Handoff rule
 
