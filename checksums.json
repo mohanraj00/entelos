@@ -22,7 +22,7 @@
   "docs/INTEGRATION.md": "0cfa4d97a511d6280bc7b6cc67c0a75e6d3895d5896cee3b9a3803e613ee79f2",
   "docs/LICENSING.md": "d440a6c0a62e8a868d80a960031ca62015b7e9ac73d3e893678a0f626136ec09",
   "docs/PROVENANCE.md": "daa305b97a18754eeb0553aed0eea4a8a625f9ae5a365d536db72743814e4065",
-  "docs/REVIEW.md": "59a8c9204cf3628db764fcffb236f747533bb71f83a57945fdac80d97daab4b4",
+  "docs/REVIEW.md": "b82e9f5546c5d050a800230639ec20909ca6c57eeafc13b9f11b6bfaf87c62e7",
   "docs/STATUS.md": "23ab9ea115819bbc871cdee73cad45092db4e01537d1b2be077624a076ebcc42",
   "docs/SUPPORT.md": "75b156f84b26dfe2197680de149b244825fa3115fef5247d0b594c8e476bf2f1",
   "docs/brand/README.md": "3cf6ed18dc8d1eeafd46a50641424e519f352ed41c55a3e2c2dd397f78846d93",
@@ -73,6 +73,6 @@
   "tests/test_export_boundaries.py": "1834479efde85731ba75041342884e0da9f6462cdcdab8d66c02e5d2ec238540",
   "tools/check_project.py": "0d47960af34b22ae744dda040693b30261aadcfa177f0d002d3dd851e2486de3",
   "tools/classify_change.py": "ce326ce56a89d47319d2670f99be7c8e656e7ea0001ee9b50cefb5d1def4a28b",
-  "tools/cross_review.py": "66078142e3fe4b905f5c448a0f8fbcfce7cf5bf4dff9f18f1bbaf72c67d3e767",
+  "tools/cross_review.py": "bda88026db67a451f3ea26c65ed9a90a450a7d13a3ef22806275c9855a2a69a0",
   "verify.py": "70275b9af0051041c16d0762d865bb557add1a83316732afd2d89a0bbed1f2e0"
 }

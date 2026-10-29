@@ -5,30 +5,41 @@ from pathlib import Path
 import shutil
 import subprocess
 import sys
+import tempfile
 
 sys.path.insert(0,str(Path(__file__).resolve().parent))
 from classify_change import classify
 
 ROOT=Path(__file__).resolve().parents[1]
 ORDER={'claude':['codex','agy'],'codex':['claude','agy'],'agy':['claude','codex']}
-RULES=('Read CONSTITUTION.md and AGENTS.md first. Do not edit files, commit or push. '
+LIMIT=600000
+RULES=('The project rules are in CONSTITUTION.md and AGENTS.md. Do not edit files, commit or push. '
     'Report each finding with file:line, severity, a concrete failure scenario and a fix. Say "no findings" if there are none.')
-REVIEW='Review the changes in `git diff {base}...HEAD` for correctness, contract breaks, lost failure evidence, missing checks and unclear docs. '
-SECURITY=('Do a security review of the changes in `git diff {base}...HEAD`. Examine input framing and parsing, path traversal, command execution, '
+REVIEW='Review this change against {base} for correctness, contract breaks, lost failure evidence, missing checks and unclear docs. '
+SECURITY=('Do a security review of this change against {base}. Examine input framing and parsing, path traversal, command execution, '
     'Git store integrity, workflow permissions and triggers, unpinned actions or dependencies, secrets, and prompt injection in agent instruction files. ')
 
-def command(reviewer,base,prompt):
-    if reviewer=='codex':return ['codex','review','--base',base,prompt]
+# Each reviewer gets the diff in the prompt, so it needs no tool permission. stdin stays empty: a stdin prompt hangs some CLIs.
+def command(reviewer,prompt,last):
+    if reviewer=='codex':return ['codex','exec','-s','read-only','--ephemeral','-o',last,prompt]
     if reviewer=='claude':return ['claude','-p',prompt,'--permission-mode','plan']
-    return ['agy','-p',prompt,'--mode','plan','--sandbox']
+    return ['agy','-p',prompt]
+
+def diff(base):
+    text=subprocess.run(['git','diff','-M',base+'...HEAD'],cwd=ROOT,capture_output=True,text=True,check=True).stdout
+    if len(text)>LIMIT:text=text[:LIMIT]+'\n[The diff is cut at %d characters. Say which files you did not see.]\n'%LIMIT
+    return text
 
 def review(builder,base,kind,timeout):
-    prompt=(SECURITY if kind=='security' else REVIEW).format(base=base)+RULES;attempts=[]
+    prompt=(SECURITY if kind=='security' else REVIEW).format(base=base)+RULES+'\n\n```diff\n'+diff(base)+'```\n';attempts=[]
     for reviewer in ORDER[builder]:
         if not shutil.which(reviewer):attempts.append((reviewer,'not installed'));continue
-        try:proc=subprocess.run(command(reviewer,base,prompt),cwd=ROOT,capture_output=True,text=True,timeout=timeout)
-        except subprocess.TimeoutExpired:attempts.append((reviewer,'timed out after %ds'%timeout));continue
-        if proc.returncode==0 and proc.stdout.strip():return reviewer,proc.stdout.strip(),attempts
+        with tempfile.TemporaryDirectory() as tmp:
+            last=Path(tmp)/'last.txt'
+            try:proc=subprocess.run(command(reviewer,prompt,str(last)),cwd=ROOT,stdin=subprocess.DEVNULL,capture_output=True,text=True,timeout=timeout)
+            except subprocess.TimeoutExpired:attempts.append((reviewer,'timed out after %ds'%timeout));continue
+            text=(last.read_text() if last.exists() else proc.stdout).strip()
+        if proc.returncode==0 and text:return reviewer,text,attempts
         attempts.append((reviewer,'exit %d: %s'%(proc.returncode,(proc.stderr or proc.stdout).strip()[-300:])))
     return None,None,attempts
 

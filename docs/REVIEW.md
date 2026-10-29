@@ -25,7 +25,7 @@ Set `--builder` to the harness that wrote the change: `claude`, `codex` or `agy`
 | Codex | Claude Code | agy |
 | agy | Claude Code | Codex |
 
-If the first reviewer is not installed, fails or times out, the tool uses the fallback. If no reviewer is available, get a manual review. Post the report on the PR. Fix each real finding, or write on the PR why it is not a defect. Reviewers run read-only: Codex uses `codex review`, Claude Code uses plan mode, and agy uses plan mode in its sandbox.
+If the first reviewer is not installed, fails or times out, the tool uses the fallback. If no reviewer is available, get a manual review. Post the report on the PR. Fix each real finding, or write on the PR why it is not a defect. Each reviewer gets the diff in its prompt and runs read-only: Codex uses `codex exec` with a read-only sandbox, Claude Code uses plan mode, and agy runs headless, where it cannot get tool permissions.
 
 ## Security review
 
