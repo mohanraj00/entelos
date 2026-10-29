@@ -1,40 +1,34 @@
 name: PR policy
+# pull_request_target runs this file and tools/ from the base branch, so a PR cannot change its own gate.
+# Do not check out or run the PR head here. This workflow reads only the PR file list and labels.
 on:
-  pull_request:
+  pull_request_target:
     types: [opened, reopened, synchronize, ready_for_review, labeled, unlabeled]
 permissions:
   contents: read
+  pull-requests: write
 jobs:
   acceptance:
     runs-on: ubuntu-latest
     timeout-minutes: 2
     steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          persist-credentials: false
       - name: Require maintainer acceptance for a PR from a fork
         env:
-          HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
-          BASE_REPO: ${{ github.repository }}
-          ACCEPTED: ${{ contains(github.event.pull_request.labels.*.name, 'accepted') }}
-        run: |
-          if [ "$HEAD_REPO" = "$BASE_REPO" ]; then echo "Same-repository PR: no fork acceptance needed."; exit 0; fi
-          if [ "$ACCEPTED" = "true" ]; then echo "A maintainer accepted this fork PR."; exit 0; fi
-          echo "::error::This PR comes from the fork $HEAD_REPO. A maintainer must do the acceptance review in docs/REVIEW.md, then add the 'accepted' label."
-          exit 1
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python3 -B tools/pr_policy.py acceptance
   security-review:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          fetch-depth: 0
+          ref: ${{ github.event.pull_request.base.sha }}
           persist-credentials: false
-      - name: Require a recorded security review for security-relevant paths
+      - name: Require a current security review for security-relevant paths
         env:
-          PR_BASE: ${{ github.event.pull_request.base.sha }}
-          REVIEWED: ${{ contains(github.event.pull_request.labels.*.name, 'security-reviewed') }}
-        run: |
-          python3 -B tools/classify_change.py "$PR_BASE" HEAD --github-output "$RUNNER_TEMP/classes" > "$RUNNER_TEMP/classes.json"
-          if ! grep -qx 'security=true' "$RUNNER_TEMP/classes"; then echo "No security-relevant paths changed."; exit 0; fi
-          python3 -c 'import json,sys;print("Security-relevant paths:\n"+"\n".join(json.load(open(sys.argv[1]))["security_paths"]))' "$RUNNER_TEMP/classes.json"
-          if [ "$REVIEWED" = "true" ]; then echo "The 'security-reviewed' label is present."; exit 0; fi
-          echo "::error::This PR changes security-relevant paths. Run tools/cross_review.py --security yes, post the result on the PR, then add the 'security-reviewed' label."
-          exit 1
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python3 -B tools/pr_policy.py security

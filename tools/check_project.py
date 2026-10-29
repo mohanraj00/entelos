@@ -5,6 +5,7 @@ import hashlib
 import json
 from pathlib import Path
 import re
+import sys
 
 ROOT=Path(__file__).resolve().parents[1]
 p=argparse.ArgumentParser(description=__doc__);p.add_argument('--write-checksums',action='store_true');a=p.parse_args()
@@ -36,6 +37,24 @@ claude=(ROOT/'CLAUDE.md').read_text() if (ROOT/'CLAUDE.md').exists() else ''
 if '@CONSTITUTION.md' not in claude or '@AGENTS.md' not in claude:errors.append('Claude entry point does not import shared rules')
 gemini=(ROOT/'GEMINI.md').read_text() if (ROOT/'GEMINI.md').exists() else ''
 if '@CONSTITUTION.md' not in gemini or '@AGENTS.md' not in gemini:errors.append('GEMINI.md does not import shared rules')
+# Classification regressions: each path must keep its CI and security-review class.
+sys.path.insert(0,str(ROOT/'tools'))
+from classify_change import classify
+for path,code,security in [('README.md',False,False),('docs/REVIEW.md',False,False),('src/cel-lifecycle/lifecycle.py',True,True),
+        ('src/cel-lifecycle/git_store.py',True,True),('src/cel-handoff/handoff_test.go',True,False),('src/cel-handoff/go.sum',True,True),
+        ('tools/classify_change.py',False,True),('.github/workflows/ci.yml',True,True),('.codex/config.toml',False,True),('GEMINI.md',False,True)]:
+    got=classify([path])
+    if (got['code'],got['security'])!=(code,security):errors.append('classification changed for %s: code=%s security=%s'%(path,got['code'],got['security']))
+# PR gate regressions: a fork needs acceptance, and a push removes an earlier approval.
+from pr_policy import decide
+def event(action,labels,head='o/r'):return {'action':action,'repository':{'full_name':'o/r'},'pull_request':{'labels':[{'name':x} for x in labels],'head':{'repo':{'full_name':head}}}}
+for check,case,paths,complete,want in [('acceptance',event('opened',[]),[],True,(True,None)),('acceptance',event('opened',[],'f/r'),[],True,(False,None)),
+        ('acceptance',event('labeled',['accepted'],'f/r'),[],True,(True,None)),('acceptance',event('synchronize',['accepted'],'f/r'),[],True,(False,'accepted')),
+        ('security',event('opened',[]),['docs/STATUS.md'],True,(True,None)),('security',event('opened',[]),['docs/STATUS.md'],False,(False,None)),
+        ('security',event('opened',[]),['tools/pr_policy.py'],True,(False,None)),('security',event('labeled',['security-reviewed']),['tools/pr_policy.py'],True,(True,None)),
+        ('security',event('synchronize',['security-reviewed']),['tools/pr_policy.py'],True,(False,'security-reviewed'))]:
+    passed,_,drop=decide(check,case,paths,complete)
+    if (passed,drop)!=want:errors.append('PR gate changed: %s %s %s'%(check,case['action'],paths))
 checksum=ROOT/'checksums.json'
 if a.write_checksums:
     if errors:raise SystemExit(json.dumps({'passed':False,'errors':errors}))

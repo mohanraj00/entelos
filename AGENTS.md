@@ -13,7 +13,7 @@ For contract, lifecycle, integration or reproduction work, read `.agents/skills/
 - `src/`: the reusable reference (`cel-handoff` Go host, `cel-lifecycle` Python lifecycle).
 - `examples/`: consumer examples that reuse `src/` without copies.
 - `tests/`: cross-component boundary tests.
-- `tools/`: project checks, change classification and cross-harness review.
+- `tools/`: project checks, change classification, PR gates and cross-harness review.
 - `docs/`: status, backlog, contracts, support, integration, provenance, review rules and brand.
 - `licenses/`: third-party notices and dependency licence texts.
 

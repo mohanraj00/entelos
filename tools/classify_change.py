@@ -10,8 +10,8 @@ import sys
 CODE=['src/*','examples/*','tests/*','verify.py','.github/workflows/ci.yml']
 # A security-relevant change needs a recorded security review before merge.
 SECURITY=['.github/*','tools/*','verify.py','src/*.go','*/go.mod','*/go.sum','src/*/cli.py','src/*/client.py',
-    'src/*/git_store.py','src/*/cel_runtime.py','examples/*/adapter.py','examples/*/cli.py',
-    'SECURITY.md','CONSTITUTION.md','AGENTS.md','CLAUDE.md','GEMINI.md','.agents/*','.claude/*']
+    'src/*/git_store.py','src/*/cel_runtime.py','src/*/lifecycle.py','examples/*/adapter.py','examples/*/cli.py',
+    'SECURITY.md','CONSTITUTION.md','AGENTS.md','CLAUDE.md','GEMINI.md','.agents/*','.claude/*','.codex/*','.gemini/*']
 NOT_SECURITY=['*_test.go']
 
 def match(path,patterns):return any(fnmatch(path,x) for x in patterns)
@@ -24,7 +24,8 @@ if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('base');p.add_argument('head',nargs='?',default='HEAD')
     p.add_argument('--github-output',help='append code=, security= and docs_only= lines to this file')
     a=p.parse_args()
-    out=subprocess.run(['git','diff','--name-only',a.base+'...'+a.head],capture_output=True,text=True)
+    # --no-renames lists both ends of a move, so a move out of src/ still counts as a code change.
+    out=subprocess.run(['git','diff','--no-renames','--name-only',a.base+'...'+a.head],capture_output=True,text=True)
     if out.returncode:sys.exit(out.stderr.strip() or 'git diff failed')
     result=classify([x for x in out.stdout.splitlines() if x])
     if a.github_output:
