@@ -2,7 +2,7 @@
 
 ## Name
 
-The project name is Entelos, with the tagline "Entelos: grow toward the goal." On 2026-10-29, the GitHub repository changed from `mohanraj00/entelos` to `mohanraj00/entelos`. GitHub redirects the old URL. The Go module path and the NOTICE attribution are unchanged. On 2026-10-29, `entelos` was free on PyPI, npm and crates.io, and the .dev and .io domains were free. The GitHub user and the .com, .ai and .org domains were taken. No trademark database was searched.
+The project name is Entelos, with the tagline "Entelos: grow toward the goal." On 2026-10-29, the GitHub repository changed from `mohanraj00/versioned-decision-reference` to `mohanraj00/entelos`. GitHub redirects the old URL. The Go module path and the NOTICE attribution are unchanged. On 2026-10-29, `entelos` was free on PyPI, npm and crates.io, and the .dev and .io domains were free. The GitHub user and the .com, .ai and .org domains were taken. No trademark database was searched.
 
 ## Source reference
 
