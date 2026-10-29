@@ -27,7 +27,7 @@ Follow these rules for each request:
 4. If you push fixes after a review, ask again for the new head. Ask at most 3 times for each PR. After that, ask the maintainer to review.
 5. Fix each real finding, or write on the PR why it is not a defect.
 
-Codex reviews through the Codex GitHub integration. Claude Code reviews through the [Claude review](../.github/workflows/claude-review.yml) workflow, which needs the `CLAUDE_CODE_OAUTH_TOKEN` secret. That workflow checks out `main`, not the PR head, and gives Claude read-only tools and PR comments only.
+Codex reviews through the Codex GitHub integration. Claude Code reviews through the [Claude review](../.github/workflows/claude-review.yml) workflow, which needs the `CLAUDE_CODE_OAUTH_TOKEN` secret. That workflow checks out `main` and fetches the PR commits as Git objects only, so the PR cannot supply Claude's instructions. Claude reads the diff with `git diff`, `git show` and `git log`, and posts with the action's comment tools. No tool gets a token: the workflow removes credentials from tool subprocesses, runs them in a PID namespace and denies reads of `/proc`. The OAuth token is a static secret. If you suspect a leak, revoke it and make a new one.
 
 ### Local fallback: agy
 

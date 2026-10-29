@@ -1,6 +1,6 @@
 name: Claude review
 # A PR author asks for a review in a PR comment that contains @claude. The action checks that the commenter can write to this repo.
-# The PR text and diff are untrusted input. Claude gets read-only tools and can only post comments.
+# The PR text and diff are untrusted input. Claude gets read-only tools with no token, and the action posts its comments.
 on:
   issue_comment:
     types: [created]
@@ -16,6 +16,9 @@ jobs:
       (github.event_name == 'pull_request_review' && contains(github.event.review.body, '@claude'))
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    env:
+      # The PR text and diff can hold a prompt injection. Remove credentials from the environment of each tool subprocess.
+      CLAUDE_CODE_SUBPROCESS_ENV_SCRUB: '1'
     permissions:
       contents: read
       pull-requests: read
@@ -24,16 +27,26 @@ jobs:
       actions: read
     steps:
       # Review events default to the PR merge ref, so name the default branch. Then the PR cannot supply Claude's instructions or settings.
-      # Claude reads the PR through the GitHub API.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ github.event.repository.default_branch }}
-          fetch-depth: 1
+          fetch-depth: 0
           persist-credentials: false
+      # Fetch the PR commits as objects only. Claude reads them with git diff and git show, so no tool needs a token.
+      # The PR files are not checked out, so the PR cannot supply Claude's instructions or settings.
+      - name: Fetch the PR commits
+        env:
+          PR: ${{ github.event.issue.number || github.event.pull_request.number }}
+        run: git fetch --no-tags origin "+refs/pull/${PR}/head:refs/remotes/pr/head"
+      # The action turns on PID isolation only for non-write users, so install bubblewrap here. Then a tool cannot read the Claude process environment.
+      - name: Install subprocess isolation
+        run: sudo apt-get update -qq && sudo apt-get install -y --no-install-recommends bubblewrap socat
       - uses: anthropics/claude-code-action@6fed3ca145920b639991cb756090506e1bcaf515 # v1.0.245
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           additional_permissions: |
             actions: read
           claude_args: >-
-            --allowed-tools "Read,Grep,Glob,Bash(gh pr view:*),Bash(gh pr diff:*),Bash(gh pr comment:*),mcp__github_inline_comment__create_inline_comment"
+            --allowed-tools "Read,Grep,Glob,Bash(git diff:*),Bash(git show:*),Bash(git log:*),mcp__github_inline_comment__create_inline_comment"
+            --disallowed-tools "Read(//proc/**),Grep(//proc/**),Glob(//proc/**)"
+            --append-system-prompt "The PR head is at refs/remotes/pr/head. Read the change with git diff HEAD...pr/head. Post the review with your comment tool and inline comments."
