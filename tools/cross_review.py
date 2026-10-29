@@ -49,7 +49,9 @@ def review(base,head,kind,timeout,work):
         config=Path(home)/'.gemini/antigravity-cli';config.mkdir(parents=True)
         (config/'settings.json').write_text(json.dumps({'permissions':{'allow':[]}})+'\n')
         if TOKEN.is_file():shutil.copy2(TOKEN,config/TOKEN.name)
-        env={k:os.environ[k] for k in KEEP if k in os.environ};env['HOME']=home
+        # agy keeps its token in the macOS keychain and refreshes an expired token. The new HOME has no keychain, so a save opens a system dialog.
+        # agy uses only the file token if it finds an SSH session. Thus, agy does not read or write any keychain.
+        env={k:os.environ[k] for k in KEEP if k in os.environ};env['HOME']=home;env['SSH_CONNECTION']='127.0.0.1 0 127.0.0.1 0'
         try:
             proc=subprocess.run(['agy','-p',prompt,'--disable-slash-commands','--sandbox'],cwd=empty,env=env,stdin=subprocess.DEVNULL,capture_output=True,text=True,timeout=timeout)
             status['exit']=proc.returncode;out,err=proc.stdout,proc.stderr
