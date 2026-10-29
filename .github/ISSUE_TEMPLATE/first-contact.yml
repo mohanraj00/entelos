@@ -38,35 +38,45 @@ body:
       placeholder: "Go 1.27.2, Python 3.14.6, Git 2.54.0"
     validations:
       required: true
-  - type: textarea
-    id: stop
+  - type: dropdown
+    id: demo-result
     attributes:
-      label: Stop step
-      description: The step where the engineer stopped, or "completed the demo".
+      label: Demo result
+      description: 'The demo completed if examples/quickstart/demo.py printed "Result: passed" and exited with status 0. Record maintainer help in the next field.'
+      options:
+        - completed
+        - did not complete
     validations:
       required: true
   - type: dropdown
-    id: demo
+    id: help
     attributes:
-      label: Demo check
-      description: Did the engineer run the demo without help? Any help from the maintainer is "did not run without help".
+      label: Maintainer help
+      description: Any help from the maintainer during the session is "gave help". Write the help in "First failure".
       options:
-        - ran without help
-        - did not run without help
+        - no help
+        - gave help
+    validations:
+      required: true
+  - type: textarea
+    id: failure
+    attributes:
+      label: First failure
+      description: The first point before the demo completed where the engineer could not continue without help. Write "None" if the demo completed without a failure.
     validations:
       required: true
   - type: textarea
     id: last-step
     attributes:
-      label: Answer to "Where did you stop, or what did you do last?"
+      label: Answer to "What did you do last?"
       description: The answer to end question 3, as the engineer said it.
     validations:
       required: true
   - type: input
     id: minutes
     attributes:
-      label: Minutes to stop
-      description: Minutes from the first command or page view to the stop. The limit is 30.
+      label: Minutes to the session end
+      description: Minutes from the first command or page view to the session end. The limit is 30.
     validations:
       required: true
   - type: textarea
@@ -80,7 +90,7 @@ body:
     id: verdict
     attributes:
       label: Problem statement check
-      description: Compare the statement with the expected answer in docs/FIRST_CONTACT.md, section Result.
+      description: Compare the statement with the expected answer in docs/FIRST_CONTACT.md, section Result. If the engineer opened docs/FIRST_CONTACT.md or a file in .github/ISSUE_TEMPLATE/ during the session, select "not correct".
       options:
         - correct
         - not correct
@@ -104,7 +114,7 @@ body:
     id: questions
     attributes:
       label: First three questions at the end
-      description: The first three questions at the end of the session, as the engineer said them. Milestone M2 uses them.
+      description: The first three questions at the end of the session, as the engineer said them. Write "None" for each missing question. Milestone M2 uses them.
       placeholder: |
         1.
         2.
@@ -114,8 +124,8 @@ body:
   - type: textarea
     id: errors
     attributes:
-      label: Errors and other stop points
-      description: Each error with its exact message, after you remove private data. Write "None" if no error occurred.
+      label: Errors and other failures
+      description: Each error or failure, with the exact message, after you remove private data. Write "None" if no error or failure occurred.
       render: text
     validations:
       required: true
