@@ -1,0 +1,140 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 872" width="960" height="872" role="img" aria-labelledby="t d">
+<title id="t">Entelos decision path</title>
+<desc id="d">Nine stages from source to replay or restatement. The left column shows what the application supplies. The right column shows what the reference records.</desc>
+<style>
+.bg{fill:#F5F5F0}
+.title{fill:#12181B;font:600 20px 'IBM Plex Sans',system-ui,sans-serif}
+.head{fill:#50595E;font:600 12px 'IBM Plex Sans',system-ui,sans-serif;letter-spacing:.06em}
+.stage{fill:#FFFFFF;stroke:#1E7A5C;stroke-width:2}
+.stage-name{fill:#12181B;font:600 15px 'IBM Plex Sans',system-ui,sans-serif}
+.op{fill:#1E7A5C;font:12px 'IBM Plex Mono',ui-monospace,monospace}
+.app{fill:none;stroke:#50595E;stroke-width:1.5;stroke-dasharray:5 4}
+.ref{fill:#E9EBE7;stroke:#D5D9D8;stroke-width:1}
+.note{fill:#2C3438;font:12.5px 'IBM Plex Sans',system-ui,sans-serif}
+.flow{stroke:#1E7A5C;stroke-width:2;fill:none}
+.tie{stroke:#A9B0B3;stroke-width:1;fill:none}
+.loop{stroke:#1E7A5C;stroke-width:1.5;fill:none;stroke-dasharray:6 4}
+.arrow{fill:#1E7A5C}
+.foot{fill:#50595E;font:12px 'IBM Plex Sans',system-ui,sans-serif}
+@media (prefers-color-scheme:dark){
+.bg{fill:#12181B}
+.title,.stage-name{fill:#EEF0EC}
+.head,.foot{fill:#A9B0B3}
+.stage{fill:#12181B;stroke:#4FC79A}
+.op{fill:#4FC79A}
+.app{stroke:#A9B0B3}
+.ref{fill:#2C3438;stroke:#50595E}
+.note{fill:#E9EBE7}
+.flow,.loop{stroke:#4FC79A}
+.tie{stroke:#50595E}
+.arrow{fill:#4FC79A}
+}
+</style>
+<rect width="960" height="872" class="bg"/>
+<defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" class="arrow"/></marker></defs>
+<text x="24" y="44" class="title" text-anchor="start">Decision path</text>
+<text x="24" y="100" class="head" text-anchor="start">APPLICATION SUPPLIES</text>
+<text x="344" y="100" class="head" text-anchor="start">STAGE AND LIFECYCLE OPERATION</text>
+<text x="668" y="100" class="head" text-anchor="start">REFERENCE RECORDS AND CHECKS</text>
+<rect x="24" y="132" width="268" height="54" rx="6" class="app"/>
+<text x="36" y="155.5" class="note" text-anchor="start">Source authority, rule and data</text>
+<text x="36" y="171.5" class="note" text-anchor="start">content, independent expectations</text>
+<path d="M292 159.0H344" class="tie"/>
+<rect x="344" y="132" width="248" height="54" rx="8" class="stage"/>
+<text x="358" y="155" class="stage-name" text-anchor="start">Source</text>
+<text x="358" y="174" class="op" text-anchor="start">source, plan</text>
+<path d="M592 159.0H668" class="tie"/>
+<rect x="668" y="132" width="268" height="54" rx="6" class="ref"/>
+<text x="680" y="155.5" class="note" text-anchor="start">Source text and test cases for one</text>
+<text x="680" y="171.5" class="note" text-anchor="start">function, scope and date interval</text>
+<rect x="24" y="208" width="268" height="54" rx="6" class="app"/>
+<text x="36" y="239.5" class="note" text-anchor="start">Author identity</text>
+<path d="M292 235.0H344" class="tie"/>
+<rect x="344" y="208" width="248" height="54" rx="8" class="stage"/>
+<text x="358" y="231" class="stage-name" text-anchor="start">Proposal</text>
+<text x="358" y="250" class="op" text-anchor="start">propose</text>
+<path d="M592 235.0H668" class="tie"/>
+<rect x="668" y="208" width="268" height="54" rx="6" class="ref"/>
+<text x="680" y="231.5" class="note" text-anchor="start">Snapshot: source, bundle, interval,</text>
+<text x="680" y="247.5" class="note" text-anchor="start">base snapshot and reason</text>
+<path d="M468.0 186V207" class="flow" marker-end="url(#a)"/>
+<rect x="24" y="284" width="268" height="54" rx="6" class="app"/>
+<text x="36" y="315.5" class="note" text-anchor="start">The installed runner</text>
+<path d="M292 311.0H344" class="tie"/>
+<rect x="344" y="284" width="248" height="54" rx="8" class="stage"/>
+<text x="358" y="307" class="stage-name" text-anchor="start">Qualification</text>
+<text x="358" y="326" class="op" text-anchor="start">qualify</text>
+<path d="M592 311.0H668" class="tie"/>
+<rect x="668" y="284" width="268" height="54" rx="6" class="ref"/>
+<text x="680" y="307.5" class="note" text-anchor="start">Report bound to the exact snapshot,</text>
+<text x="680" y="323.5" class="note" text-anchor="start">cases and build. Pass is not approval</text>
+<path d="M468.0 262V283" class="flow" marker-end="url(#a)"/>
+<rect x="24" y="360" width="268" height="54" rx="6" class="app"/>
+<text x="36" y="383.5" class="note" text-anchor="start">Admission policy and reviewer</text>
+<text x="36" y="399.5" class="note" text-anchor="start">identity</text>
+<path d="M292 387.0H344" class="tie"/>
+<rect x="344" y="360" width="248" height="54" rx="8" class="stage"/>
+<text x="358" y="383" class="stage-name" text-anchor="start">Approval</text>
+<text x="358" y="402" class="op" text-anchor="start">decide</text>
+<path d="M592 387.0H668" class="tie"/>
+<rect x="668" y="360" width="268" height="54" rx="6" class="ref"/>
+<text x="680" y="383.5" class="note" text-anchor="start">Decision bound to one passed report,</text>
+<text x="680" y="399.5" class="note" text-anchor="start">with its reason</text>
+<path d="M468.0 338V359" class="flow" marker-end="url(#a)"/>
+<rect x="344" y="436" width="248" height="54" rx="8" class="stage"/>
+<text x="358" y="459" class="stage-name" text-anchor="start">Dated activation</text>
+<text x="358" y="478" class="op" text-anchor="start">activate</text>
+<path d="M592 463.0H668" class="tie"/>
+<rect x="668" y="436" width="268" height="54" rx="6" class="ref"/>
+<text x="680" y="459.5" class="note" text-anchor="start">Enable event for [from, until).</text>
+<text x="680" y="475.5" class="note" text-anchor="start">Overlaps fail unless masked</text>
+<path d="M468.0 414V435" class="flow" marker-end="url(#a)"/>
+<rect x="24" y="512" width="268" height="54" rx="6" class="app"/>
+<text x="36" y="543.5" class="note" text-anchor="start">Worker that loads the revision</text>
+<path d="M292 539.0H344" class="tie"/>
+<rect x="344" y="512" width="248" height="54" rx="8" class="stage"/>
+<text x="358" y="535" class="stage-name" text-anchor="start">Preparation</text>
+<text x="358" y="554" class="op" text-anchor="start">load</text>
+<path d="M592 539.0H668" class="tie"/>
+<rect x="668" y="512" width="268" height="54" rx="6" class="ref"/>
+<text x="680" y="535.5" class="note" text-anchor="start">Loaded bundle and engine build must</text>
+<text x="680" y="551.5" class="note" text-anchor="start">match the selected revision</text>
+<path d="M468.0 490V511" class="flow" marker-end="url(#a)"/>
+<rect x="24" y="588" width="268" height="54" rx="6" class="app"/>
+<text x="36" y="611.5" class="note" text-anchor="start">Authenticated caller, named inputs,</text>
+<text x="36" y="627.5" class="note" text-anchor="start">side effects of the answer</text>
+<path d="M292 615.0H344" class="tie"/>
+<rect x="344" y="588" width="248" height="54" rx="8" class="stage"/>
+<text x="358" y="611" class="stage-name" text-anchor="start">Execution</text>
+<text x="358" y="630" class="op" text-anchor="start">invoke</text>
+<path d="M592 615.0H668" class="tie"/>
+<rect x="668" y="588" width="268" height="54" rx="6" class="ref"/>
+<text x="680" y="611.5" class="note" text-anchor="start">Receipt: retained inputs, selected</text>
+<text x="680" y="627.5" class="note" text-anchor="start">revision, bundle and answer</text>
+<path d="M468.0 566V587" class="flow" marker-end="url(#a)"/>
+<rect x="24" y="664" width="268" height="54" rx="6" class="app"/>
+<text x="36" y="687.5" class="note" text-anchor="start">Learning policy, corrected facts</text>
+<text x="36" y="703.5" class="note" text-anchor="start">as a new call with a relationship</text>
+<path d="M292 691.0H344" class="tie"/>
+<rect x="344" y="664" width="248" height="54" rx="8" class="stage"/>
+<text x="358" y="687" class="stage-name" text-anchor="start">Feedback or correction</text>
+<text x="358" y="706" class="op" text-anchor="start">observe, checkpoint</text>
+<path d="M592 691.0H668" class="tie"/>
+<rect x="668" y="664" width="268" height="54" rx="6" class="ref"/>
+<text x="680" y="687.5" class="note" text-anchor="start">Observation and correction task;</text>
+<text x="680" y="703.5" class="note" text-anchor="start">a fix starts again at source</text>
+<path d="M468.0 642V663" class="flow" marker-end="url(#a)"/>
+<rect x="24" y="740" width="268" height="54" rx="6" class="app"/>
+<text x="36" y="771.5" class="note" text-anchor="start">Retention of receipts and inputs</text>
+<path d="M292 767.0H344" class="tie"/>
+<rect x="344" y="740" width="248" height="54" rx="8" class="stage"/>
+<text x="358" y="763" class="stage-name" text-anchor="start">Replay or restatement</text>
+<text x="358" y="782" class="op" text-anchor="start">replay, restate</text>
+<path d="M592 767.0H668" class="tie"/>
+<rect x="668" y="740" width="268" height="54" rx="6" class="ref"/>
+<text x="680" y="763.5" class="note" text-anchor="start">New receipt that names the earlier</text>
+<text x="680" y="779.5" class="note" text-anchor="start">receipt, reason and root</text>
+<path d="M468.0 718V739" class="flow" marker-end="url(#a)"/>
+<path d="M592 701.0H630V169.0H593" class="loop" marker-end="url(#a)"/>
+<text x="24" y="850" class="foot" text-anchor="start">Dashed boxes: the application supplies these. Shaded boxes: the reference keeps these records. Content hashes are identities, not signatures.</text>
+</svg>
