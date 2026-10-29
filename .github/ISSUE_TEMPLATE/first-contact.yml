@@ -1,0 +1,77 @@
+name: First-contact session record
+description: Record one first-contact session (docs/FIRST_CONTACT.md). The record is public. Write no names, employers, usernames, email addresses, home paths, hostnames or private data.
+title: "First contact: Engineer "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use one issue for each session. Refer to the engineer as "Engineer A", "Engineer B" or "Engineer C". Remove user names and home paths from error messages. Do not attach screen recordings or audio.
+  - type: input
+    id: commit
+    attributes:
+      label: Commit
+      description: The commit of main that the engineer cloned.
+      placeholder: "dfd9f3c"
+    validations:
+      required: true
+  - type: input
+    id: platform
+    attributes:
+      label: Platform
+      description: Operating system and CPU architecture.
+      placeholder: "macOS 15 arm64"
+    validations:
+      required: true
+  - type: input
+    id: toolchain
+    attributes:
+      label: Toolchain
+      description: Go, Python and Git versions. Write "not installed" for a missing tool.
+      placeholder: "Go 1.27.2, Python 3.14.6, Git 2.54.0"
+    validations:
+      required: true
+  - type: textarea
+    id: stop
+    attributes:
+      label: Stop step
+      description: The step where the engineer stopped, or "completed the demo".
+    validations:
+      required: true
+  - type: input
+    id: minutes
+    attributes:
+      label: Minutes to stop
+      description: Minutes from the first command or page view to the stop. The limit is 30.
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem statement
+      description: The one-sentence problem statement, as the engineer said it.
+    validations:
+      required: true
+  - type: textarea
+    id: questions
+    attributes:
+      label: First three questions
+      description: The first three questions, as the engineer said them. Milestone M2 uses them.
+      value: |
+        1.
+        2.
+        3.
+    validations:
+      required: true
+  - type: textarea
+    id: errors
+    attributes:
+      label: Errors and other stop points
+      description: Each error with its exact message, after you remove private data.
+      render: text
+  - type: checkboxes
+    id: privacy
+    attributes:
+      label: Privacy
+      options:
+        - label: This record contains no names, employers, usernames, email addresses, home paths, hostnames or private data.
+          required: true
