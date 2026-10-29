@@ -61,7 +61,7 @@ for need in ["env['HOME']=home","'--sandbox'","'allow':[]"]:
     if need not in review:errors.append('cross_review.py must keep '+need)
 if "'HOME'," in review:errors.append('cross_review.py must not pass the real HOME to agy')
 # PR gate regressions: a fork needs acceptance, and a label counts only with an approval record for the current head and base.
-from pr_policy import decide
+from pr_policy import CLEAN,REVIEWED,decide
 def event(labels,head='o/r',sha='aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',base='main'):return {'action':'edited','repository':{'full_name':'o/r'},'pull_request':{'labels':[{'name':x} for x in labels],'head':{'sha':sha,'repo':{'full_name':head}},'base':{'ref':base}}}
 ok={'accepted':{('aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa','main')},'security-reviewed':{('aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa','main')}}
 for check,case,paths,complete,found,want in [('acceptance',event([]),[],True,{},(True,None)),('acceptance',event([],'f/r'),[],True,{},(False,None)),
@@ -80,6 +80,10 @@ for case,reviews,want in [(event([]),[('aaaaaaaaaa',True)],(True,None)),(event([
         (event(['security-reviewed'],sha='a'*39+'b'),[('aaaaaaaaaa',True)],(True,'security-reviewed'))]:
     passed,_,drop=decide('security',case,['tools/pr_policy.py'],True,ok,reviews)
     if (passed,drop)!=want:errors.append('PR gate changed for a Codex security review: %s'%reviews)
+# The clean verdict must be a full line, and the commit must have at least 10 hex digits.
+for body,want in [('Security review completed. No security issues were found in this pull request.',True),('> quote: Security review completed. No security issues were found in this pull request.',False),('No security issues were found',False)]:
+    if bool(CLEAN.search(body))!=want:errors.append('PR gate changed for the Codex clean verdict: %s'%body)
+if REVIEWED.search('**Reviewed commit:** `aaaaaaa`') or not REVIEWED.search('**Reviewed commit:** `aaaaaaaaaa`'):errors.append('PR gate changed for the Codex commit prefix length.')
 checksum=ROOT/'checksums.json'
 if a.write_checksums:
     if errors:raise SystemExit(json.dumps({'passed':False,'errors':errors}))

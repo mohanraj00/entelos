@@ -12,7 +12,7 @@ jobs:
   rerun:
     if: github.event.issue.pull_request && github.event.comment.user.login == 'chatgpt-codex-connector[bot]'
     runs-on: ubuntu-latest
-    timeout-minutes: 2
+    timeout-minutes: 10
     steps:
       - name: Run the failed PR policy jobs again
         env:
@@ -21,5 +21,8 @@ jobs:
           PR: ${{ github.event.issue.number }}
         run: |
           head=$(gh api "repos/$REPO/pulls/$PR" --jq .head.sha)
-          run=$(gh api "repos/$REPO/actions/workflows/pr-policy.yml/runs?head_sha=$head&event=pull_request_target&per_page=1" --jq '.workflow_runs[0] | select(.conclusion == "failure") | .id')
+          run=$(gh api "repos/$REPO/actions/workflows/pr-policy.yml/runs?head_sha=$head&event=pull_request_target&per_page=1" --jq '.workflow_runs[0].id // empty')
+          # A run that is in progress can read the comments before Codex posts, so wait for it to complete.
+          if [ -n "$run" ]; then gh run watch "$run" -R "$REPO" --interval 15 > /dev/null || true; fi
+          if [ -n "$run" ] && [ "$(gh api "repos/$REPO/actions/runs/$run" --jq .conclusion)" != failure ]; then run=; fi
           if [ -n "$run" ]; then gh api -X POST "repos/$REPO/actions/runs/$run/rerun-failed-jobs"; else echo "No failed PR policy run for head $head."; fi

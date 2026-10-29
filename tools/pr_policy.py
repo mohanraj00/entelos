@@ -47,20 +47,28 @@ BOT='github-actions[bot]'
 BINDING=re.compile(r'<!-- pr-policy:approval label=(\S+) head=([0-9a-f]{40}) base=(\S+) -->')
 # The Codex GitHub integration posts its review results as this app. A user cannot post as an app.
 CODEX='chatgpt-codex-connector[bot]'
-REVIEWED=re.compile(r'\*\*Reviewed commit:\*\* `([0-9a-f]{7,40})`')
+# Codex names the commit with 10 hex digits. A shorter prefix is easier to match with a different commit.
+REVIEWED=re.compile(r'\*\*Reviewed commit:\*\* `([0-9a-f]{10,40})`')
+CLEAN=re.compile(r'^Security review completed\. No security issues were found in this pull request\.$',re.M)
 
 def records(repo,number,token):
-    """Return ({label: {(head, base ref)}}, [(commit prefix, clean)]) from the approval records of this workflow and the Codex security review results on the PR."""
-    found={};reviews=[]
+    """Return ({label: {(head, base ref)}}, [(commit prefix, clean)]) from the approval records of this workflow and the Codex security review results on the PR.
+    A Codex result names a commit, not a base, so the gate ignores results posted before the last base change."""
+    found={};reviews=[];changed=''
+    for page in range(1,PAGES+1):
+        batch=call('GET','/repos/%s/issues/%d/events?per_page=100&page=%d'%(repo,number,page),token)
+        changed=max([changed]+[x['created_at'] for x in batch if x['event']=='base_ref_changed'])
+        if len(batch)<100:break
     for page in range(1,PAGES+1):
         batch=call('GET','/repos/%s/issues/%d/comments?per_page=100&page=%d'%(repo,number,page),token)
         for item in batch:
             body=item['body'] or ''
             if item['user']['login']==BOT:
                 for label,head,base in BINDING.findall(body):found.setdefault(label,set()).add((head,base))
-            # A result without the clean text counts as open findings.
-            elif item['user']['login']==CODEX and 'Codex Security Review' in body:
-                reviews+=[(commit,'No security issues were found' in body) for commit in REVIEWED.findall(body)]
+            # A result without the clean verdict line counts as open findings. Only the first commit in a result counts.
+            elif item['user']['login']==CODEX and 'Codex Security Review' in body and item['created_at']>changed:
+                commit=REVIEWED.search(body)
+                if commit:reviews.append((commit.group(1),bool(CLEAN.search(body))))
         if len(batch)<100:break
     return found,reviews
 
@@ -95,6 +103,7 @@ def decide(check,event,paths,complete,found,reviews=()):
         return True,found_paths+'\nThe Codex security review of head %s found no security issues.'%current[0][:12],stale
     if stale:return False,found_paths+'\n'+again,stale
     if valid:return True,found_paths+'\nThe security-reviewed label applies to head %s.'%current[0][:12],None
+    if results:return False,found_paths+'\nThe latest Codex security review of head %s has open findings. Fix them and ask again, or write the answer on the PR and ask the maintainer to add the security-reviewed label.'%current[0][:12],None
     return False,found_paths+'\nRequest a security review as docs/REVIEW.md says. The check passes when the Codex security review of head %s finds no security issues, or when the maintainer adds the security-reviewed label.'%current[0][:12],None
 
 if __name__=='__main__':

@@ -58,12 +58,13 @@ If a PR changes one of these paths, the `security-review` check fails until the 
 2. Fix each finding, push, and ask again for the new head.
 3. If the Codex security review of the current head finds no security issues, the check passes. You do not add a label.
 
-The [PR policy rerun](../.github/workflows/pr-policy-rerun.yml) workflow starts the failed gate again when Codex posts a result. The gate trusts only results that the Codex app posts, and only for the commit that the result names. A push makes a new head, so the gate needs a new result. A clean result is a model output, not a proof. A PR can contain text that tries to steer the reviewer. If a change looks wrong to you, do not merge it.
+The [PR policy rerun](../.github/workflows/pr-policy-rerun.yml) workflow starts the failed gate again when Codex posts a result. If the gate run is in progress, the workflow waits for it to complete. GitHub keeps the failed attempt in the run history. The gate trusts only results that the Codex app posts, and only for the commit that the result names. A push makes a new head, so the gate needs a new result. A result names a commit, not a base. Thus, the gate ignores results posted before the last change of the PR base branch. A clean result is a model output, not a proof. A PR can contain text that tries to steer the reviewer. If a change looks wrong to you, do not merge it.
 
 The `security-reviewed` label is only for the cases that a clean Codex result cannot show:
 
 - Codex is not available, and the review came from the agy fallback: `python3 -B tools/cross_review.py --security yes --work "$REVIEW_WORK"`. Post the report.
 - A finding is not a defect, and the PR has an answer for it.
+- Claude Code did the security review, because Codex or agy wrote the change. The gate reads only Codex results.
 
 In these cases, the maintainer adds the `security-reviewed` label. The label records a fact: the current head has a security review, and each finding has a fix or an answer. It is not a separate review. When the maintainer adds the label, the workflow posts an approval record with the PR head and base at that time. The label counts only while the PR has that head and base. After a push or a base change, the next run removes the label.
 
