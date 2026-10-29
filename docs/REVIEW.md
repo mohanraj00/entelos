@@ -43,7 +43,7 @@ The PR is untrusted input to agy:
 
 - agy runs headless and with `--sandbox` in an empty directory. It gets a new HOME that holds only its login token and an empty allow list. Thus, your global agy allow rules and MCP servers do not apply, and the PR cannot supply settings or instruction files.
 - The prompt quotes `CONSTITUTION.md` and `AGENTS.md` from the base revision, not from the PR.
-- agy gets only basic environment variables and its own login key. The script also sets `SSH_CONNECTION`, so agy uses only the file token and does not open the macOS keychain. Read the report before you post it, and remove anything that is not a review finding.
+- agy gets only basic environment variables and its own login key. The script also sets `SSH_CONNECTION`, so agy uses only the file token and does not open the macOS keychain. Thus, the script needs a file token at `~/.gemini/antigravity-cli/antigravity-oauth-token` or an API key. If it has neither, it stops before agy starts. The report warns if agy did not use file-only storage, or if agy changed the refresh token. agy output never changes your token file. Read the report before you post it, and remove anything that is not a review finding.
 - The tool resolves the base and head to commit SHAs once. If HEAD changes during the review, the report says so and the tool exits 1.
 - If the diff is larger than 90000 bytes, the tool cuts it and says so in the report. Get a manual review of the rest.
 - The full output and exit status stay in the work directory, which must be outside the checkout.

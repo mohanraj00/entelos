@@ -35,6 +35,11 @@ def diff(span):
     cut=data[:LIMIT].decode(errors='ignore')
     return cut+'\n[The diff is cut at %d bytes. The full file list follows. Say which files you did not see.]\n'%LIMIT+git('diff','--stat',span),True
 
+def refresh(path):
+    # Only a comparison uses this value. The token never goes into the output.
+    try:return json.loads(path.read_text())['token']['refresh_token']
+    except (OSError,ValueError,KeyError,TypeError):return None
+
 def text(value):return value.decode(errors='replace') if isinstance(value,bytes) else (value or '')
 
 def review(base,head,kind,timeout,work):
@@ -57,6 +62,12 @@ def review(base,head,kind,timeout,work):
             status['exit']=proc.returncode;out,err=proc.stdout,proc.stderr
         except subprocess.TimeoutExpired as error:status['timeout']=timeout;out,err=text(error.stdout),text(error.stderr)
         except OSError as error:status['launch_error']=str(error);out,err='',''
+        # SSH detection is not a documented agy setting. The agy log shows if agy used only the file token.
+        log=''.join(f.read_text(errors='replace') for f in sorted((config/'log').glob('*.log')) if f.is_file() and not f.is_symlink())
+        status['file_token_only']='Using file-based token storage' in log
+        (record/'agy.log').write_text(log)
+        # The refreshed token stays in the new HOME and is deleted. agy output must not change your token, so the script does not copy it back.
+        status['refresh_token_changed']=TOKEN.is_file() and refresh(config/TOKEN.name)!=refresh(TOKEN)
     (record/'stdout.txt').write_text(out);(record/'stderr.txt').write_text(err);(record/'status.json').write_text(json.dumps(status,indent=2)+'\n')
     return (out.strip() if status.get('exit')==0 and out.strip() else None),status
 
@@ -84,6 +95,8 @@ if __name__=='__main__':
         why='timed out after %ds'%a.timeout if 'timeout' in status else status.get('launch_error') or 'exit %s'%status.get('exit')
         err=(work/kind/'stderr.txt').read_text().strip()
         if report is None and err:why+=': '+err[-300:]
+        if not status['file_token_only']:print('- agy did not report file-only token storage. It possibly used the macOS keychain. Check %s.'%(work/kind/'agy.log'))
+        if status['refresh_token_changed']:print('- agy changed the refresh token. Your token at %s possibly does not work now. If agy cannot sign in, sign in to agy again.'%TOKEN)
         print((report or 'agy did not give a review (%s). Get a manual review.'%why)+'\n');failed|=report is None
     if git('rev-parse','HEAD').strip()!=head:print('HEAD changed during the review. This report covers %s only.'%head[:12]);failed=True
     print('Full output: %s'%work)

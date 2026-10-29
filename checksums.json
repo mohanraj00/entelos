@@ -24,7 +24,7 @@
   "docs/INTEGRATION.md": "0cfa4d97a511d6280bc7b6cc67c0a75e6d3895d5896cee3b9a3803e613ee79f2",
   "docs/LICENSING.md": "d440a6c0a62e8a868d80a960031ca62015b7e9ac73d3e893678a0f626136ec09",
   "docs/PROVENANCE.md": "daa305b97a18754eeb0553aed0eea4a8a625f9ae5a365d536db72743814e4065",
-  "docs/REVIEW.md": "ee08a65deceab9452eec36c27d1106c221e7747404a199b5cfc9c505c124d0b6",
+  "docs/REVIEW.md": "d7b9b1f0b1f2b06a7daebc2012e3352dcae6cb7f636ce8e74075bc9b21411e30",
   "docs/STATUS.md": "702ae2ddc7910c028f2746d100f5c8c66c2131d77d90bb0c7cfb918ae733b143",
   "docs/SUPPORT.md": "75b156f84b26dfe2197680de149b244825fa3115fef5247d0b594c8e476bf2f1",
   "docs/WALKTHROUGH.md": "7df1f0cc74d320d4d54e5212acdb306a1d3bbdf1c5c8097147a6f2ee766493f9",
@@ -79,7 +79,7 @@
   "tests/test_export_boundaries.py": "1834479efde85731ba75041342884e0da9f6462cdcdab8d66c02e5d2ec238540",
   "tools/check_project.py": "7fd4cdbf54b4faf106ac28073f2528f2062b1fcb797c204f3d3d5bb43fa218c9",
   "tools/classify_change.py": "be24b68b179d2a45189a0a1b55dde0cd8df73d9004fd1ec53ffccc26ab7b7d2c",
-  "tools/cross_review.py": "34b3df9d82bc8ce971849c626f35309734d10f739f1e4044f114b99d8ccc9756",
+  "tools/cross_review.py": "7a41765e57985103b0611f7e2ba6d722a3c1ca42e15dd31e1c4c3afadbe09a7b",
   "tools/pr_policy.py": "e8b5bd3d1feecabbfe518af880852bcb1cea64f406be1bb39fa75d0fce875fd5",
   "verify.py": "70275b9af0051041c16d0762d865bb557add1a83316732afd2d89a0bbed1f2e0"
 }
