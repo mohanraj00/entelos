@@ -34,20 +34,22 @@ The PR is untrusted input to the reviewer:
 - Each reviewer runs in an empty directory. The PR cannot supply settings, hooks, MCP servers or instruction files.
 - The prompt quotes `CONSTITUTION.md` and `AGENTS.md` from the base revision, not from the PR.
 - The diff is in the prompt, so the reviewer needs no tools. Claude Code runs with no tools and user settings only. Codex runs in a read-only sandbox. agy runs headless, where it cannot get tool permissions.
+- The reviewer gets only basic environment variables and its own login key. Codex can still read local files in its read-only sandbox, so a prompt injection in the diff can try to copy local data into the report. Read the report before you post it, and remove anything that is not a review finding.
+- The tool resolves the base and head to commit SHAs once. If HEAD changes during the review, the report says so and the tool exits 1.
 - If the diff is larger than 90000 bytes, the tool cuts it and says so in the report. Get a manual review of the rest.
 
 ## Security review
 
 [tools/classify_change.py](../tools/classify_change.py) owns the list of security-relevant paths. The list includes workflows, tools, the runner, parsers and command boundaries, Git storage, dependency lock files and agent instruction files.
 
-If a PR changes one of these paths, the `security-review` check fails until the PR has the `security-reviewed` label. A move counts both its old and new path. To get the label:
+If a PR changes one of these paths, the `security-review` check fails until the PR has the `security-reviewed` label. A move counts both its old and new path. Agent instruction files and settings count at any directory depth. To get the label:
 
 1. Run `python3 -B tools/cross_review.py --builder <harness> --security yes`.
 2. Post the security report on the PR.
 3. Fix or answer each finding.
 4. Add the `security-reviewed` label.
 
-A new push to a security-relevant PR removes the label automatically. Review the new commits, then add the label again.
+A push, a reopen or a base change on a security-relevant PR removes the label automatically. Review the new commits, then add the label again.
 
 The `PR policy` workflow uses the `pull_request_target` event. GitHub runs that workflow and `tools/pr_policy.py` from the base branch, so a PR cannot change its own gate. The workflow reads only the PR file list and labels. It never checks out or runs the PR head. Do not change this.
 
@@ -55,7 +57,7 @@ The `PR policy` workflow uses the `pull_request_target` event. GitHub runs that 
 
 GitHub does not run workflows for a PR from an outside contributor until a maintainer approves the run. Before you approve the run, read the workflow and tool changes. Do not approve a run that changes `.github/` or `tools/` until you understand the change.
 
-The `acceptance` check fails for a fork PR until the PR has the `accepted` label. A new push from the fork removes the label automatically. Before you add the label, make sure that:
+The `acceptance` check fails for a fork PR until the PR has the `accepted` label. A push, a reopen or a base change removes the label automatically. Before you add the label, make sure that:
 
 - the PR links an issue with a concrete workflow and completion criteria;
 - the change contains no private application material, credentials, customer data or generated binaries;

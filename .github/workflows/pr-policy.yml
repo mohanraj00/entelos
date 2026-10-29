@@ -3,7 +3,7 @@ name: PR policy
 # Do not check out or run the PR head here. This workflow reads only the PR file list and labels.
 on:
   pull_request_target:
-    types: [opened, reopened, synchronize, ready_for_review, labeled, unlabeled]
+    types: [opened, reopened, synchronize, edited, ready_for_review, labeled, unlabeled]
 permissions:
   contents: read
   pull-requests: write

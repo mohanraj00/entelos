@@ -42,7 +42,8 @@ sys.path.insert(0,str(ROOT/'tools'))
 from classify_change import classify
 for path,code,security in [('README.md',False,False),('docs/REVIEW.md',False,False),('src/cel-lifecycle/lifecycle.py',True,True),
         ('src/cel-lifecycle/git_store.py',True,True),('src/cel-handoff/handoff_test.go',True,False),('src/cel-handoff/go.sum',True,True),
-        ('tools/classify_change.py',False,True),('.github/workflows/ci.yml',True,True),('.codex/config.toml',False,True),('GEMINI.md',False,True)]:
+        ('tools/classify_change.py',False,True),('.github/workflows/ci.yml',True,True),('.codex/config.toml',False,True),('GEMINI.md',False,True),
+        ('docs/AGENTS.md',False,True),('src/cel-lifecycle/.claude/settings.json',True,True)]:
     got=classify([path])
     if (got['code'],got['security'])!=(code,security):errors.append('classification changed for %s: code=%s security=%s'%(path,got['code'],got['security']))
 # PR gate regressions: a fork needs acceptance, and a push removes an earlier approval.
@@ -52,7 +53,10 @@ for check,case,paths,complete,want in [('acceptance',event('opened',[]),[],True,
         ('acceptance',event('labeled',['accepted'],'f/r'),[],True,(True,None)),('acceptance',event('synchronize',['accepted'],'f/r'),[],True,(False,'accepted')),
         ('security',event('opened',[]),['docs/STATUS.md'],True,(True,None)),('security',event('opened',[]),['docs/STATUS.md'],False,(False,None)),
         ('security',event('opened',[]),['tools/pr_policy.py'],True,(False,None)),('security',event('labeled',['security-reviewed']),['tools/pr_policy.py'],True,(True,None)),
-        ('security',event('synchronize',['security-reviewed']),['tools/pr_policy.py'],True,(False,'security-reviewed'))]:
+        ('security',event('synchronize',['security-reviewed']),['tools/pr_policy.py'],True,(False,'security-reviewed')),
+        ('security',event('reopened',['security-reviewed']),['tools/pr_policy.py'],True,(False,'security-reviewed')),
+        ('security',dict(event('edited',['security-reviewed']),changes={'base':{}}),['tools/pr_policy.py'],True,(False,'security-reviewed')),
+        ('security',dict(event('edited',['security-reviewed']),changes={'title':{}}),['tools/pr_policy.py'],True,(True,None))]:
     passed,_,drop=decide(check,case,paths,complete)
     if (passed,drop)!=want:errors.append('PR gate changed: %s %s %s'%(check,case['action'],paths))
 checksum=ROOT/'checksums.json'

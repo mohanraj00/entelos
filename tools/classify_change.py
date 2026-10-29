@@ -11,8 +11,16 @@ CODE=['src/*','examples/*','tests/*','verify.py','.github/workflows/ci.yml']
 # A security-relevant change needs a recorded security review before merge.
 SECURITY=['.github/*','tools/*','verify.py','src/*.go','*/go.mod','*/go.sum','src/*/cli.py','src/*/client.py',
     'src/*/git_store.py','src/*/cel_runtime.py','src/*/lifecycle.py','examples/*/adapter.py','examples/*/cli.py',
-    'SECURITY.md','CONSTITUTION.md','AGENTS.md','CLAUDE.md','GEMINI.md','.agents/*','.claude/*','.codex/*','.gemini/*']
+    'SECURITY.md','CONSTITUTION.md','AGENTS.md','CLAUDE.md','GEMINI.md','.agents/*','.claude/*','.codex/*','.gemini/*',
+    # An agent loads instruction files and settings from any directory depth.
+    '*/AGENTS.md','*/CLAUDE.md','*/GEMINI.md','*/.agents/*','*/.claude/*','*/.codex/*','*/.gemini/*']
 NOT_SECURITY=['*_test.go']
+
+def changed(base,head,cwd=None):
+    """List both ends of each move, so a move out of src/ still counts. -z keeps unusual names unquoted."""
+    out=subprocess.run(['git','diff','--no-renames','--name-only','-z',base+'...'+head],cwd=cwd,capture_output=True,text=True)
+    if out.returncode:sys.exit(out.stderr.strip() or 'git diff failed')
+    return [x for x in out.stdout.split('\0') if x]
 
 def match(path,patterns):return any(fnmatch(path,x) for x in patterns)
 def classify(paths):
@@ -24,10 +32,7 @@ if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('base');p.add_argument('head',nargs='?',default='HEAD')
     p.add_argument('--github-output',help='append code=, security= and docs_only= lines to this file')
     a=p.parse_args()
-    # --no-renames lists both ends of a move, so a move out of src/ still counts as a code change.
-    out=subprocess.run(['git','diff','--no-renames','--name-only',a.base+'...'+a.head],capture_output=True,text=True)
-    if out.returncode:sys.exit(out.stderr.strip() or 'git diff failed')
-    result=classify([x for x in out.stdout.splitlines() if x])
+    result=classify(changed(a.base,a.head))
     if a.github_output:
         with open(a.github_output,'a') as f:
             for key in ['code','security','docs_only']:f.write(key+'='+str(result[key]).lower()+'\n')
