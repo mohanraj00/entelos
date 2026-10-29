@@ -56,7 +56,7 @@ If a PR changes one of these paths, the `security-review` check fails until the 
 
 1. Ask for the security review in a PR comment, as the table above shows. If the GitHub reviewer is not available, run `python3 -B tools/cross_review.py --security yes --work "$REVIEW_WORK"` and post the report.
 2. Fix or answer each finding.
-3. Add the `security-reviewed` label. The label records a fact: the current head has a security review, and each finding has a fix or an answer.
+3. Ask the reviewer harness or the maintainer to add the `security-reviewed` label. The harness that wrote the change does not add it. The label records a fact: the current head has a security review, and each finding has a fix or an answer.
 
 When you add the label, the workflow posts an approval record with the PR head and base at that time. The label counts only while the PR has that head and base. After a push or a base change, the next run removes the label. Review the new commits, then add the label again.
 
