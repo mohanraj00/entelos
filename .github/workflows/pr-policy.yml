@@ -1,6 +1,6 @@
 name: PR policy
 # pull_request_target runs this file and tools/ from the base branch, so a PR cannot change its own gate.
-# Do not check out or run the PR head here. This workflow reads only the PR file list and labels.
+# Do not check out or run the PR head here. This workflow reads only the PR file list, labels and its own approval records.
 on:
   pull_request_target:
     types: [opened, reopened, synchronize, edited, ready_for_review, labeled, unlabeled]
@@ -9,7 +9,8 @@ permissions:
   pull-requests: write
   # The label endpoints are under /issues.
   issues: write
-# Runs for one PR and one job wait in order, so a push removes a label before a later event reads it.
+# Runs for one PR wait in order. A new pending run can replace an older pending run, so the gate does not depend on one event:
+# each run checks that the label has an approval record for the current head and base.
 concurrency:
   group: pr-policy-${{ github.event.pull_request.number }}
   cancel-in-progress: false

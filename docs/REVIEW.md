@@ -58,15 +58,17 @@ If a PR changes one of these paths, the `security-review` check fails until the 
 2. Fix or answer each finding.
 3. Ask the maintainer to add the `security-reviewed` label. Only the maintainer adds it.
 
-A push, a reopen or a base change on a security-relevant PR removes the label automatically. Review the new commits, then add the label again.
+When you add the label, the workflow posts an approval record with the PR head and base at that time. The label counts only while the PR has that head and base. After a push or a base change, the next run removes the label. Review the new commits, then add the label again.
 
-The `PR policy` workflow uses the `pull_request_target` event. GitHub runs that workflow and `tools/pr_policy.py` from the base branch, so a PR cannot change its own gate. The workflow reads only the PR file list and labels. It never checks out or runs the PR head. Do not change this.
+The `PR policy` workflow uses the `pull_request_target` event. GitHub runs that workflow and `tools/pr_policy.py` from the base branch, so a PR cannot change its own gate. The workflow reads only the PR file list, the labels and its own approval records. It never checks out or runs the PR head. Do not change this.
+
+The workflow posts the approval records with the workflow token. A fork PR gets a read-only token, so it cannot write a record. A user with write access can change a workflow to write one, so the gates trust writers.
 
 ## PRs from forks
 
 GitHub does not run workflows for a PR from an outside contributor until a maintainer approves the run. Before you approve the run, read the workflow and tool changes. Do not approve a run that changes `.github/` or `tools/` until you understand the change.
 
-The `acceptance` check fails for a fork PR until the PR has the `accepted` label. A push, a reopen or a base change removes the label automatically. Before you add the label, make sure that:
+The `acceptance` check fails for a fork PR until the PR has the `accepted` label. The label counts only for the head and base in its approval record, as for the security label. Before you add the label, make sure that:
 
 - the PR links an issue with a concrete workflow and completion criteria;
 - the change contains no private application material, credentials, customer data or generated binaries;

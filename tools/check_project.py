@@ -47,19 +47,20 @@ for path,code,security in [('README.md',False,False),('src/cel-lifecycle/lifecyc
         ('src/cel-lifecycle/test_lifecycle.py',True,False),('tests/test_export_boundaries.py',True,False),('docs/STATUS.md',False,False),('docs/REVIEW.md',False,True),('src/cel-lifecycle/.claude/settings.json',True,True)]:
     got=classify([path])
     if (got['code'],got['security'])!=(code,security):errors.append('classification changed for %s: code=%s security=%s'%(path,got['code'],got['security']))
-# PR gate regressions: a fork needs acceptance, and a push removes an earlier approval.
+# PR gate regressions: a fork needs acceptance, and a label counts only with an approval record for the current head and base.
 from pr_policy import decide
-def event(action,labels,head='o/r'):return {'action':action,'repository':{'full_name':'o/r'},'pull_request':{'labels':[{'name':x} for x in labels],'head':{'repo':{'full_name':head}}}}
-for check,case,paths,complete,want in [('acceptance',event('opened',[]),[],True,(True,None)),('acceptance',event('opened',[],'f/r'),[],True,(False,None)),
-        ('acceptance',event('labeled',['accepted'],'f/r'),[],True,(True,None)),('acceptance',event('synchronize',['accepted'],'f/r'),[],True,(False,'accepted')),
-        ('security',event('opened',[]),['docs/STATUS.md'],True,(True,None)),('security',event('opened',[]),['docs/STATUS.md'],False,(False,None)),
-        ('security',event('opened',[]),['tools/pr_policy.py'],True,(False,None)),('security',event('labeled',['security-reviewed']),['tools/pr_policy.py'],True,(True,None)),
-        ('security',event('synchronize',['security-reviewed']),['tools/pr_policy.py'],True,(False,'security-reviewed')),
-        ('security',event('reopened',['security-reviewed']),['tools/pr_policy.py'],True,(False,'security-reviewed')),
-        ('security',dict(event('edited',['security-reviewed']),changes={'base':{}}),['tools/pr_policy.py'],True,(False,'security-reviewed')),
-        ('security',dict(event('edited',['security-reviewed']),changes={'title':{}}),['tools/pr_policy.py'],True,(True,None))]:
-    passed,_,drop=decide(check,case,paths,complete)
-    if (passed,drop)!=want:errors.append('PR gate changed: %s %s %s'%(check,case['action'],paths))
+def event(labels,head='o/r',sha='aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',base='main'):return {'action':'edited','repository':{'full_name':'o/r'},'pull_request':{'labels':[{'name':x} for x in labels],'head':{'sha':sha,'repo':{'full_name':head}},'base':{'ref':base}}}
+ok={'accepted':{('aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa','main')},'security-reviewed':{('aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa','main')}}
+for check,case,paths,complete,found,want in [('acceptance',event([]),[],True,{},(True,None)),('acceptance',event([],'f/r'),[],True,{},(False,None)),
+        ('acceptance',event(['accepted'],'f/r'),[],True,ok,(True,None)),('acceptance',event(['accepted'],'f/r'),[],True,{},(False,'accepted')),
+        ('acceptance',event(['accepted'],'f/r','bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb'),[],True,ok,(False,'accepted')),('acceptance',event(['accepted'],'f/r',base='dev'),[],True,ok,(False,'accepted')),
+        ('security',event([]),['docs/STATUS.md'],True,{},(True,None)),('security',event([]),['docs/STATUS.md'],False,{},(False,None)),
+        ('security',event([]),['tools/pr_policy.py'],True,ok,(False,None)),('security',event(['security-reviewed']),['tools/pr_policy.py'],True,ok,(True,None)),
+        ('security',event(['security-reviewed'],sha='bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb'),['tools/pr_policy.py'],True,ok,(False,'security-reviewed')),
+        ('security',event(['security-reviewed'],base='dev'),['tools/pr_policy.py'],True,ok,(False,'security-reviewed')),
+        ('security',event(['security-reviewed']),['tools/pr_policy.py'],True,{'accepted':{('aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa','main')}},(False,'security-reviewed'))]:
+    passed,_,drop=decide(check,case,paths,complete,found)
+    if (passed,drop)!=want:errors.append('PR gate changed: %s %s %s'%(check,case['pull_request']['head']['sha'][:1],paths))
 checksum=ROOT/'checksums.json'
 if a.write_checksums:
     if errors:raise SystemExit(json.dumps({'passed':False,'errors':errors}))
