@@ -2,7 +2,7 @@
 
 ## Name
 
-The project name is Entelos, with the tagline "Entelos: grow toward the goal." On 2026-10-29, the GitHub repository changed from `mohanraj00/versioned-decision-reference` to `mohanraj00/entelos`. GitHub redirects the old URL. The Go module path and the NOTICE attribution are unchanged. On 2026-10-29, `entelos` was free on PyPI, npm and crates.io, and the .dev and .io domains were free. The GitHub user and the .com, .ai and .org domains were taken. No trademark database was searched.
+The project name is Entelos, with the tagline "Entelos: grow toward the goal." On 2026-10-29, the GitHub repository changed from `mohanraj00/entelos` to `mohanraj00/entelos`. GitHub redirects the old URL. The Go module path and the NOTICE attribution are unchanged. On 2026-10-29, `entelos` was free on PyPI, npm and crates.io, and the .dev and .io domains were free. The GitHub user and the .com, .ai and .org domains were taken. No trademark database was searched.
 
 ## Source reference
 
@@ -16,11 +16,11 @@ Project source uses [Apache-2.0](../LICENSE); [NOTICE](../NOTICE) retains projec
 
 Purpose is in [CONSTITUTION.md](../CONSTITUTION.md), workflow in [AGENTS.md](../AGENTS.md). Codex, Claude Code and other agent entry points share those files and the same skill source. `tools/check_project.py` checks that layout, links and source checksums.
 
-The source-check workflow checks this project structure and source inventory. The full runtime runner is `python3 -B verify.py --work "$TASK_WORK"`; broad platform/runtime CI support is not established by a layout check.
+The source-check workflow checks this project structure and source inventory. The `Full suite` workflow runs `verify.py` on one Linux runner and uploads the compact results and command logs for 14 days. See [SUPPORT.md](../SUPPORT.md) for the observed toolchain. One passing runner does not establish broad platform support.
 
 ## Next work
 
-Use [BACKLOG.md](BACKLOG.md) and the linked GitHub issues. Start with full-suite CI reproduction. Keep caller walkthrough and input-correction documentation bounded to the existing examples. Numeric/structured profiles, production DBs, authentication gateways and resident-worker coordination are outside the current implemented scope.
+Use [BACKLOG.md](BACKLOG.md) and the linked GitHub issues. Full-suite CI reproduction ([issue #2](https://github.com/mohanraj00/entelos/issues/2)) is complete. Start with the clean-run caller and correction walkthrough. Keep caller walkthrough and input-correction documentation bounded to the existing examples. Numeric/structured profiles, production DBs, authentication gateways and resident-worker coordination are outside the current implemented scope.
 
 ## Handoff rule
 

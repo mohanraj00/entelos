@@ -6,8 +6,8 @@ GitHub issues own live status. This map identifies bounded work for this source 
 |---|---|
 | [Switch project licensing to Apache-2.0](https://github.com/mohanraj00/entelos/issues/5) | Licence, attribution, documentation and verification; prior history and dependency terms retained. |
 | [Bootstrap the runnable reference and shared agent workflow](https://github.com/mohanraj00/entelos/issues/1) | Initial publication, shared project workflow and verification. |
-| [Run the full standalone reference suite in GitHub Actions](https://github.com/mohanraj00/entelos/issues/2) | Next: reproduce the full suite on a documented Linux CI runner. |
-| [Add a clean-run typed caller and correction walkthrough](https://github.com/mohanraj00/entelos/issues/3) | Existing neutral author-to-caller and correction/replay commands. |
+| [Run the full standalone reference suite in GitHub Actions](https://github.com/mohanraj00/entelos/issues/2) | Done: the `Full suite` workflow runs `verify.py` on `ubuntu-24.04`. |
+| [Add a clean-run typed caller and correction walkthrough](https://github.com/mohanraj00/entelos/issues/3) | Next: existing neutral author-to-caller and correction/replay commands. |
 | [Explain supplied-fact correction versus rule restatement](https://github.com/mohanraj00/entelos/issues/4) | Application input revisions versus pinned replay and rule restatement. |
 
 No issue here authorizes an unscoped model benchmark, a new domain policy, a public package release or production deployment. Choose the smallest change that completes the issue's stated workflow and preserve its failures/limits.
