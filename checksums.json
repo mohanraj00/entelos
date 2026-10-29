@@ -72,8 +72,8 @@
   "src/cel-lifecycle/storage-port.md": "755a88379bbe093451910a4b44639853d757f449352f02dd6eeb74ad155de25d",
   "src/cel-lifecycle/test_lifecycle.py": "3edaa3c4f575a48ac1b1623f2204aa86233c2c25a320c902fc10deab85ae752e",
   "tests/test_export_boundaries.py": "1834479efde85731ba75041342884e0da9f6462cdcdab8d66c02e5d2ec238540",
-  "tools/check_project.py": "1cc7988adc18c5cae6c95a38edc87e990a7b65dafad329a459832df0ace9e2c7",
-  "tools/classify_change.py": "bd81e8ae9748693f9d7771fd371931e17e3388bcab430fb570c1e6a7008f2418",
+  "tools/check_project.py": "74a0a0f7098d12cf893ef836a9c29a6d9f9f91c22c69153819a9a625819676e3",
+  "tools/classify_change.py": "be24b68b179d2a45189a0a1b55dde0cd8df73d9004fd1ec53ffccc26ab7b7d2c",
   "tools/cross_review.py": "4b6be831dc18712db10ab6024f2aa6fcd5c07cc9bbcd62807440869000890842",
   "tools/pr_policy.py": "e8b5bd3d1feecabbfe518af880852bcb1cea64f406be1bb39fa75d0fce875fd5",
   "verify.py": "70275b9af0051041c16d0762d865bb557add1a83316732afd2d89a0bbed1f2e0"
