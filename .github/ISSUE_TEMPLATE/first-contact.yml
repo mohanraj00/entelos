@@ -15,6 +15,14 @@ body:
     validations:
       required: true
   - type: input
+    id: round
+    attributes:
+      label: Round
+      description: The session number and the number of sessions that you selected for this round before the first session.
+      placeholder: "Session 1 of 3"
+    validations:
+      required: true
+  - type: input
     id: platform
     attributes:
       label: Platform
@@ -69,10 +77,17 @@ body:
     validations:
       required: true
   - type: textarea
+    id: live-questions
+    attributes:
+      label: Questions during the session
+      description: Each question that the engineer asked during the session, in sequence. Write "None" if the engineer asked no question.
+    validations:
+      required: true
+  - type: textarea
     id: questions
     attributes:
-      label: First three questions
-      description: The first three questions, as the engineer said them. Milestone M2 uses them.
+      label: First three questions at the end
+      description: The first three questions at the end of the session, as the engineer said them. Milestone M2 uses them.
       placeholder: |
         1.
         2.
