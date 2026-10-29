@@ -38,35 +38,45 @@ body:
       placeholder: "Go 1.27.2, Python 3.14.6, Git 2.54.0"
     validations:
       required: true
-  - type: textarea
-    id: stop
+  - type: dropdown
+    id: demo-result
     attributes:
-      label: Stop step
-      description: The step where the engineer stopped, or "completed the demo".
+      label: Demo result
+      description: 'The demo completed if examples/quickstart/demo.py printed "Result: passed" and exited with status 0. Record maintainer help in the next field.'
+      options:
+        - completed
+        - did not complete
     validations:
       required: true
   - type: dropdown
-    id: demo
+    id: help
     attributes:
-      label: Demo check
-      description: Did the engineer run the demo without help? Any help from the maintainer is "did not run without help".
+      label: Maintainer help
+      description: Any help from the maintainer during the session is "gave help". Write each help in "Failures".
       options:
-        - ran without help
-        - did not run without help
+        - no help
+        - gave help
+    validations:
+      required: true
+  - type: textarea
+    id: failures
+    attributes:
+      label: Failures
+      description: Each point before the demo completed where the engineer could not continue alone, in sequence. Give the step, and the help that the maintainer gave. An error, a missing tool, a step that the engineer could not do, help and the session end before the demo completed are failures. Write "None" only if the demo completed without a failure and without help.
     validations:
       required: true
   - type: textarea
     id: last-step
     attributes:
-      label: Answer to "Where did you stop, or what did you do last?"
+      label: Answer to "What did you do last?"
       description: The answer to end question 3, as the engineer said it.
     validations:
       required: true
   - type: input
     id: minutes
     attributes:
-      label: Minutes to stop
-      description: Minutes from the first command or page view to the stop. The limit is 30.
+      label: Minutes to the session end
+      description: Minutes from the first command or page view to the session end. The limit is 30.
     validations:
       required: true
   - type: textarea
@@ -80,7 +90,7 @@ body:
     id: verdict
     attributes:
       label: Problem statement check
-      description: Compare the statement with the expected answer in docs/FIRST_CONTACT.md, section Result.
+      description: Compare the statement with the expected answer in docs/FIRST_CONTACT.md, section Result. Record a view of a kit file in "Kit check", not here.
       options:
         - correct
         - not correct
@@ -91,6 +101,16 @@ body:
     attributes:
       label: Reason for the check
       description: Which of the two expected points the statement gives, and which it does not give.
+    validations:
+      required: true
+  - type: dropdown
+    id: kit-check
+    attributes:
+      label: Kit check
+      description: The kit files are docs/FIRST_CONTACT.md and .github/ISSUE_TEMPLATE/first-contact.yml. Did the engineer open a kit file during the session?
+      options:
+        - did not open the kit files
+        - opened a kit file
     validations:
       required: true
   - type: textarea
@@ -104,7 +124,7 @@ body:
     id: questions
     attributes:
       label: First three questions at the end
-      description: The first three questions at the end of the session, as the engineer said them. Milestone M2 uses them.
+      description: The first three questions at the end of the session, as the engineer said them. Write "None" for each missing question. Milestone M2 uses them.
       placeholder: |
         1.
         2.
@@ -114,8 +134,8 @@ body:
   - type: textarea
     id: errors
     attributes:
-      label: Errors and other stop points
-      description: Each error with its exact message, after you remove private data. Write "None" if no error occurred.
+      label: Error messages
+      description: Each error message, exactly as it occurred, after you remove private data. Write "None" if no error occurred.
       render: text
     validations:
       required: true
