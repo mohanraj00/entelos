@@ -7,6 +7,8 @@ on:
 permissions:
   contents: read
   pull-requests: write
+  # The label endpoints are under /issues.
+  issues: write
 # Runs for one PR and one job wait in order, so a push removes a label before a later event reads it.
 concurrency:
   group: pr-policy-${{ github.event.pull_request.number }}

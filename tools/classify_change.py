@@ -7,7 +7,7 @@ import subprocess
 import sys
 
 # A code change runs the full suite. A docs-only change runs the project check only.
-CODE=['src/*','examples/*','tests/*','verify.py','.github/workflows/ci.yml']
+CODE=['src/*','examples/*','tests/*','tools/*','verify.py','.github/workflows/ci.yml']
 # A security-relevant change needs a recorded security review before merge.
 # Almost every runtime source runs commands, Git or CEL, so all executable sources count. Tests do not.
 SECURITY=['.github/*','tools/*','verify.py','src/*.go','src/*.py','examples/*.py','*/go.mod','*/go.sum','docs/REVIEW.md',
@@ -26,7 +26,7 @@ def match(path,patterns):return any(fnmatch(path,x) for x in patterns)
 def classify(paths):
     code=[x for x in paths if match(x,CODE)]
     security=[x for x in paths if match(x,SECURITY) and not match(x,NOT_SECURITY)]
-    return {'code':bool(code),'security':bool(security),'docs_only':bool(paths) and not code,'code_paths':code,'security_paths':security,'paths':paths}
+    return {'code':bool(code),'security':bool(security),'docs_only':bool(paths) and not code and not security,'code_paths':code,'security_paths':security,'paths':paths}
 
 if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('base');p.add_argument('head',nargs='?',default='HEAD')

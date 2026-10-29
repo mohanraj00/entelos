@@ -78,6 +78,6 @@ If the contributor pushes again, read the new commits before you approve the run
 
 ## CI scope
 
-The `CI` workflow runs the project check on every PR and every push to `main`. It runs the full suite only when code paths change: `src/`, `examples/`, `tests/`, `verify.py` or the CI workflow. A docs-only change skips the full suite. The `ci-ok` job passes if each needed job passed or was skipped.
+The `CI` workflow runs the project check on every PR and every push to `main`. It runs the full suite only when code paths change: `src/`, `examples/`, `tests/`, `tools/`, `verify.py` or the CI workflow. Other changes, for example docs or other workflows, skip the full suite. The `ci-ok` job passes if each needed job passed or was skipped.
 
 The `CI` workflow uses the `pull_request` event and runs the PR code without secrets. Thus a PR can change its own CI scope. The trusted `security-review` gate covers this: a change to `.github/` or `tools/` needs a security review.
