@@ -35,6 +35,10 @@ def remove_label(repo,number,label,token):
     except urllib.error.HTTPError as error:
         if error.code!=404:raise
 
+def live_labels(repo,number,token):
+    # The event payload can be older than a later push, so the gate reads the current labels.
+    return [{'name':x['name']} for x in call('GET','/repos/%s/issues/%d/labels?per_page=100'%(repo,number),token)]
+
 def decide(check,event,paths,complete):
     """Return (passed, message, label to remove or None). This function makes no network calls."""
     # A push, a reopen or a new base can change the reviewed bytes, so each one removes an earlier approval.
@@ -59,6 +63,7 @@ if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('check',choices=['acceptance','security'])
     a=p.parse_args();token=os.environ['GITHUB_TOKEN']
     event=json.loads(Path(os.environ['GITHUB_EVENT_PATH']).read_text());repo=event['repository']['full_name'];number=event['pull_request']['number']
+    event['pull_request']['labels']=live_labels(repo,number,token)
     paths,complete=changed_paths(repo,number,token) if a.check=='security' else ([],True)
     passed,message,drop=decide(a.check,event,paths,complete)
     if drop:remove_label(repo,number,drop,token)

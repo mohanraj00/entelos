@@ -11,32 +11,42 @@ These rules apply to every change to `main`. [AGENTS.md](../AGENTS.md) owns the 
 
 ## Cross-harness review
 
-A harness does not review its own change. Before you ask for a merge, run:
+A harness does not review its own change. The branch prefix names the harness that wrote the change: `claude/`, `codex/` or `agy/`. The reviews run on GitHub. No harness reviews a PR by default, so the PR author asks in a PR comment.
+
+| Builder | Code review comment | Security review comment |
+|---|---|---|
+| Claude Code | `@codex review` | `@codex security review` |
+| Codex | `@claude review this PR. Use the Review guidelines in AGENTS.md.` | `@claude do a security review of this PR. Use the Review guidelines in AGENTS.md.` |
+| agy | `@claude review this PR. Use the Review guidelines in AGENTS.md.` | `@claude do a security review of this PR. Use the Review guidelines in AGENTS.md.` |
+
+Follow these rules for each request:
+
+1. Ask when CI is green and the PR is ready.
+2. On the next line of the comment, write `Head: <sha>` with the short SHA of the PR head commit.
+3. Ask one time for each head commit. Before you ask, read the PR comments. If a request names the current head, do not ask again.
+4. If you push fixes after a review, ask again for the new head. Ask at most 3 times for each PR. After that, ask the maintainer to review.
+5. Fix each real finding, or write on the PR why it is not a defect.
+
+Codex reviews through the Codex GitHub integration. Claude Code reviews through the [Claude review](../.github/workflows/claude-review.yml) workflow, which needs the `CLAUDE_CODE_OAUTH_TOKEN` secret. That workflow checks out `main`, not the PR head, and gives Claude read-only tools and PR comments only.
+
+### Local fallback: agy
+
+If the GitHub reviewer is not available (no quota, an outage or no integration), run agy on your machine:
 
 ```sh
-python3 -B tools/cross_review.py --builder claude
+python3 -B tools/cross_review.py --work "$REVIEW_WORK"
 ```
 
-Set `--builder` to the harness that wrote the change: `claude`, `codex` or `agy`.
+Post the report on the PR. It starts with `Review (agy <version>):` and names the base and head commits. If agy is not available, ask the maintainer for a manual review.
 
-| Builder | First reviewer | Fallback |
-|---|---|---|
-| Claude Code | Codex | agy |
-| Codex | Claude Code | agy |
-| agy | Claude Code | Codex |
+The PR is untrusted input to agy:
 
-If the first reviewer is not installed, fails or times out, the tool uses the fallback. If no reviewer is available, get a manual review. Post the report on the PR. Fix each real finding, or write on the PR why it is not a defect.
-
-The tool keeps the full output, exit status and reviewed commit of each attempt in a work directory outside the checkout. Use `--work DIR` to name a new directory. A failed first attempt keeps its output when the fallback passes.
-
-The PR is untrusted input to the reviewer:
-
-- Each reviewer runs in an empty directory. The PR cannot supply settings, hooks, MCP servers or instruction files.
+- agy runs headless in an empty directory, where it cannot get tool permissions. The PR cannot supply settings or instruction files.
 - The prompt quotes `CONSTITUTION.md` and `AGENTS.md` from the base revision, not from the PR.
-- The diff is in the prompt, so the reviewer needs no tools. Claude Code runs with no tools and user settings only. Codex runs in a read-only sandbox. agy runs headless, where it cannot get tool permissions.
-- The reviewer gets only basic environment variables and its own login key. Codex can still read local files in its read-only sandbox, so a prompt injection in the diff can try to copy local data into the report. Read the report before you post it, and remove anything that is not a review finding.
+- agy gets only basic environment variables and its own login key. Read the report before you post it, and remove anything that is not a review finding.
 - The tool resolves the base and head to commit SHAs once. If HEAD changes during the review, the report says so and the tool exits 1.
 - If the diff is larger than 90000 bytes, the tool cuts it and says so in the report. Get a manual review of the rest.
+- The full output and exit status stay in the work directory, which must be outside the checkout.
 
 ## Security review
 
@@ -44,10 +54,9 @@ The PR is untrusted input to the reviewer:
 
 If a PR changes one of these paths, the `security-review` check fails until the PR has the `security-reviewed` label. A move counts both its old and new path. Agent instruction files and settings count at any directory depth. To get the label:
 
-1. Run `python3 -B tools/cross_review.py --builder <harness> --security yes`.
-2. Post the security report on the PR.
-3. Fix or answer each finding.
-4. Add the `security-reviewed` label.
+1. Ask for the security review in a PR comment, as the table above shows. If the GitHub reviewer is not available, run `python3 -B tools/cross_review.py --security yes --work "$REVIEW_WORK"` and post the report.
+2. Fix or answer each finding.
+3. Ask the maintainer to add the `security-reviewed` label. Only the maintainer adds it.
 
 A push, a reopen or a base change on a security-relevant PR removes the label automatically. Review the new commits, then add the label again.
 

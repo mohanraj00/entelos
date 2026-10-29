@@ -41,7 +41,20 @@ Preserve failed runs. Record a changed method and its reason; call a repaired sa
 
 ## Review
 
-A harness does not review its own change. Run `python3 -B tools/cross_review.py --builder <harness>` before you ask for a merge. A security-relevant change also needs a security review. [docs/REVIEW.md](docs/REVIEW.md) owns the reviewer order, the fallback, fork PR acceptance and the CI scope.
+A harness does not review its own change. Ask the other harness for a review in a PR comment on GitHub: Claude Code writes `@codex review`; Codex and agy write `@claude review this PR. Use the Review guidelines in AGENTS.md.` If that reviewer is not available, run the local agy fallback, `python3 -B tools/cross_review.py`. A security-relevant change also needs a security review. [docs/REVIEW.md](docs/REVIEW.md) owns the request rules, the fallback, fork PR acceptance and the CI scope.
+
+## Review guidelines
+
+Flag these as high priority in a PR review:
+
+- A change that weakens a decision contract, an approval, an activation date or the record of an earlier answer.
+- A check that labels a candidate's own output as its oracle, or a passed flag carried onto changed bytes.
+- A lost failed run or a removed failure case.
+- A content hash used as a signature or as an authority.
+- Private application material, customer data, credentials or generated binaries in the repo.
+- An unpinned action or dependency, or a dependency without a recorded licence.
+
+End a code review with one line. Write `Security review: needed`, with the reason, if `tools/classify_change.py` marks a changed path as security-relevant. Else write `Security review: not needed`. A security review does not end with this line.
 
 ## Records and publication
 

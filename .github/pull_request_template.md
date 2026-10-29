@@ -10,8 +10,9 @@ Closes #
 
 - [ ] `python3 -B tools/check_project.py`
 - [ ] `python3 -B verify.py --work "$TASK_WORK"` (code changes only)
-- [ ] Cross-harness review posted (`tools/cross_review.py`)
-- [ ] Security review posted, if security-relevant paths changed
+- [ ] Review by the other harness: <harness and version, link to the comment>
+- [ ] Security review: <link to the comment, or "not needed" and the reason>
+- [ ] Each finding is fixed, or has a reason in this PR
 
 ## Limits
 

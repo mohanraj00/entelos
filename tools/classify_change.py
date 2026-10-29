@@ -9,12 +9,12 @@ import sys
 # A code change runs the full suite. A docs-only change runs the project check only.
 CODE=['src/*','examples/*','tests/*','verify.py','.github/workflows/ci.yml']
 # A security-relevant change needs a recorded security review before merge.
-SECURITY=['.github/*','tools/*','verify.py','src/*.go','*/go.mod','*/go.sum','src/*/cli.py','src/*/client.py',
-    'src/*/git_store.py','src/*/cel_runtime.py','src/*/lifecycle.py','examples/*/adapter.py','examples/*/cli.py',
+# Almost every runtime source runs commands, Git or CEL, so all executable sources count. Tests do not.
+SECURITY=['.github/*','tools/*','verify.py','src/*.go','src/*.py','examples/*.py','*/go.mod','*/go.sum','docs/REVIEW.md',
     'SECURITY.md','CONSTITUTION.md','AGENTS.md','CLAUDE.md','GEMINI.md','.agents/*','.claude/*','.codex/*','.gemini/*',
     # An agent loads instruction files and settings from any directory depth.
     '*/AGENTS.md','*/CLAUDE.md','*/GEMINI.md','*/.agents/*','*/.claude/*','*/.codex/*','*/.gemini/*']
-NOT_SECURITY=['*_test.go']
+NOT_SECURITY=['*_test.go','*/test_*.py','tests/*']
 
 def changed(base,head,cwd=None):
     """List both ends of each move, so a move out of src/ still counts. -z keeps unusual names unquoted."""
