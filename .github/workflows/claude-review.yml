@@ -23,9 +23,11 @@ jobs:
       id-token: write
       actions: read
     steps:
-      # This checks out main, not the PR head. Claude reads the PR through the GitHub API.
+      # Review events default to the PR merge ref, so name the default branch. Then the PR cannot supply Claude's instructions or settings.
+      # Claude reads the PR through the GitHub API.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          ref: ${{ github.event.repository.default_branch }}
           fetch-depth: 1
           persist-credentials: false
       - uses: anthropics/claude-code-action@6fed3ca145920b639991cb756090506e1bcaf515 # v1.0.245

@@ -47,6 +47,8 @@ for path,code,security in [('README.md',False,False),('src/cel-lifecycle/lifecyc
         ('src/cel-lifecycle/test_lifecycle.py',True,False),('tests/test_export_boundaries.py',True,False),('docs/STATUS.md',False,False),('docs/REVIEW.md',False,True),('src/cel-lifecycle/.claude/settings.json',True,True)]:
     got=classify([path])
     if (got['code'],got['security'])!=(code,security):errors.append('classification changed for %s: code=%s security=%s'%(path,got['code'],got['security']))
+# Review events default to the PR merge ref, so the Claude review must check out the default branch.
+if 'ref: ${{ github.event.repository.default_branch }}' not in (ROOT/'.github/workflows/claude-review.yml').read_text():errors.append('claude-review.yml must check out the default branch')
 # PR gate regressions: a fork needs acceptance, and a label counts only with an approval record for the current head and base.
 from pr_policy import decide
 def event(labels,head='o/r',sha='aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',base='main'):return {'action':'edited','repository':{'full_name':'o/r'},'pull_request':{'labels':[{'name':x} for x in labels],'head':{'sha':sha,'repo':{'full_name':head}},'base':{'ref':base}}}
