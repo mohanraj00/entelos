@@ -23,9 +23,9 @@ env={k:v for k,v in os.environ.items() if not k.startswith('GIT_')}|{
  'GOCACHE':str(w/'cache/build'),'GOMODCACHE':str(w/'cache/mod'),'GOPATH':str(w/'cache/gopath'),
  'GOTMPDIR':str(w/'tmp'),'TMPDIR':str(w/'tmp'),'TEST_TELEMETRY_DIR':str(w/'cache/telemetry'),
  'GOENV':'off','GOWORK':'off','GOFLAGS':'','GOTOOLCHAIN':'local','PYTHONDONTWRITEBYTECODE':'1',
- 'CEL_LIFECYCLE_SOURCE':str(ROOT/'cel-lifecycle'),
+ 'CEL_LIFECYCLE_SOURCE':str(ROOT/'src/cel-lifecycle'),
  'LIFECYCLE_TEST_WORK':str(w/'conformance'),'LIFECYCLE_CEL_BINARY':str(w/'bin/cel-handoff'),
- 'LIFECYCLE_CEL_BUNDLE':str(w/'record-bundle'),'LIFECYCLE_FIXTURE':str(ROOT/'cel-lifecycle/fixtures/lifecycle-scenario.json'),
+ 'LIFECYCLE_CEL_BUNDLE':str(w/'record-bundle'),'LIFECYCLE_FIXTURE':str(ROOT/'src/cel-lifecycle/fixtures/lifecycle-scenario.json'),
  'EXPORT_TEST_WORK':str(w/'boundaries'),'DECISION_EXPORT_SOURCE':str(ROOT)}
 for key in list(os.environ):
  if key.startswith('GIT_'):os.environ.pop(key)
@@ -58,28 +58,28 @@ try:
   check('checkout-author-tools','Does the public author checkout resolve the chosen revision?',checkout.returncode==0,{'exit_code':checkout.returncode})
  pin=run('author-revision',['git','rev-parse','HEAD'],skills);clean=run('author-clean',['git','status','--porcelain'],skills)
  check('author-source','Is the author source clean and pinned?',pin.stdout.strip()==PIN and clean.returncode==0 and not clean.stdout,{'revision':pin.stdout.strip(),'status':clean.stdout})
- build=run('build-host',['go','build','-mod=readonly','-trimpath','-buildvcs=false','-o',w/'bin/cel-handoff','./cmd/cel-handoff'],ROOT/'cel-handoff')
+ build=run('build-host',['go','build','-mod=readonly','-trimpath','-buildvcs=false','-o',w/'bin/cel-handoff','./cmd/cel-handoff'],ROOT/'src/cel-handoff')
  check('build-host','Does the exported host build from its lockfiles?',build.returncode==0,{'exit_code':build.returncode})
  author=run('build-author',['go','build','-mod=readonly','-trimpath','-buildvcs=false','-o',w/'bin/cel-expr','./cmd/cel-expr'],skills)
  check('build-author','Do the pinned author tools build independently?',author.returncode==0,{'exit_code':author.returncode})
  identity=run('host-identity',[w/'bin/cel-handoff','-build']);host_build=json.loads(identity.stdout)
  deps={x['Path']:x['Version'] for x in host_build['build']['Deps']}
  check('engine-pins','Does the actual host use the pinned CEL engine/expressions?',deps.get('cel.dev/cel-go')=='v0.32.0' and deps.get('cel.dev/expr')=='v0.25.3',host_build)
- go_tests=run('go-tests',['go','test','-mod=readonly','-count=1','-json','./...'],ROOT/'cel-handoff')
+ go_tests=run('go-tests',['go','test','-mod=readonly','-count=1','-json','./...'],ROOT/'src/cel-handoff')
  check('go-contracts','Do the exported Go contract tests pass?',go_tests.returncode==0,{'exit_code':go_tests.returncode})
- vet=run('go-vet',['go','vet','-mod=readonly','./...'],ROOT/'cel-handoff')
+ vet=run('go-vet',['go','vet','-mod=readonly','./...'],ROOT/'src/cel-handoff')
  check('go-vet','Does Go static analysis pass?',vet.returncode==0,{'exit_code':vet.returncode})
- prepared=run('prepare-record',[sys.executable,'-B',ROOT/'cel-handoff/tools/prepare.py','--bundle',w/'record-bundle','--binary',w/'bin/cel-handoff'])
+ prepared=run('prepare-record',[sys.executable,'-B',ROOT/'src/cel-handoff/tools/prepare.py','--bundle',w/'record-bundle','--binary',w/'bin/cel-handoff'])
  check('prepare-record','Can a fresh bundle bind the exported build identity?',prepared.returncode==0,{'exit_code':prepared.returncode})
  syntax=run('python-syntax',[sys.executable,'-B','-c','import pathlib; [compile(p.read_bytes(),str(p),"exec") for p in pathlib.Path(".").rglob("*.py")]'])
  check('syntax','Are the exported Python sources syntactically valid?',syntax.returncode==0,{'exit_code':syntax.returncode})
- boundaries=run('export-boundaries',[sys.executable,'-B',ROOT/'test_export_boundaries.py'])
+ boundaries=run('export-boundaries',[sys.executable,'-B',ROOT/'tests/test_export_boundaries.py'])
  boundary_results=json.loads((w/'boundaries/test-results.json').read_text())
  check('export-boundaries','Do oversized stream and audit-identity regressions pass?',boundaries.returncode==0 and boundary_results['successful'],boundary_results)
- tests=run('lifecycle-tests',[sys.executable,'-B',ROOT/'cel-lifecycle/test_lifecycle.py'])
+ tests=run('lifecycle-tests',[sys.executable,'-B',ROOT/'src/cel-lifecycle/test_lifecycle.py'])
  test_results=json.loads((w/'conformance/test-results.json').read_text())
  check('lifecycle','Do local lifecycle/concurrency/recovery/replay checks pass from the export alone?',tests.returncode==0 and test_results['successful'],test_results)
- demo=run('consumer-reuse',[sys.executable,'-B',ROOT/'ci-trigger/run.py','--work',w/'reuse','--cel-binary',w/'bin/cel-handoff','--author-binary',w/'bin/cel-expr','--record-bundle',w/'record-bundle'])
+ demo=run('consumer-reuse',[sys.executable,'-B',ROOT/'examples/ci-trigger/run.py','--work',w/'reuse','--cel-binary',w/'bin/cel-handoff','--author-binary',w/'bin/cel-expr','--record-bundle',w/'record-bundle'])
  reuse=json.loads((w/'reuse/results.json').read_text())
  check('two-consumers-and-baseline','Do both consumer loops and the ordinary-code comparison pass?',demo.returncode==0 and reuse['status']=='passed',{'status':reuse['status'],'checks':reuse['checks'],'measurements':reuse['measurements'],'errors':reuse['errors']})
  check('source-unchanged','Did verification leave every candidate byte unchanged?',inventory()==before,{'unchanged':inventory()==before})

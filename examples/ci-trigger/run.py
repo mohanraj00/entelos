@@ -17,7 +17,8 @@ from ordinary import OrdinaryRuntime
 
 p=argparse.ArgumentParser(description=__doc__);p.add_argument('--work',type=Path,required=True);p.add_argument('--cel-binary',type=Path,required=True);p.add_argument('--author-binary',type=Path,required=True);p.add_argument('--record-bundle',type=Path,required=True)
 a=p.parse_args();w=a.work.resolve()
-if w==ROOT.parent or ROOT.parent in w.parents:p.error('work must be outside the source tree')
+SOURCE=ROOT.parents[1]
+if w==SOURCE or SOURCE in w.parents:p.error('work must be outside the source tree')
 if w.exists():p.error('work directory exists; preserve previous runs')
 w.mkdir(parents=True);(w/'tmp').mkdir();os.environ['TMPDIR']=str(w/'tmp');os.environ['PYTHONDONTWRITEBYTECODE']='1';os.environ['CEL_LIFECYCLE_SOURCE']=str(LIFE)
 for key in list(os.environ):
@@ -47,12 +48,12 @@ def direct(name,host,request,expected='ok'):
     return result
 
 try:
-    decl=fixture();inventory=decode((ROOT.parent/'checksums.json').read_bytes())
+    decl=fixture();inventory=decode((SOURCE/'checksums.json').read_bytes())
     life_files=['git_store.py','cel_runtime.py','lifecycle.py','cli.py']
     life_hashes={x:hashlib.sha256((LIFE/x).read_bytes()).hexdigest() for x in life_files}
     cel=LIFE.parent/'cel-handoff';cel_files=['handoff.go','json.go','identity.go','cmd/cel-handoff/main.go','go.mod','go.sum']
     cel_hashes={x:hashlib.sha256((cel/x).read_bytes()).hexdigest() for x in cel_files}
-    check('unchanged-production-sources','Do exported shared sources retain their reviewed checksums?',all(inventory['cel-lifecycle/'+x]==v for x,v in life_hashes.items()) and all(inventory['cel-handoff/'+x]==v for x,v in cel_hashes.items()),{'lifecycle':life_hashes,'cel':cel_hashes,'changed_shared_files':[]})
+    check('unchanged-production-sources','Do exported shared sources retain their reviewed checksums?',all(inventory['src/cel-lifecycle/'+x]==v for x,v in life_hashes.items()) and all(inventory['src/cel-handoff/'+x]==v for x,v in cel_hashes.items()),{'lifecycle':life_hashes,'cel':cel_hashes,'changed_shared_files':[]})
     actual=decode(subprocess.check_output([str(a.cel_binary),'-build']));deps={x['Path']:x['Version'] for x in actual['build']['Deps']}
     check('pinned-runtime','Does the freshly identified host use the pinned CEL dependency closure?',deps.get('cel.dev/cel-go')=='v0.32.0' and deps.get('cel.dev/expr')=='v0.25.3',actual)
     original=Driver(LIFE,w/'original',a.cel_binary,decode((LIFE/'fixtures/lifecycle-scenario.json').read_bytes()))

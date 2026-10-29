@@ -1,0 +1,41 @@
+name: PR policy
+# pull_request_target runs this file and tools/ from the base branch, so a PR cannot change its own gate.
+# Do not check out or run the PR head here. This workflow reads only the PR file list, labels and its own approval records.
+on:
+  pull_request_target:
+    types: [opened, reopened, synchronize, edited, ready_for_review, labeled, unlabeled]
+permissions:
+  contents: read
+  pull-requests: write
+  # The label endpoints are under /issues.
+  issues: write
+# Runs for one PR wait in order. A new pending run can replace an older pending run, so the gate does not depend on one event:
+# each run checks that the label has an approval record for the current head and base.
+concurrency:
+  group: pr-policy-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+jobs:
+  acceptance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          persist-credentials: false
+      - name: Require maintainer acceptance for a PR from a fork
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python3 -B tools/pr_policy.py acceptance
+  security-review:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          persist-credentials: false
+      - name: Require a current security review for security-relevant paths
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python3 -B tools/pr_policy.py security

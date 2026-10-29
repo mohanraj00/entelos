@@ -6,6 +6,10 @@ Run `python3 -B verify.py --work "$TASK_WORK"` with a fresh work directory befor
 
 Do not submit generated binaries, caches, local Git stores, credentials, customer material or raw private evaluation data. Preserve project copyright, licence and NOTICE attribution, plus upstream dependency licences and notices. Avoid unrelated framework, language or deployment work without a demonstrated integration need.
 
+## Review
+
+A maintainer reviews every PR. A PR from a fork needs a maintainer acceptance review before it can merge, and some changes need a security review. [Review and merge rules](docs/REVIEW.md) explains the checks.
+
 ## Licence
 
-Project source is licensed under [Apache-2.0](LICENSE). Unless explicitly stated otherwise, contributions intentionally submitted for inclusion use those terms, as described in section 5 of the licence. Keep the [project attribution](NOTICE) and [third-party notices](THIRD_PARTY.md). The [licence decision](docs/LICENSING.md) records the change from MIT.
+Project source is licensed under [Apache-2.0](LICENSE). Unless explicitly stated otherwise, contributions intentionally submitted for inclusion use those terms, as described in section 5 of the licence. Keep the [project attribution](NOTICE) and [third-party notices](licenses/THIRD_PARTY.md). The [licence decision](docs/LICENSING.md) records the change from MIT.

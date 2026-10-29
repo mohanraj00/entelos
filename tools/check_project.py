@@ -5,12 +5,13 @@ import hashlib
 import json
 from pathlib import Path
 import re
+import sys
 
 ROOT=Path(__file__).resolve().parents[1]
 p=argparse.ArgumentParser(description=__doc__);p.add_argument('--write-checksums',action='store_true');a=p.parse_args()
-required=['CONSTITUTION.md','AGENTS.md','CLAUDE.md','Agent.md','README.md','SUPPORT.md','SECURITY.md',
+required=['CONSTITUTION.md','AGENTS.md','CLAUDE.md','GEMINI.md','README.md','docs/SUPPORT.md','SECURITY.md',
     'docs/STATUS.md','docs/BACKLOG.md','docs/CONTRACTS.md','.agents/skills/decision-workflow/SKILL.md',
-    '.github/workflows/source-checks.yml','.github/workflows/full-suite.yml','.github/ISSUE_TEMPLATE/bug.yml','.github/ISSUE_TEMPLATE/workflow.yml','.github/ISSUE_TEMPLATE/config.yml']
+    'docs/REVIEW.md','.github/CODEOWNERS','.github/workflows/ci.yml','.github/workflows/pr-policy.yml','.github/workflows/claude-review.yml','.github/ISSUE_TEMPLATE/bug.yml','.github/ISSUE_TEMPLATE/workflow.yml','.github/ISSUE_TEMPLATE/config.yml']
 errors=[];inventory={};links=0
 for path in sorted(ROOT.rglob('*')):
     relative=path.relative_to(ROOT)
@@ -34,6 +35,45 @@ alias=ROOT/'.claude/skills'
 if not alias.is_symlink():errors.append('missing shared skill link')
 claude=(ROOT/'CLAUDE.md').read_text() if (ROOT/'CLAUDE.md').exists() else ''
 if '@CONSTITUTION.md' not in claude or '@AGENTS.md' not in claude:errors.append('Claude entry point does not import shared rules')
+gemini=(ROOT/'GEMINI.md').read_text() if (ROOT/'GEMINI.md').exists() else ''
+if '@CONSTITUTION.md' not in gemini or '@AGENTS.md' not in gemini:errors.append('GEMINI.md does not import shared rules')
+# Classification regressions: each path must keep its CI and security-review class.
+sys.path.insert(0,str(ROOT/'tools'))
+from classify_change import classify
+for path,code,security in [('README.md',False,False),('src/cel-lifecycle/lifecycle.py',True,True),
+        ('src/cel-lifecycle/git_store.py',True,True),('src/cel-handoff/handoff_test.go',True,False),('src/cel-handoff/go.sum',True,True),
+        ('tools/classify_change.py',True,True),('.github/workflows/ci.yml',True,True),('.codex/config.toml',False,True),('GEMINI.md',False,True),
+        ('docs/AGENTS.md',False,True),('src/cel-handoff/tools/prepare.py',True,True),('examples/ci-trigger/run.py',True,True),
+        ('src/cel-lifecycle/test_lifecycle.py',True,False),('tests/test_export_boundaries.py',True,False),('docs/STATUS.md',False,False),('docs/REVIEW.md',False,True),('src/cel-lifecycle/.claude/settings.json',True,True),
+        ('tests/AGENTS.md',True,True),('tests/CLAUDE.md',True,True),('tests/.claude/settings.json',True,True),('tests/go.mod',True,True),('src/cel-handoff/x_test.go',True,False)]:
+    got=classify([path])
+    if (got['code'],got['security'])!=(code,security):errors.append('classification changed for %s: code=%s security=%s'%(path,got['code'],got['security']))
+# Review events default to the PR merge ref, so the Claude review must check out the default branch.
+claude=(ROOT/'.github/workflows/claude-review.yml').read_text()
+if 'ref: ${{ github.event.repository.default_branch }}' not in claude:errors.append('claude-review.yml must check out the default branch')
+# PR text can tell Claude to show a credential, so the tools get no token and no gh command.
+for need in ["CLAUDE_CODE_SUBPROCESS_ENV_SCRUB: '1'",'bubblewrap','Read(//proc/**)']:
+    if need not in claude:errors.append('claude-review.yml must keep '+need)
+if 'Bash(gh' in claude:errors.append('claude-review.yml must not allow gh commands')
+# The agy fallback must not load the maintainer's global allow rules or MCP servers.
+review=(ROOT/'tools/cross_review.py').read_text()
+for need in ["env['HOME']=home","'--sandbox'","'allow':[]"]:
+    if need not in review:errors.append('cross_review.py must keep '+need)
+if "'HOME'," in review:errors.append('cross_review.py must not pass the real HOME to agy')
+# PR gate regressions: a fork needs acceptance, and a label counts only with an approval record for the current head and base.
+from pr_policy import decide
+def event(labels,head='o/r',sha='aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',base='main'):return {'action':'edited','repository':{'full_name':'o/r'},'pull_request':{'labels':[{'name':x} for x in labels],'head':{'sha':sha,'repo':{'full_name':head}},'base':{'ref':base}}}
+ok={'accepted':{('aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa','main')},'security-reviewed':{('aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa','main')}}
+for check,case,paths,complete,found,want in [('acceptance',event([]),[],True,{},(True,None)),('acceptance',event([],'f/r'),[],True,{},(False,None)),
+        ('acceptance',event(['accepted'],'f/r'),[],True,ok,(True,None)),('acceptance',event(['accepted'],'f/r'),[],True,{},(False,'accepted')),
+        ('acceptance',event(['accepted'],'f/r','bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb'),[],True,ok,(False,'accepted')),('acceptance',event(['accepted'],'f/r',base='dev'),[],True,ok,(False,'accepted')),
+        ('security',event([]),['docs/STATUS.md'],True,{},(True,None)),('security',event([]),['docs/STATUS.md'],False,{},(False,None)),
+        ('security',event([]),['tools/pr_policy.py'],True,ok,(False,None)),('security',event(['security-reviewed']),['tools/pr_policy.py'],True,ok,(True,None)),
+        ('security',event(['security-reviewed'],sha='bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb'),['tools/pr_policy.py'],True,ok,(False,'security-reviewed')),
+        ('security',event(['security-reviewed'],base='dev'),['tools/pr_policy.py'],True,ok,(False,'security-reviewed')),
+        ('security',event(['security-reviewed']),['tools/pr_policy.py'],True,{'accepted':{('aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa','main')}},(False,'security-reviewed'))]:
+    passed,_,drop=decide(check,case,paths,complete,found)
+    if (passed,drop)!=want:errors.append('PR gate changed: %s %s %s'%(check,case['pull_request']['head']['sha'][:1],paths))
 checksum=ROOT/'checksums.json'
 if a.write_checksums:
     if errors:raise SystemExit(json.dumps({'passed':False,'errors':errors}))

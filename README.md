@@ -21,7 +21,7 @@ Start with [CONSTITUTION.md](CONSTITUTION.md), [AGENTS.md](AGENTS.md) and [curre
 
 ## Run
 
-Use Python, Go and Git. See [SUPPORT.md](SUPPORT.md) for the tested toolchain and limits. Choose a new scratch directory outside this checkout:
+Use Python, Go and Git. See [SUPPORT.md](docs/SUPPORT.md) for the tested toolchain and limits. Choose a new scratch directory outside this checkout:
 
 ```sh
 python3 -B verify.py --work "$TASK_WORK"
@@ -34,10 +34,10 @@ If the author-tools checkout is already available at the documented revision, pa
 The work directory contains `results.json`, command logs and the example stores. To discover the CI function after a successful run:
 
 ```sh
-printf '%s\n' '{"op":"describe","function":"ci.pr_should_run","date":"2026-11-15"}' | python3 -B cel-lifecycle/cli.py --repo "$TASK_WORK/reuse/cel/state.git" --context "$TASK_WORK/reuse/cel/caller.json" --runtime "$TASK_WORK/bin/cel-handoff" --work "$TASK_WORK/reuse/cel"
+printf '%s\n' '{"op":"describe","function":"ci.pr_should_run","date":"2026-11-15"}' | python3 -B src/cel-lifecycle/cli.py --repo "$TASK_WORK/reuse/cel/state.git" --context "$TASK_WORK/reuse/cel/caller.json" --runtime "$TASK_WORK/bin/cel-handoff" --work "$TASK_WORK/reuse/cel"
 ```
 
-`cel-lifecycle/client.py` uses that discovery result, ordinary inputs and a retry key to invoke a function. A caller does not submit the expression, fixed parameters or test expectations. Authors can use the existing CEL prompt/compile/eval tools and submit an exact proposal/base through the same local command boundary.
+`src/cel-lifecycle/client.py` uses that discovery result, ordinary inputs and a retry key to invoke a function. A caller does not submit the expression, fixed parameters or test expectations. Authors can use the existing CEL prompt/compile/eval tools and submit an exact proposal/base through the same local command boundary.
 
 ## What the examples show
 
@@ -55,10 +55,10 @@ The callable profile accepts named string/bool variables and a boolean result. N
 
 This is local reference code with unstable APIs and records. Host context and repository writers are trusted. It is not a network authentication boundary, distributed database, resident-worker coordinator or hosted service. Preparation acknowledgement records a successful ephemeral preparation; each call prepares and checks its exact closure again.
 
-CI ingress verification is simulated. No webhook is authenticated and no pipeline is launched. Its raw-event audit sidecar is not atomic with the Git receipt. The application supplies source truth, independent expectations, admission/learning policy, authentication, retention and side effects. See [INTEGRATION.md](INTEGRATION.md), [SUPPORT.md](SUPPORT.md) and [SECURITY.md](SECURITY.md).
+CI ingress verification is simulated. No webhook is authenticated and no pipeline is launched. Its raw-event audit sidecar is not atomic with the Git receipt. The application supplies source truth, independent expectations, admission/learning policy, authentication, retention and side effects. See [INTEGRATION.md](docs/INTEGRATION.md), [SUPPORT.md](docs/SUPPORT.md) and [SECURITY.md](SECURITY.md).
 
 The complete source-to-correction workflow is reproducible here. Production adapters and operations remain separate work. Ordinary code plus Git is appropriate when these explicit contracts and histories are unnecessary.
 
 ## Source and license
 
-The project source is licensed under [Apache-2.0](LICENSE). Keep the [project attribution](NOTICE) and required notices. Dependencies retain their own licenses; see [THIRD_PARTY.md](THIRD_PARTY.md). The [licence decision](docs/LICENSING.md) records the change from MIT. The workflow examples are neutral invented policies informed by the public sources listed in [PROVENANCE.md](PROVENANCE.md).
+The project source is licensed under [Apache-2.0](LICENSE). Keep the [project attribution](NOTICE) and required notices. Dependencies retain their own licenses; see [THIRD_PARTY.md](licenses/THIRD_PARTY.md). The [licence decision](docs/LICENSING.md) records the change from MIT. The workflow examples are neutral invented policies informed by the public sources listed in [PROVENANCE.md](docs/PROVENANCE.md).
