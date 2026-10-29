@@ -1,0 +1,128 @@
+name: First-contact session record
+description: Record one first-contact session (docs/FIRST_CONTACT.md). The record is public. Write no names, employers, usernames, email addresses, home paths, hostnames or private data.
+title: "First contact: Engineer "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use one issue for each session. Refer to the engineer as "Engineer A", "Engineer B" or "Engineer C". Remove user names and home paths from error messages. Do not attach screen recordings or audio.
+  - type: input
+    id: commit
+    attributes:
+      label: Commit
+      description: The commit of main that the engineer cloned.
+      placeholder: "dfd9f3c"
+    validations:
+      required: true
+  - type: input
+    id: round
+    attributes:
+      label: Round
+      description: The session number and the number of sessions that you selected for this round before the first session.
+      placeholder: "Session 1 of 3"
+    validations:
+      required: true
+  - type: input
+    id: platform
+    attributes:
+      label: Platform
+      description: Operating system and CPU architecture.
+      placeholder: "macOS 15 arm64"
+    validations:
+      required: true
+  - type: input
+    id: toolchain
+    attributes:
+      label: Toolchain
+      description: Go, Python and Git versions. Write "not installed" for a missing tool.
+      placeholder: "Go 1.27.2, Python 3.14.6, Git 2.54.0"
+    validations:
+      required: true
+  - type: textarea
+    id: stop
+    attributes:
+      label: Stop step
+      description: The step where the engineer stopped, or "completed the demo".
+    validations:
+      required: true
+  - type: dropdown
+    id: demo
+    attributes:
+      label: Demo check
+      description: Did the engineer run the demo without help? Any help from the maintainer is "did not run without help".
+      options:
+        - ran without help
+        - did not run without help
+    validations:
+      required: true
+  - type: textarea
+    id: last-step
+    attributes:
+      label: Answer to "Where did you stop, or what did you do last?"
+      description: The answer to end question 3, as the engineer said it.
+    validations:
+      required: true
+  - type: input
+    id: minutes
+    attributes:
+      label: Minutes to stop
+      description: Minutes from the first command or page view to the stop. The limit is 30.
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem statement
+      description: The one-sentence problem statement, as the engineer said it.
+    validations:
+      required: true
+  - type: dropdown
+    id: verdict
+    attributes:
+      label: Problem statement check
+      description: Compare the statement with the expected answer in docs/FIRST_CONTACT.md, section Result.
+      options:
+        - correct
+        - not correct
+    validations:
+      required: true
+  - type: textarea
+    id: verdict-reason
+    attributes:
+      label: Reason for the check
+      description: Which of the two expected points the statement gives, and which it does not give.
+    validations:
+      required: true
+  - type: textarea
+    id: live-questions
+    attributes:
+      label: Questions during the session
+      description: Each question that the engineer asked during the session, in sequence. Write "None" if the engineer asked no question.
+    validations:
+      required: true
+  - type: textarea
+    id: questions
+    attributes:
+      label: First three questions at the end
+      description: The first three questions at the end of the session, as the engineer said them. Milestone M2 uses them.
+      placeholder: |
+        1.
+        2.
+        3.
+    validations:
+      required: true
+  - type: textarea
+    id: errors
+    attributes:
+      label: Errors and other stop points
+      description: Each error with its exact message, after you remove private data. Write "None" if no error occurred.
+      render: text
+    validations:
+      required: true
+  - type: checkboxes
+    id: privacy
+    attributes:
+      label: Privacy
+      options:
+        - label: This record contains no names, employers, usernames, email addresses, home paths, hostnames or private data.
+          required: true
