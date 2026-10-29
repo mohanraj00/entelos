@@ -64,10 +64,12 @@ def review(base,head,kind,timeout,work):
         except OSError as error:status['launch_error']=str(error);out,err='',''
         # SSH detection is not a documented agy setting. The agy log shows if agy used only the file token.
         log=''.join(f.read_text(errors='replace') for f in sorted((config/'log').glob('*.log')) if f.is_file() and not f.is_symlink())
-        status['file_token_only']='Using file-based token storage' in log
+        # The check applies only if agy started with the file token. None means that it does not apply.
+        status['file_token_only']=('Using file-based token storage' in log) if TOKEN.is_file() and 'launch_error' not in status else None
         (record/'agy.log').write_text(log)
         # The refreshed token stays in the new HOME and is deleted. agy output must not change your token, so the script does not copy it back.
-        status['refresh_token_changed']=TOKEN.is_file() and refresh(config/TOKEN.name)!=refresh(TOKEN)
+        new=refresh(config/TOKEN.name) if TOKEN.is_file() else None
+        status['refresh_token_changed']=new is not None and new!=refresh(TOKEN)
     (record/'stdout.txt').write_text(out);(record/'stderr.txt').write_text(err);(record/'status.json').write_text(json.dumps(status,indent=2)+'\n')
     return (out.strip() if status.get('exit')==0 and out.strip() else None),status
 
@@ -95,7 +97,7 @@ if __name__=='__main__':
         why='timed out after %ds'%a.timeout if 'timeout' in status else status.get('launch_error') or 'exit %s'%status.get('exit')
         err=(work/kind/'stderr.txt').read_text().strip()
         if report is None and err:why+=': '+err[-300:]
-        if not status['file_token_only']:print('- agy did not report file-only token storage. It possibly used the macOS keychain. Check %s.'%(work/kind/'agy.log'))
+        if status['file_token_only'] is False:print('- agy did not report file-only token storage. It possibly used the macOS keychain. Check %s.'%(work/kind/'agy.log'))
         if status['refresh_token_changed']:print('- agy changed the refresh token. Your token at %s possibly does not work now. If agy cannot sign in, sign in to agy again.'%TOKEN)
         print((report or 'agy did not give a review (%s). Get a manual review.'%why)+'\n');failed|=report is None
     if git('rev-parse','HEAD').strip()!=head:print('HEAD changed during the review. This report covers %s only.'%head[:12]);failed=True
