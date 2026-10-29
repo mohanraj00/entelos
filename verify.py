@@ -26,7 +26,7 @@ env={k:v for k,v in os.environ.items() if not k.startswith('GIT_')}|{
  'CEL_LIFECYCLE_SOURCE':str(ROOT/'src/cel-lifecycle'),
  'LIFECYCLE_TEST_WORK':str(w/'conformance'),'LIFECYCLE_CEL_BINARY':str(w/'bin/cel-handoff'),
  'LIFECYCLE_CEL_BUNDLE':str(w/'record-bundle'),'LIFECYCLE_FIXTURE':str(ROOT/'src/cel-lifecycle/fixtures/lifecycle-scenario.json'),
- 'EXPORT_TEST_WORK':str(w/'boundaries'),'DECISION_EXPORT_SOURCE':str(ROOT)}
+ 'EXPORT_TEST_WORK':str(w/'boundaries'),'QUICKSTART_TEST_WORK':str(w/'quickstart-failures'),'DECISION_EXPORT_SOURCE':str(ROOT)}
 for key in list(os.environ):
  if key.startswith('GIT_'):os.environ.pop(key)
 os.environ.update(env)
@@ -82,6 +82,9 @@ try:
  demo=run('consumer-reuse',[sys.executable,'-B',ROOT/'examples/ci-trigger/run.py','--work',w/'reuse','--cel-binary',w/'bin/cel-handoff','--author-binary',w/'bin/cel-expr','--record-bundle',w/'record-bundle'])
  reuse=json.loads((w/'reuse/results.json').read_text())
  check('two-consumers-and-baseline','Do both consumer loops and the ordinary-code comparison pass?',demo.returncode==0 and reuse['status']=='passed',{'status':reuse['status'],'checks':reuse['checks'],'measurements':reuse['measurements'],'errors':reuse['errors']})
+ failures=run('quickstart-failures',[sys.executable,'-B',ROOT/'examples/quickstart/test_demo.py'])
+ failure_results=json.loads((w/'quickstart-failures/test-results.json').read_text())
+ check('quickstart-failures','Does each demo failure path write summary.json with a named reason?',failures.returncode==0 and failure_results['successful'],failure_results)
  quick=run('quickstart',[sys.executable,'-B',ROOT/'examples/quickstart/demo.py','--work',w/'quickstart'])
  expected_loop=json.loads(Path(env['LIFECYCLE_FIXTURE']).read_text())['expected']
  summary=json.loads((w/'quickstart/summary.json').read_text()) if (w/'quickstart/summary.json').exists() else {}
