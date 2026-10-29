@@ -27,7 +27,7 @@ The expected values come from the `expected` field of the fixture, not from the 
 
 ## If the demo fails
 
-The demo prints `Result: failed` and exits with status 1. It always writes `<work>/summary.json` with the reason:
+The demo prints `Result: failed` and exits with status 1. If a step before the loop fails, the demo also writes the step output to stderr. It always writes `<work>/summary.json` with the reason:
 
 - `failed_step`, `stdout` and `stderr`: a step before the loop failed, for example `build-host`.
 - `loop_error` and `loop_output`: the loop failed. `loop_output` keeps the exit code, stdout and stderr of `scenario.py`.

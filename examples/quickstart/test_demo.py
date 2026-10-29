@@ -13,6 +13,7 @@ import unittest
 
 sys.path.insert(0,str(Path(__file__).resolve().parent))
 import demo
+if not os.environ.get('QUICKSTART_TEST_WORK'):sys.exit('set QUICKSTART_TEST_WORK to a work directory outside the checkout')
 WORK=Path(os.environ['QUICKSTART_TEST_WORK']);WORK.mkdir(parents=True,exist_ok=True)
 FIXTURE=json.loads(demo.FIXTURE.read_text());EXPECTED=FIXTURE['expected']
 BUILD={'implementation_ref':'sha256:'+'0'*64,'build':{'Deps':[{'Path':'cel.dev/cel-go','Version':'v0.32.0'}]}}
@@ -54,6 +55,7 @@ class QuickstartFailures(unittest.TestCase):
  def test_invalid_results_with_a_zero_exit_fail(self):
   summary,printed=self.conclude('[]')
   self.assertEqual(summary['status'],'failed');self.assertIn('not valid JSON: the top level is not an object',summary['errors'][0])
+  self.assertNotIn('The loop failed',printed);self.assertIn('Error: scenario-results.json is not valid JSON',printed)
  def test_value_mismatch_names_the_comparison(self):
   results=copy.deepcopy(PASSED);results['trace'][2]['response']['data']['result']['actual']['value']=not EXPECTED['pinned_replay']
   summary,printed=self.conclude(results)
@@ -78,9 +80,10 @@ class QuickstartFailures(unittest.TestCase):
   summary,printed=self.conclude(results)
   self.assertEqual(summary['status'],'failed');self.assertIn("KeyError 'correction_snapshot'",summary['errors'][0])
  def test_failed_step_writes_the_summary(self):
-  w=Path(tempfile.mkdtemp(dir=WORK));err=io.StringIO()
-  with contextlib.redirect_stderr(err),self.assertRaises(SystemExit) as caught:demo.step_failed(w,'build-host',1,'out\n','go: no network\n')
-  self.assertEqual(caught.exception.code,1);self.assertIn('build-host failed',err.getvalue())
+  w=Path(tempfile.mkdtemp(dir=WORK));err=io.StringIO();out=io.StringIO()
+  with contextlib.redirect_stderr(err),contextlib.redirect_stdout(out),self.assertRaises(SystemExit) as caught:demo.step_failed(w,'build-host',1,'out\n','go: no network\n')
+  self.assertEqual(caught.exception.code,1);self.assertIn('build-host failed (exit 1)',err.getvalue())
+  self.assertIn('Result: failed. build-host failed. Details: %s'%(w/'summary.json'),out.getvalue())
   summary=json.loads((w/'summary.json').read_text())
   self.assertEqual((summary['status'],summary['failed_step'],summary['stdout'],summary['stderr']),('failed','build-host','out\n','go: no network\n'))
 

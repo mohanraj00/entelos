@@ -22,7 +22,8 @@ def write_summary(w,summary):(w/'summary.json').write_text(json.dumps(summary,in
 def step_failed(w,step,code,stdout,stderr):
  # Keep the failed step's output in summary.json and on stderr, then stop.
  write_summary(w,{'kind':'QuickstartSummary','status':'failed','failed_step':step,'exit_code':code,'stdout':stdout,'stderr':stderr,'work':str(w)})
- sys.stderr.write('%s failed (exit %s)\n%s%s'%(step,code,stdout,stderr));raise SystemExit(1)
+ sys.stderr.write('%s failed (exit %d)\n%s%s'%(step,code,stdout,stderr))
+ print('Result: failed. %s failed. Details: %s'%(step,w/'summary.json'));raise SystemExit(1)
 
 def summarize(w,fixture,build,loop):
  """Make the summary from the loop result. Each failure path records its reason."""
@@ -78,7 +79,7 @@ def report(summary):
   print('                  new snapshot %s; the earlier receipt stays'%short(s['correction']['snapshot_ref']))
   print('  3. Replay:      the same receipt on its pinned snapshot -> %s (fixture expects %s)'%(json.dumps(s['replay']['value']),json.dumps(expected['pinned_replay'])))
   print('  4. Restatement: the same input under the correction -> %s (fixture expects %s)'%(json.dumps(s['restatement']['value']),json.dumps(expected['later_restatement'])))
- if summary['loop_status']!='passed':print('  The loop failed: %s'%summary['loop_error'])
+ if summary['loop_error']:print('  The loop failed: %s'%summary['loop_error'])
  for error in summary['errors']:print('  Error: %s'%error)
  for name in summary['failed_checks']:print('  Failed comparison: %s'%name)
  if summary['loop_output']['exit_code']:print('  The scenario stdout and stderr are in summary.json (loop_output).')
@@ -109,7 +110,7 @@ def main():
  run('build-host',['go','build','-mod=readonly','-trimpath','-buildvcs=false','-o',binary,'./cmd/cel-handoff'],ROOT/'src/cel-handoff')
  identity=run('host-identity',[binary,'-build'])
  try:build=json.loads(identity.stdout)
- except ValueError as error:step_failed(w,'host-identity','output is not valid JSON: %s'%error,identity.stdout,identity.stderr)
+ except ValueError as error:step_failed(w,'host-identity',identity.returncode or 1,identity.stdout,identity.stderr+'the output is not valid JSON: %s\n'%error)
  run('prepare-record',[sys.executable,'-B',ROOT/'src/cel-handoff/tools/prepare.py','--bundle',w/'record-bundle','--binary',binary])
  print('Running the record-filter loop...',flush=True)
  loop=subprocess.run([str(x) for x in [sys.executable,'-B',LIFE/'scenario.py','--work',w/'loop','--runtime',binary,'--bundle',w/'record-bundle','--fixture',FIXTURE]],

@@ -83,7 +83,8 @@ try:
  reuse=json.loads((w/'reuse/results.json').read_text())
  check('two-consumers-and-baseline','Do both consumer loops and the ordinary-code comparison pass?',demo.returncode==0 and reuse['status']=='passed',{'status':reuse['status'],'checks':reuse['checks'],'measurements':reuse['measurements'],'errors':reuse['errors']})
  failures=run('quickstart-failures',[sys.executable,'-B',ROOT/'examples/quickstart/test_demo.py'])
- failure_results=json.loads((w/'quickstart-failures/test-results.json').read_text())
+ failure_path=w/'quickstart-failures/test-results.json'
+ failure_results=json.loads(failure_path.read_text()) if failure_path.exists() else {'successful':False,'error':'test_demo.py wrote no test-results.json','exit_code':failures.returncode,'stderr':failures.stderr}
  check('quickstart-failures','Does each demo failure path write summary.json with a named reason?',failures.returncode==0 and failure_results['successful'],failure_results)
  quick=run('quickstart',[sys.executable,'-B',ROOT/'examples/quickstart/demo.py','--work',w/'quickstart'])
  expected_loop=json.loads(Path(env['LIFECYCLE_FIXTURE']).read_text())['expected']
