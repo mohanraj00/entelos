@@ -1,4 +1,15 @@
-# Versioned decision reference
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/brand/entelos-logo-dark.svg">
+    <img alt="Entelos" src="docs/brand/entelos-logo-light.svg" width="360">
+  </picture>
+</p>
+
+# Entelos
+
+**Entelos: grow toward the goal.**
+
+Entelos (from Greek *en* + *telos*, "the goal within") is the name of this versioned decision reference. The repository is `mohanraj00/entelos`; its earlier name was `versioned-decision-reference`. [Brand assets](docs/brand/README.md) holds the mark, the logo and the colours.
 
 I built this reference to keep an authored decision, its approval, and its recorded answers tied to exact inputs and revisions. It shows how to correct a decision without rewriting the answer that was given earlier.
 
