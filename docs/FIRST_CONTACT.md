@@ -6,7 +6,7 @@ This kit is for the exit test of milestone M1 ([issue #10](https://github.com/mo
 
 1. Merge the M1 wave 1 and wave 2 issues first. The engineer must see the README, the demo command and the walkthroughs.
 2. Select an engineer who did not see the project before. Do not select a contributor.
-3. Record the commit of `main` that the engineer will clone.
+3. Select one commit of `main` for all sessions of this round. Record it. Each engineer clones that commit.
 4. Do not install toolchains or build the project for the engineer.
 
 ## Script
@@ -37,7 +37,7 @@ The session is 30 minutes from the first command or page view. At 30 minutes, st
 
 ## Record
 
-Open one issue for each session with the [first-contact template](../.github/ISSUE_TEMPLATE/first-contact.yml). Write the record in the 24 hours after the session. The record has these fields:
+Open one issue for each session with the [first-contact form](https://github.com/mohanraj00/entelos/issues/new?template=first-contact.yml). The form source is [first-contact.yml](../.github/ISSUE_TEMPLATE/first-contact.yml). Write the record in the 24 hours after the session. The record has these fields:
 
 - the commit of `main` that the engineer cloned;
 - the platform: operating system and CPU architecture;
@@ -45,8 +45,9 @@ Open one issue for each session with the [first-contact template](../.github/ISS
 - the step where the engineer stopped;
 - the time to the stop, in minutes;
 - the one-sentence problem statement, as the engineer said it;
+- the check of that statement ("correct" or "not correct", see [Result](#result)) and its reason;
 - the first three questions, as the engineer said them;
-- the errors and other stop points, with the exact message.
+- the errors and other stop points, with the exact message, or "None".
 
 Milestone M2 ([issue #11](https://github.com/mohanraj00/entelos/issues/11)) uses the first three questions as its first input.
 
@@ -56,4 +57,11 @@ The record is public. Do not write names, employers, usernames, email addresses,
 
 ## Result
 
-The exit test of M1 passes if each engineer runs the demo without help and states the problem in one sentence. If an engineer stops, keep the record. A stop is evidence. Do not run the same engineer again on changed docs and call it a new first contact.
+A round is two or three sessions on the same commit of `main`. The expected answer is set here, before the sessions. A problem statement is correct if it says both of these:
+
+- rules that change inside a service, or the decisions of those rules;
+- the earlier answers stay tied to their exact inputs and rule revisions, or a correction keeps the earlier answer.
+
+The maintainer compares each statement with these two points and writes "correct" or "not correct" in the record, with the reason.
+
+The exit test of M1 passes for a commit if each engineer of the round runs the demo without help and gives a correct problem statement. If one engineer stops or gives a statement that is not correct, the round fails for that commit. Keep each record of a failed round. A stop is evidence. If the docs change after a failed round, run a new round on the new commit with new engineers. Do not combine results from different commits. Do not run the same engineer again and call it a new first contact.
