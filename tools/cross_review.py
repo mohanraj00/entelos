@@ -3,6 +3,7 @@
 import argparse
 import json
 import os
+import re
 from pathlib import Path
 import shutil
 import subprocess
@@ -25,6 +26,7 @@ SECURITY=('Do a security review of this change against {base}. Examine input fra
 KEEP=['PATH','USER','LOGNAME','LANG','LC_ALL','TERM','TMPDIR','SHELL','GEMINI_API_KEY','GOOGLE_API_KEY']
 # agy loads its settings, allow rules and MCP servers from HOME. The new HOME gets only the login token and an empty allow list.
 TOKEN=Path.home()/'.gemini/antigravity-cli/antigravity-oauth-token'
+STORAGE=re.compile(r'^I\d{4} [\d:.]+ +\d+ composite_token_storage\.go:\d+\] Using file-based token storage',re.M)
 
 def git(*args):return subprocess.run(['git',*args],cwd=ROOT,capture_output=True,text=True,check=True).stdout
 
@@ -65,7 +67,8 @@ def review(base,head,kind,timeout,work):
         # SSH detection is not a documented agy setting. The agy log shows if agy used only the file token.
         log=''.join(f.read_text(errors='replace') for f in sorted((config/'log').glob('*.log')) if f.is_file() and not f.is_symlink())
         # The check applies only if agy started with the file token. None means that it does not apply.
-        status['file_token_only']=('Using file-based token storage' in log) if TOKEN.is_file() and 'launch_error' not in status else None
+        # The match must be a full agy log line, so a diff with this text cannot give a false result.
+        status['file_token_only']=bool(STORAGE.search(log)) if TOKEN.is_file() and 'launch_error' not in status else None
         (record/'agy.log').write_text(log)
         # The refreshed token stays in the new HOME and is deleted. agy output must not change your token, so the script does not copy it back.
         new=refresh(config/TOKEN.name) if TOKEN.is_file() else None

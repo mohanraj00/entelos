@@ -79,7 +79,7 @@
   "tests/test_export_boundaries.py": "1834479efde85731ba75041342884e0da9f6462cdcdab8d66c02e5d2ec238540",
   "tools/check_project.py": "7fd4cdbf54b4faf106ac28073f2528f2062b1fcb797c204f3d3d5bb43fa218c9",
   "tools/classify_change.py": "be24b68b179d2a45189a0a1b55dde0cd8df73d9004fd1ec53ffccc26ab7b7d2c",
-  "tools/cross_review.py": "ef6d9c8310ceeb9d60f9b185cfce1d4ee05beb6a0842c51506571375e2117915",
+  "tools/cross_review.py": "b69f65ccc0051a7fd9b8e2c7f9fbb3673b8ad49b0e06123c88678cd3a8d76bac",
   "tools/pr_policy.py": "e8b5bd3d1feecabbfe518af880852bcb1cea64f406be1bb39fa75d0fce875fd5",
   "verify.py": "70275b9af0051041c16d0762d865bb557add1a83316732afd2d89a0bbed1f2e0"
 }
