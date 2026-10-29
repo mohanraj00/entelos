@@ -1,6 +1,6 @@
 name: PR policy
 # pull_request_target runs this file and tools/ from the base branch, so a PR cannot change its own gate.
-# Do not check out or run the PR head here. This workflow reads only the PR file list, labels and its own approval records.
+# Do not check out or run the PR head here. This workflow reads only the PR file list, labels, its own approval records and the Codex review results.
 on:
   pull_request_target:
     types: [opened, reopened, synchronize, edited, ready_for_review, labeled, unlabeled]

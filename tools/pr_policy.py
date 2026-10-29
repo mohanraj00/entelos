@@ -45,17 +45,32 @@ def live_pr(repo,number,token):
 # A writer can change a workflow to post as this user, so the gates trust writers.
 BOT='github-actions[bot]'
 BINDING=re.compile(r'<!-- pr-policy:approval label=(\S+) head=([0-9a-f]{40}) base=(\S+) -->')
+# The Codex GitHub integration posts its review results as this app. A user cannot post as an app.
+CODEX='chatgpt-codex-connector[bot]'
+# Codex names the commit with 10 hex digits. A shorter prefix is easier to match with a different commit.
+REVIEWED=re.compile(r'\*\*Reviewed commit:\*\* `([0-9a-f]{10,40})`')
+CLEAN=re.compile(r'^Security review completed\. No security issues were found in this pull request\.$',re.M)
 
-def bindings(repo,number,token):
-    """Return {label: {(head, base ref)}} from the approval records that this workflow posted on the PR."""
-    found={}
+def records(repo,number,token):
+    """Return ({label: {(head, base ref)}}, [(commit prefix, clean)]) from the approval records of this workflow and the Codex security review results on the PR.
+    A Codex result names a commit, not a base, so the gate ignores results posted before the last base change."""
+    found={};reviews=[];changed=''
+    for page in range(1,PAGES+1):
+        batch=call('GET','/repos/%s/issues/%d/events?per_page=100&page=%d'%(repo,number,page),token)
+        changed=max([changed]+[x['created_at'] for x in batch if x['event']=='base_ref_changed'])
+        if len(batch)<100:break
     for page in range(1,PAGES+1):
         batch=call('GET','/repos/%s/issues/%d/comments?per_page=100&page=%d'%(repo,number,page),token)
         for item in batch:
-            if item['user']['login']!=BOT:continue
-            for label,head,base in BINDING.findall(item['body'] or ''):found.setdefault(label,set()).add((head,base))
+            body=item['body'] or ''
+            if item['user']['login']==BOT:
+                for label,head,base in BINDING.findall(body):found.setdefault(label,set()).add((head,base))
+            # A result without the clean verdict line counts as open findings. Only the first commit in a result counts.
+            elif item['user']['login']==CODEX and 'Codex Security Review' in body and item['created_at']>changed:
+                commit=REVIEWED.search(body)
+                if commit:reviews.append((commit.group(1),bool(CLEAN.search(body))))
         if len(batch)<100:break
-    return found
+    return found,reviews
 
 def bind(repo,number,label,pr,token):
     # The labeled event holds the head and base at the time of the label, not at the time of this run.
@@ -64,7 +79,7 @@ def bind(repo,number,label,pr,token):
     call('POST','/repos/%s/issues/%d/comments'%(repo,number),token,{'body':body})
     return head,base
 
-def decide(check,event,paths,complete,found):
+def decide(check,event,paths,complete,found,reviews=()):
     """Return (passed, message, label to remove or None). event holds the live PR. This function makes no network calls."""
     # A label is valid only with an approval record for the current head and base, so a lost or replaced event cannot keep an old approval.
     pr=event['pull_request'];labels={x['name'] for x in pr['labels']}
@@ -82,19 +97,24 @@ def decide(check,event,paths,complete,found):
     change=classify(paths)
     if complete and not change['security']:return True,'No security-relevant paths changed.',None
     found_paths='Security-relevant paths: '+(', '.join(change['security_paths']) if complete else 'the PR has more files than GitHub lists')
+    # Comments come oldest first. The latest Codex security review of the current head passes without a label if it found no issues.
+    results=[clean for commit,clean in reviews if current[0].startswith(commit)]
+    if results and results[-1]:
+        return True,found_paths+'\nThe Codex security review of head %s found no security issues.'%current[0][:12],stale
     if stale:return False,found_paths+'\n'+again,stale
     if valid:return True,found_paths+'\nThe security-reviewed label applies to head %s.'%current[0][:12],None
-    return False,found_paths+'\nGet a security review as docs/REVIEW.md says, post the result on the PR, then add the security-reviewed label.',None
+    if results:return False,found_paths+'\nThe latest Codex security review of head %s has open findings. Fix them and ask again, or write the answer on the PR and ask the maintainer to add the security-reviewed label.'%current[0][:12],None
+    return False,found_paths+'\nRequest a security review as docs/REVIEW.md says. The check passes when the Codex security review of head %s finds no security issues, or when the maintainer adds the security-reviewed label.'%current[0][:12],None
 
 if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('check',choices=['acceptance','security'])
     a=p.parse_args();token=os.environ['GITHUB_TOKEN']
     event=json.loads(Path(os.environ['GITHUB_EVENT_PATH']).read_text());repo=event['repository']['full_name'];number=event['pull_request']['number']
-    found=bindings(repo,number,token);label='accepted' if a.check=='acceptance' else 'security-reviewed'
+    found,reviews=records(repo,number,token);label='accepted' if a.check=='acceptance' else 'security-reviewed'
     if event['action']=='labeled' and event['label']['name']==label:found.setdefault(label,set()).add(bind(repo,number,label,event['pull_request'],token))
     event['pull_request']=live_pr(repo,number,token)
     paths,complete=changed_paths(repo,number,token) if a.check=='security' else ([],True)
-    passed,message,drop=decide(a.check,event,paths,complete,found)
+    passed,message,drop=decide(a.check,event,paths,complete,found,reviews)
     if drop:remove_label(repo,number,drop,token)
     print(message)
     if not passed:print('::error::'+message.splitlines()[-1]);sys.exit(1)

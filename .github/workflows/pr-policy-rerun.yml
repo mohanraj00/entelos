@@ -1,0 +1,28 @@
+name: PR policy rerun
+# issue_comment runs this file from the default branch. It never checks out or runs PR code.
+# When Codex posts a review result, this workflow runs the failed PR policy jobs again for the current head,
+# so the security-review gate can read the new result. tools/pr_policy.py decides; this file only starts the run.
+on:
+  issue_comment:
+    types: [created]
+permissions:
+  actions: write
+  pull-requests: read
+jobs:
+  rerun:
+    if: github.event.issue.pull_request && github.event.comment.user.login == 'chatgpt-codex-connector[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Run the failed PR policy jobs again
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PR: ${{ github.event.issue.number }}
+        run: |
+          head=$(gh api "repos/$REPO/pulls/$PR" --jq .head.sha)
+          run=$(gh api "repos/$REPO/actions/workflows/pr-policy.yml/runs?head_sha=$head&event=pull_request_target&per_page=1" --jq '.workflow_runs[0].id // empty')
+          # A run that is in progress can read the comments before Codex posts, so wait for it to complete.
+          if [ -n "$run" ]; then gh run watch "$run" -R "$REPO" --interval 15 > /dev/null || true; fi
+          if [ -n "$run" ] && [ "$(gh api "repos/$REPO/actions/runs/$run" --jq .conclusion)" != failure ]; then run=; fi
+          if [ -n "$run" ]; then gh api -X POST "repos/$REPO/actions/runs/$run/rerun-failed-jobs"; else echo "No failed PR policy run for head $head."; fi
