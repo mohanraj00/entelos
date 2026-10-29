@@ -45,6 +45,23 @@ body:
       description: The step where the engineer stopped, or "completed the demo".
     validations:
       required: true
+  - type: dropdown
+    id: demo
+    attributes:
+      label: Demo check
+      description: Did the engineer run the demo without help? Any help from the maintainer is "did not run without help".
+      options:
+        - ran without help
+        - did not run without help
+    validations:
+      required: true
+  - type: textarea
+    id: last-step
+    attributes:
+      label: Answer to "Where did you stop, or what did you do last?"
+      description: The answer to end question 3, as the engineer said it.
+    validations:
+      required: true
   - type: input
     id: minutes
     attributes:
