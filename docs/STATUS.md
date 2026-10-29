@@ -6,7 +6,7 @@ The project name is Entelos, with the tagline "Entelos: grow toward the goal." O
 
 ## Source reference
 
-The source reference contains a primitive typed CEL callable, a local qualified Git lifecycle, record-filter and PR CI examples, and an ordinary-function comparison. APIs and record formats are unstable. See [SUPPORT.md](../SUPPORT.md) for the tested environment and operating limits.
+The source reference contains a primitive typed CEL callable, a local qualified Git lifecycle, record-filter and PR CI examples, and an ordinary-function comparison. APIs and record formats are unstable. See [SUPPORT.md](SUPPORT.md) for the tested environment and operating limits.
 
 ## Licence
 
@@ -14,9 +14,13 @@ Project source uses [Apache-2.0](../LICENSE); [NOTICE](../NOTICE) retains projec
 
 ## Shared workflow
 
-Purpose is in [CONSTITUTION.md](../CONSTITUTION.md), workflow in [AGENTS.md](../AGENTS.md). Codex, Claude Code and other agent entry points share those files and the same skill source. `tools/check_project.py` checks that layout, links and source checksums.
+Purpose is in [CONSTITUTION.md](../CONSTITUTION.md), workflow in [AGENTS.md](../AGENTS.md). Codex (`AGENTS.md`), Claude Code (`CLAUDE.md`) and agy (`GEMINI.md`) share those files and the same skill source. A different harness reviews each change; see [REVIEW.md](REVIEW.md). `tools/check_project.py` checks that layout, links and source checksums.
 
-The source-check workflow checks this project structure and source inventory. The `Full suite` workflow runs `verify.py` on one Linux runner and uploads the compact results and command logs for 14 days. See [SUPPORT.md](../SUPPORT.md) for the observed toolchain. One passing runner does not establish broad platform support.
+The `CI` workflow checks the project structure and source inventory on every change. For code changes only, its `standalone` job runs `verify.py` on one Linux runner and uploads the compact results and command logs for 14 days. See [SUPPORT.md](SUPPORT.md) for the observed toolchain. One passing runner does not establish broad platform support.
+
+## Layout
+
+On 2026-10-29, the code moved to `src/` and `examples/`, the boundary test moved to `tests/`, and the loose reference docs moved to `docs/` and `licenses/`. `GEMINI.md` replaced `Agent.md`. Behavior did not change; the full suite must pass on the new paths.
 
 ## Next work
 

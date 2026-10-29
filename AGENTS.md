@@ -4,9 +4,18 @@ Read [CONSTITUTION.md](CONSTITUTION.md), this file, then [docs/STATUS.md](docs/S
 
 ## Shared harness setup
 
-Codex reads this entry point. `CLAUDE.md` imports this file and the constitution. `Agent.md` points other harnesses to the same files. Shared skills live in `.agents/skills/`; `.claude/skills` is a relative link to that directory. Edit shared instructions only at their owning path.
+Codex reads this entry point. `CLAUDE.md` and `GEMINI.md` import this file and the constitution, for Claude Code and agy (Antigravity). Shared skills live in `.agents/skills/`; `.claude/skills` is a relative link to that directory. Edit shared instructions only at their owning path.
 
 For contract, lifecycle, integration or reproduction work, read `.agents/skills/decision-workflow/SKILL.md`. No model account is needed for the deterministic checks. This structure does not claim equivalent model performance across harnesses.
+
+## Layout
+
+- `src/`: the reusable reference (`cel-handoff` Go host, `cel-lifecycle` Python lifecycle).
+- `examples/`: consumer examples that reuse `src/` without copies.
+- `tests/`: cross-component boundary tests.
+- `tools/`: project checks, change classification and cross-harness review.
+- `docs/`: status, backlog, contracts, support, integration, provenance, review rules and brand.
+- `licenses/`: third-party notices and dependency licence texts.
 
 ## Work and verification
 
@@ -29,6 +38,10 @@ python3 -B verify.py --work "$TASK_WORK"
 The runner builds pinned public dependencies, runs Go tests/vet, Python checks, lifecycle conformance, regressions and both consumer examples. It retains generated results under the supplied work directory. Keep caches, binaries, logs and generated stores outside the source checkout. Use the host's configured local scratch directory; avoid cloud-synced folders for temporary work. Use `python3 -B` to avoid source-side bytecode.
 
 Preserve failed runs. Record a changed method and its reason; call a repaired same-fixture repeat what it is. A dependency/profile change requires fresh build identity, qualification and relevant checks. Never carry a passed flag onto changed bytes.
+
+## Review
+
+A harness does not review its own change. Run `python3 -B tools/cross_review.py --builder <harness>` before you ask for a merge. A security-relevant change also needs a security review. [docs/REVIEW.md](docs/REVIEW.md) owns the reviewer order, the fallback, fork PR acceptance and the CI scope.
 
 ## Records and publication
 

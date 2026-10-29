@@ -2,7 +2,7 @@
 import os
 from pathlib import Path
 import sys
-LIFE=Path(os.environ.get('CEL_LIFECYCLE_SOURCE',Path(__file__).resolve().parent.parent/'cel-lifecycle')).resolve()
+LIFE=Path(os.environ.get('CEL_LIFECYCLE_SOURCE',Path(__file__).resolve().parents[2]/'src/cel-lifecycle')).resolve()
 sys.path.insert(0,str(LIFE))
 from git_store import Fault,GitStore,encode,decode,content_ref,envelope,media
 from cel_runtime import CELRuntime,MIMES

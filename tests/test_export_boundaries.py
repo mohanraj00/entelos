@@ -9,9 +9,9 @@ import sys
 import tempfile
 import unittest
 
-ROOT=Path(os.environ.get('DECISION_EXPORT_SOURCE',Path(__file__).resolve().parent)).resolve()
-os.environ['CEL_LIFECYCLE_SOURCE']=str(ROOT/'cel-lifecycle')
-sys.path.insert(0,str(ROOT/'ci-trigger'))
+ROOT=Path(os.environ.get('DECISION_EXPORT_SOURCE',Path(__file__).resolve().parents[1])).resolve()
+os.environ['CEL_LIFECYCLE_SOURCE']=str(ROOT/'src/cel-lifecycle')
+sys.path.insert(0,str(ROOT/'examples/ci-trigger'))
 from support import GitStore,Fault,encode,content_ref,envelope,fixture
 from adapter import Ingress,project,link,verify_link
 WORK=Path(os.environ['EXPORT_TEST_WORK']);WORK.mkdir(parents=True,exist_ok=True)
@@ -27,10 +27,10 @@ class ExportBoundaries(unittest.TestCase):
   self.assertEqual(GitStore(self.repo).root(),'','a fragment of the rejected line changed accepted state')
   messages=[json.loads(line) for line in p.stdout.splitlines()]
   self.assertEqual(len(messages),1);self.assertEqual(messages[0]['status'],'invalid_request');self.assertNotEqual(p.returncode,0)
- def test_lifecycle_oversized_line_cannot_execute_a_remainder(self):self.framing(ROOT/'cel-lifecycle/cli.py')
- def test_ordinary_oversized_line_cannot_execute_a_remainder(self):self.framing(ROOT/'ci-trigger/cli.py')
+ def test_lifecycle_oversized_line_cannot_execute_a_remainder(self):self.framing(ROOT/'src/cel-lifecycle/cli.py')
+ def test_ordinary_oversized_line_cannot_execute_a_remainder(self):self.framing(ROOT/'examples/ci-trigger/cli.py')
  def test_audit_identity_covers_the_receipt_link(self):
-  raw=(ROOT/'ci-trigger/fixtures/ready-review-envelope.json').read_bytes();ingress=Ingress(True,fixture()['repository']);inputs=project(raw,ingress)
+  raw=(ROOT/'examples/ci-trigger/fixtures/ready-review-envelope.json').read_bytes();ingress=Ingress(True,fixture()['repository']);inputs=project(raw,ingress)
   invocation={'receipt_ref':'sha256:'+'1'*64,'receipt':{'inputs_ref':content_ref(envelope('application/json',encode(inputs)))}}
   audit=link(raw,ingress,invocation,self.work/'audit')
   self.assertEqual(verify_link(audit,self.work/'audit',ingress),inputs)
@@ -38,7 +38,7 @@ class ExportBoundaries(unittest.TestCase):
   with self.assertRaises(Fault) as caught:verify_link(altered,self.work/'audit',ingress)
   self.assertEqual(caught.exception.code,'artifact_mismatch')
  def test_audit_paths_require_content_reference_syntax(self):
-  raw=(ROOT/'ci-trigger/fixtures/ready-review-envelope.json').read_bytes();ingress=Ingress(True,fixture()['repository']);inputs=project(raw,ingress)
+  raw=(ROOT/'examples/ci-trigger/fixtures/ready-review-envelope.json').read_bytes();ingress=Ingress(True,fixture()['repository']);inputs=project(raw,ingress)
   invocation={'receipt_ref':'sha256:'+'1'*64,'receipt':{'inputs_ref':content_ref(envelope('application/json',encode(inputs)))}}
   audit=link(raw,ingress,invocation,self.work/'audit');audit['audit']['raw_ref']='sha256:../../unapproved'
   with self.assertRaises(Fault) as caught:verify_link(audit,self.work/'audit',ingress)

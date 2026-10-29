@@ -10,7 +10,7 @@ Keep the complete path visible: source -> proposal -> qualification -> approval 
 
 Reuse existing language and storage tools. Applications supply source authority, rule/data content, independent expectations, admission/learning policy, authentication, retention and effects. A passing test does not grant serving authority. Content hashes are identities, not signatures.
 
-The current callable profile is string/bool input and bool output. APIs and records are unstable. Source-reference support, compatibility and operating limits are defined in [SUPPORT.md](SUPPORT.md) and [SECURITY.md](SECURITY.md). A new profile or guarantee needs an explicit workflow, contract and relevant conformance checks.
+The current callable profile is string/bool input and bool output. APIs and records are unstable. Source-reference support, compatibility and operating limits are defined in [SUPPORT.md](docs/SUPPORT.md) and [SECURITY.md](SECURITY.md). A new profile or guarantee needs an explicit workflow, contract and relevant conformance checks.
 
 ## Evidence
 
