@@ -7,6 +7,8 @@ A recorded answer can be wrong for two different reasons:
 
 The lifecycle handles these two cases differently. This page uses the neutral record-filter scenario to show the boundary. The scenario is [lifecycle-scenario.json](../src/cel-lifecycle/fixtures/lifecycle-scenario.json), and [scenario.py](../src/cel-lifecycle/scenario.py) runs it.
 
+To run this scenario with one command, use the [quickstart demo](../examples/quickstart/README.md).
+
 ## The rule and the inputs
 
 The function `record.visible` in scope `demo` takes two caller inputs, `state` (string) and `archived` (bool). It returns `true` only if `state` is equal to the fixed value `allowed_state` and `archived` is `false`. The approved source tables give these values:
