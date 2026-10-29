@@ -41,7 +41,10 @@ run('prepare-record',[sys.executable,'-B',ROOT/'src/cel-handoff/tools/prepare.py
 print('Running the record-filter loop...',flush=True)
 loop=subprocess.run([sys.executable,'-B',LIFE/'scenario.py','--work',w/'loop','--runtime',binary,'--bundle',w/'record-bundle','--fixture',FIXTURE],
                     cwd=ROOT,env=env,capture_output=True,text=True)
-results=json.loads((w/'loop/scenario-results.json').read_text()) if (w/'loop/scenario-results.json').exists() else {'status':'failed','error':loop.stderr,'trace':[],'pins':{}}
+results=json.loads((w/'loop/scenario-results.json').read_text()) if (w/'loop/scenario-results.json').exists() else {'status':'failed','trace':[],'pins':{}}
+if loop.returncode:
+ # Keep the scenario's own error output; a nonzero exit is a failure even with a results file.
+ results['status']='failed';results['error']=results.get('error') or loop.stderr.strip() or 'scenario.py exited with status %d'%loop.returncode
 fixture=json.loads(FIXTURE.read_text());expected=fixture['expected']
 summary={'kind':'QuickstartSummary','function':fixture['function'],'implementation_ref':build['implementation_ref'],'cel_go':deps.get('cel.dev/cel-go'),
          'loop_status':results['status'],'loop_error':results.get('error'),'expected':expected,'work':str(w)}

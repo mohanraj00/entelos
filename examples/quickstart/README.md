@@ -6,7 +6,7 @@ This demo runs the complete record-filter loop with one command. It needs Go, Py
 python3 -B examples/quickstart/demo.py --work "$TASK_WORK"
 ```
 
-Use a new directory outside this checkout for `--work`. The demo does not write to the checkout. It writes the build, the Go caches and the Git lifecycle store to the work directory.
+Use a new path outside this checkout for `--work`. The directory must not exist. The demo makes it, and it does not overwrite an earlier run. The demo does not write to the checkout. It writes the build, the Go caches and the Git lifecycle store to the work directory.
 
 ## What the demo does
 
@@ -23,7 +23,7 @@ Use a new directory outside this checkout for `--work`. The demo does not write 
 - The replay: the earlier receipt, on its pinned snapshot, gives the same answer again.
 - The restatement: the same input under the correction gives a new, separate answer.
 
-The expected values come from the `expected` field of the fixture, not from the demo output. If an answer does not agree with the fixture, the demo prints `Result: failed` and exits with status 1. The full trace is in `loop/scenario-results.json`.
+The expected values come from the `expected` field of the fixture, not from the demo output. If an answer does not agree with the fixture, the demo prints `Result: failed` and exits with status 1. The full trace is in `<work>/loop/scenario-results.json`.
 
 ## Limits
 

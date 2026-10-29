@@ -86,9 +86,11 @@ try:
  expected_loop=json.loads(Path(env['LIFECYCLE_FIXTURE']).read_text())['expected']
  summary=json.loads((w/'quickstart/summary.json').read_text()) if (w/'quickstart/summary.json').exists() else {}
  check('quickstart','Does the one-command demo build the verified host identity and reach the fixture answer, replay and restatement?',
-       quick.returncode==0 and summary.get('implementation_ref')==host_build['implementation_ref'] and summary['answer']['value'] is expected_loop['future_november_reviewed']
-       and summary['replay']['value'] is expected_loop['pinned_replay'] and summary['restatement']['value'] is expected_loop['later_restatement'],
-       {'exit_code':quick.returncode,'expected':expected_loop,'summary':summary})
+       quick.returncode==0 and summary.get('status')=='passed' and summary.get('implementation_ref')==host_build['implementation_ref']
+       and summary.get('answer',{}).get('value') is expected_loop['future_november_reviewed']
+       and summary.get('replay',{}).get('value') is expected_loop['pinned_replay'] and summary.get('restatement',{}).get('value') is expected_loop['later_restatement']
+       and summary['replay']['snapshot_ref']==summary['answer']['snapshot_ref'] and summary['restatement']['snapshot_ref']==summary['correction']['snapshot_ref'],
+       {'exit_code':quick.returncode,'stdout':quick.stdout,'stderr':quick.stderr,'expected':expected_loop,'summary':summary})
  check('source-unchanged','Did verification leave every candidate byte unchanged?',inventory()==before,{'unchanged':inventory()==before})
 except Exception as error:checks.append({'name':'runner-completion','question':'Did standalone verification finish?','passed':False,'actual':repr(error)})
 finally:
