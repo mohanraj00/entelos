@@ -74,18 +74,24 @@ def report(summary):
  print()
  print('Entelos demo: each answer stays explainable after its rule changes.')
  print('The rule %s answers one question: can a user see this record?'%summary['function'])
+ rule=Path(summary['work'])/'record-bundle/rule.cel'
+ if rule.exists():
+  f=json.loads(FIXTURE.read_text());i,a=f['initial'],f['amendment']
+  print('  Rule:   %s'%rule.read_text().strip())
+  print('  Values: allowed_state is "%s" from %s, then "%s" from %s.'%(i['allowed_state'],i['from'],a['allowed_state'],a['from']))
  print()
  if 'restatement' in summary:
   s=summary;c=s['correction']
   record='"%s"%s'%(s['input'].get('state'),'' if s['input'].get('archived') else ', not archived')
   print('  1. Answer       Is a %s record visible on %s? -> %s (expected %s)'%(record,s['date'],v(s['answer']['value']),v(expected['future_november_reviewed'])))
-  print('                  A receipt saves the exact rule version, input and answer.')
-  print('  2. Correction   A reviewer changes the visible state from "%s" to "%s".'%(c['from_state'],c['to_state']))
+  print('                  A receipt in the Git store saves the exact rule version, input and answer.')
+  print('  2. Rule change  A reviewer changes allowed_state from "%s" to "%s".'%(c['from_state'],c['to_state']))
   print('                  This makes a new rule version. The old version and the receipt stay.')
   print('  3. Replay       Why was the answer %s? Run the receipt on its old rule version. -> %s (expected %s)'%(v(s['answer']['value']),v(s['replay']['value']),v(expected['pinned_replay'])))
-  print('  4. Restatement  What is the answer for the same record under the new rule? -> %s (expected %s)'%(v(s['restatement']['value']),v(expected['later_restatement'])))
+  print('  4. Restatement  Under the new rule, what is the answer for the same record and date? -> %s (expected %s)'%(v(s['restatement']['value']),v(expected['later_restatement'])))
   print('                  This is a new, separate answer. The first answer stays in the history.')
   print()
+  print('  The expected values come from the fixture file, not from this run.')
   print('  Records: build %s, receipt %s, old rule %s,'%(short(s['implementation_ref']),short(s['answer']['receipt_ref']),short(s['answer']['snapshot_ref'])))
   print('           new rule %s, change event %s (cel-go %s)'%(short(c['snapshot_ref']),short(c['event_ref']),s['cel_go']))
  if summary['loop_error']:print('  The loop failed: %s'%summary['loop_error'])

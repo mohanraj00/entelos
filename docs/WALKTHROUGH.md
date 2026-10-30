@@ -31,7 +31,7 @@ export TASK_WORK="$HOME/scratch/entelos-walk-1"
 python3 -B verify.py --work "$TASK_WORK"
 ```
 
-The last line is `{"passed": 17, "failed": 0}`. The runner builds the host at `$TASK_WORK/bin/cel-handoff` and the record bundle at `$TASK_WORK/record-bundle`. If the runner fails, read `$TASK_WORK/results.json` and the logs in `$TASK_WORK/runs/`. The runner does not reuse a work directory. For each new run, use a new directory.
+The last line gives the number of passed and failed checks. A complete run has `"failed": 0`. The runner builds the host at `$TASK_WORK/bin/cel-handoff` and the record bundle at `$TASK_WORK/record-bundle`. If the runner fails, read `$TASK_WORK/results.json` and the logs in `$TASK_WORK/runs/`. The runner does not reuse a work directory. For each new run, use a new directory.
 
 Set these names for the subsequent steps:
 

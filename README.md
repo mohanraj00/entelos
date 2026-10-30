@@ -17,7 +17,7 @@ A service often asks a rule for an answer, and people change that rule over time
 
 ## Run the demo
 
-Entelos does this with [CEL](https://cel.dev) rules and a local Git history. The demo runs one invented rule through an answer, a correction, a replay and a restatement.
+Entelos does this with [CEL](https://cel.dev) rules and a local Git history. The demo runs one invented rule through an answer, a rule change, a replay and a restatement. One run on a Mac took about 1.5 minutes.
 
 ### 1. Install the tools
 
@@ -52,23 +52,26 @@ This is the output of one run. The hashes in your run can differ.
 ```text
 Entelos demo: each answer stays explainable after its rule changes.
 The rule record.visible answers one question: can a user see this record?
+  Rule:   state == allowed_state && !archived
+  Values: allowed_state is "ready" from 2026-10-01, then "reviewed" from 2026-11-01.
 
   1. Answer       Is a "reviewed", not archived record visible on 2026-11-15? -> true (expected true)
-                  A receipt saves the exact rule version, input and answer.
-  2. Correction   A reviewer changes the visible state from "reviewed" to "approved".
+                  A receipt in the Git store saves the exact rule version, input and answer.
+  2. Rule change  A reviewer changes allowed_state from "reviewed" to "approved".
                   This makes a new rule version. The old version and the receipt stay.
   3. Replay       Why was the answer true? Run the receipt on its old rule version. -> true (expected true)
-  4. Restatement  What is the answer for the same record under the new rule? -> false (expected false)
+  4. Restatement  Under the new rule, what is the answer for the same record and date? -> false (expected false)
                   This is a new, separate answer. The first answer stays in the history.
 
-  Records: build sha256:94ac3b7b4d34..., receipt sha256:d03ee278baeb..., old rule sha256:66e12e967a63...,
+  The expected values come from the fixture file, not from this run.
+  Records: build sha256:94ac3b7b4d34..., receipt sha256:47121ec901a7..., old rule sha256:66e12e967a63...,
            new rule sha256:9e30a2cd3dac..., change event sha256:78730c528391... (cel-go v0.32.0)
 Result: passed. Details: <TASK_WORK>/summary.json
 Next: read "After the demo" in README.md.
 ```
 
 - **Answer:** the service asks the rule a question. The receipt keeps the exact rule version and input.
-- **Correction:** a reviewer changes the rule. The change is a new version. Nothing old is edited.
+- **Rule change:** a reviewer changes the rule value. The change is a new version. Nothing old is edited. [CORRECTION.md](docs/CORRECTION.md) calls this path a rule restatement, and it also explains a fact correction.
 - **Replay:** you can still show why the first answer was `true`, because its rule version still exists.
 - **Restatement:** the same question under the new rule gives `false`. You now have two answers, and each one has its own record.
 
@@ -120,9 +123,10 @@ The complete source-to-correction workflow is reproducible here. Production adap
 
 ## Run all checks
 
-Use Python, Go and Git. See [SUPPORT.md](docs/SUPPORT.md) for the tested toolchain and limits. Choose a new scratch directory outside this checkout:
+Use Python, Go and Git. See [SUPPORT.md](docs/SUPPORT.md) for the tested toolchain and limits. Use a new work directory, not the demo directory. One run on a Mac took about 10 minutes, and the runner prints its result only at the end.
 
 ```sh
+export TASK_WORK="$(mktemp -d)/run"
 python3 -B verify.py --work "$TASK_WORK"
 ```
 
