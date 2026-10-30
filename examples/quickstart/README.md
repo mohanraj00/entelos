@@ -19,9 +19,9 @@ Use a new path outside this checkout for `--work`. The directory must not exist.
 
 - The build identity of the host.
 - The answer: on 2026-11-15, the record `{"state":"reviewed","archived":false}` is visible. The answer has a receipt.
-- The correction: the approved visible state changes from `reviewed` to `approved`. A reviewer activates it as a new event.
+- The rule change: the allowed state changes from `reviewed` to `approved`. A reviewer activates it as a new event. The `correction` field of `summary.json` holds this change.
 - The replay: the earlier receipt, on its pinned snapshot, gives the same answer again.
-- The restatement: the same input under the correction gives a new, separate answer.
+- The restatement: the same input under the rule change gives a new, separate answer.
 
 The expected values come from the `expected` field of the fixture, not from the demo output. The full trace is in `<work>/loop/scenario-results.json`.
 

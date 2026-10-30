@@ -82,7 +82,7 @@ def report(summary):
  print()
  if 'restatement' in summary:
   s=summary;c=s['correction']
-  record='"%s"%s'%(s['input'].get('state'),'' if s['input'].get('archived') else ', not archived')
+  record='"%s", %s'%(s['input'].get('state'),'archived' if s['input'].get('archived') else 'not archived')
   print('  1. Answer       Is a %s record visible on %s? -> %s (expected %s)'%(record,s['date'],v(s['answer']['value']),v(expected['future_november_reviewed'])))
   print('                  A receipt in the Git store saves the exact rule version, input and answer.')
   print('  2. Rule change  A reviewer changes allowed_state from "%s" to "%s".'%(c['from_state'],c['to_state']))
@@ -92,8 +92,9 @@ def report(summary):
   print('                  This is a new, separate answer. The first answer stays in the history.')
   print()
   print('  The expected values come from the fixture file, not from this run.')
-  print('  Records: build %s, receipt %s, old rule %s,'%(short(s['implementation_ref']),short(s['answer']['receipt_ref']),short(s['answer']['snapshot_ref'])))
-  print('           new rule %s, change event %s (cel-go %s)'%(short(c['snapshot_ref']),short(c['event_ref']),s['cel_go']))
+  print('  Records: receipt %s, old rule %s,'%(short(s['answer']['receipt_ref']),short(s['answer']['snapshot_ref'])))
+  print('           new rule %s, change event %s'%(short(c['snapshot_ref']),short(c['event_ref'])))
+ print('  Build:   %s (cel-go %s)'%(short(summary['implementation_ref']),summary['cel_go']))
  if summary['loop_error']:print('  The loop failed: %s'%summary['loop_error'])
  for error in summary['errors']:print('  Error: %s'%error)
  for name in summary['failed_checks']:print('  Failed comparison: %s'%name)

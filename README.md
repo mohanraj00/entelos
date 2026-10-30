@@ -27,7 +27,7 @@ Entelos does this with [CEL](https://cel.dev) rules and a local Git history. The
 | Python | 3 (tested with 3.14.6) | `python3 --version` | [python.org/downloads](https://www.python.org/downloads/) |
 | Git | tested with 2.54.0 | `git --version` | [git-scm.com/downloads](https://git-scm.com/downloads) |
 
-You also need network access. The demo downloads the pinned Go modules on each run. macOS and Linux are tested. Windows is not tested. The demo checks Go and Git before it starts, and it tells you if one is missing or too old.
+You also need network access. The demo downloads the pinned Go modules on each run. macOS and Linux are tested. Windows is not tested. Before it starts, the demo checks that Go and Git are installed and that Go is 1.27.2 or later. It does not check the Git or Python version.
 
 ### 2. Get the code
 
@@ -64,8 +64,9 @@ The rule record.visible answers one question: can a user see this record?
                   This is a new, separate answer. The first answer stays in the history.
 
   The expected values come from the fixture file, not from this run.
-  Records: build sha256:94ac3b7b4d34..., receipt sha256:47121ec901a7..., old rule sha256:66e12e967a63...,
-           new rule sha256:9e30a2cd3dac..., change event sha256:78730c528391... (cel-go v0.32.0)
+  Records: receipt sha256:47121ec901a7..., old rule sha256:66e12e967a63...,
+           new rule sha256:9e30a2cd3dac..., change event sha256:78730c528391...
+  Build:   sha256:94ac3b7b4d34... (cel-go v0.32.0)
 Result: passed. Details: <TASK_WORK>/summary.json
 Next: read "After the demo" in README.md.
 ```
