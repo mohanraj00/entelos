@@ -92,6 +92,7 @@ def report(summary):
   print('                  This is a new, separate answer. The first answer stays in the history.')
   print()
   print('  The expected values come from the fixture file, not from this run.')
+  print('  Input:   %s'%json.dumps(s['input'],separators=(',',':')))
   print('  Records: receipt %s, old rule %s,'%(short(s['answer']['receipt_ref']),short(s['answer']['snapshot_ref'])))
   print('           new rule %s, change event %s'%(short(c['snapshot_ref']),short(c['event_ref'])))
  print('  Build:   %s (cel-go %s)'%(short(summary['implementation_ref']),summary['cel_go']))
@@ -106,11 +107,17 @@ def check_tools(p):
  # Check the tools before the build, so that a missing tool gives a clear error and the work path stays free.
  for tool,url in [('go','https://go.dev/dl/'),('git','https://git-scm.com/downloads')]:
   if not shutil.which(tool):p.error('%s is not on PATH. Install it from %s, then run the demo again.'%(tool,url))
- out=subprocess.run(['go','version'],capture_output=True,text=True,env=os.environ|{'GOTOOLCHAIN':'local'}).stdout
- m=re.search(r'go(\d+)\.(\d+)(?:\.(\d+))?',out)
- found=tuple(int(x or 0) for x in m.groups()) if m else None
- if found is None or found<GO_MIN:
-  p.error('Go %s or later is necessary; found %s. Install it from https://go.dev/dl/, then run the demo again.'%('.'.join(map(str,GO_MIN)),out.strip() or 'no version'))
+ problem=go_problem(subprocess.run(['go','version'],capture_output=True,text=True,env=os.environ|{'GOTOOLCHAIN':'local'}))
+ if problem:p.error(problem)
+
+def go_problem(result):
+ """Return the reason that the `go version` result is not usable, or None. A devel build passes; the build step then shows its own error."""
+ need='Go %s or later is necessary'%'.'.join(map(str,GO_MIN));fix='Install it from https://go.dev/dl/, then run the demo again.'
+ if result.returncode:return '%s, but `go version` failed (exit %d): %s. %s'%(need,result.returncode,(result.stderr or result.stdout).strip() or 'no output',fix)
+ if re.search(r'\bgo version devel\b',result.stdout):return None
+ m=re.search(r'go(\d+)\.(\d+)(?:\.(\d+))?',result.stdout)
+ if m and tuple(int(x or 0) for x in m.groups())>=GO_MIN:return None
+ return '%s; found %s. %s'%(need,result.stdout.strip() or 'no version',fix)
 
 def main():
  p=argparse.ArgumentParser(description=__doc__)

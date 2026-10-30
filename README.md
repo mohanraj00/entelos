@@ -64,6 +64,7 @@ The rule record.visible answers one question: can a user see this record?
                   This is a new, separate answer. The first answer stays in the history.
 
   The expected values come from the fixture file, not from this run.
+  Input:   {"state":"reviewed","archived":false}
   Records: receipt sha256:47121ec901a7..., old rule sha256:66e12e967a63...,
            new rule sha256:9e30a2cd3dac..., change event sha256:78730c528391...
   Build:   sha256:94ac3b7b4d34... (cel-go v0.32.0)
