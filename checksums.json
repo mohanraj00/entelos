@@ -18,7 +18,7 @@
   "GEMINI.md": "aedcc26287ae0d997e03d296f16041932e82e6b41220b1cf42e1ad315eb74bd7",
   "LICENSE": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
   "NOTICE": "e6d14cd939a382417f017023beb072f09c10a21e259dab84fdc7ff78d91071bf",
-  "README.md": "48e69238d0124967f6470a5bbb166d397fc3371fae8f3c2d0162cb6a96a4f4a6",
+  "README.md": "db98904c3af84a4f97280633172c84e63193c4b5d4a75faeda23c78c36a7db37",
   "SECURITY.md": "d91d9a0aee4a9ae3cf2158793fbb6bcdb76bf271ecf3519e553451202fc5cab7",
   "docs/BACKLOG.md": "9abd79ebcef1fbc73b16a99e681e8b2324c46f39ebb65022774e1d6fd3d6dee0",
   "docs/CONTRACTS.md": "a67a1008d3a925955c8151da13c4b48fec2df1dc2834352972b194c209fc4dc4",
@@ -54,7 +54,7 @@
   "examples/ci-trigger/run.py": "f90945cc3522396dd444e44c7e6ac90ab0f630b24b453308c106219c1395e1cf",
   "examples/ci-trigger/support.py": "c637e908b27a4a8d808b118bca72f83ba7ae96b03416b27a1710fefd09aa0b28",
   "examples/quickstart/README.md": "7923f8305514bba3f01c8e83a7cb38c6328279e00988956c50cfe976e3df5ac0",
-  "examples/quickstart/demo.py": "c39675dff507ba74ada3f2b21fbd7e7f608a088f5f6a04b6829d47dacf4bb0e7",
+  "examples/quickstart/demo.py": "fc240663d47805c7393ffee7440b44eab51c84053abe976e960ace6d82165cc5",
   "examples/quickstart/test_demo.py": "305dee84698b14a650e99ed90bf7802b8bca8323a6f031a4572753d6d0527a29",
   "licenses/THIRD_PARTY.md": "e57b063622ac4563916b67dfd53d93c76f82c6af432b006715188b6c0f9596b6",
   "licenses/dependencies/cel.dev__cel-go__LICENSE.txt": "4cdb9af102dfbb0ca03d87d6f650a505df098646a4080f4665b389ad9c6caa02",
@@ -92,5 +92,5 @@
   "tools/classify_change.py": "be24b68b179d2a45189a0a1b55dde0cd8df73d9004fd1ec53ffccc26ab7b7d2c",
   "tools/cross_review.py": "b69f65ccc0051a7fd9b8e2c7f9fbb3673b8ad49b0e06123c88678cd3a8d76bac",
   "tools/pr_policy.py": "ac1312b707d39dd7a8c6431724c1a5f424cce70f7a708ecacc6760274769fc7d",
-  "verify.py": "9764044e9f798397155e1104049e41a2852aae69aee1b338be81dac72ddf4006"
+  "verify.py": "f178270925042416d645973aff7a8e58409bc6eb50ab23fa553db3f38d23b984"
 }
