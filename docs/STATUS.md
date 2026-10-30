@@ -24,7 +24,15 @@ On 2026-10-29, the code moved to `src/` and `examples/`, the boundary test moved
 
 ## Next work
 
-Use [BACKLOG.md](BACKLOG.md) and the linked GitHub issues. Full-suite CI reproduction ([issue #2](https://github.com/mohanraj00/entelos/issues/2)) is complete. Start with the clean-run caller and correction walkthrough. It is the first item of milestone M1 in [BACKLOG.md](BACKLOG.md#milestones-to-a-public-announcement). Keep caller walkthrough and input-correction documentation bounded to the existing examples. Numeric/structured profiles, production DBs, authentication gateways and resident-worker coordination are outside the current implemented scope.
+Use [BACKLOG.md](BACKLOG.md) and the linked GitHub issues. On 2026-10-30, the M1 work was complete in `main` (merge commit `e844246`):
+
+- [WALKTHROUGH.md](WALKTHROUGH.md) gives the typed caller and the correction (issue #3).
+- [CORRECTION.md](CORRECTION.md) explains a fact correction and a rule restatement (issue #4).
+- `examples/quickstart/demo.py` runs the answer, correction, replay and restatement in one command. `verify.py` compares its results with the fixture and checks the failure evidence (issues #15 and #27).
+- The README states the problem first and shows the [decision path diagram](diagrams/decision-path.svg) (issues #16 and #17).
+- [FIRST_CONTACT.md](FIRST_CONTACT.md) and the first-contact issue form are the kit for the exit test (issues #18 and #25).
+
+The M1 exit test has not run. The maintainer runs the first-contact sessions and records the results on [issue #10](https://github.com/mohanraj00/entelos/issues/10). M2 starts from the first three questions of those engineers. Keep caller walkthrough and input-correction documentation bounded to the existing examples. Numeric/structured profiles, production DBs, authentication gateways and resident-worker coordination are outside the current implemented scope.
 
 ## Handoff rule
 
