@@ -15,7 +15,7 @@ p.add_argument('--work',type=Path,required=True)
 p.add_argument('--skills',type=Path,help='optional clean public author-tools checkout at the pinned revision')
 a=p.parse_args();w=a.work.resolve()
 if w==ROOT or ROOT in w.parents:p.error('work must be outside this source tree')
-if w.exists():p.error('use a fresh work directory; prior runs are preserved')
+if w.exists():p.error('%s already exists. Choose a path that does not exist, for example --work "$(mktemp -d)/run". An earlier run is not overwritten.'%w)
 for name in ['runs','bin','tmp','cache/build','cache/mod','cache/gopath','cache/telemetry']:(w/name).mkdir(parents=True,exist_ok=True)
 (w/'cache/telemetry/mode').write_text('off\n')
 env={k:v for k,v in os.environ.items() if not k.startswith('GIT_')}|{
