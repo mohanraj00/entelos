@@ -2,6 +2,8 @@
 
 This walkthrough uses the existing neutral record filter, `record.visible`. It goes from the author bundle to a typed call, qualification, activation, correction and pinned replay. It uses only the commands and records that are in this repository. It adds no API.
 
+To run this scenario with one command, use the [quickstart demo](../examples/quickstart/README.md).
+
 The rule is invented: a record is visible when its `state` equals the host's fixed `allowed_state` and `archived` is false. The source is [scope-fixture.json](../src/cel-handoff/testdata/scope-fixture.json). The dated lifecycle values are in [lifecycle-scenario.json](../src/cel-lifecycle/fixtures/lifecycle-scenario.json).
 
 ## Who supplies what
