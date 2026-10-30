@@ -7,6 +7,7 @@ import os
 from pathlib import Path
 import subprocess
 import sys
+import time
 
 ROOT=Path(__file__).resolve().parent
 PIN='5eac36c53cd8971fa1e5548374238183e0d8b302'
@@ -30,11 +31,13 @@ env={k:v for k,v in os.environ.items() if not k.startswith('GIT_')}|{
 for key in list(os.environ):
  if key.startswith('GIT_'):os.environ.pop(key)
 os.environ.update(env)
-commands=[];checks=[]
+commands=[];checks=[];start=time.monotonic()
 def inventory():
  return {str(p.relative_to(ROOT)):hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted(ROOT.rglob('*')) if p.is_file()}
 def write(path,value):path.write_text(json.dumps(value,indent=2,ensure_ascii=False)+'\n')
 def run(name,args,cwd=ROOT):
+ # Each stage prints one progress line to stderr. Stdout keeps only the final summary JSON.
+ print('verify: %4ds start %s'%(time.monotonic()-start,name),file=sys.stderr,flush=True)
  result=subprocess.run([str(x) for x in args],cwd=cwd,env=env,capture_output=True,text=True)
  record={'name':name,'args':[str(x) for x in args],'cwd':str(cwd),'exit_code':result.returncode,'stdout':result.stdout,'stderr':result.stderr}
  commands.append(record);write(w/'runs'/(name+'.json'),record);return result
