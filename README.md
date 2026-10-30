@@ -89,7 +89,12 @@ These are the two requests for the record filter. The service copies the two val
 {"op":"invoke","function":"record.visible","date":"2026-11-15","inputs":{"state":"reviewed","archived":false},"expected_bundle_ref":"<data.callable.bundle_ref>","expected_revision":"<data.cursor>","request_key":"walk-november"}
 ```
 
-If the call succeeds, the response has `"status":"ok"` and the answer in `data.result.actual.value`. The store also records a receipt for the call. Its identity is in `data.result.receipt_ref`. If the call fails, the response has a refusal status, for example `revision_not_loaded`, and no answer.
+Check two status fields before you read the answer:
+
+1. The outer `status`. If the lifecycle refuses the call, this field has a refusal status, for example `revision_not_loaded`, and the response has no result.
+2. `data.result.actual.status`. The rule host can reject the inputs after the lifecycle accepts the call. Then the outer status is `ok`, but this field is `invalid_input`, and `data.result.actual` has no `value`.
+
+The answer is in `data.result.actual.value` only if both fields are `ok`. The store records a receipt for each call that the lifecycle accepts, also for a rejected input. Its identity is in `data.result.receipt_ref`.
 
 [client.py](src/cel-lifecycle/client.py) is a short caller that sends these two requests. It starts `cli.py` once for each request. The service does not send the rule text, the fixed values or the test cases. Step 6 of [WALKTHROUGH.md](docs/WALKTHROUGH.md#6-call-as-a-caller) gives the full command. The `unchanged-caller-client` check in [examples/ci-trigger/run.py](examples/ci-trigger/run.py) runs `client.py` in each `verify.py` run.
 
