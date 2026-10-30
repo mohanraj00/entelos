@@ -83,6 +83,7 @@ The `expected` values come from a fixture file, not from the demo. `Result: pass
 
 | If you want to | Read |
 |---|---|
+| Know how a service calls a rule, why not a plain function and log, and what a correction date means | [COMPARISON.md](docs/COMPARISON.md) |
 | See the same steps with the commands and records | [WALKTHROUGH.md](docs/WALKTHROUGH.md) |
 | Know the difference between a fact correction and a rule change | [CORRECTION.md](docs/CORRECTION.md) |
 | Call or author a rule from your own service | [CONTRACTS.md](docs/CONTRACTS.md), then [INTEGRATION.md](docs/INTEGRATION.md) |
