@@ -4,12 +4,15 @@ import argparse
 import json
 import os
 from pathlib import Path
+import re
+import shutil
 import subprocess
 import sys
 
 ROOT=Path(__file__).resolve().parents[2]
 LIFE=ROOT/'src/cel-lifecycle'
 FIXTURE=LIFE/'fixtures/lifecycle-scenario.json'
+GO_MIN=(1,27,2)
 
 class MissingStep(Exception):pass
 def find(trace,name):
@@ -67,29 +70,47 @@ def summarize(w,fixture,build,loop):
 
 def short(ref):return str(ref)[:19]+'...'
 def report(summary):
- expected=summary['expected']
+ expected=summary['expected'];v=lambda x:json.dumps(x)
  print()
- print('Record-filter loop for %s'%summary['function'])
- print('  Build identity: %s (cel-go %s)'%(short(summary['implementation_ref']),summary['cel_go']))
+ print('Entelos demo: each answer stays explainable after its rule changes.')
+ print('The rule %s answers one question: can a user see this record?'%summary['function'])
+ print()
  if 'restatement' in summary:
-  s=summary;q=json.dumps(s['input'],separators=(',',':'))
-  print('  1. Answer:      on %s, %s -> %s (fixture expects %s)'%(s['date'],q,json.dumps(s['answer']['value']),json.dumps(expected['future_november_reviewed'])))
-  print('                  receipt %s, snapshot %s'%(short(s['answer']['receipt_ref']),short(s['answer']['snapshot_ref'])))
-  print('  2. Correction:  visible state "%s" -> "%s", activated as event %s'%(s['correction']['from_state'],s['correction']['to_state'],short(s['correction']['event_ref'])))
-  print('                  new snapshot %s; the earlier receipt stays'%short(s['correction']['snapshot_ref']))
-  print('  3. Replay:      the same receipt on its pinned snapshot -> %s (fixture expects %s)'%(json.dumps(s['replay']['value']),json.dumps(expected['pinned_replay'])))
-  print('  4. Restatement: the same input under the correction -> %s (fixture expects %s)'%(json.dumps(s['restatement']['value']),json.dumps(expected['later_restatement'])))
+  s=summary;c=s['correction']
+  record='"%s"%s'%(s['input'].get('state'),'' if s['input'].get('archived') else ', not archived')
+  print('  1. Answer       Is a %s record visible on %s? -> %s (expected %s)'%(record,s['date'],v(s['answer']['value']),v(expected['future_november_reviewed'])))
+  print('                  A receipt saves the exact rule version, input and answer.')
+  print('  2. Correction   A reviewer changes the visible state from "%s" to "%s".'%(c['from_state'],c['to_state']))
+  print('                  This makes a new rule version. The old version and the receipt stay.')
+  print('  3. Replay       Why was the answer %s? Run the receipt on its old rule version. -> %s (expected %s)'%(v(s['answer']['value']),v(s['replay']['value']),v(expected['pinned_replay'])))
+  print('  4. Restatement  What is the answer for the same record under the new rule? -> %s (expected %s)'%(v(s['restatement']['value']),v(expected['later_restatement'])))
+  print('                  This is a new, separate answer. The first answer stays in the history.')
+  print()
+  print('  Records: build %s, receipt %s, old rule %s,'%(short(s['implementation_ref']),short(s['answer']['receipt_ref']),short(s['answer']['snapshot_ref'])))
+  print('           new rule %s, change event %s (cel-go %s)'%(short(c['snapshot_ref']),short(c['event_ref']),s['cel_go']))
  if summary['loop_error']:print('  The loop failed: %s'%summary['loop_error'])
  for error in summary['errors']:print('  Error: %s'%error)
  for name in summary['failed_checks']:print('  Failed comparison: %s'%name)
  if summary['loop_output']['exit_code']:print('  The scenario stdout and stderr are in summary.json (loop_output).')
  print('Result: %s. Details: %s'%(summary['status'],Path(summary['work'])/'summary.json'))
+ if summary['status']=='passed':print('Next: read "After the demo" in README.md.')
+
+def check_tools(p):
+ # Check the tools before the build, so that a missing tool gives a clear error and the work path stays free.
+ for tool,url in [('go','https://go.dev/dl/'),('git','https://git-scm.com/downloads')]:
+  if not shutil.which(tool):p.error('%s is not on PATH. Install it from %s, then run the demo again.'%(tool,url))
+ out=subprocess.run(['go','version'],capture_output=True,text=True,env=os.environ|{'GOTOOLCHAIN':'local'}).stdout
+ m=re.search(r'go(\d+)\.(\d+)(?:\.(\d+))?',out)
+ found=tuple(int(x or 0) for x in m.groups()) if m else None
+ if found is None or found<GO_MIN:
+  p.error('Go %s or later is necessary; found %s. Install it from https://go.dev/dl/, then run the demo again.'%('.'.join(map(str,GO_MIN)),out.strip() or 'no version'))
 
 def main():
  p=argparse.ArgumentParser(description=__doc__)
  p.add_argument('--work',type=Path,required=True,help='new directory outside this source tree')
  a=p.parse_args();w=a.work.resolve()
  if w==ROOT or ROOT in w.parents:p.error('work must be outside this source tree')
+ check_tools(p)
  if w.exists():p.error('%s already exists. Choose a path that does not exist, for example --work "$(mktemp -d)/run". An earlier run is not overwritten.'%w)
  for name in ['bin','tmp','cache/build','cache/mod','cache/gopath','cache/telemetry']:(w/name).mkdir(parents=True,exist_ok=True)
  (w/'cache/telemetry/mode').write_text('off\n')

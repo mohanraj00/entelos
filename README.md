@@ -17,28 +17,74 @@ A service often asks a rule for an answer, and people change that rule over time
 
 ## Run the demo
 
-Entelos is a runnable reference that does this with [CEL](https://cel.dev) rules and a local Git history. Use Go, Python 3, Git and network access. Set `TASK_WORK` to a path outside this checkout that does not exist yet. The demo makes this directory, and it does not overwrite an earlier run. Then run the demo:
+Entelos does this with [CEL](https://cel.dev) rules and a local Git history. The demo runs one invented rule through an answer, a correction, a replay and a restatement.
+
+### 1. Install the tools
+
+| Tool | Version | Check | Install |
+|---|---|---|---|
+| Go | 1.27.2 or later | `go version` | [go.dev/dl](https://go.dev/dl/) |
+| Python | 3 (tested with 3.14.6) | `python3 --version` | [python.org/downloads](https://www.python.org/downloads/) |
+| Git | tested with 2.54.0 | `git --version` | [git-scm.com/downloads](https://git-scm.com/downloads) |
+
+You also need network access. The demo downloads the pinned Go modules on each run. macOS and Linux are tested. Windows is not tested. The demo checks Go and Git before it starts, and it tells you if one is missing or too old.
+
+### 2. Get the code
+
+```sh
+git clone https://github.com/mohanraj00/entelos.git
+cd entelos
+```
+
+### 3. Run the demo
+
+The demo writes to a new directory outside this checkout. The directory must not exist. The demo does not overwrite an earlier run.
 
 ```sh
 export TASK_WORK="$(mktemp -d)/run"
 python3 -B examples/quickstart/demo.py --work "$TASK_WORK"
 ```
 
-The demo builds the host, runs one invented record filter through answer, correction, replay and restatement, and compares each answer with the fixture. This is the output of one run. The hashes in your run can differ.
+### 4. Read the output
+
+This is the output of one run. The hashes in your run can differ.
 
 ```text
-Record-filter loop for record.visible
-  Build identity: sha256:94ac3b7b4d34... (cel-go v0.32.0)
-  1. Answer:      on 2026-11-15, {"state":"reviewed","archived":false} -> true (fixture expects true)
-                  receipt sha256:e890475b3547..., snapshot sha256:66e12e967a63...
-  2. Correction:  visible state "reviewed" -> "approved", activated as event sha256:78730c528391...
-                  new snapshot sha256:9e30a2cd3dac...; the earlier receipt stays
-  3. Replay:      the same receipt on its pinned snapshot -> true (fixture expects true)
-  4. Restatement: the same input under the correction -> false (fixture expects false)
+Entelos demo: each answer stays explainable after its rule changes.
+The rule record.visible answers one question: can a user see this record?
+
+  1. Answer       Is a "reviewed", not archived record visible on 2026-11-15? -> true (expected true)
+                  A receipt saves the exact rule version, input and answer.
+  2. Correction   A reviewer changes the visible state from "reviewed" to "approved".
+                  This makes a new rule version. The old version and the receipt stay.
+  3. Replay       Why was the answer true? Run the receipt on its old rule version. -> true (expected true)
+  4. Restatement  What is the answer for the same record under the new rule? -> false (expected false)
+                  This is a new, separate answer. The first answer stays in the history.
+
+  Records: build sha256:94ac3b7b4d34..., receipt sha256:d03ee278baeb..., old rule sha256:66e12e967a63...,
+           new rule sha256:9e30a2cd3dac..., change event sha256:78730c528391... (cel-go v0.32.0)
 Result: passed. Details: <TASK_WORK>/summary.json
+Next: read "After the demo" in README.md.
 ```
 
-[examples/quickstart/README.md](examples/quickstart/README.md) explains each line and the failure output.
+- **Answer:** the service asks the rule a question. The receipt keeps the exact rule version and input.
+- **Correction:** a reviewer changes the rule. The change is a new version. Nothing old is edited.
+- **Replay:** you can still show why the first answer was `true`, because its rule version still exists.
+- **Restatement:** the same question under the new rule gives `false`. You now have two answers, and each one has its own record.
+
+The `expected` values come from a fixture file, not from the demo. `Result: passed` means that each answer agrees with the fixture. [examples/quickstart/README.md](examples/quickstart/README.md) explains `summary.json` and the failure output.
+
+## After the demo
+
+| If you want to | Read |
+|---|---|
+| See the same steps with the commands and records | [WALKTHROUGH.md](docs/WALKTHROUGH.md) |
+| Know the difference between a fact correction and a rule change | [CORRECTION.md](docs/CORRECTION.md) |
+| Call or author a rule from your own service | [CONTRACTS.md](docs/CONTRACTS.md), then [INTEGRATION.md](docs/INTEGRATION.md) |
+| Compare Entelos with a tool you know | [OPA](docs/compare/opa.md), [Cedar](docs/compare/cedar.md), [GoRules ZEN](docs/compare/zen.md), [feature flags](docs/compare/flags.md), [ordinary code and Git](docs/compare/code-git.md) |
+| Know what Entelos does not do | [Limits](#limits) and [SUPPORT.md](docs/SUPPORT.md) |
+| Run all the checks | [Run all checks](#run-all-checks) |
+| Ask a question or report a problem | [GitHub issues](https://github.com/mohanraj00/entelos/issues) |
 
 ## How a decision moves
 
