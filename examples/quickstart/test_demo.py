@@ -87,10 +87,35 @@ class QuickstartFailures(unittest.TestCase):
   summary=json.loads((w/'summary.json').read_text())
   self.assertEqual((summary['status'],summary['failed_step'],summary['stdout'],summary['stderr']),('failed','build-host','out\n','go: no network\n'))
 
+class QuickstartToolCheck(unittest.TestCase):
+ def go(self,code,stdout,stderr=''):return demo.go_problem(subprocess.CompletedProcess(['go','version'],code,stdout,stderr))
+ def test_control_the_pinned_go_passes(self):self.assertIsNone(self.go(0,'go version go1.27.2 darwin/arm64\n'))
+ def test_a_later_go_passes(self):self.assertIsNone(self.go(0,'go version go1.28 linux/amd64\n'))
+ def test_an_older_go_names_the_version(self):
+  problem=self.go(0,'go version go1.26.9 linux/amd64\n');self.assertIn('Go 1.27.2 or later is necessary; found go version go1.26.9',problem)
+ def test_a_failed_go_keeps_stderr(self):
+  problem=self.go(1,'','dyld: Library not loaded\n');self.assertIn('failed (exit 1): dyld: Library not loaded',problem)
+ def test_a_devel_go_passes(self):self.assertIsNone(self.go(0,'go version devel go1.28-abc123 linux/amd64\n'))
+
+class QuickstartReport(unittest.TestCase):
+ def report(self,summary):
+  out=io.StringIO()
+  with contextlib.redirect_stdout(out):demo.report(summary)
+  return out.getvalue()
+ def test_failure_before_the_restatement_keeps_the_build(self):
+  w=Path(tempfile.mkdtemp(dir=WORK));(w/'loop').mkdir();loop=subprocess.CompletedProcess(['scenario.py'],2,'','stopped\n')
+  summary=demo.summarize(w,FIXTURE,BUILD,loop);printed=self.report(summary)
+  self.assertNotIn('restatement',summary);self.assertIn('Build:   %s'%demo.short(BUILD['implementation_ref']),printed)
+ def test_an_archived_record_is_named(self):
+  w=Path(tempfile.mkdtemp(dir=WORK));(w/'loop').mkdir();(w/'loop/scenario-results.json').write_text(json.dumps(PASSED))
+  fixture=copy.deepcopy(FIXTURE);fixture['original_input']={'state':'reviewed','archived':True}
+  printed=self.report(demo.summarize(w,fixture,BUILD,subprocess.CompletedProcess(['scenario.py'],0,'','')))
+  self.assertIn('Is a "reviewed", archived record',printed);self.assertIn('Input:   {"state":"reviewed","archived":true}',printed)
+
 if __name__=='__main__':
  class Results(unittest.TextTestResult):
   def __init__(self,*a,**kw):super().__init__(*a,**kw);self.passed=[]
   def addSuccess(self,test):self.passed.append(test.id());super().addSuccess(test)
- r=unittest.TextTestRunner(verbosity=2,resultclass=Results).run(unittest.defaultTestLoader.loadTestsFromTestCase(QuickstartFailures))
+ r=unittest.TextTestRunner(verbosity=2,resultclass=Results).run(unittest.defaultTestLoader.loadTestsFromNames(['__main__.QuickstartFailures','__main__.QuickstartToolCheck','__main__.QuickstartReport']))
  record={'tests_run':r.testsRun,'passed':r.passed,'failures':[{'test':t.id(),'traceback':s} for t,s in r.failures],'errors':[{'test':t.id(),'traceback':s} for t,s in r.errors],'successful':r.wasSuccessful()}
  (WORK/'test-results.json').write_text(json.dumps(record,indent=2)+'\n');raise SystemExit(not r.wasSuccessful())
