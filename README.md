@@ -17,9 +17,10 @@ A service often asks a rule for an answer, and people change that rule over time
 
 ## Run the demo
 
-Entelos is a runnable reference that does this with [CEL](https://cel.dev) rules and a local Git history. Use Go, Python 3, Git and network access. Set `TASK_WORK` to a new path outside this checkout, then run:
+Entelos is a runnable reference that does this with [CEL](https://cel.dev) rules and a local Git history. Use Go, Python 3, Git and network access. Set `TASK_WORK` to a path outside this checkout that does not exist yet. The demo makes this directory, and it does not overwrite an earlier run. Then run the demo:
 
 ```sh
+export TASK_WORK="$(mktemp -d)/run"
 python3 -B examples/quickstart/demo.py --work "$TASK_WORK"
 ```
 
