@@ -24,15 +24,49 @@ On 2026-10-29, the code moved to `src/` and `examples/`, the boundary test moved
 
 ## Next work
 
-Use [BACKLOG.md](BACKLOG.md) and the linked GitHub issues. On 2026-10-30, the M1 work was complete in `main` (merge commit `e844246`):
+Use [BACKLOG.md](BACKLOG.md) and the linked GitHub issues. The next milestone is [M3 Copy proof](https://github.com/mohanraj00/entelos/issues/12).
+
+### M1 First contact
+
+On 2026-10-30, the M1 work was complete in `main` (merge commit `e844246`):
 
 - [WALKTHROUGH.md](WALKTHROUGH.md) gives the typed caller and the correction (issue #3).
 - [CORRECTION.md](CORRECTION.md) explains a fact correction and a rule restatement (issue #4).
 - `examples/quickstart/demo.py` runs the answer, correction, replay and restatement in one command. `verify.py` compares its results with the fixture and checks the failure evidence (issues #15 and #27).
 - The README states the problem first and shows the [decision path diagram](diagrams/decision-path.svg) (issues #16 and #17).
-- [FIRST_CONTACT.md](FIRST_CONTACT.md) and the first-contact issue form are the kit for the exit test (issues #18 and #25).
 
-The M1 exit test has not run. The maintainer runs the first-contact sessions and records the results on [issue #10](https://github.com/mohanraj00/entelos/issues/10). M2 starts from the first three questions of those engineers. Keep caller walkthrough and input-correction documentation bounded to the existing examples. Numeric/structured profiles, production DBs, authentication gateways and resident-worker coordination are outside the current implemented scope.
+On 2026-10-30, the maintainer dropped the observed first-contact sessions as the M1 exit test. The scope of that test was not clear, and most of it measured whether the docs were clear enough to run the demo. The maintainer ran the demo and found those problems in one session. The reason and the limits are on [issue #10](https://github.com/mohanraj00/entelos/issues/10). These changes replace the test:
+
+- PR #45 (merge `0375158`, issue #44): a clear error and a README line for the work directory.
+- PR #47 (merge `c3a2ece`, issue #46): a tools table, numbered steps, a demo output that explains each step, a Go and Git check before the build, and an "After the demo" table.
+- A fresh-context adversarial critic read the new README. Its findings are on PR #47.
+
+No engineer who does not know the project ran the demo. Nobody recorded whether the problem matters to an engineer. [FIRST_CONTACT.md](FIRST_CONTACT.md) and the first-contact issue form stay in the repo, but nobody used them.
+
+### M2 Comparison
+
+On 2026-10-30, the M2 work was complete in `main`:
+
+- Five pages in [compare/](compare/): OPA/Rego, Cedar, GoRules ZEN, feature-flag services and ordinary code plus Git (issues #33 to #37). Each page states where the other tool is the better choice.
+- [COMPARISON.md](COMPARISON.md) answers the three questions of the critic pass (PR #48, merge `49d5a7e`, issue #38).
+
+The M2 exit test was "the first three questions from the M1 engineers". The three questions of the critic replace them, because the first-contact sessions did not run.
+
+These parts of M2 were not run:
+
+- The Cedar blocks in [compare/cedar.md](compare/cedar.md) are proposed text from the Cedar docs. Nobody parsed, validated or authorized them.
+- Unleash, the GoRules BRMS and the OpenFeature SDK are described from their docs only.
+- No call cost, speed or effort was measured.
+
+These critic findings from PR #47 are open and have no issue yet:
+
+- An example of how a service calls a rule from its own code.
+- A command that opens a receipt from the demo.
+- The first-screen order: the tagline and the Limits note come before the problem.
+- Progress output from `verify.py` during its run of about 10 minutes.
+- Jargon in "What the examples show".
+
+Keep caller walkthrough and input-correction documentation bounded to the existing examples. Numeric/structured profiles, production DBs, authentication gateways and resident-worker coordination are outside the current implemented scope.
 
 ## Handoff rule
 
