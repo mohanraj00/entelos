@@ -9,6 +9,9 @@ GitHub issues own live status. This map identifies bounded work for this source 
 | [Run the full standalone reference suite in GitHub Actions](https://github.com/mohanraj00/entelos/issues/2) | Done: the `Full suite` workflow runs `verify.py` on `ubuntu-24.04`. |
 | [Add a clean-run typed caller and correction walkthrough](https://github.com/mohanraj00/entelos/issues/3) | Done: [WALKTHROUGH.md](WALKTHROUGH.md), merged in #23. |
 | [Explain supplied-fact correction versus rule restatement](https://github.com/mohanraj00/entelos/issues/4) | Done: [CORRECTION.md](CORRECTION.md), merged in #20. |
+| [Tell the user how to choose a new work directory](https://github.com/mohanraj00/entelos/issues/44) | Done: merged in #45. |
+| [Make the first run clear](https://github.com/mohanraj00/entelos/issues/46) | Done: tools table, demo output and next steps, merged in #47. |
+| [Answer the first three questions](https://github.com/mohanraj00/entelos/issues/38) | Done: [COMPARISON.md](COMPARISON.md), merged in #48. |
 
 ## Milestones to a public announcement
 
@@ -17,8 +20,8 @@ On 2026-10-29, the maintainer chose to announce Entelos as a source reference to
 | Milestone | Work | Exit test |
 |---|---|---|
 | M0 Bootstrap | Done: runnable reference, two examples, full-suite CI, Apache-2.0, cross-harness review, rename. | Met on 2026-10-29. |
-| [M1 First contact](https://github.com/mohanraj00/entelos/issues/10) | Done in `main` on 2026-10-30: issues 3 and 4, one demo command that shows an answer, a correction, a replay and a restatement, a README that states the problem first, one diagram of the complete path and the first-contact kit. | Not run yet. Two or three engineers who do not know the project run the demo from a clean clone without help. Each states the problem in one sentence. Their stop points are recorded. |
-| [M2 Comparison](https://github.com/mohanraj00/entelos/issues/11) | Compare OPA/Rego, Cedar, GoRules ZEN, feature-flag services and ordinary code plus Git. State where each one is the better choice. | The comparison answers the first three questions from the M1 engineers. |
+| [M1 First contact](https://github.com/mohanraj00/entelos/issues/10) | Done in `main` on 2026-10-30: issues 3 and 4, one demo command that shows an answer, a correction, a replay and a restatement, a README that states the problem first, one diagram of the complete path. Then a clear first run: issues 44 and 46. | Changed on 2026-10-30. The observed sessions are dropped (see #10). A maintainer run of the demo and an adversarial critic pass replace them. No outside engineer ran the demo. |
+| [M2 Comparison](https://github.com/mohanraj00/entelos/issues/11) | Done in `main` on 2026-10-30: compare OPA/Rego, Cedar, GoRules ZEN, feature-flag services and ordinary code plus Git, and state where each one is the better choice. [COMPARISON.md](COMPARISON.md) answers three first questions. | Met on 2026-10-30, with the three questions of the critic pass in place of the questions of the M1 engineers. The Cedar blocks were not run. |
 | [M3 Copy proof](https://github.com/mohanraj00/entelos/issues/12) | A third neutral example, written from the docs only, that copies or reuses `src/`. | The example passes `verify.py`. Each `src/` change that it needed is recorded as a finding. |
 | [M4 Contributor path](https://github.com/mohanraj00/entelos/issues/13) | `CONTRIBUTING.md`, issue templates, three to five starter issues, a review path for a human contributor without an agent harness, CI on Linux and macOS. | One outside pull request merges through the documented path. |
 | [M5 Snapshot and announcement](https://github.com/mohanraj00/entelos/issues/14) | A record format version field, a compatibility statement, a changelog, a `v0.1.0` tag, a security review of the approval and record path. A quiet share with five to ten engineers before the public post. | The tag passes on both operating systems. Known limits are at the top of the README. |
