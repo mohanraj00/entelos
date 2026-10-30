@@ -1,0 +1,63 @@
+{
+  "kind": "NeutralCallableFixture",
+  "status": "expected_example_cases",
+  "requirement_origin": "Invented neutral tier eligibility policy with expected cases written by hand.",
+  "requirement": "A customer may use bulk export when the tier is platinum or gold, or silver if the host allows silver. A trial account may use it only if the host allows trials.",
+  "function_id": "feature.bulk_export",
+  "environment": {
+    "name": "tier-eligibility",
+    "variables": [
+      {
+        "name": "tier",
+        "type": "string",
+        "description": "The customer tier supplied by the caller."
+      },
+      {
+        "name": "trial",
+        "type": "bool",
+        "description": "Whether the customer account is a trial account."
+      },
+      {
+        "name": "silver_allowed",
+        "type": "bool",
+        "description": "The host's fixed value: silver customers may use the feature."
+      },
+      {
+        "name": "trial_allowed",
+        "type": "bool",
+        "description": "The host's fixed value: trial accounts may use the feature."
+      }
+    ]
+  },
+  "caller_variables": [
+    "tier",
+    "trial"
+  ],
+  "fixed_bindings": {
+    "silver_allowed": false,
+    "trial_allowed": false
+  },
+  "expression": "(tier == \"platinum\" || tier == \"gold\" || (tier == \"silver\" && silver_allowed)) && (trial_allowed || !trial)",
+  "expected_cel_output_type": "bool",
+  "proposed_profile": {
+    "resource_budgets": {
+      "status": "configured_example_limits_not_production_defaults",
+      "max_request_bytes": "4096",
+      "max_string_utf8_bytes": "256",
+      "max_source_utf8_bytes": "4096",
+      "parser_recursion_limit": "64",
+      "evaluation_cost_limit": "1000",
+      "cost_model": "pinned_CEL_default_model"
+    }
+  },
+  "expected_calls": [
+    {"case": "gold-paid", "inputs": {"tier": "gold", "trial": false}, "status": "ok", "value": true},
+    {"case": "platinum-paid", "inputs": {"tier": "platinum", "trial": false}, "status": "ok", "value": true},
+    {"case": "silver-paid", "inputs": {"tier": "silver", "trial": false}, "status": "ok", "value": false},
+    {"case": "gold-trial", "inputs": {"tier": "gold", "trial": true}, "status": "ok", "value": false},
+    {"case": "unknown-tier", "inputs": {"tier": "bronze", "trial": false}, "status": "ok", "value": false},
+    {"case": "missing-trial", "inputs": {"tier": "gold"}, "status": "needs_input", "field": "/trial"},
+    {"case": "string-trial", "inputs": {"tier": "gold", "trial": "false"}, "status": "invalid_input", "field": "/trial"},
+    {"case": "fixed-binding-override", "inputs": {"tier": "gold", "trial": true, "trial_allowed": true}, "status": "invalid_input", "field": "/trial_allowed"}
+  ]
+}

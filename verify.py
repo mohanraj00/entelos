@@ -82,6 +82,9 @@ try:
  demo=run('consumer-reuse',[sys.executable,'-B',ROOT/'examples/ci-trigger/run.py','--work',w/'reuse','--cel-binary',w/'bin/cel-handoff','--author-binary',w/'bin/cel-expr','--record-bundle',w/'record-bundle'])
  reuse=json.loads((w/'reuse/results.json').read_text())
  check('two-consumers-and-baseline','Do both consumer loops and the ordinary-code comparison pass?',demo.returncode==0 and reuse['status']=='passed',{'status':reuse['status'],'checks':reuse['checks'],'measurements':reuse['measurements'],'errors':reuse['errors']})
+ tier=run('tier-eligibility',[sys.executable,'-B',ROOT/'examples/tier-eligibility/run.py','--work',w/'tier','--cel-binary',w/'bin/cel-handoff','--author-binary',w/'bin/cel-expr'])
+ tier_path=w/'tier/results.json';tier_results=json.loads(tier_path.read_text()) if tier_path.exists() else {'status':'failed','errors':['run.py wrote no results.json'],'stderr':tier.stderr}
+ check('tier-eligibility','Does the third consumer pass its hand-written cases, correction, replay and restatement?',tier.returncode==0 and tier_results['status']=='passed',{'status':tier_results['status'],'errors':tier_results.get('errors')})
  failures=run('quickstart-failures',[sys.executable,'-B',ROOT/'examples/quickstart/test_demo.py'])
  failure_path=w/'quickstart-failures/test-results.json'
  failure_results=json.loads(failure_path.read_text()) if failure_path.exists() else {'successful':False,'error':'test_demo.py wrote no test-results.json','exit_code':failures.returncode,'stderr':failures.stderr}
