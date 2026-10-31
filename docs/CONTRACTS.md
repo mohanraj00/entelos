@@ -13,6 +13,31 @@ This map points to executable reference contracts. It is not a separately versio
 
 The JSON CLI schemas and typed faults are defined in source. Qualification success does not activate a proposal. Caller discovery must be checked again after source/profile/bundle changes. Invalid input and a successful false result remain different outcomes.
 
+## Callable cases
+
+`Bundle.Check` compares each case with a call to the selected bundle. A case has these fields:
+
+| Field | Meaning |
+|---|---|
+| `case` | A nonempty, unique name for this case. |
+| `inputs` | The input values passed to the bundle. |
+| `status` | The exact status expected from the call. |
+| `value` | Optional expected boolean result. Required when `status` is `ok`; omitted for every other status. |
+| `field` | Optional diagnostic field expected from the call. When present, it must equal the actual diagnostic's field. |
+
+The case list must contain at least one entry. Each actual status must equal the expected status. An answer case with status `ok` passes only when both expected and actual values are present and equal. A refusal or other non-`ok` case passes only when neither the expectation nor the actual response has a value. If `field` is supplied, the response must include a diagnostic with that exact field. These checks do not compare other diagnostic details.
+
+For example, these two entries expect a true answer and a missing-input refusal:
+
+```json
+[
+  {"case": "paid-eligible", "inputs": {"tier": "gold", "trial": false}, "status": "ok", "value": true},
+  {"case": "missing-trial", "inputs": {"tier": "gold"}, "status": "needs_input", "field": "/trial"}
+]
+```
+
+The case structure and comparison rules are implemented by [`Case` and `Bundle.Check`](../src/cel-handoff/handoff.go).
+
 Replay retains the original input and execution closure. Restatement names a later accepted root and computes a separate answer for the retained original input. A correction to application facts therefore requires a new input/call and an explicit relationship supplied by the application; restatement does not reread a live fact source.
 
 Applications supply source authority, independent expectations, admission/learning policy, authentication, retention and side effects. See [INTEGRATION.md](INTEGRATION.md), [SECURITY.md](../SECURITY.md) and [SUPPORT.md](SUPPORT.md) before treating the local reference as an application component.
