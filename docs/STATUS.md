@@ -16,7 +16,7 @@ Project source uses [Apache-2.0](../LICENSE); [NOTICE](../NOTICE) retains projec
 
 Purpose is in [CONSTITUTION.md](../CONSTITUTION.md), workflow in [AGENTS.md](../AGENTS.md). Codex (`AGENTS.md`), Claude Code (`CLAUDE.md`) and agy (`GEMINI.md`) share those files and the same skill source. A different harness reviews each change; see [REVIEW.md](REVIEW.md). `tools/check_project.py` checks that layout, links and source checksums.
 
-The `CI` workflow checks the project structure and source inventory on every change. For code changes only, its `standalone` job runs `verify.py` on one Linux runner and uploads the compact results and command logs for 14 days. See [SUPPORT.md](SUPPORT.md) for the observed toolchain. One passing runner does not establish broad platform support.
+The `CI` workflow checks the project structure and source inventory on every change. For code changes only, its `standalone` job runs `verify.py` on two runners, `ubuntu-24.04` and `macos-15`. Each run uploads its compact results and command logs for 14 days. See [SUPPORT.md](SUPPORT.md) for the observed toolchain. Two passing runners do not establish broad platform support.
 
 ## Layout
 
