@@ -7,13 +7,9 @@
 
 # Entelos
 
-**Entelos: grow toward the goal.**
+A service often asks a rule for an answer, and people change that rule over time. Later, someone asks why the service gave a specific answer on a specific date. Often nobody can show the exact rule, inputs and approval behind that answer. If a correction changes the old rule in place, the earlier answer has no explanation. I want each answer tied to its exact rule version, inputs and approval, and each correction recorded as a new, separate answer.
 
 > **Limits:** This is local reference code with unstable APIs and records. It is not a hosted service, an authentication boundary or a production database. Rules accept only string and bool inputs and give a bool result. See [Limits](#limits) and [SUPPORT.md](docs/SUPPORT.md).
-
-## The problem
-
-A service often asks a rule for an answer, and people change that rule over time. Later, someone asks why the service gave a specific answer on a specific date. Often nobody can show the exact rule, inputs and approval behind that answer. If a correction changes the old rule in place, the earlier answer has no explanation. I want each answer tied to its exact rule version, inputs and approval, and each correction recorded as a new, separate answer.
 
 ## Run the demo
 
@@ -79,6 +75,29 @@ Next: read "After the demo" in README.md.
 
 The `expected` values come from a fixture file, not from the demo. `Result: passed` means that each answer agrees with the fixture. [examples/quickstart/README.md](examples/quickstart/README.md) explains `summary.json` and the failure output.
 
+## Call a rule from your service
+
+A service calls a rule through [cli.py](src/cel-lifecycle/cli.py). The service writes one JSON request to stdin and reads one JSON response from stdout. A call has two requests:
+
+1. `describe` gives the input schema, the exact bundle reference and the store cursor for a function and a date.
+2. `invoke` sends the inputs, the bundle reference and the cursor from `describe`, and a retry key.
+
+These are the two requests for the record filter. The service copies the two values in angle brackets from the `describe` response:
+
+```text
+{"op":"describe","function":"record.visible","date":"2026-11-15"}
+{"op":"invoke","function":"record.visible","date":"2026-11-15","inputs":{"state":"reviewed","archived":false},"expected_bundle_ref":"<data.callable.bundle_ref>","expected_revision":"<data.cursor>","request_key":"walk-november"}
+```
+
+Check two status fields before you read the answer:
+
+1. The outer `status`. If the lifecycle refuses the call, this field has a refusal status, for example `revision_not_loaded`, and the response has no result.
+2. `data.result.actual.status`. The rule host can reject the inputs after the lifecycle accepts the call. Then the outer status is `ok`, but this field is `invalid_input`, and `data.result.actual` has no `value`.
+
+The answer is in `data.result.actual.value` only if both fields are `ok`. The store records a receipt for each call that the lifecycle accepts, also for a rejected input. Its identity is in `data.result.receipt_ref`.
+
+[client.py](src/cel-lifecycle/client.py) is a short caller that sends these two requests. It starts `cli.py` once for each request. The service does not send the rule text, the fixed values or the test cases. Step 6 of [WALKTHROUGH.md](docs/WALKTHROUGH.md#6-call-as-a-caller) gives the full command. The `unchanged-caller-client` check in [examples/ci-trigger/run.py](examples/ci-trigger/run.py) runs `client.py` in each `verify.py` run.
+
 ## After the demo
 
 | If you want to | Read |
@@ -86,7 +105,7 @@ The `expected` values come from a fixture file, not from the demo. `Result: pass
 | Know how a service calls a rule, why not a plain function and log, and what a correction date means | [COMPARISON.md](docs/COMPARISON.md) |
 | See the same steps with the commands and records | [WALKTHROUGH.md](docs/WALKTHROUGH.md) |
 | Know the difference between a fact correction and a rule change | [CORRECTION.md](docs/CORRECTION.md) |
-| Call or author a rule from your own service | [CONTRACTS.md](docs/CONTRACTS.md), then [INTEGRATION.md](docs/INTEGRATION.md) |
+| Call or author a rule from your own service | [Call a rule from your service](#call-a-rule-from-your-service), [CONTRACTS.md](docs/CONTRACTS.md), then [INTEGRATION.md](docs/INTEGRATION.md) |
 | Compare Entelos with a tool you know | [OPA](docs/compare/opa.md), [Cedar](docs/compare/cedar.md), [GoRules ZEN](docs/compare/zen.md), [feature flags](docs/compare/flags.md), [ordinary code and Git](docs/compare/code-git.md) |
 | Know what Entelos does not do | [Limits](#limits) and [SUPPORT.md](docs/SUPPORT.md) |
 | Run all the checks | [Run all checks](#run-all-checks) |
@@ -104,15 +123,23 @@ The `expected` values come from a fixture file, not from the demo. `Result: pass
 
 ## What the examples show
 
-I reuse CEL and Git; I do not implement another expression language. The record-filter example combines a typed CEL callable with a local Git history. A second example models pull-request CI eligibility and compares CEL with ordinary typed functions.
+Entelos uses [CEL](https://cel.dev) for the rule text and Git for the history. It does not add a new expression language. The repository has two examples:
 
-- One environment drives CEL declarations and a stable required caller schema. Fixed parameters cannot be supplied by callers.
-- An exact snapshot is qualified against host-installed cases. A reviewer decides and activates it for an explicit scope and date interval.
-- Git publishes accepted state and outbox work through one root compare-and-swap. Historical reads stay at a captured root.
-- A correction keeps its earlier evidence, cases and receipts. Replay keeps the original input/build/answer; restatement names a later root and records a separate answer.
-- A routed manual task records correction work and fences an earlier owner after takeover.
+- The record filter, `record.visible`, decides if a user can see a record. Its correction changes a fixed value of the rule. [WALKTHROUGH.md](docs/WALKTHROUGH.md) shows each step.
+- The CI example, `ci.pr_should_run`, decides if a pull request starts CI. Its correction changes the rule formula. It changes nested event data into string and bool inputs. It also compares the CEL rule with an ordinary typed function. The source is in [examples/ci-trigger](examples/ci-trigger/).
 
-The record-filter example changes a parameter. The CI example changes a formula and projects nested event data into a different primitive contract. The ordinary-code comparison shares the lifecycle intentionally; it does not prove that CEL or this lifecycle is always the better choice.
+Both examples use these terms:
+
+- **Caller contract:** the named inputs and the bool output that a caller can see. A caller cannot send a **fixed value**. A fixed value is a value that the author sets in the rule, for example `allowed_state`. See [CONTRACTS.md](docs/CONTRACTS.md).
+- **Snapshot:** one exact set of rule files. Its content hash identifies it. A hash is an identity. It is not a signature.
+- **Qualification:** a test of one snapshot against cases that the host owns, not the author. A passed test does not let the rule give answers to callers.
+- **Activation:** a reviewer approves a qualified snapshot for one scope and one date interval. A call for a date uses the snapshot that is active on that date.
+- **Store:** a local Git repository that holds the approved state. Each change is one update of one Git ref. The update fails if another writer changed the ref first. A **cursor** is the Git commit of one state. A read at an earlier cursor shows the earlier state.
+- **Receipt:** the record of one answer: the snapshot, the input, the host build and the result.
+- **Correction:** a new snapshot replaces an incorrect snapshot for later calls. The old snapshot, its cases and its receipts stay in the store. **Replay** runs an old receipt again on its own snapshot and build. **Restatement** gives a new, separate answer for the old input at a later cursor. See [CORRECTION.md](docs/CORRECTION.md).
+- **Correction task:** a recorded work item for a correction. If a second maintainer takes the task, the store refuses a write from the first owner.
+
+The ordinary-code comparison uses the same lifecycle. It does not show that CEL or this lifecycle is always the better choice.
 
 ## Limits
 
@@ -143,7 +170,7 @@ The work directory contains `results.json`, command logs and the example stores.
 printf '%s\n' '{"op":"describe","function":"ci.pr_should_run","date":"2026-11-15"}' | python3 -B src/cel-lifecycle/cli.py --repo "$TASK_WORK/reuse/cel/state.git" --context "$TASK_WORK/reuse/cel/caller.json" --runtime "$TASK_WORK/bin/cel-handoff" --work "$TASK_WORK/reuse/cel"
 ```
 
-`src/cel-lifecycle/client.py` uses that discovery result, ordinary inputs and a retry key to invoke a function. A caller does not submit the expression, fixed parameters or test expectations. Authors can use the existing CEL prompt/compile/eval tools and submit an exact proposal/base through the same local command boundary.
+To call a function from your own code, see [Call a rule from your service](#call-a-rule-from-your-service). Authors can use the existing CEL prompt/compile/eval tools and submit an exact proposal/base through the same local command boundary.
 
 ## Work in this project
 
@@ -151,6 +178,6 @@ Start with [CONSTITUTION.md](CONSTITUTION.md), [AGENTS.md](AGENTS.md) and [curre
 
 ## Name, source and license
 
-Entelos (from Greek *en* + *telos*, "the goal within") is the name of this versioned decision reference. The repository is `mohanraj00/entelos`; its earlier name was `versioned-decision-reference`. [Brand assets](docs/brand/README.md) holds the mark, the logo and the colours.
+The tagline is "Entelos: grow toward the goal." Entelos (from Greek *en* + *telos*, "the goal within") is the name of this versioned decision reference. The repository is `mohanraj00/entelos`; its earlier name was `versioned-decision-reference`. [Brand assets](docs/brand/README.md) holds the mark, the logo and the colours.
 
 The project source is licensed under [Apache-2.0](LICENSE). Keep the [project attribution](NOTICE) and required notices. Dependencies retain their own licenses; see [THIRD_PARTY.md](licenses/THIRD_PARTY.md). The [licence decision](docs/LICENSING.md) records the change from MIT. The workflow examples are neutral invented policies informed by the public sources listed in [PROVENANCE.md](docs/PROVENANCE.md).

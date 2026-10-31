@@ -104,6 +104,8 @@ The host can also run its own cases. This check does not activate the bundle:
 
 The result starts with `{"status":"passed"` and lists each case with its actual response.
 
+A Go service can also load a bundle in its own process. It calls `handoff.Load` with the four bundle files, then `Bundle.Run` with the same request bytes. `TestCallerCanDiscoverAndInvokeFixedRule` in [handoff_test.go](../src/cel-handoff/handoff_test.go) covers this path. `Load` refuses a manifest whose `implementation_ref` is not the build identity of the running binary. The refusal is `implementation_unavailable`. Thus a bundle that `prepare.py` wrote for `cel-handoff` does not load in a different binary.
+
 ## 5. Run the dated lifecycle
 
 [scenario.py](../src/cel-lifecycle/scenario.py) sends each operation through the JSONL boundary in [cli.py](../src/cel-lifecycle/cli.py). It writes a new local Git store and one context file for each actor:
@@ -163,6 +165,8 @@ The fixture `expected` block states the five answers before the run: `true`, `tr
 python3 -B src/cel-lifecycle/client.py --repo "$LIFE/state.git" --context "$LIFE/caller.json" \
   --runtime "$RT" --work "$LIFE" --key walk-november
 ```
+
+`client.py` sends two JSON requests to `cli.py`: `describe`, then `invoke`. [Call a rule from your service](../README.md#call-a-rule-from-your-service) shows the two requests. The `unchanged-caller-client` check in [run.py](../examples/ci-trigger/run.py) runs `client.py` in each `verify.py` run.
 
 The default date is 2026-11-15 and the default input is `{"state":"reviewed","archived":false}`. The result has `"status":"ok"` and the value `false`, because the correction is active and loaded. The response also contains the new receipt.
 

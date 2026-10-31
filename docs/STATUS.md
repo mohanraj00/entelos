@@ -58,13 +58,13 @@ These parts of M2 were not run:
 - Unleash, the GoRules BRMS and the OpenFeature SDK are described from their docs only.
 - No call cost, speed or effort was measured.
 
-These critic findings from PR #47 are open and have no issue yet:
+These are the critic findings from PR #47. The README change for issues #50, #52 and #54 addresses three of them:
 
-- An example of how a service calls a rule from its own code.
+- An example of how a service calls a rule from its own code (issue #50).
 - A command that opens a receipt from the demo.
-- The first-screen order: the tagline and the Limits note come before the problem.
+- The first-screen order: the tagline and the Limits note come before the problem (issue #52).
 - Progress output from `verify.py` during its run of about 10 minutes.
-- Jargon in "What the examples show".
+- Jargon in "What the examples show" (issue #54).
 
 Keep caller walkthrough and input-correction documentation bounded to the existing examples. Numeric/structured profiles, production DBs, authentication gateways and resident-worker coordination are outside the current implemented scope.
 
