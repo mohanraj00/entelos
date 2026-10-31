@@ -10,8 +10,8 @@ Closes #
 
 - [ ] `python3 -B tools/check_project.py`
 - [ ] `python3 -B verify.py --work "$TASK_WORK"` (code changes only)
-- [ ] Review by the other harness: <harness and version, link to the comment>
-- [ ] Security review: <link to the comment, or "not needed" and the reason>
+- [ ] Code review: <harness and version, link to the comment> (a contributor without a harness writes "maintainer")
+- [ ] Security review: <link to the comment, "maintainer", or "not needed" and the reason>
 - [ ] Each finding is fixed, or has a reason in this PR
 
 ## Limits

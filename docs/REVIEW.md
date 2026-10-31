@@ -9,6 +9,10 @@ These rules apply to every change to `main`. [AGENTS.md](../AGENTS.md) owns the 
 - The required checks are `shared-project`, `ci-ok`, `acceptance` and `security-review`.
 - The maintainer is the only code owner. GitHub does not let an author approve their own PR, so the maintainer merges their own PRs with the admin bypass. The cross-harness review below replaces the approval for these PRs.
 
+## Human contributors
+
+A contributor does not need Codex, Claude Code or agy. [CONTRIBUTING.md](../CONTRIBUTING.md) gives the steps. For a PR without a harness, the maintainer asks for the code review and the security review as the sections below show. If no harness is available, the maintainer does a manual code review, as the local fallback section says.
+
 ## Cross-harness review
 
 A harness does not review its own change. The branch prefix names the harness that wrote the change: `claude/`, `codex/` or `agy/`. The reviews run on GitHub. No harness reviews a PR by default, so the PR author asks in a PR comment.
