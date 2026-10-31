@@ -24,7 +24,7 @@ On 2026-10-29, the code moved to `src/` and `examples/`, the boundary test moved
 
 ## Next work
 
-Use [BACKLOG.md](BACKLOG.md) and the linked GitHub issues. The next milestone is [M3 Copy proof](https://github.com/mohanraj00/entelos/issues/12).
+Use [BACKLOG.md](BACKLOG.md) and the linked GitHub issues. The next milestone is [M4 Contributor path](https://github.com/mohanraj00/entelos/issues/13).
 
 ### M1 First contact
 
@@ -58,13 +58,26 @@ These parts of M2 were not run:
 - Unleash, the GoRules BRMS and the OpenFeature SDK are described from their docs only.
 - No call cost, speed or effort was measured.
 
-These are the critic findings from PR #47. The README change for issues #50, #52 and #54 addresses three of them:
+On 2026-10-31, the five critic findings from PR #47 were complete in `main`:
 
-- An example of how a service calls a rule from its own code (issue #50).
-- A command that opens a receipt from the demo.
-- The first-screen order: the tagline and the Limits note come before the problem (issue #52).
-- Progress output from `verify.py` during its run of about 10 minutes.
-- Jargon in "What the examples show" (issue #54).
+- An example of how a service calls a rule from its own code (issue #50, PR #56).
+- A command that prints a receipt from the demo (issue #51, PR #58).
+- The first-screen order: the problem now comes before the Limits note (issue #52, PR #56).
+- Progress output from `verify.py` on stderr (issue #53, PR #57).
+- Plain definitions in "What the examples show" (issue #54, PR #56).
+
+### M3 Copy proof
+
+On 2026-10-31, the M3 work was complete in `main` (PR #59, merge `f14e2f8`):
+
+- [examples/tier-eligibility/](../examples/tier-eligibility/) adds a third neutral example, `feature.bulk_export`. It reuses `src/` without a copy.
+- The example needed 0 `src/` changes. `verify.py` runs it as the `tier-eligibility` check, and the full run had 20 passed checks and 0 failed checks.
+- [FINDINGS.md](../examples/tier-eligibility/FINDINGS.md) records 9 docs gaps. For each gap, the author read source to continue. Issue #60 owns the docs for these gaps.
+
+These are the limits of the M3 result:
+
+- An agent wrote the example from the docs, not an engineer from outside the project.
+- The example uses only the current profile: string/bool inputs and a bool output.
 
 Keep caller walkthrough and input-correction documentation bounded to the existing examples. Numeric/structured profiles, production DBs, authentication gateways and resident-worker coordination are outside the current implemented scope.
 
