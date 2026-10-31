@@ -104,6 +104,7 @@ The answer is in `data.result.actual.value` only if both fields are `ok`. The st
 |---|---|
 | Know how a service calls a rule, why not a plain function and log, and what a correction date means | [COMPARISON.md](docs/COMPARISON.md) |
 | See the same steps with the commands and records | [WALKTHROUGH.md](docs/WALKTHROUGH.md) |
+| See the receipt of the first answer | The command that the demo prints, or [Print a receipt](examples/quickstart/README.md#print-a-receipt) |
 | Know the difference between a fact correction and a rule change | [CORRECTION.md](docs/CORRECTION.md) |
 | Call or author a rule from your own service | [Call a rule from your service](#call-a-rule-from-your-service), [CONTRACTS.md](docs/CONTRACTS.md), then [INTEGRATION.md](docs/INTEGRATION.md) |
 | Compare Entelos with a tool you know | [OPA](docs/compare/opa.md), [Cedar](docs/compare/cedar.md), [GoRules ZEN](docs/compare/zen.md), [feature flags](docs/compare/flags.md), [ordinary code and Git](docs/compare/code-git.md) |
