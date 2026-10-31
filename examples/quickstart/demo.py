@@ -5,6 +5,7 @@ import json
 import os
 from pathlib import Path
 import re
+import shlex
 import shutil
 import subprocess
 import sys
@@ -21,6 +22,12 @@ def find(trace,name):
    try:return x['response']['data']['result']
    except (KeyError,TypeError):raise MissingStep('step %s has no response.data.result'%name)
  raise MissingStep('step %s is not in the trace'%name)
+def receipt_command(w,ref):
+ """Return a shell command that prints the receipt ref from the demo Git store. It uses the lifecycle CLI read operation `receipt`."""
+ q=lambda x:shlex.quote(str(x));loop=w/'loop'
+ request=json.dumps({'op':'receipt','receipt_ref':ref},separators=(',',':'))
+ return "printf '%%s\\n' %s | python3 -B %s --repo %s --context %s --runtime %s --work %s | python3 -m json.tool"%(
+  q(request),q(LIFE/'cli.py'),q(loop/'state.git'),q(loop/'reader.json'),q(w/'bin/cel-handoff'),q(loop))
 def write_summary(w,summary):(w/'summary.json').write_text(json.dumps(summary,indent=2,ensure_ascii=False)+'\n')
 def step_failed(w,step,code,stdout,stderr):
  # Keep the failed step's output in summary.json and on stderr, then stop.
@@ -55,6 +62,7 @@ def summarize(w,fixture,build,loop):
                   'event_ref':pins['correction_event'],'snapshot_ref':pins['correction_snapshot']},
     'replay':{'value':replay['actual']['value'],'snapshot_ref':replay['receipt']['selection']['snapshot_ref']},
     'restatement':{'value':restated['actual']['value'],'snapshot_ref':restated['receipt']['selection']['snapshot_ref']}}
+   summary['receipt_command']=receipt_command(w,summary['answer']['receipt_ref'])
    # The expected values come from the fixture. The replay must keep the answer's snapshot; the restatement must use the correction.
    checks={'answer-value':summary['answer']['value'] is expected['future_november_reviewed'],
            'replay-value':summary['replay']['value'] is expected['pinned_replay'],
@@ -95,6 +103,8 @@ def report(summary):
   print('  Input:   %s'%json.dumps(s['input'],separators=(',',':')))
   print('  Records: receipt %s, old rule %s,'%(short(s['answer']['receipt_ref']),short(s['answer']['snapshot_ref'])))
   print('           new rule %s, change event %s'%(short(c['snapshot_ref']),short(c['event_ref'])))
+  print('  To print the receipt of answer 1 from the Git store, run:')
+  print('    %s'%s['receipt_command'])
  print('  Build:   %s (cel-go %s)'%(short(summary['implementation_ref']),summary['cel_go']))
  if summary['loop_error']:print('  The loop failed: %s'%summary['loop_error'])
  for error in summary['errors']:print('  Error: %s'%error)

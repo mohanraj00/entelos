@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Regression checks: each quickstart failure path writes summary.json with a named reason."""
+"""Regression checks: each quickstart failure path writes summary.json with a named reason, and the receipt command works on a demo run."""
 import contextlib
 import copy
 import io
@@ -39,6 +39,7 @@ class QuickstartFailures(unittest.TestCase):
  def test_control_the_invented_results_pass(self):
   summary,printed=self.conclude(PASSED)
   self.assertEqual(summary['status'],'passed');self.assertEqual(summary['failed_checks'],[]);self.assertIn('Result: passed',printed)
+  self.assertIn(summary['receipt_command'],printed);self.assertIn(PASSED['trace'][0]['response']['data']['result']['receipt_ref'],summary['receipt_command'])
  def test_loop_failure_keeps_stdout_and_stderr(self):
   summary,printed=self.conclude({'status':'failed','error':'store rejected the correction'},2,'partial trace line\n','Traceback: scenario stopped\n')
   self.assertEqual(summary['status'],'failed');self.assertEqual(summary['loop_error'],'store rejected the correction')
@@ -112,10 +113,31 @@ class QuickstartReport(unittest.TestCase):
   printed=self.report(demo.summarize(w,fixture,BUILD,subprocess.CompletedProcess(['scenario.py'],0,'','')))
   self.assertIn('Is a "reviewed", archived record',printed);self.assertIn('Input:   {"state":"reviewed","archived":true}',printed)
 
+class QuickstartReceipt(unittest.TestCase):
+ """Run the real demo once, then run the receipt command that it prints."""
+ @classmethod
+ def setUpClass(cls):
+  # A new work directory for each test run; the demo does not overwrite an earlier run.
+  cls.work=Path(tempfile.mkdtemp(dir=WORK))/'demo'
+  cls.demo=subprocess.run([sys.executable,'-B',str(Path(demo.__file__)),'--work',str(cls.work)],capture_output=True,text=True)
+ def test_the_printed_command_prints_the_answer_receipt(self):
+  self.assertEqual(self.demo.returncode,0,self.demo.stdout+self.demo.stderr)
+  summary=json.loads((self.work/'summary.json').read_text());command=summary['receipt_command']
+  self.assertIn(command,self.demo.stdout)
+  shown=subprocess.run(command,shell=True,capture_output=True,text=True)
+  (self.work/'receipt-command.json').write_text(json.dumps({'command':command,'exit_code':shown.returncode,'stdout':shown.stdout,'stderr':shown.stderr},indent=2)+'\n')
+  self.assertEqual(shown.returncode,0,shown.stderr)
+  printed=json.loads(shown.stdout)
+  # The reference is the receipt that the scenario recorded at the time of the answer, not the command output.
+  trace=json.loads((self.work/'loop/scenario-results.json').read_text())['trace']
+  answer=next(x for x in trace if x['name']=='november-before-correction')['response']['data']['result']
+  self.assertEqual(printed,{'status':'ok','data':answer['receipt']})
+  self.assertEqual(printed['data']['selection']['snapshot_ref'],summary['answer']['snapshot_ref'])
+
 if __name__=='__main__':
  class Results(unittest.TextTestResult):
   def __init__(self,*a,**kw):super().__init__(*a,**kw);self.passed=[]
   def addSuccess(self,test):self.passed.append(test.id());super().addSuccess(test)
- r=unittest.TextTestRunner(verbosity=2,resultclass=Results).run(unittest.defaultTestLoader.loadTestsFromNames(['__main__.QuickstartFailures','__main__.QuickstartToolCheck','__main__.QuickstartReport']))
+ r=unittest.TextTestRunner(verbosity=2,resultclass=Results).run(unittest.defaultTestLoader.loadTestsFromNames(['__main__.QuickstartFailures','__main__.QuickstartToolCheck','__main__.QuickstartReport','__main__.QuickstartReceipt']))
  record={'tests_run':r.testsRun,'passed':r.passed,'failures':[{'test':t.id(),'traceback':s} for t,s in r.failures],'errors':[{'test':t.id(),'traceback':s} for t,s in r.errors],'successful':r.wasSuccessful()}
  (WORK/'test-results.json').write_text(json.dumps(record,indent=2)+'\n');raise SystemExit(not r.wasSuccessful())

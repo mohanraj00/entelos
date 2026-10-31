@@ -7,6 +7,7 @@ import os
 from pathlib import Path
 import subprocess
 import sys
+import time
 
 ROOT=Path(__file__).resolve().parent
 PIN='5eac36c53cd8971fa1e5548374238183e0d8b302'
@@ -30,11 +31,13 @@ env={k:v for k,v in os.environ.items() if not k.startswith('GIT_')}|{
 for key in list(os.environ):
  if key.startswith('GIT_'):os.environ.pop(key)
 os.environ.update(env)
-commands=[];checks=[]
+commands=[];checks=[];start=time.monotonic()
 def inventory():
  return {str(p.relative_to(ROOT)):hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted(ROOT.rglob('*')) if p.is_file()}
 def write(path,value):path.write_text(json.dumps(value,indent=2,ensure_ascii=False)+'\n')
 def run(name,args,cwd=ROOT):
+ # Each stage prints one progress line to stderr. Stdout keeps only the final summary JSON.
+ print('verify: %4ds start %s'%(time.monotonic()-start,name),file=sys.stderr,flush=True)
  result=subprocess.run([str(x) for x in args],cwd=cwd,env=env,capture_output=True,text=True)
  record={'name':name,'args':[str(x) for x in args],'cwd':str(cwd),'exit_code':result.returncode,'stdout':result.stdout,'stderr':result.stderr}
  commands.append(record);write(w/'runs'/(name+'.json'),record);return result
@@ -82,6 +85,9 @@ try:
  demo=run('consumer-reuse',[sys.executable,'-B',ROOT/'examples/ci-trigger/run.py','--work',w/'reuse','--cel-binary',w/'bin/cel-handoff','--author-binary',w/'bin/cel-expr','--record-bundle',w/'record-bundle'])
  reuse=json.loads((w/'reuse/results.json').read_text())
  check('two-consumers-and-baseline','Do both consumer loops and the ordinary-code comparison pass?',demo.returncode==0 and reuse['status']=='passed',{'status':reuse['status'],'checks':reuse['checks'],'measurements':reuse['measurements'],'errors':reuse['errors']})
+ tier=run('tier-eligibility',[sys.executable,'-B',ROOT/'examples/tier-eligibility/run.py','--work',w/'tier','--cel-binary',w/'bin/cel-handoff','--author-binary',w/'bin/cel-expr'])
+ tier_path=w/'tier/results.json';tier_results=json.loads(tier_path.read_text()) if tier_path.exists() else {'status':'failed','errors':['run.py wrote no results.json'],'stderr':tier.stderr}
+ check('tier-eligibility','Does the third consumer pass its hand-written cases, correction, replay and restatement?',tier.returncode==0 and tier_results['status']=='passed',{'status':tier_results['status'],'errors':tier_results.get('errors')})
  failures=run('quickstart-failures',[sys.executable,'-B',ROOT/'examples/quickstart/test_demo.py'])
  failure_path=w/'quickstart-failures/test-results.json'
  failure_results=json.loads(failure_path.read_text()) if failure_path.exists() else {'successful':False,'error':'test_demo.py wrote no test-results.json','exit_code':failures.returncode,'stderr':failures.stderr}

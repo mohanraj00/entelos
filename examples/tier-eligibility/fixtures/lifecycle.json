@@ -1,0 +1,56 @@
+{
+  "kind": "NeutralLifecycleScenario",
+  "status": "expected_example_cases",
+  "origin": "Invented tier eligibility source tables. The cases and expected values are written by hand from each table, not from a run.",
+  "function": "feature.bulk_export",
+  "scope": "tier-demo",
+  "stages": {
+    "initial": {
+      "from": "2026-10-01",
+      "until": "2026-12-01",
+      "source_text": "Invented approved table: platinum and gold customers may use bulk export. Silver customers may not. Trial accounts may not.",
+      "fixed": {"silver_allowed": false, "trial_allowed": false},
+      "cases": [
+        {"case": "gold-paid", "inputs": {"tier": "gold", "trial": false}, "status": "ok", "value": true},
+        {"case": "platinum-paid", "inputs": {"tier": "platinum", "trial": false}, "status": "ok", "value": true},
+        {"case": "silver-paid", "inputs": {"tier": "silver", "trial": false}, "status": "ok", "value": false},
+        {"case": "gold-trial", "inputs": {"tier": "gold", "trial": true}, "status": "ok", "value": false},
+        {"case": "missing-trial", "inputs": {"tier": "gold"}, "status": "needs_input", "field": "/trial"}
+      ]
+    },
+    "amendment": {
+      "from": "2026-11-01",
+      "until": "2026-12-01",
+      "source_text": "Invented approved table for November: silver customers may also use bulk export. Trial accounts may use it.",
+      "fixed": {"silver_allowed": true, "trial_allowed": true},
+      "cases": [
+        {"case": "silver-paid", "inputs": {"tier": "silver", "trial": false}, "status": "ok", "value": true},
+        {"case": "silver-trial", "inputs": {"tier": "silver", "trial": true}, "status": "ok", "value": true},
+        {"case": "gold-trial", "inputs": {"tier": "gold", "trial": true}, "status": "ok", "value": true},
+        {"case": "bronze-paid", "inputs": {"tier": "bronze", "trial": false}, "status": "ok", "value": false}
+      ]
+    },
+    "correction": {
+      "from": "2026-11-01",
+      "until": "2026-12-01",
+      "source_text": "Corrected November table: silver customers may use bulk export. Trial accounts may not. The amendment transcribed the trial rule incorrectly.",
+      "fixed": {"silver_allowed": true, "trial_allowed": false},
+      "cases": [
+        {"case": "silver-paid", "inputs": {"tier": "silver", "trial": false}, "status": "ok", "value": true},
+        {"case": "silver-trial", "inputs": {"tier": "silver", "trial": true}, "status": "ok", "value": false},
+        {"case": "gold-trial", "inputs": {"tier": "gold", "trial": true}, "status": "ok", "value": false},
+        {"case": "bronze-paid", "inputs": {"tier": "bronze", "trial": false}, "status": "ok", "value": false}
+      ]
+    }
+  },
+  "october_input": {"tier": "gold", "trial": false},
+  "original_input": {"tier": "silver", "trial": true},
+  "original_date": "2026-11-15",
+  "expected": {
+    "october_gold_paid": true,
+    "november_silver_trial_before_correction": true,
+    "november_silver_trial_after_correction": false,
+    "pinned_replay": true,
+    "later_restatement": false
+  }
+}
