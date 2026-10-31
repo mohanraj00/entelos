@@ -25,6 +25,18 @@ Use a new path outside this checkout for `--work`. The directory must not exist.
 
 The expected values come from the `expected` field of the fixture, not from the demo output. The full trace is in `<work>/loop/scenario-results.json`.
 
+## Print a receipt
+
+If the demo passes, it prints one command that prints the receipt of the first answer. The `receipt_command` field of `summary.json` holds the same command. The command has this form:
+
+```sh
+printf '%s\n' '{"op":"receipt","receipt_ref":"<receipt_ref>"}' | python3 -B src/cel-lifecycle/cli.py --repo <work>/loop/state.git --context <work>/loop/reader.json --runtime <work>/bin/cel-handoff --work <work>/loop | python3 -m json.tool
+```
+
+The demo fills in the full receipt reference and the absolute paths. The command sends the `receipt` read operation to the lifecycle CLI, with the reader context of the demo. It reads the Git store and does not change it.
+
+The receipt contains the function, the scope, the date, the engine build and the references of the input, the response, the rule version (`selection.snapshot_ref`) and the approval. The input and the response are separate records in the store. [WALKTHROUGH.md](../../docs/WALKTHROUGH.md) shows how to replay this receipt.
+
 ## If the demo fails
 
 The demo prints `Result: failed` and exits with status 1. If a step before the loop fails, the demo also writes the step output to stderr. It always writes `<work>/summary.json` with the reason:
@@ -38,4 +50,4 @@ Keep the work directory of a failed run. The next run needs a new work directory
 
 ## Limits
 
-The demo shows one invented example on a local Git store. It does not show authentication, a production database or performance. The `quickstart-failures` check in `verify.py` runs `test_demo.py`, which gives invented failed results to the summary path. The `quickstart` check runs this demo and compares its build identity and answers with the verified build and the fixture.
+The demo shows one invented example on a local Git store. It does not show authentication, a production database or performance. The `quickstart-failures` check in `verify.py` runs `test_demo.py`, which gives invented failed results to the summary path. `test_demo.py` also runs the demo one time in its own work directory, runs the printed receipt command and compares the output with the receipt in the trace. The `quickstart` check runs this demo and compares its build identity and answers with the verified build and the fixture.
