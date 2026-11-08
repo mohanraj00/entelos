@@ -30,3 +30,5 @@ On 2026-10-29, the maintainer chose to announce Entelos as a source reference to
 A reference to copy needs no package release. A tag gives a stable snapshot that a reader can cite and copy.
 
 No issue here authorizes an unscoped model benchmark, a new domain policy, a public package release or production deployment. Choose the smallest change that completes the issue's stated workflow and preserve its failures/limits.
+
+This line is for a test of the gates. The PR closes without a merge.
