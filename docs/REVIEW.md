@@ -60,7 +60,7 @@ The `post` job writes as the workflow bot, and the gates trust markers and appro
 
 ### Use of a Claude result
 
-The `cross-review` gate accepts a Claude code review of the current head with `Findings: 0`. The `security-review` gate accepts a clean Claude security review of the current head. The gates accept a marker only from an `issue_comment` run of this workflow on the default branch. The review has no inline comments and no conversation. A push makes a new head, so ask again as the request rules say. The OAuth token is a static secret. If you suspect a leak, revoke it and make a new one.
+The `cross-review` gate accepts a Claude code review of the current head with `Findings: 0`. A Claude security review is advisory. The `security-review` gate writes a line about it, but does not pass on it. The `cross-review` gate accepts a marker only from an `issue_comment` run of this workflow on the default branch. The review has no inline comments and no conversation. A push makes a new head, so ask again as the request rules say. The OAuth token is a static secret. If you suspect a leak, revoke it and make a new one.
 
 ### Local fallback: agy
 
@@ -89,12 +89,13 @@ If a PR changes one of these paths, the `security-review` check fails until the 
 
 1. Ask for the security review in a PR comment, as the table above shows.
 2. Fix each finding, push, and ask again for the new head.
-3. If the Codex or Claude security review of the current head finds no security issues, the check passes. You do not add a label.
+3. If the Codex security review of the current head finds no security issues, the check passes. You do not add a label. A Codex receipt with an open finding stops the pass.
 
 The [Gates rerun](../.github/workflows/gates-rerun.yml) workflow starts the failed gates again when Codex posts a result or the Claude review workflow completes. If the gate run is in progress, the workflow waits for it to complete. GitHub keeps the failed attempt in the run history. The gate trusts only results that the Codex app or the Claude review workflow posts, and only for the commit that the result names. A push makes a new head, so the gate needs a new result. A result names a commit, not a base. Thus, the gate ignores results posted before the last change of the PR base branch. A clean result is a model output, not a proof. A PR can contain text that tries to steer the reviewer. If a change looks wrong to you, do not merge it.
 
 The `security-reviewed` label is only for the cases that a clean Codex result cannot show:
 
+- Codex is not available, and the review came from the Claude review workflow. The maintainer reads the review.
 - Codex is not available, and the review came from the agy fallback: `python3 -B tools/cross_review.py --security yes --work "$REVIEW_WORK"`. Post the report.
 - A finding is not a defect, and the PR has an answer for it.
 - Codex and agy are both not available, and the maintainer did a manual security review. The maintainer posts the review on the PR. The review names the head commit and the base commit, and gives each finding with its fix or its answer.
@@ -109,7 +110,7 @@ The workflow posts the approval records with the workflow token. A fork PR gets 
 
 GitHub does not run workflows for a PR from an outside contributor until a maintainer approves the run. Before you approve the run, read the workflow and tool changes. Do not approve a run that changes `.github/` or `tools/` until you understand the change.
 
-The `acceptance` check fails for a fork PR until the PR has the `accepted` label. The label counts only for the head and base in its approval record, as for the security label. Before you add the label, make sure that:
+The `acceptance` check fails for a fork PR until the PR has the `accepted` label. The label counts only for the head and base in its approval record, as for the security label. The check also needs the owner approval of stage 2 for the current head and base: the `ready-for-review` label, or an approval with the GitHub Approve button. A review does not start the gates, so after an approval, run the failed `acceptance` job again. Before you add the `accepted` label, make sure that:
 
 - the PR links an issue with a concrete workflow and completion criteria;
 - the change contains no private application material, credentials, customer data or generated binaries;
