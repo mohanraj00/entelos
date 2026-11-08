@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Classify changed paths as code, security-relevant or docs. CI and cross_review.py share these rules."""
+"""Give a local estimate of code, security-relevant and docs paths for cross_review.py and contributors. The gates use .github/gates.json."""
 import argparse
 from fnmatch import fnmatch
 import json

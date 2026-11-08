@@ -1,52 +1,69 @@
 name: CI
+# The ci-ok skeleton. Copy this file to .github/workflows/ci.yml of the project, then put the project jobs in it.
+# Replace the SHA of the gates action with a full SHA of mohanraj00/.github on main.
+# A docs-only PR skips the project jobs, and ci-ok still passes. The check job always runs.
+# Do not use paths-ignore, because a required check can then stay pending.
 on:
+  pull_request:
   push:
     branches: [main]
-  pull_request:
-  workflow_dispatch:
-permissions:
-  contents: read
-# If a new commit arrives on a pull request, cancel the older run for that pull request.
-# Runs on main are never cancelled, so each main commit keeps its own evidence.
-concurrency:
-  group: ci-${{ github.event.pull_request.number || github.sha }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+permissions: {}
 jobs:
   changes:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 5
+    permissions:
+      contents: read
+      pull-requests: read
     outputs:
       code: ${{ steps.classify.outputs.code }}
     steps:
+      # The classify step reads .github/gates.json from the base branch, so a PR cannot mark its own change as docs.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          fetch-depth: 0
+          ref: ${{ github.event.pull_request.base.sha || github.sha }}
           persist-credentials: false
-      - name: Classify the changed paths
-        id: classify
-        env:
-          EVENT: ${{ github.event_name }}
-          PR_BASE: ${{ github.event.pull_request.base.sha }}
-          PUSH_BEFORE: ${{ github.event.before }}
-        run: |
-          case "$EVENT" in
-            pull_request) base="$PR_BASE" ;;
-            push) base="$PUSH_BEFORE" ;;
-            *) base="" ;;
-          esac
-          if [ -z "$base" ] || ! git cat-file -e "$base^{commit}" 2>/dev/null; then
-            echo "code=true" >> "$GITHUB_OUTPUT"; echo "No usable base: run all checks."; exit 0
-          fi
-          python3 -B tools/classify_change.py "$base" HEAD --github-output "$GITHUB_OUTPUT"
+      - id: classify
+        uses: mohanraj00/.github/gates@fb951a2ad58ba1283efc2e909d4753202e5cc742 # main, 2026-11-08
+        with:
+          check: classify
+  # The project check always runs.
   shared-project:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 5
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - name: Run the project check and the Claude review tests
         run: make check
+  # The parse of each workflow always runs. In a test, an invalid workflow passed the project check and both Codex reviews.
+  actionlint:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      # One exact version. The SHA-256 value is from the checksums file of the actionlint release.
+      - name: Install actionlint
+        env:
+          ACTIONLINT_VERSION: 1.7.7
+          ACTIONLINT_SHA256: 023070a287cd8cccd71515fedc843f1985bf96c436b7effaecce67290e7e0757
+        run: |
+          mkdir "$RUNNER_TEMP/actionlint"
+          curl --fail --silent --show-error --location --proto '=https' --output "$RUNNER_TEMP/actionlint/actionlint.tgz" \
+            "https://github.com/rhysd/actionlint/releases/download/v${ACTIONLINT_VERSION}/actionlint_${ACTIONLINT_VERSION}_linux_amd64.tar.gz"
+          echo "$ACTIONLINT_SHA256  $RUNNER_TEMP/actionlint/actionlint.tgz" | sha256sum --check --strict
+          tar --extract --gzip --file "$RUNNER_TEMP/actionlint/actionlint.tgz" --directory "$RUNNER_TEMP/actionlint" actionlint
+          echo "$RUNNER_TEMP/actionlint" >> "$GITHUB_PATH"
+      - name: Parse each workflow
+        run: actionlint .github/workflows/*.yml
+  # The full suite runs only for a change that is not docs-only.
   standalone:
     needs: changes
     if: needs.changes.outputs.code == 'true'
@@ -56,6 +73,8 @@ jobs:
         os: [ubuntu-24.04, macos-15]
     runs-on: ${{ matrix.os }}
     timeout-minutes: 30
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -104,17 +123,24 @@ jobs:
           path: ${{ runner.temp }}/vdr-report
           retention-days: 14
           if-no-files-found: warn
+  # The required check. Add each project job to needs. A skipped job passes. A failed or cancelled job fails.
   ci-ok:
-    needs: [changes, shared-project, standalone]
+    needs: [changes, shared-project, actionlint, standalone]
     if: always()
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 2
+    permissions: {}
     steps:
-      - name: Require every needed job to pass or be skipped
+      - name: Collect the project jobs
         env:
-          RESULTS: ${{ join(needs.*.result, ' ') }}
+          NEEDS: ${{ toJSON(needs) }}
         run: |
-          echo "Job results: $RESULTS"
-          for r in $RESULTS; do
-            case "$r" in success|skipped) ;; *) exit 1 ;; esac
-          done
+          python3 -B -I -c '
+          import json, os, sys
+          needs = json.loads(os.environ["NEEDS"])
+          bad = sorted(k for k, v in needs.items() if v["result"] not in ("success", "skipped"))
+          if needs.get("changes", {}).get("result") != "success":
+              bad = sorted(set(bad) | {"changes"})
+          print("\n".join("%s: %s" % (k, v["result"]) for k, v in sorted(needs.items())))
+          sys.exit("Failed jobs: " + ", ".join(bad) if bad else 0)
+          '

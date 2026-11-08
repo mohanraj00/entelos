@@ -56,7 +56,7 @@ Flag these as high priority in a PR review:
 
 Skip these paths: `checksums.json`, `licenses/`, `docs/STANDARD.md` and `.github/pull_request_template.md`. The first two are generated or third-party text. The last two are exact copies of the shared standard. Report at most 3 nits, and mark each one as a nit.
 
-End a code review with one line. Write `Security review: needed`, with the reason, if `tools/classify_change.py` marks a changed path as security-relevant. Else write `Security review: not needed`. A security review does not end with this line.
+End a code review with one line. Write `Security review: needed`, with the reason, if a changed path is security-relevant. Else write `Security review: not needed`. [.github/gates.json](.github/gates.json) and the shared categories of the gates action decide this. `tools/classify_change.py` gives a local estimate. A security review does not end with this line.
 
 ## Records and publication
 

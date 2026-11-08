@@ -11,7 +11,7 @@ ROOT=Path(__file__).resolve().parents[1]
 p=argparse.ArgumentParser(description=__doc__);p.add_argument('--write-checksums',action='store_true');a=p.parse_args()
 required=['CONSTITUTION.md','AGENTS.md','CLAUDE.md','GEMINI.md','README.md','docs/SUPPORT.md','SECURITY.md',
     'docs/STATUS.md','docs/BACKLOG.md','docs/CONTRACTS.md','docs/STANDARD.md','Makefile','.agents/skills/decision-workflow/SKILL.md',
-    'docs/REVIEW.md','.github/CODEOWNERS','.github/workflows/ci.yml','.github/workflows/pr-policy.yml','.github/workflows/pr-policy-rerun.yml','.github/workflows/claude-review.yml','.github/ISSUE_TEMPLATE/bug.yml','.github/ISSUE_TEMPLATE/workflow.yml','.github/ISSUE_TEMPLATE/config.yml']
+    'docs/REVIEW.md','.github/CODEOWNERS','.github/workflows/ci.yml','.github/workflows/gates.yml','.github/workflows/gates-rerun.yml','.github/gates.json','.github/dependabot.yml','.github/workflows/claude-review.yml','.github/ISSUE_TEMPLATE/bug.yml','.github/ISSUE_TEMPLATE/workflow.yml','.github/ISSUE_TEMPLATE/config.yml']
 errors=[];inventory={};links=0
 for path in sorted(ROOT.rglob('*')):
     relative=path.relative_to(ROOT)
@@ -60,30 +60,16 @@ review=(ROOT/'tools/cross_review.py').read_text()
 for need in ["env['HOME']=home","'--sandbox'","'allow':[]"]:
     if need not in review:errors.append('cross_review.py must keep '+need)
 if "'HOME'," in review:errors.append('cross_review.py must not pass the real HOME to agy')
-# PR gate regressions: a fork needs acceptance, and a label counts only with an approval record for the current head and base.
-from pr_policy import CLEAN,REVIEWED,decide
-def event(labels,head='o/r',sha='aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',base='main'):return {'action':'edited','repository':{'full_name':'o/r'},'pull_request':{'labels':[{'name':x} for x in labels],'head':{'sha':sha,'repo':{'full_name':head}},'base':{'ref':base}}}
-ok={'accepted':{('aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa','main')},'security-reviewed':{('aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa','main')}}
-for check,case,paths,complete,found,want in [('acceptance',event([]),[],True,{},(True,None)),('acceptance',event([],'f/r'),[],True,{},(False,None)),
-        ('acceptance',event(['accepted'],'f/r'),[],True,ok,(True,None)),('acceptance',event(['accepted'],'f/r'),[],True,{},(False,'accepted')),
-        ('acceptance',event(['accepted'],'f/r','bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb'),[],True,ok,(False,'accepted')),('acceptance',event(['accepted'],'f/r',base='dev'),[],True,ok,(False,'accepted')),
-        ('security',event([]),['docs/STATUS.md'],True,{},(True,None)),('security',event([]),['docs/STATUS.md'],False,{},(False,None)),
-        ('security',event([]),['tools/pr_policy.py'],True,ok,(False,None)),('security',event(['security-reviewed']),['tools/pr_policy.py'],True,ok,(True,None)),
-        ('security',event(['security-reviewed'],sha='bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb'),['tools/pr_policy.py'],True,ok,(False,'security-reviewed')),
-        ('security',event(['security-reviewed'],base='dev'),['tools/pr_policy.py'],True,ok,(False,'security-reviewed')),
-        ('security',event(['security-reviewed']),['tools/pr_policy.py'],True,{'accepted':{('aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa','main')}},(False,'security-reviewed'))]:
-    passed,_,drop=decide(check,case,paths,complete,found)
-    if (passed,drop)!=want:errors.append('PR gate changed: %s %s %s'%(check,case['pull_request']['head']['sha'][:1],paths))
-# A Codex security review counts only if it names the current head and found no security issues.
-for case,reviews,want in [(event([]),[('aaaaaaaaaa',True)],(True,None)),(event([]),[('bbbbbbbbbb',True)],(False,None)),(event([]),[('aaaaaaaaaa',False)],(False,None)),
-        (event([]),[('aaaaaaaaaa',True),('aaaaaaa',False)],(False,None)),(event([]),[('aaaaaaaaaa',False),('aaaaaaaaaa',True)],(True,None)),
-        (event(['security-reviewed'],sha='a'*39+'b'),[('aaaaaaaaaa',True)],(True,'security-reviewed'))]:
-    passed,_,drop=decide('security',case,['tools/pr_policy.py'],True,ok,reviews)
-    if (passed,drop)!=want:errors.append('PR gate changed for a Codex security review: %s'%reviews)
-# The clean verdict must be a full line, and the commit must have at least 10 hex digits.
-for body,want in [('Security review completed. No security issues were found in this pull request.',True),('> quote: Security review completed. No security issues were found in this pull request.',False),('No security issues were found',False)]:
-    if bool(CLEAN.search(body))!=want:errors.append('PR gate changed for the Codex clean verdict: %s'%body)
-if REVIEWED.search('**Reviewed commit:** `aaaaaaa`') or not REVIEWED.search('**Reviewed commit:** `aaaaaaaaaa`'):errors.append('PR gate changed for the Codex commit prefix length.')
+# The shared gates read .github/gates.json from the base branch. They fail closed on an unknown key or a bad value.
+try:
+    gates=json.loads((ROOT/'.github/gates.json').read_text())
+    keys={'code','security_sources','not_security','boundaries','level1','generated'}
+    if gates.get('version')!=1 or set(gates)-keys-{'version'} or not all(isinstance(gates.get(k,[]),list) and all(isinstance(x,str) and x for x in gates.get(k,[])) for k in keys):
+        errors.append('.github/gates.json must have "version": 1 and only lists of path patterns')
+except (OSError,ValueError) as error:errors.append('.github/gates.json: %s'%error)
+# Each gate action must use one full SHA of mohanraj00/.github, not a tag or a branch.
+pins={m for f in sorted((ROOT/'.github/workflows').glob('*.yml')) for m in re.findall(r'uses: mohanraj00/\.github/gates@(\S+)',f.read_text())}
+if len(pins)!=1 or not re.fullmatch(r'[0-9a-f]{40}',next(iter(pins),'')):errors.append('the gates action must use one full SHA in all workflows: %s'%sorted(pins))
 checksum=ROOT/'checksums.json'
 if a.write_checksums:
     if errors:raise SystemExit(json.dumps({'passed':False,'errors':errors}))

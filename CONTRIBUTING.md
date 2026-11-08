@@ -41,14 +41,14 @@ You need only Git, Go, Python and a GitHub account. You do not need Codex, Claud
 | Step | Who | What happens |
 |---|---|---|
 | Approve the CI run | Maintainer | GitHub does not run the CI workflow for a fork PR until the maintainer approves the run. |
-| `shared-project` check | CI | Runs the project check on every PR. |
-| `ci-ok` check | CI | Runs the full suite if the PR changes a code path. Passes if each needed job passed or was skipped. |
+| `ci-ok` check | CI | Runs the project check and a parse of each workflow on every PR. Runs the full suite if the PR is not docs-only. Passes if each needed job passed or was skipped. |
+| `cross-review` check | Maintainer | Fails until the current head has a clean code review from a harness, or the maintainer adds the `cross-reviewed` label. |
 | Code review | Maintainer | Reviews the change, or asks a harness for a review in a PR comment. You do not ask a harness. |
-| `security-review` check | Maintainer | Fails if the PR changes a security-relevant path. [tools/classify_change.py](tools/classify_change.py) decides which paths are security-relevant. The maintainer does or asks for the security review. |
-| `acceptance` check | Maintainer | Fails for a fork PR until the maintainer does the acceptance review and adds the `accepted` label. The label applies only to the current head. |
-| Approval and merge | Maintainer | A PR needs one approval from the code owner. A new push removes earlier approvals. |
+| `security-review` check | Maintainer | Fails if the PR changes a security-relevant path. [.github/gates.json](.github/gates.json) and the shared categories of the gates action decide which paths are security-relevant. The maintainer does or asks for the security review. |
+| `acceptance` check | Maintainer | Fails for a fork PR until the maintainer does the acceptance review and adds the `accepted` label. The label applies only to the current head. It also fails for a level 1 PR, which the maintainer merges. |
+| Merge | Maintainer | A new push removes earlier approvals. |
 
-To see if your change touches a security-relevant path, compare it with the main repository:
+To get a local estimate of whether your change touches a security-relevant path, compare it with the main repository:
 
 ```sh
 git remote add upstream https://github.com/mohanraj00/entelos.git

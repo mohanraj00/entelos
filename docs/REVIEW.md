@@ -5,9 +5,10 @@ These rules apply to every change to `main`. [AGENTS.md](../AGENTS.md) owns the 
 ## Protected main
 
 - Every change goes through a pull request. Direct pushes, force pushes and branch deletion are blocked.
-- A PR needs one approval from a code owner. A new push removes earlier approvals.
-- The required checks are `shared-project`, `ci-ok`, `acceptance` and `security-review`.
-- The maintainer is the only code owner. GitHub does not let an author approve their own PR, so the maintainer merges their own PRs with the admin bypass. The cross-harness review below replaces the approval for these PRs.
+- The required checks are `ci-ok`, `cross-review`, `security-review` and `acceptance`. The shared gates of [mohanraj00/.github](https://github.com/mohanraj00/.github) supply the last three. [docs/STANDARD.md](STANDARD.md) gives the rules.
+- A new push dismisses earlier approvals.
+- The `acceptance` check fails for a level 1 PR. The maintainer merges a level 1 PR with the admin bypass. An agent never approves a PR and never merges a level 1 PR.
+- [.github/gates.json](../.github/gates.json) lists the project paths of the gates: the code paths, the security-relevant sources and boundaries, the added level 1 paths and the generated files. The gates action adds the shared categories.
 
 ## Human contributors
 
@@ -44,22 +45,22 @@ A comment or a review with other text does not start the workflow. The comment t
 
 An issue comment event reads the workflow from `main`, so a PR cannot change this workflow for its own review. The workflow has two jobs.
 
-The `review` job has `contents: read` only. It uses the `claude-review` environment, which holds the `CLAUDE_CODE_OAUTH_TOKEN` secret. Only the CLI step gets the secret. The environment needs a deployment branch rule for `main`. The job does these steps:
+The `review` job has `contents: read` and `pull-requests: read` only. It uses the `claude-review` environment, which holds the `CLAUDE_CODE_OAUTH_TOKEN` secret. Only the CLI step gets the secret. The environment needs a deployment branch rule for `main`. The job does these steps:
 
-1. It checks out `main` and fetches the PR commits as Git objects only. It never checks out PR files, so the PR cannot supply instructions, settings or code.
-2. It writes the diff with `git diff --no-ext-diff --no-textconv -U20 origin/main...pr/head`. If the diff is empty, the job fails.
+1. It checks out `main`. It reads the base branch of the PR from the API, and fetches that branch and the PR commits as Git objects only. It never checks out PR files, so the PR cannot supply instructions, settings or code.
+2. It writes the diff with `git diff --no-ext-diff --no-textconv -U20 pr/base...pr/head`. If the diff is empty, the job fails.
 3. It installs one exact version of the Claude Code CLI and checks the SHA-512 value of the package.
 4. It runs the CLI in restricted mode with only the `Read`, `Grep` and `Glob` tools, no MCP server, no slash command and a turn limit. These tools cannot read `/proc`. The prompt says that the diff is untrusted data.
 5. It checks the JSON result: `type` is `result`, `subtype` is `success`, `is_error` is false, `result` is not empty and `permission_denials` is empty. If a check fails, the job fails.
 6. It keeps the review text and the head SHA in an artifact.
 
-The `post` job has `contents: read`, `issues: write` and `pull-requests: write` only, with no secret and no environment. A comment on a PR needs `pull-requests: write`. It runs [tools/claude_review.py](../tools/claude_review.py) from the `main` checkout. The first line of the comment names the head SHA and says that the review is advisory. If the `review` job failed, the comment holds only `NO VALID CLAUDE REVIEW` and the head SHA.
+The `post` job has `contents: read`, `issues: write` and `pull-requests: write` only, with no secret and no environment. A comment on a PR needs `pull-requests: write`. It runs [tools/claude_review.py](../tools/claude_review.py) from the `main` checkout. This file is a copy of `gates/claude_review.py` of the shared repository. The comment starts with a fixed marker that holds the kind (`code` or `security`), the head SHA, the count from the `Findings: <number>` line of the review and the workflow run ID. If the `review` job failed, the comment holds only `NO VALID CLAUDE REVIEW` and the head SHA.
 
-The `post` job writes as the workflow bot, and the PR gates trust approval records from this bot. Thus the script treats the model text as untrusted. It escapes `&` and `<`, changes each `@` to a character that makes no mention, and limits the length.
+The `post` job writes as the workflow bot, and the gates trust markers and approval records from this bot. Thus the script treats the model text as untrusted. It escapes `&` and `<`, changes each `@` to a character that makes no mention, and limits the length. The model text cannot make a marker.
 
 ### Use of a Claude result
 
-A Claude result is advisory. No gate reads it. A person reads it. The review has no inline comments and no conversation. A push makes a new head, so ask again as the request rules say. The OAuth token is a static secret. If you suspect a leak, revoke it and make a new one.
+The `cross-review` gate accepts a Claude code review of the current head with `Findings: 0`. The `security-review` gate accepts a clean Claude security review of the current head. The gates accept a marker only from an `issue_comment` run of this workflow on the default branch. The review has no inline comments and no conversation. A push makes a new head, so ask again as the request rules say. The OAuth token is a static secret. If you suspect a leak, revoke it and make a new one.
 
 ### Local fallback: agy
 
@@ -69,7 +70,7 @@ If the GitHub reviewer is not available (no quota, an outage or no integration),
 python3 -B tools/cross_review.py --work "$REVIEW_WORK"
 ```
 
-Post the report on the PR. It starts with `Review (agy <version>):` and names the base and head commits. If agy is not available, ask the maintainer for a manual review. If the PR needs a security review, the maintainer also does a manual security review, as the [Security review](#security-review) section says.
+Post the report on the PR. It starts with `Review (agy <version>):` and names the base and head commits. The `cross-review` gate cannot read a local result. The maintainer reads the report and adds the `cross-reviewed` label, which the gate binds to the current head and base. If agy is not available, ask the maintainer for a manual review. If the PR needs a security review, the maintainer also does a manual security review, as the [Security review](#security-review) section says.
 
 The PR is untrusted input to agy:
 
@@ -82,26 +83,25 @@ The PR is untrusted input to agy:
 
 ## Security review
 
-[tools/classify_change.py](../tools/classify_change.py) owns the list of security-relevant paths. The list includes workflows, tools, the runner, parsers and command boundaries, Git storage, dependency lock files, the `Makefile`, agent instruction files and `docs/STANDARD.md`.
+The `security-review` gate decides from the changed paths. [.github/gates.json](../.github/gates.json) lists the project paths: tools, the runner, the `Makefile` and the executable sources, which include parsers, command boundaries and Git storage. The gates action adds the shared categories: workflows, agent instructions and settings, `docs/STANDARD.md`, `docs/REVIEW.md`, `SECURITY.md` and dependency manifests and lock files. [tools/classify_change.py](../tools/classify_change.py) gives a local estimate for the agy fallback and for contributors. The gate result controls.
 
 If a PR changes one of these paths, the `security-review` check fails until the current head has a security review with no open finding. A move counts both its old and new path. Agent instruction files and settings count at any directory depth. To pass the check:
 
 1. Ask for the security review in a PR comment, as the table above shows.
 2. Fix each finding, push, and ask again for the new head.
-3. If the Codex security review of the current head finds no security issues, the check passes. You do not add a label.
+3. If the Codex or Claude security review of the current head finds no security issues, the check passes. You do not add a label.
 
-The [PR policy rerun](../.github/workflows/pr-policy-rerun.yml) workflow starts the failed gate again when Codex posts a result. If the gate run is in progress, the workflow waits for it to complete. GitHub keeps the failed attempt in the run history. The gate trusts only results that the Codex app posts, and only for the commit that the result names. A push makes a new head, so the gate needs a new result. A result names a commit, not a base. Thus, the gate ignores results posted before the last change of the PR base branch. A clean result is a model output, not a proof. A PR can contain text that tries to steer the reviewer. If a change looks wrong to you, do not merge it.
+The [Gates rerun](../.github/workflows/gates-rerun.yml) workflow starts the failed gates again when Codex posts a result or the Claude review workflow completes. If the gate run is in progress, the workflow waits for it to complete. GitHub keeps the failed attempt in the run history. The gate trusts only results that the Codex app or the Claude review workflow posts, and only for the commit that the result names. A push makes a new head, so the gate needs a new result. A result names a commit, not a base. Thus, the gate ignores results posted before the last change of the PR base branch. A clean result is a model output, not a proof. A PR can contain text that tries to steer the reviewer. If a change looks wrong to you, do not merge it.
 
 The `security-reviewed` label is only for the cases that a clean Codex result cannot show:
 
 - Codex is not available, and the review came from the agy fallback: `python3 -B tools/cross_review.py --security yes --work "$REVIEW_WORK"`. Post the report.
 - A finding is not a defect, and the PR has an answer for it.
-- Claude Code did the security review, because Codex or agy wrote the change. The gate reads only Codex results.
 - Codex and agy are both not available, and the maintainer did a manual security review. The maintainer posts the review on the PR. The review names the head commit and the base commit, and gives each finding with its fix or its answer.
 
 In these cases, the maintainer adds the `security-reviewed` label. The label records a fact: the current head has a security review, and each finding has a fix or an answer. It is not a separate review. When the maintainer adds the label, the workflow posts an approval record with the PR head and base at that time. The label counts only while the PR has that head and base. After a push or a base change, the next run removes the label.
 
-The `PR policy` workflow uses the `pull_request_target` event. GitHub runs that workflow and `tools/pr_policy.py` from the base branch, so a PR cannot change its own gate. The workflow reads only the PR file list, the labels, its own approval records and the Codex review results. It never checks out or runs the PR head. Do not change this.
+The [Gates](../.github/workflows/gates.yml) workflow uses the `pull_request_target` event. GitHub runs that workflow from the base branch, and it checks out the base SHA. The gates action comes from one full SHA of `mohanraj00/.github`. Thus a PR cannot change its own gate or its `.github/gates.json`. The workflow reads only the PR file list, the labels, its own approval records and the review results. It never checks out or runs the PR head. Do not change this.
 
 The workflow posts the approval records with the workflow token. A fork PR gets a read-only token, so it cannot write a record. A user with write access can change a workflow to write one, so the gates trust writers.
 
@@ -121,6 +121,6 @@ If the contributor pushes again, read the new commits before you approve the run
 
 ## CI scope
 
-The `CI` workflow runs `make check` on every PR and every push to `main`. This target runs the project check and the Claude review tests. It runs the full suite only when code paths change: `src/`, `examples/`, `tests/`, `tools/`, `verify.py`, the `Makefile` or the CI workflow. Other changes, for example docs or other workflows, skip the full suite. The full suite runs `verify.py` on two runners, `ubuntu-24.04` and `macos-15`. The two runs are independent: a failure on one runner does not stop the other run. The `ci-ok` job passes if each needed job passed or was skipped. Thus `ci-ok` fails if the full suite fails on either runner.
+The `CI` workflow runs `make check` (the `shared-project` job) and a parse of each workflow with a pinned `actionlint` (the `actionlint` job) on every PR and every push to `main`. `make check` runs the project check and the Claude review tests. The `changes` job runs the `classify` step of the gates action with `.github/gates.json` from the base branch. A docs-only PR skips the full suite. Each other PR and each push to `main` runs it. The full suite runs `verify.py` on two runners, `ubuntu-24.04` and `macos-15`. The two runs are independent: a failure on one runner does not stop the other run. The `ci-ok` job passes if each needed job passed or was skipped, and the `changes` job passed. Thus `ci-ok` fails if the full suite fails on either runner.
 
-The `CI` workflow uses the `pull_request` event and runs the PR code without secrets. Thus a PR can change its own CI scope. The trusted `security-review` gate covers this: a change to `.github/` or `tools/` needs a security review.
+The `CI` workflow uses the `pull_request` event and runs the PR code without secrets. A PR can change its own CI jobs, but not the docs-only decision, which comes from the base branch. The trusted `security-review` gate covers the rest: a change to `.github/` or `tools/` needs a security review.
