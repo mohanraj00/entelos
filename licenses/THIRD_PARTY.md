@@ -20,13 +20,14 @@ The author CLI is fetched separately from its pinned public repository, which re
 
 ## CI tools
 
-The [Claude review](../.github/workflows/claude-review.yml) workflow downloads one tool on the GitHub runner. The tool is not in this tree, and this project does not distribute it.
+The [Claude review](../.github/workflows/claude-review.yml) and [CI](../.github/workflows/ci.yml) workflows each download one tool on the GitHub runner. The tools are not in this tree, and this project does not distribute them.
 
 | Package | Version | Observed license | Use |
 |---|---|---|---|
 | @anthropic-ai/claude-code-linux-x64 | 2.1.319 | Proprietary. The package `LICENSE.md` says "All rights reserved" and points to the Anthropic legal agreements at https://code.claude.com/docs/en/legal-and-compliance. | The workflow checks the SHA-512 value of the package, then runs the CLI on the runner with the owner's OAuth token. |
+| actionlint (rhysd/actionlint, linux_amd64 release archive) | 1.7.7 | MIT. The `LICENSE.txt` of the release archive says "the MIT License", Copyright (c) 2021 rhysd. | The `actionlint` job of the CI workflow checks the SHA-256 value of the archive, then parses each workflow. It gets no secret. |
 
-The Apache-2.0 licence of this project does not apply to this tool. The owner's account agreement with Anthropic controls its use. If the workflow changes the CLI version, change this row too.
+The Apache-2.0 licence of this project does not apply to this tool. The owner's account agreement with Anthropic controls its use. If a workflow changes the version of a tool, change its row too.
 
 Before distributing any binary, enumerate its actual linked dependencies and retain required license/NOTICE/copyright material. That includes any optional tool binary selected for distribution. A source-only reference is not permission to omit upstream notices from a later binary release.
 

@@ -52,9 +52,11 @@ for path,code,security in [('README.md',False,False),('src/lifecycle-core/host.g
 # The Claude review workflow keeps the design in docs/REVIEW.md. tools/claude_review.py owns the list of checks.
 from claude_review import workflow_errors
 errors+=['claude-review.yml '+x for x in workflow_errors((ROOT/'.github/workflows/claude-review.yml').read_text())]
-# The licence record of the downloaded CLI must name the pinned version.
+# The licence record of each downloaded CI tool must name the pinned version.
 cli=re.search(r'CLI_VERSION: (\S+)\n',(ROOT/'.github/workflows/claude-review.yml').read_text())
 if not cli or '| @anthropic-ai/claude-code-linux-x64 | %s |'%cli.group(1) not in (ROOT/'licenses/THIRD_PARTY.md').read_text():errors.append('licenses/THIRD_PARTY.md must record the Claude CLI version of claude-review.yml')
+lint=re.search(r'ACTIONLINT_VERSION: (\S+)\n',(ROOT/'.github/workflows/ci.yml').read_text())
+if not lint or '| actionlint (rhysd/actionlint, linux_amd64 release archive) | %s |'%lint.group(1) not in (ROOT/'licenses/THIRD_PARTY.md').read_text():errors.append('licenses/THIRD_PARTY.md must record the actionlint version of ci.yml')
 # The agy fallback must not load the maintainer's global allow rules or MCP servers.
 review=(ROOT/'tools/cross_review.py').read_text()
 for need in ["env['HOME']=home","'--sandbox'","'allow':[]"]:
