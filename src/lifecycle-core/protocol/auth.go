@@ -5,12 +5,15 @@ import (
 	"crypto/subtle"
 	"errors"
 	"io"
+	"net"
 	"os"
 	"syscall"
+	"time"
 )
 
 const authMarker = "ENT1"
 const tokenSize = 64
+const authWait = 30 * time.Second
 
 var errToken = errors.New("sidecar token required or invalid")
 var errTokenFormat = errors.New("token file must contain 64 lowercase hex digits and an optional newline")
@@ -47,16 +50,20 @@ func readToken(path string) ([]byte, error) {
 	return token, nil
 }
 
-func authenticate(r io.Reader, path string) error {
+func authenticate(conn net.Conn, path string) error {
+	if err := conn.SetReadDeadline(time.Now().Add(authWait)); err != nil {
+		return err
+	}
+	defer conn.SetReadDeadline(time.Time{})
 	var marker [len(authMarker)]byte
-	if _, err := io.ReadFull(r, marker[:]); err != nil {
+	if _, err := io.ReadFull(conn, marker[:]); err != nil {
 		return err
 	}
 	if string(marker[:]) != authMarker {
 		return errToken
 	}
 	var presented [tokenSize]byte
-	if _, err := io.ReadFull(r, presented[:]); err != nil {
+	if _, err := io.ReadFull(conn, presented[:]); err != nil {
 		return errToken
 	}
 	expected, err := readToken(path)

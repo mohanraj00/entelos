@@ -28,11 +28,14 @@ The sidecar checks the prelude and the current token before reading the frame
 length or JSON. A missing or wrong credential gets one `unauthenticated`
 response with `request_id` set to `""` and diagnostic stage
 `authentication`, then the sidecar closes the connection. The Host receives
-no request and writes no record. A clean EOF between requests ends the stream.
+no request and writes no record. The sidecar waits up to 30 seconds for the
+prelude of each request. An idle client can reconnect. A clean EOF between
+requests ends the stream.
 
 The operator configures and rotates the token with
-[`--token-file`](../lifecycle-core/README.md#sidecar). Socket clients from
-v0.2.0 need the new prelude. The JSON messages and their version remain 1.0.
+[`--token-file`](../lifecycle-core/README.md#sidecar). This prelude is required
+starting with v0.3.0. Clients written for v0.2.0 must change their request
+framing before calling the v0.3.0 sidecar. The JSON messages remain at version 1.0.
 
 ## Frame
 
