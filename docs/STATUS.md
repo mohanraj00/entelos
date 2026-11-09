@@ -73,6 +73,7 @@ On 2026-10-31, the M3 work was complete in `main` (PR #59, merge `f14e2f8`):
 - [examples/tier-eligibility/](../examples/tier-eligibility/) adds a third neutral example, `feature.bulk_export`. It reuses `src/` without a copy.
 - The example needed 0 `src/` changes. `verify.py` runs it as the `tier-eligibility` check, and the full run had 20 passed checks and 0 failed checks.
 - [FINDINGS.md](../examples/tier-eligibility/FINDINGS.md) records 9 docs gaps. For each gap, the author read source to continue. Issue #60 owns the docs for these gaps.
+- The [consumer guide](ADD_CONSUMER.md) covers reuse, the record-filter scenario limit and adding an example to the verifier (#66). The [contract map](CONTRACTS.md) covers the author fixture, fixed values, case checks, lifecycle requests, proposal base and content references (#63, #64 and #65). The CI example README remains tracked in #62.
 
 These are the limits of the M3 result:
 
