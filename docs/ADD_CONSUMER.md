@@ -66,6 +66,10 @@ Use the [request field table](CONTRACTS.md#lifecycle-request-records) to send
 and `decide` and `activate` as reviewer. Load as worker before invoking as
 caller. The first proposal uses `base_snapshot=""`. Later proposals use the
 most recent proposal's `snapshot_ref`, even if it failed qualification.
+Use `result(call(...))` to get a write's `source_ref`, `plan_ref`,
+`snapshot_ref`, `report_ref`, `decision_ref` or `event_ref` for the next step.
+Check `report.status` inside the qualification result before deciding.
+`ack` can record the worker's preparation after `load`.
 Use the [bundle media types](CONTRACTS.md#content-references-for-a-stage-bundle)
 to recompute references when fixed values or rule bytes change. The
 `bundle` argument maps `manifest`, `environment`, `source` and `fixed`
@@ -85,7 +89,11 @@ the new interval overlaps. See [activation targets](CONTRACTS.md#activation-targ
 For a changed rule, write a new proposal and leave the first receipt intact.
 Use a reader context to replay the original receipt and restate it at the
 later accepted cursor. Check the values and both receipts' selected
-snapshots. Include one refusal such as a stale bundle or missing input.
+snapshots. A write result from `invoke`, `replay` or `restate` has
+`actual`, `receipt` and `receipt_ref`. A reader's `receipt` call returns the
+receipt directly. Its `mode` is `invoke`, `replay` or `restate` for those
+operations, and the two forensic operations name `previous_receipt`.
+Include one refusal such as a stale bundle or missing input.
 The unchanged [`caller.py`](../src/lifecycle-core/client/caller.py) can call
 the new function with `--function`, `--date` and `--inputs`. See the
 [caller command](WALKTHROUGH.md#6-call-as-a-caller) for the other arguments.
@@ -104,6 +112,21 @@ the example's `run.py`, a fresh subdirectory of `w`, and the built
 `cel-handoff`, `cel-expr` and `lifecycle-core` binaries in `w / 'bin'`.
 Read the new example's `results.json`. Require both exit code 0 and status
 `passed`, and include the example's errors if either condition fails.
+
+```python
+example_work = w / "export-example"
+example = run("export-example", [
+    sys.executable, "-B", ROOT / "examples/export-example/run.py",
+    "--work", example_work, "--cel-binary", w / "bin/cel-handoff",
+    "--author-binary", w / "bin/cel-expr", "--host", w / "bin/lifecycle-core",
+])
+result_path = example_work / "results.json"
+result = json.loads(result_path.read_text()) if result_path.exists() else {
+    "status": "failed", "errors": [example.stderr],
+}
+check("export-example", "Does the export example preserve its earlier answer?",
+      example.returncode == 0 and result["status"] == "passed", result)
+```
 
 Regenerate `checksums.json` with
 `python3 -B tools/check_project.py --write-checksums`. Run `make check` and
