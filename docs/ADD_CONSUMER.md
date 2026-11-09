@@ -47,7 +47,8 @@ Keep its generic methods:
 
 - `call(actor, op, name=None, expected="ok", **fields)` sends one operation
   and records the request and response. It fills the revision and retry key
-  for writes and asserts the outer status.
+  for writes and asserts the outer status. It returns the response's `data`
+  on success or the response with its diagnostic on an expected refusal.
 - `cursor()` gives the current accepted Git root. `result(data)` extracts
   the inner result of a successful write.
 - `check(name, question, passed, actual)` records an assertion and stops the
@@ -70,6 +71,17 @@ to recompute references when fixed values or rule bytes change. The
 `bundle` argument maps `manifest`, `environment`, `source` and `fixed`
 to the UTF-8 strings of the four files.
 
+For example, when a stage changes its fixed values, build the fixed bytes
+with `fixed = encode(stage_fixed_values)`. Set
+`manifest["fixed_ref"] = content_ref(envelope(MIMES["fixed"], fixed))`
+before encoding the manifest. Keep the environment and source bytes from
+the prepared bundle if that stage uses the same declarations and rule.
+
+Read `event_ref` from the result of `activate`. To suspend the first revision,
+pass that reference in `targets` with the interval you want to mask. When
+activating a replacement directly, list every earlier live activation that
+the new interval overlaps. See [activation targets](CONTRACTS.md#activation-targets).
+
 For a changed rule, write a new proposal and leave the first receipt intact.
 Use a reader context to replay the original receipt and restate it at the
 later accepted cursor. Check the values and both receipts' selected
@@ -81,7 +93,8 @@ the new function with `--function`, `--date` and `--inputs`. See the
 ## Run and record it
 
 Keep the bundle, store, `results.json` and `commands.json` under the external
-`--work` directory. Write the partial trace and the error on failure and
+`--work` directory. Use `driver.trace` and `driver.checks` for the lifecycle
+evidence. Write the partial trace and the error on failure and
 exit with status 1. Include a top-level `status` of `passed` or `failed` in
 `results.json`.
 

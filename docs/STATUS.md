@@ -93,7 +93,7 @@ On 2026-11-03, the M4 exit test was met in `main`:
 These are the limits of the M4 result:
 
 - The outside pull requests changed only docs. No outside contributor changed code.
-- Starter issues #62, #65 and #66 are open. PR #71 for issue #65 is open.
+- Starter issues #62, #65 and #66 were open at the M4 exit test. PR #71 later closed #65.
 
 ### M6 Store-neutral core and versioned protocol
 
