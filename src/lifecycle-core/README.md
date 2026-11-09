@@ -44,11 +44,13 @@ The `sidecar-protocol` check in `verify.py` builds `cmd/entelos-sidecar`. Then i
 ## Sidecar
 
 ```sh
-entelos-sidecar --socket <path> --repo <store.git> --context <context.json> --runtime <cel-handoff> --work <dir> --schema src/protocol/schema
+entelos-sidecar --socket <path> --repo <store.git> --context <context.json> --runtime <cel-handoff> --work <dir> --schema src/protocol/schema --token-file <path>
 ```
 
 - The host context comes from the `--context` file. A request cannot supply the actor, the roles or the scope. The context fields are `actor`, `roles`, `scope`, `runner_actor`, `worker`, `functions` and the optional boolean `upload_inputs`, the ingest upload policy. See [CONTRACTS.md](../../docs/CONTRACTS.md#receipt-provenance-and-ingest).
 - The sidecar reads the schemas from `--schema` at start. If an operation schema does not agree with the Host read operations, the sidecar does not start.
+- Create the token in a private directory, for example with `(umask 077; set -C; openssl rand -hex 32 > sidecar.token)`. The token file must be a regular file owned by the sidecar user with mode 0600. It contains exactly 64 lowercase hex digits and may end with one newline. The sidecar refuses to start with an invalid file. Pass only the file path on the command line.
+- The client sends the [token prelude](../protocol/PROTOCOL.md#unix-socket-authentication) before each request. To rotate, create a new token file in the same directory, then rename it over the old file. The sidecar opens the file for each authentication check, including on existing connections. An unavailable or invalid file denies new requests. A request that has passed the token check can finish.
 - The socket file has mode 0600. The umask is 0177 while the sidecar makes the socket, so the mode is 0600 from the start.
 - If the socket path exists, the sidecar removes it only if it is a stale socket: a socket file with no listener. If the path is another file type or a socket with a listener, the sidecar does not start.
 - While the sidecar starts, it holds an exclusive lock on `<path>.lock` for the stale check, the removal and the bind. It releases the lock when the socket listens. Thus two sidecars that start at the same time at one stale socket cannot both remove it. The lock file stays, with mode 0600. If the lock path is not a regular file that the current user owns and can read and write, or another process holds the lock for 10 seconds, the sidecar does not start.
@@ -66,5 +68,5 @@ The lifecycle build identity is a content reference over the core `*.go` sources
 - Records that hold the lifecycle build (reports, receipts and decisions) get new content references when a core source changes.
 - The scenario runs only on the Git adapter. The in-memory adapter has the storage vectors, store tests and one in-process Host test.
 - Windows is not tested. The sidecar is POSIX only.
-- The sidecar has no authentication. The file mode of the socket is the only access control. Some BSD systems do not check the mode of a socket file, so put the socket in a directory with mode 0700.
+- Put the socket and the token in a directory with mode 0700. Every client holding the token uses the host context selected for that socket. Treat the socket directory and the account that runs the sidecar as trusted.
 - The socket vectors cannot make the sidecar do short writes. The in-process Go tests cover short reads and short writes.

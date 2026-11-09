@@ -6,6 +6,7 @@ import (
 	"net"
 	"os"
 	"strings"
+	"syscall"
 	"testing"
 	"time"
 
@@ -15,6 +16,9 @@ import (
 // The tests use a relative socket path in a new working directory, because
 // the full path of a temporary directory can be longer than sun_path.
 const sock = "test.sock"
+const tokenPath = "sidecar.token"
+
+var testToken = strings.Repeat("a", tokenSize)
 
 func inTempDir(t *testing.T) {
 	t.Helper()
@@ -103,11 +107,17 @@ func TestListenRefusesLongPath(t *testing.T) {
 
 func startServer(t *testing.T, host Handler) (*Server, *net.UnixListener, chan error) {
 	t.Helper()
+	if err := os.WriteFile(tokenPath, []byte(testToken+"\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	s, err := NewServer(NewAdapter(host, loadTestSchemas(t)), tokenPath)
+	if err != nil {
+		t.Fatal(err)
+	}
 	l, err := Listen(sock)
 	if err != nil {
 		t.Fatal(err)
 	}
-	s := &Server{Adapter: NewAdapter(host, loadTestSchemas(t))}
 	done := make(chan error, 1)
 	go func() { done <- s.Serve(l) }()
 	return s, l, done
@@ -115,8 +125,17 @@ func startServer(t *testing.T, host Handler) (*Server, *net.UnixListener, chan e
 
 func roundTrip(t *testing.T, conn net.Conn, payload []byte) lifecycle.Object {
 	t.Helper()
+	return socketReply(t, conn, authenticatedFrame(testToken, payload))
+}
+
+func authenticatedFrame(token string, payload []byte) []byte {
+	return append([]byte(authMarker+token), frameOf(payload)...)
+}
+
+func socketReply(t *testing.T, conn net.Conn, wire []byte) lifecycle.Object {
+	t.Helper()
 	conn.SetDeadline(time.Now().Add(10 * time.Second))
-	if _, err := conn.Write(frameOf(payload)); err != nil {
+	if _, err := conn.Write(wire); err != nil {
 		t.Fatal(err)
 	}
 	header := make([]byte, 4)
@@ -132,6 +151,97 @@ func roundTrip(t *testing.T, conn net.Conn, payload []byte) lifecycle.Object {
 		t.Fatal(err)
 	}
 	return value.(lifecycle.Object)
+}
+
+func TestSocketAuthenticatesEveryFrame(t *testing.T) {
+	inTempDir(t)
+	calls := make(chan struct{}, 4)
+	host := gateHost{entered: calls}
+	release := make(chan struct{})
+	close(release)
+	host.release = release
+	s, l, done := startServer(t, host)
+	t.Cleanup(func() {
+		if err := s.Shutdown(l); err != nil {
+			t.Error(err)
+		}
+		if err := <-done; err != nil {
+			t.Error(err)
+		}
+	})
+	dial := func() net.Conn {
+		conn, err := net.Dial("unix", sock)
+		if err != nil {
+			t.Fatal(err)
+		}
+		t.Cleanup(func() { conn.Close() })
+		return conn
+	}
+	deny := func(conn net.Conn, wire []byte) {
+		t.Helper()
+		got := socketReply(t, conn, wire)
+		want := failure("", "unauthenticated", "authentication", "sidecar token required or invalid")
+		if string(lifecycle.Encode(got)) != string(lifecycle.Encode(want)) {
+			t.Fatalf("got %v, want %v", got, want)
+		}
+		if _, err := conn.Read(make([]byte, 1)); err != io.EOF {
+			t.Fatalf("denial did not close the connection: %v", err)
+		}
+	}
+	// Withhold the entire JSON body, and keep the write side open. A server
+	// that reads it before authenticating would wait instead of answering.
+	deny(dial(), frameOf(inspect)[:4])
+	deny(dial(), []byte(authMarker+strings.Repeat("b", tokenSize)))
+	conn := dial()
+	if got := roundTrip(t, conn, inspect); got["status"] != "ok" {
+		t.Fatalf("valid token: %v", got)
+	}
+
+	newToken := strings.Repeat("c", tokenSize)
+	if err := os.WriteFile("new.token", []byte(newToken), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Rename("new.token", tokenPath); err != nil {
+		t.Fatal(err)
+	}
+	if got := socketReply(t, conn, authenticatedFrame(newToken, inspect)); got["status"] != "ok" {
+		t.Fatalf("rotated token on an open connection: %v", got)
+	}
+	deny(conn, []byte(authMarker+testToken))
+	if err := os.Remove(tokenPath); err != nil {
+		t.Fatal(err)
+	}
+	deny(dial(), []byte(authMarker+newToken))
+	if len(calls) != 2 {
+		t.Fatalf("Host got %d calls, want only the two authenticated calls", len(calls))
+	}
+}
+
+func TestNewServerRejectsInvalidTokenFile(t *testing.T) {
+	inTempDir(t)
+	for _, name := range []string{"missing", "broad-mode", "wrong-format", "link", "fifo"} {
+		t.Run(name, func(t *testing.T) {
+			var err error
+			switch name {
+			case "broad-mode":
+				err = os.WriteFile(name, []byte(testToken), 0o644)
+			case "wrong-format":
+				err = os.WriteFile(name, []byte(testToken+"\n\n"), 0o600)
+			case "link":
+				if err = os.WriteFile(tokenPath, []byte(testToken), 0o600); err == nil {
+					err = os.Symlink(tokenPath, name)
+				}
+			case "fifo":
+				err = syscall.Mkfifo(name, 0o600)
+			}
+			if err != nil {
+				t.Fatal(err)
+			}
+			if _, err := NewServer(nil, name); err == nil {
+				t.Fatal("accepted invalid token file")
+			}
+		})
+	}
 }
 
 // A stored record with an unknown format gives a structured diagnostic through
@@ -290,7 +400,7 @@ func TestShutdownKeepsReplacementSocket(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer conn.Close()
-	if _, err := conn.Write(frameOf(inspect)); err != nil {
+	if _, err := conn.Write(authenticatedFrame(testToken, inspect)); err != nil {
 		t.Fatal(err)
 	}
 	<-h.entered
