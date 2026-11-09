@@ -10,7 +10,8 @@ receipts in a local Git store.
 
 - Each sidecar request uses an operator-configured bearer token (#125). A
   missing or invalid token returns `unauthenticated` before the sidecar reads
-  the JSON. Token rotation applies to open connections.
+  the JSON. Token rotation applies to open connections. The sidecar waits up
+  to 30 seconds for a request's token prelude.
 - Retrying a write requires current access to the affected functions (#14).
   An authorized retry still returns its original result and cursor.
 - The consumer guide explains the author and lifecycle fixtures, the shared
@@ -22,6 +23,8 @@ receipts in a local Git store.
 - v0.2.0 socket clients need the token prelude on every request, and the
   launcher needs `--token-file`. JSON message version 1.0 and response
   framing carry forward. See [the socket protocol](src/protocol/PROTOCOL.md).
+- Go code that embeds the socket server creates it with
+  `protocol.NewServer(adapter, tokenFile)`.
 - Record format remains `entelos.record/1`. The v0.1.0 store format is
   unsupported. Keep the original lifecycle and engine builds with the store
   for exact replay. See [compatibility and retention](docs/SUPPORT.md#compatibility-and-retention).
