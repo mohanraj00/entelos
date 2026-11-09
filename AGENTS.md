@@ -4,7 +4,7 @@ Read [CONSTITUTION.md](CONSTITUTION.md), this file, then [docs/STATUS.md](docs/S
 
 ## Shared harness setup
 
-Codex reads this entry point. `CLAUDE.md` and `GEMINI.md` import this file and the constitution, for Claude Code and agy (Antigravity). Shared skills live in `.agents/skills/`; `.claude/skills` is a relative link to that directory. Edit shared instructions only at their owning path.
+Codex reads this entry point. `CLAUDE.md` and `GEMINI.md` import this file and the constitution, for Claude Code and agy (Antigravity). Shared skills live in `.agents/skills/`; `.claude/skills` is a relative link to that directory. If a harness does not find a skill, read its `SKILL.md` directly. Edit shared instructions only at their owning path.
 
 For contract, lifecycle, integration or reproduction work, read `.agents/skills/decision-workflow/SKILL.md`. No model account is needed for the deterministic checks. This structure does not claim equivalent model performance across harnesses.
 
@@ -21,7 +21,7 @@ For contract, lifecycle, integration or reproduction work, read `.agents/skills/
 
 Start from a GitHub issue with a concrete workflow and completion criteria. Inspect the working tree and preserve unrelated edits. Use a task branch for subsequent engineering work; Codex defaults to `codex/<topic>`. Initial repository bootstrap may create `main` directly.
 
-Map the change to its question before adding machinery. Keep authoring and calling usable through explicit contracts and structured diagnostics. Separate domain projection/authority/policy from reusable mechanics. Use independently stated expectations; never label a candidate's own output as its oracle.
+See the principles in [CONSTITUTION.md](CONSTITUTION.md#principles).
 
 Run the checks relevant to the change. For every change, run the project check and the Claude review tests:
 
