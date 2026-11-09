@@ -19,7 +19,7 @@ For contract, lifecycle, integration or reproduction work, read `.agents/skills/
 
 ## Work and verification
 
-Start from a GitHub issue with a concrete workflow and completion criteria. Inspect the working tree and preserve unrelated edits. Use a task branch for subsequent engineering work; Codex defaults to `codex/<topic>`. Initial repository bootstrap may create `main` directly.
+[docs/STANDARD.md](docs/STANDARD.md#builds) gives the build rules: the issue, the harness label and the branch name. Give each issue a concrete workflow and completion criteria. Inspect the working tree and preserve unrelated edits.
 
 See the principles in [CONSTITUTION.md](CONSTITUTION.md#principles).
 
@@ -41,7 +41,7 @@ Preserve failed runs. Record a changed method and its reason; call a repaired sa
 
 ## Review
 
-A harness does not review its own change. Ask the other harness for a review in a PR comment on GitHub: Claude Code writes `@codex review`; Codex and agy write `@claude review this PR. Use the Review guidelines in AGENTS.md.` If that reviewer is not available, run the local agy fallback, `python3 -B tools/cross_review.py`. A security-relevant change also needs a security review. [docs/REVIEW.md](docs/REVIEW.md) owns the request rules, the fallback, fork PR acceptance and the CI scope.
+Governance rule 1 in [CONSTITUTION.md](CONSTITUTION.md#governance) says who reviews a change. [docs/STANDARD.md](docs/STANDARD.md#reviews) gives the reviewers, the fallback, the review requests and the security review trigger. [docs/REVIEW.md](docs/REVIEW.md) gives the request texts of this project, the local agy fallback command and the CI scope.
 
 ## Review guidelines
 
@@ -64,6 +64,6 @@ GitHub issues own live status. At completion, comment with the commit, checks, l
 
 `checksums.json` inventories regular source files except itself. After an intended source edit, regenerate it with `python3 -B tools/check_project.py --write-checksums`, review the diff, then run the project check. That command records bytes; it does not validate their behavior or authorize publication. The only source symlink is `.claude/skills` to the internal shared skill directory.
 
-Obtain specific maintainer authorization for public pushes, tags/releases, package publication and outreach. An engineering task does not authorize promotion or a change to any other repository. Never publish private application material or claim unsupported production guarantees. Report security concerns through [SECURITY.md](SECURITY.md).
+Governance rule 4 in [CONSTITUTION.md](CONSTITUTION.md#governance) lists the steps that need a separate owner approval. An engineering task does not authorize promotion or a change to any other repository. Never publish private application material or claim unsupported production guarantees. Report security concerns through [SECURITY.md](SECURITY.md).
 
 Write short, concrete English. Explain the behavior, checks and limits. Public writing uses first person where appropriate. Avoid em dashes, filler and invented quality claims.

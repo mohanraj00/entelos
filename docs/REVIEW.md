@@ -1,13 +1,12 @@
 # Review and merge rules
 
-These rules apply to every change to `main`. [AGENTS.md](../AGENTS.md) owns the general workflow.
+These rules apply to every change to `main`. [docs/STANDARD.md](STANDARD.md) owns the rules for builds, reviews, approvals and CI. This file gives the request texts, the tools and the CI scope of this project.
 
 ## Protected main
 
 - Every change goes through a pull request. Direct pushes, force pushes and branch deletion are blocked.
 - The required checks are `ci-ok`, `cross-review`, `security-review` and `acceptance`. The shared gates of [mohanraj00/.github](https://github.com/mohanraj00/.github) supply the last three. [docs/STANDARD.md](STANDARD.md) gives the rules.
-- A new push dismisses earlier approvals.
-- The `acceptance` check fails for a level 1 PR. The maintainer merges a level 1 PR with the admin bypass. An agent never approves a PR and never merges a level 1 PR.
+- The approval levels and the main ruleset are in [docs/STANDARD.md](STANDARD.md#approvals). The agent rules are in the governance block of [CONSTITUTION.md](../CONSTITUTION.md#governance).
 - [.github/gates.json](../.github/gates.json) lists the project paths of the gates: the code paths, the security-relevant sources and boundaries, the added level 1 paths and the generated files. The gates action adds the shared categories.
 
 ## Human contributors
@@ -16,7 +15,7 @@ A contributor does not need Codex, Claude Code or agy. [CONTRIBUTING.md](../CONT
 
 ## Cross-harness review
 
-A harness does not review its own change. The branch prefix names the harness that wrote the change: `claude/`, `codex/` or `agy/`. The reviews run on GitHub. No harness reviews a PR by default, so the PR author asks in a PR comment.
+Governance rule 1 in [CONSTITUTION.md](../CONSTITUTION.md#governance) says who reviews a change. The branch prefix names the harness that wrote the change: `claude/`, `codex/` or `agy/`. The reviews run on GitHub. No harness reviews a PR by default, so the PR author asks in a PR comment.
 
 | Builder | Code review comment | Security review comment |
 |---|---|---|
@@ -66,13 +65,13 @@ The `cross-review` gate accepts a Claude code review of the current head and the
 
 ### Local fallback: agy
 
-If the GitHub reviewer is not available (no quota, an outage or no integration), run agy on your machine:
+[docs/STANDARD.md](STANDARD.md#reviews) says when the fallback starts, who adds the labels for a local result, and what to do if agy is not available. To run agy on your machine:
 
 ```sh
 python3 -B tools/cross_review.py --work "$REVIEW_WORK"
 ```
 
-Post the report on the PR. It starts with `Review (agy <version>):` and names the base and head commits. The `cross-review` gate cannot read a local result. The maintainer reads the report and adds the `cross-reviewed` label, which the gate binds to the current head and base. If agy is not available, ask the maintainer for a manual review. If the PR needs a security review, the maintainer also does a manual security review, as the [Security review](#security-review) section says.
+Post the report on the PR. It starts with `Review (agy <version>):` and names the base and head commits. The `cross-review` gate cannot read a local result. The maintainer reads the report and adds the `cross-reviewed` label, which the gate binds to the current head and base.
 
 The PR is untrusted input to agy:
 
@@ -93,9 +92,7 @@ If a PR changes one of these paths, the `security-review` check fails until the 
 2. Fix each finding, push, and ask again for the new head.
 3. If the Codex security review of the current head finds no security issues, the check passes. You do not add a label. A Codex receipt with an open finding stops the pass.
 
-Some listed changes need no security review, because the security review of `mohanraj00/.github` covers them: an exact copy of a file of that repository at the pinned SHA, and a change of only the SHA in a pin line of the gates action to a SHA on its `main`. The gate proves each one. Each other listed change still needs a review, and the PR stays level 1.
-
-For a finding in the gates or in their copies, use the stop rule in the threat model of [STANDARD.md](STANDARD.md). Fix the finding now only if it is P0 or P1 and a fork contributor or text in a diff can reach it. For each other finding, write the reason on the PR and close the thread. If the finding is in a copied file, file it in `mohanraj00/.github`, and do not change the copy.
+[docs/STANDARD.md](STANDARD.md#security-review-trigger) says which copied files and pin changes need no security review. Its `## Reviews` section gives the stop rule for a finding in the gates or in their copies.
 
 The [Gates rerun](../.github/workflows/gates-rerun.yml) workflow starts the failed gates again when Codex posts a result or the Claude review workflow completes. If the gate run is in progress, the workflow waits for it to complete. GitHub keeps the failed attempt in the run history. The gate trusts only results that the Codex app or the Claude review workflow posts, and only for the commit that the result names. A push makes a new head, so the gate needs a new result. A result names a commit, not a base. Thus, the gate ignores results posted before the last change of the PR base branch. A clean result is a model output, not a proof. A PR can contain text that tries to steer the reviewer. If a change looks wrong to you, do not merge it.
 
@@ -116,7 +113,7 @@ The workflow posts the approval records with the workflow token. A fork PR gets 
 
 GitHub does not run workflows for a PR from an outside contributor until a maintainer approves the run. Before you approve the run, read the workflow and tool changes. Do not approve a run that changes `.github/` or `tools/` until you understand the change.
 
-The `acceptance` check fails for a fork PR until the PR has the `accepted` label. The label counts only for the head and base in its approval record, as for the security label. The check also needs the owner approval of stage 2 for the current head and base: the `ready-for-review` label, or an approval with the GitHub Approve button. A review does not start the gates, so after an approval, run the failed `acceptance` job again. Before you add the `accepted` label, make sure that:
+[docs/STANDARD.md](STANDARD.md#fork-prs) gives the two stages of fork PR acceptance. Before you add the `accepted` label, make sure that:
 
 - the PR links an issue with a concrete workflow and completion criteria;
 - the change contains no private application material, credentials, customer data or generated binaries;
