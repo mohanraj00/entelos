@@ -30,7 +30,7 @@ Follow these rules for each request:
 2. For a Codex code review request, write `Head: <sha>` on the next line of the comment, with the short SHA of the PR head commit. Do not add this line to a Claude request. The Claude review starts only for the exact text in the table, and its comment names the head that it reviewed.
 3. Write a security review request as the exact text in the table, with no other text in the comment. If the comment has other text, for example a `Head:` line, Codex does a code review and no security review. The Codex result names the commit that it reviewed.
 4. Ask one time for each head commit. Before you ask, read the PR comments. If a request names the current head, or comes after the last push, do not ask again.
-5. If you push fixes after a review, ask again for the new head. Ask at most 3 times for each PR. After that, ask the maintainer to review.
+5. If you push fixes after a review, ask again for the new head. Ask at most 3 times for each PR. After that, ask the maintainer to review. The `gate` job of the Claude review workflow stops a second Claude review of one kind for a head and merge base, and a Claude review after 3 of one kind.
 6. Fix each real finding, or write on the PR why it is not a defect.
 
 Codex reviews through the Codex GitHub integration. Claude Code reviews through the [Claude review](../.github/workflows/claude-review.yml) workflow. The workflow starts only if all of these are true:
@@ -43,18 +43,20 @@ A comment or a review with other text does not start the workflow. The comment t
 
 ### Claude review design
 
-An issue comment event reads the workflow from `main`, so a PR cannot change this workflow for its own review. The workflow has two jobs.
+An issue comment event reads the workflow from `main`, so a PR cannot change this workflow for its own review. The workflow has three jobs: `gate`, `review` and `post`. The requests on one PR run one at a time. A new pending request replaces an older pending request, and the older request posts no comment.
+
+The `gate` job has `actions: read`, `contents: read`, `issues: read` and `pull-requests: read` only, with no environment and no secret. It runs the `claude-review` check of the gates action, with the same SHA as the other gates. For a fork PR, it needs the stage 2 owner approval of the current head and base, with the same code as the `acceptance` gate. It stops a request if a trusted marker of the same kind names the current head and merge base, or if the PR has 3 trusted markers of that kind. On a pass, it gives the head, the base and the merge base to the `review` job.
 
 The `review` job has `contents: read` and `pull-requests: read` only. It uses the `claude-review` environment, which holds the `CLAUDE_CODE_OAUTH_TOKEN` secret. Only the CLI step gets the secret. The environment needs a deployment branch rule for `main`. The job does these steps:
 
-1. It checks out `main`. It reads the base branch of the PR from the API, and fetches that branch and the PR commits as Git objects only. It never checks out PR files, so the PR cannot supply instructions, settings or code.
+1. It checks out `main`. It reads the base branch of the PR from the API, and fetches that branch and the PR commits as Git objects only. It never checks out PR files, so the PR cannot supply instructions, settings or code. If the head, the base or the merge base is not the same as in the `gate` job, the job fails. Then ask again.
 2. It writes the diff with `git diff --no-ext-diff --no-textconv -U20 pr/base...pr/head`. If the diff is empty, the job fails.
 3. It installs one exact version of the Claude Code CLI and checks the SHA-512 value of the package.
 4. It runs the CLI in restricted mode with only the `Read`, `Grep` and `Glob` tools, no MCP server, no slash command and a turn limit. These tools cannot read `/proc`. The prompt says that the diff is untrusted data.
 5. It checks the JSON result: `type` is `result`, `subtype` is `success`, `is_error` is false, `result` is not empty and `permission_denials` is empty. If a check fails, the job fails.
-6. It keeps the review text and the head SHA in an artifact.
+6. It keeps the review text, the head SHA and the merge base in an artifact.
 
-The `post` job has `contents: read`, `issues: write` and `pull-requests: write` only, with no secret and no environment. A comment on a PR needs `pull-requests: write`. It runs [tools/claude_review.py](../tools/claude_review.py) from the `main` checkout. This file is a copy of `gates/claude_review.py` of the shared repository. The comment starts with a fixed marker that holds the kind (`code` or `security`), the head SHA, the merge base of the reviewed diff, the count from the `Findings: <number>` line of the review and the workflow run ID. The marker version is `v2`. If the `review` job failed, the comment holds only `NO VALID CLAUDE REVIEW` and the head SHA.
+The `post` job has `contents: read`, `issues: write` and `pull-requests: write` only, with no secret and no environment. A comment on a PR needs `pull-requests: write`. It runs [tools/claude_review.py](../tools/claude_review.py) from the `main` checkout. This file is a copy of `gates/claude_review.py` of the shared repository. The comment starts with a fixed marker that holds the kind (`code` or `security`), the head SHA, the merge base of the reviewed diff, the count from the `Findings: <number>` line of the review and the workflow run ID. The marker version is `v2`. The count is `unknown` if the review text does not agree with it: `INCOMPLETE REVIEW` on a line, a second count line with a different number, or, for a count of 0, a finding line or a severity tag `P0` to `P3`. If the `review` job failed, the comment holds only `NO VALID CLAUDE REVIEW` and the head SHA. If the `gate` job stopped the request, the comment starts with `The Claude review did not start.` and gives the reason. No gate reads that comment.
 
 The `post` job writes as the workflow bot, and the gates trust markers and approval records from this bot. Thus the script treats the model text as untrusted. It escapes `&` and `<`, changes each `@` to a character that makes no mention, and limits the length. The model text cannot make a marker.
 
