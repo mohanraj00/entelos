@@ -9,7 +9,7 @@
 
 A service often asks a rule for an answer, and people change that rule over time. Later, someone asks why the service gave a specific answer on a specific date. Often nobody can show the exact rule, inputs and approval behind that answer. If a correction changes the old rule in place, the earlier answer has no explanation. I want each answer tied to its exact rule version, inputs and approval, and each correction recorded as a new, separate answer.
 
-> **Limits:** This is local reference code with unstable APIs and records. The Unix socket uses a token for its configured host context. Use trusted local storage. Rules accept only string and bool inputs and give a bool result. See [Limits](#limits) and [compatibility](docs/SUPPORT.md#compatibility-and-retention).
+> **Limits:** This is local reference code with unstable APIs and records. It is not a hosted service, an authentication boundary or a production database. Rules accept only string and bool inputs and give a bool result. See [Limits](#limits) and [SUPPORT.md](docs/SUPPORT.md).
 
 ## Run the demo
 
