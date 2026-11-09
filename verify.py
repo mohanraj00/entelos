@@ -6,6 +6,7 @@ import hashlib
 import json
 import os
 import re
+import shlex
 import shutil
 from pathlib import Path
 import subprocess
@@ -108,15 +109,24 @@ try:
  wasm_stages=[run('build-wasm',['go','build','-mod=readonly','-trimpath','-buildvcs=false','-o',module,'./cmd/cel-handoff'],handoff,wasm_env)]
  # The Go launcher copies the whole environment into the module, and the module has a size limit for arguments and
  # environment. Thus each wrapper starts Node with an empty environment. The test wrapper keeps only the results path.
- wrapper=w/'bin/cel-handoff-wasm';wrapper.write_text('#!/bin/sh\nexec /usr/bin/env -i "%s" "%s" "%s" "$@"\n'%(node,lib/'wasm_exec_node.js',module));wrapper.chmod(0o755)
- test_exec=w/'bin/go-wasm-exec';test_exec.write_text('#!/bin/sh\nexec /usr/bin/env -i EXECUTOR_VECTOR_RESULTS="$EXECUTOR_VECTOR_RESULTS" "%s" "%s" "$@"\n'%(node,lib/'wasm_exec_node.js'));test_exec.chmod(0o755)
+ launcher=shlex.join(map(str,[node,lib/'wasm_exec_node.js']))
+ wrapper=w/'bin/cel-handoff-wasm'
+ wrapper.write_text('#!/bin/sh\nexec /usr/bin/env -i '+launcher+' '+shlex.quote(str(module))+' "$@"\n')
+ wrapper.chmod(0o755)
+ test_exec=w/'bin/go-wasm-exec'
+ test_exec.write_text('#!/bin/sh\nexec /usr/bin/env -i EXECUTOR_VECTOR_RESULTS="$EXECUTOR_VECTOR_RESULTS" '+launcher+' "$@"\n')
+ test_exec.chmod(0o755)
  wasm_identity=run('wasm-identity',[wrapper,'-build']);wasm_build=json.loads(wasm_identity.stdout) if wasm_identity.returncode==0 else {}
  wasm_deps={x['Path']:x['Version'] for x in wasm_build.get('build',{}).get('Deps',[])}
  check('wasm-identity','Does the WASM module use the pinned CEL engine and have its own build identity?',
        wasm_stages[0].returncode==0 and wasm_deps.get('cel.dev/cel-go')=='v0.32.0' and wasm_deps.get('cel.dev/expr')=='v0.25.3'
        and wasm_build.get('implementation_ref','') not in ('',host_build['implementation_ref']),
        {'implementation_ref':wasm_build.get('implementation_ref'),'native_implementation_ref':host_build['implementation_ref'],'deps':wasm_deps})
- wasm_stages.append(run('go-tests-wasm',['go','test','-mod=readonly','-count=1','-exec',test_exec,'.'],handoff,wasm_env|{'EXECUTOR_VECTOR_RESULTS':str(w/'executor/wasm-test.json')}))
+ # Go splits the -exec argument into words. Find the launcher by name so
+ # spaces in the absolute work path stay part of the path.
+ test_path=os.pathsep.join([str(test_exec.parent),*os.get_exec_path(env)])
+ wasm_stages.append(run('go-tests-wasm',['go','test','-mod=readonly','-count=1','-exec',test_exec.name,'.'],handoff,
+                        wasm_env|{'PATH':test_path,'EXECUTOR_VECTOR_RESULTS':str(w/'executor/wasm-test.json')}))
  wasm_stages.append(run('go-vet-wasm',['go','vet','-mod=readonly','./...'],handoff,wasm_env))
  wasm_stages.append(run('bridge-vectors',[node,handoff/'web/node-check.mjs',module,lib/'wasm_exec.js',ROOT/'src/cel-lifecycle/conformance/executor',w/'executor/bridge.json']))
  def executor_results(name):

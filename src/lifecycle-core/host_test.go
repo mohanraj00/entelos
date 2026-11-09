@@ -647,3 +647,37 @@ func TestInvokeRequestKeyBindsTheWorker(t *testing.T) {
 		t.Fatal("a conflict changed the state")
 	}
 }
+
+func TestRetryRequiresCurrentFunctionAccess(t *testing.T) {
+	for _, tc := range []struct{ role, op string }{{"caller", "invoke"}, {"reader", "replay"}} {
+		t.Run(tc.op, func(t *testing.T) {
+			f := newFixture(t)
+			fields := Object{"receipt_ref": f.pin("old_receipt"), "reason": "check retry access"}
+			if tc.op == "invoke" {
+				view, err := f.store.Read(nil)
+				if err != nil {
+					t.Fatal(err)
+				}
+				snapshot, err := view.Get(f.pin("correction_snapshot"), "snapshot")
+				if err != nil {
+					t.Fatal(err)
+				}
+				fields = Object{"function": "record.visible", "date": "2026-11-15", "expected_bundle_ref": snapshot["bundle_ref"],
+					"inputs": Object{"state": "reviewed", "archived": false}}
+			}
+			q := f.request(tc.op, fields)
+			allowed := f.host(tc.role, nil)
+			first := f.ok(allowed.Handle(copyObject(q)))
+			before := f.root()
+			narrowed := f.host(tc.role, func(c Object) { c["functions"] = Array{"other.function"} })
+			f.expect("out_of_scope")(narrowed.Handle(copyObject(q)))
+			retry := f.ok(allowed.Handle(copyObject(q)))
+			if retry["reused"] != true || retry["cursor"] != first["cursor"] || !equal(retry["result"], first["result"]) {
+				t.Fatalf("authorized retry differs from the first result: %v", retry)
+			}
+			if f.root() != before {
+				t.Fatal("a retry changed the state")
+			}
+		})
+	}
+}
