@@ -152,7 +152,9 @@ func (s *Server) Serve(listener net.Listener) error {
 		s.mu.Unlock()
 		go func() {
 			defer s.wg.Done()
-			s.adapter.serve(conn, conn, func() error { return authenticate(conn, s.tokenFile) })
+			if err := conn.SetReadDeadline(time.Now().Add(authWait)); err == nil {
+				s.adapter.serve(conn, conn, func() error { return authenticate(conn, s.tokenFile) })
+			}
 			conn.Close()
 			s.mu.Lock()
 			delete(s.conns, conn)

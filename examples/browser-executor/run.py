@@ -122,7 +122,8 @@ def main():
     try:
         for name, context in contexts.items():
             sidecars[name] = sidecar.Sidecar(a.sidecar.resolve(), a.cel_binary.resolve(), w, name, context)
-            clients[name] = sidecar.Client(sidecars[name])
+            if name != 'browser':
+                clients[name] = sidecar.Client(sidecars[name])
         summary = sidecar.loop(run, clients, fixture, a.record_bundle.resolve())
         pin, job = session(run, clients, fixture, a.record_bundle.resolve(), summary)
         found = browser.find_browser(a.browser)
@@ -131,7 +132,9 @@ def main():
         page, record = browser.run(a.module.resolve(), a.wasm_exec.resolve(), {'session': job}, w / 'browser', found, 180)
         run.check('browser-page', page is not None and not page['errors'] and page['vectors']['errors'] == []
                   and page['implementation_ref'] == pin['engine_build'], {'errors': (page or {}).get('errors'), 'vectors': (page or {}).get('vectors', {}).get('errors')})
-        summary['ingest'] = ingest(run, clients, judge(run, page, pin, fixture, job), pin)
+        entries = judge(run, page, pin, fixture, job)
+        clients['browser'] = sidecar.Client(sidecars['browser'])
+        summary['ingest'] = ingest(run, clients, entries, pin)
     except Exception as e:
         error = '%s: %s' % (type(e).__name__, e)
     finally:

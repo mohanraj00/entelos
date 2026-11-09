@@ -28,9 +28,10 @@ The sidecar checks the prelude and the current token before reading the frame
 length or JSON. A missing or wrong credential gets one `unauthenticated`
 response with `request_id` set to `""` and diagnostic stage
 `authentication`, then the sidecar closes the connection. The Host receives
-no request and writes no record. The sidecar waits up to 30 seconds for the
-prelude of each request. An idle client can reconnect. A clean EOF between
-requests ends the stream.
+no request and writes no record. The first byte must arrive within 30 seconds
+of opening a connection. Once a prelude starts, it must finish within 30
+seconds. An authenticated connection can stay idle between requests. A clean
+EOF between requests ends the stream.
 
 The operator configures and rotates the token with
 [`--token-file`](../lifecycle-core/README.md#sidecar). This prelude is required

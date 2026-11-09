@@ -51,13 +51,18 @@ func readToken(path string) ([]byte, error) {
 }
 
 func authenticate(conn net.Conn, path string) error {
+	var marker [len(authMarker)]byte
+	// An authenticated connection can be idle between requests. Start
+	// timing the next prelude as soon as its first byte arrives.
+	if _, err := io.ReadFull(conn, marker[:1]); err != nil {
+		return err
+	}
 	if err := conn.SetReadDeadline(time.Now().Add(authWait)); err != nil {
 		return err
 	}
 	defer conn.SetReadDeadline(time.Time{})
-	var marker [len(authMarker)]byte
-	if _, err := io.ReadFull(conn, marker[:]); err != nil {
-		return err
+	if _, err := io.ReadFull(conn, marker[1:]); err != nil {
+		return errToken
 	}
 	if string(marker[:]) != authMarker {
 		return errToken
