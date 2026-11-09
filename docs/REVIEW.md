@@ -54,13 +54,13 @@ The `review` job has `contents: read` and `pull-requests: read` only. It uses th
 5. It checks the JSON result: `type` is `result`, `subtype` is `success`, `is_error` is false, `result` is not empty and `permission_denials` is empty. If a check fails, the job fails.
 6. It keeps the review text and the head SHA in an artifact.
 
-The `post` job has `contents: read`, `issues: write` and `pull-requests: write` only, with no secret and no environment. A comment on a PR needs `pull-requests: write`. It runs [tools/claude_review.py](../tools/claude_review.py) from the `main` checkout. This file is a copy of `gates/claude_review.py` of the shared repository. The comment starts with a fixed marker that holds the kind (`code` or `security`), the head SHA, the count from the `Findings: <number>` line of the review and the workflow run ID. If the `review` job failed, the comment holds only `NO VALID CLAUDE REVIEW` and the head SHA.
+The `post` job has `contents: read`, `issues: write` and `pull-requests: write` only, with no secret and no environment. A comment on a PR needs `pull-requests: write`. It runs [tools/claude_review.py](../tools/claude_review.py) from the `main` checkout. This file is a copy of `gates/claude_review.py` of the shared repository. The comment starts with a fixed marker that holds the kind (`code` or `security`), the head SHA, the merge base of the reviewed diff, the count from the `Findings: <number>` line of the review and the workflow run ID. The marker version is `v2`. If the `review` job failed, the comment holds only `NO VALID CLAUDE REVIEW` and the head SHA.
 
 The `post` job writes as the workflow bot, and the gates trust markers and approval records from this bot. Thus the script treats the model text as untrusted. It escapes `&` and `<`, changes each `@` to a character that makes no mention, and limits the length. The model text cannot make a marker.
 
 ### Use of a Claude result
 
-The `cross-review` gate accepts a Claude code review of the current head with `Findings: 0`. A Claude security review is advisory. The `security-review` gate writes a line about it, but does not pass on it. The `cross-review` gate accepts a marker only from an `issue_comment` run of this workflow on the default branch. The review has no inline comments and no conversation. A push makes a new head, so ask again as the request rules say. The OAuth token is a static secret. If you suspect a leak, revoke it and make a new one.
+The `cross-review` gate accepts a Claude code review of the current head and the current merge base with `Findings: 0`. It does not accept a `v1` marker, because that marker has no merge base. A Claude security review is advisory. The `security-review` gate writes a line about it, but does not pass on it. The `cross-review` gate accepts a marker only from an `issue_comment` run of this workflow on the default branch. The review has no inline comments and no conversation. A push makes a new head, so ask again as the request rules say. The OAuth token is a static secret. If you suspect a leak, revoke it and make a new one.
 
 ### Local fallback: agy
 
