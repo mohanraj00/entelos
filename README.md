@@ -127,7 +127,7 @@ The answer is in `data.result.actual.value` only if both fields are `ok`. The st
 Entelos uses [CEL](https://cel.dev) for the rule text and Git for the history. It does not add a new expression language. The two main examples are:
 
 - The record filter, `record.visible`, decides if a user can see a record. Its correction changes a fixed value of the rule. [WALKTHROUGH.md](docs/WALKTHROUGH.md) shows each step.
-- The CI example, `ci.pr_should_run`, decides if a pull request starts CI. Its correction changes the rule formula. It changes nested event data into string and bool inputs. It also compares the CEL rule with an ordinary typed function. The source is in [examples/ci-trigger](examples/ci-trigger/).
+- The CI example, `ci.pr_should_run`, decides if a pull request starts CI. Its correction changes the rule formula. It changes nested event data into string and bool inputs. It also compares the CEL rule with an ordinary typed function. [examples/ci-trigger/README.md](examples/ci-trigger/README.md) names its entry point, arguments, files and result.
 
 Both examples use these terms:
 
