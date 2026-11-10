@@ -88,6 +88,7 @@ earlier event references for the same function and scope that overlap the new
 interval. Include every live activation the interval overlaps. An omitted live
 target gives `ambiguous_activation`. An empty list works for an initial
 activation. A suspension must name at least one overlapping event.
+A bad target or a suspension with an empty `targets` list returns `invalid_targets`.
 
 ## Expiry and revocation
 
