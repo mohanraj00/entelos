@@ -117,7 +117,9 @@ python3 -B src/lifecycle-core/client/scenario.py --work "$LIFE" --runtime "$RT" 
   --fixture src/cel-lifecycle/fixtures/lifecycle-scenario.json --host "$HOST"
 ```
 
-The output is `{"status": "passed", "checks": 10, "error": null}`. The full trace is in `$LIFE/scenario-results.json`. Print one line for each operation:
+The output is `{"status": "passed", "checks": 10, "error": null}`. The full trace is in `$LIFE/scenario-results.json`. The `--fixture` flag selects data for the `record.visible` scenario. For a different function, use the [consumer guide](ADD_CONSUMER.md).
+
+Print one line for each operation:
 
 ```sh
 python3 -B -c '

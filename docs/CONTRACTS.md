@@ -81,6 +81,15 @@ The CLI reads one JSON object per line, in a loop, so one process can take many 
 
 The bundle must name all four components. The manifest's `function_id` must equal the proposal's `function`, or the call is `contract_changed`. When `base_snapshot` is not empty, the new manifest must keep the base manifest's `environment_ref`, `caller_variables`, `profile` and `limits`; a difference is `contract_changed`. A later proposal may change the rule and the fixed data.
 
+## Activation targets
+
+`activate` and `suspend` return an `event_ref`. The `targets` array names
+earlier event references for the same function and scope that overlap the new
+interval. Include every live activation the interval overlaps. An omitted live
+target gives `ambiguous_activation`. An empty list works for an initial
+activation. A suspension must name at least one overlapping event.
+A bad target or a suspension with an empty `targets` list returns `invalid_targets`.
+
 ## Expiry and revocation
 
 An activation is an `enable` event with a half-open interval from `from` to `until`. The lifecycle uses the existing records for expiry and revocation:
@@ -241,7 +250,7 @@ A content reference is `sha256:` plus the lowercase hex SHA-256 of `media type +
 | `rule.cel` | `text/plain` |
 | `fixed.json` | `application/json` |
 
-To change a fixed value for a stage, replace the fixed bytes, compute the new reference with the `application/json` media type, write it into the manifest's `fixed_ref`, encode the manifest, and compute the manifest reference over the exact manifest bytes with the bundle manifest media type. The examples use the canonical `encode()` from `git_store.py` (sorted keys, UTF-8, no insignificant whitespace, trailing newline), but the host does not require that form and any byte change gives a new reference. The manifest's `environment_ref` and `source_ref` follow the same rule when their bytes change. `describe` reports the assembled bundle identity as `bundle_ref` and the host build as `implementation_ref`; the lifecycle stores them as the snapshot's `bundle_ref` and `engine_build`.
+To change a fixed value for a stage, replace the fixed bytes, compute the new reference with the `application/json` media type, write it into the manifest's `fixed_ref`, encode the manifest, and compute the manifest reference over the exact manifest bytes with the bundle manifest media type. The examples use `encode()` from [`lifecycle_client.py`](../src/lifecycle-core/client/lifecycle_client.py), which produces UTF-8 with sorted keys, no insignificant whitespace and a trailing newline. The host uses the exact bytes supplied. The manifest's `environment_ref` and `source_ref` follow the same rule when their bytes change. `describe` reports the assembled bundle identity as `bundle_ref` and the host build as `implementation_ref`. The lifecycle stores them as the snapshot's `bundle_ref` and `engine_build`.
 
 ## Author fixtures
 
@@ -255,7 +264,13 @@ To change a fixed value for a stage, replace the fixed bytes, compute the new re
 | `fixed_bindings` | Object written to `fixed.json` and combined with each successful case's inputs when preparing upstream tests. Its keys must be declared variables that are not caller variables. |
 | `expression` | CEL source written to `rule.cel`. |
 | `expected_calls` | Case records written to `cases.json`. Each record supplies `case`, `inputs` and `status`; successful (`ok`) cases also supply `value`, while refusal cases may supply `field` to check the diagnostic location. Only `ok` cases are included in `upstream-tests.json`. |
-| `proposed_profile.resource_budgets` | Resource limits copied to the generated manifest as integers, except the descriptive `status` and `cost_model` entries. |
+| `proposed_profile.resource_budgets` | Resource limits copied to the generated manifest as integers. The descriptive `status` and `cost_model` entries are ignored. |
+
+Supply all five positive limits. The ceilings for this profile are
+`max_request_bytes` 4096, `max_string_utf8_bytes` 256,
+`max_source_utf8_bytes` 4096, `parser_recursion_limit` 64 and
+`evaluation_cost_limit` 1000. The host refuses a missing, zero or
+above-ceiling limit with `invalid_bundle`.
 
 `prepare.py` does not read the fixture's descriptive metadata such as `kind`, `requirement`, `workflow_source` or `expected_cel_output_type`. Those fields do not affect the generated bundle.
 

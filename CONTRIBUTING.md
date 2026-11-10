@@ -4,6 +4,8 @@ You need only Git, Go, Python and a GitHub account. You do not need Codex, Claud
 
 [Review and merge rules](docs/REVIEW.md) owns the detailed rules. This page gives the steps from an issue to a merge.
 
+To add a neutral example, follow [Add a consumer example](docs/ADD_CONSUMER.md).
+
 ## Steps
 
 1. Select an issue.
