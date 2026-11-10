@@ -63,7 +63,7 @@ only `record.visible`. Its bundle, cases and demonstration assume
 
 Use the [request field table](CONTRACTS.md#lifecycle-request-records) to send
 `source` and `plan` as reviewer, `propose` as author, `qualify` as runner
-and `decide` and `activate` as reviewer. Load as worker before invoking as
+and `decide`, `activate` and `suspend` as reviewer. Load as worker before invoking as
 caller. The first proposal uses `base_snapshot=""`. Later proposals use the
 most recent proposal's `snapshot_ref`, even if it failed qualification.
 Use `result(call(...))` to get a write's `source_ref`, `plan_ref`,
@@ -80,6 +80,8 @@ with `fixed = encode(stage_fixed_values)`. Set
 `manifest["fixed_ref"] = content_ref(envelope(MIMES["fixed"], fixed))`
 before encoding the manifest. Keep the environment and source bytes from
 the prepared bundle if that stage uses the same declarations and rule.
+`encode()` returns bytes. Use `.decode("utf-8")` on each component's bytes
+when constructing the `bundle` argument.
 
 Read `event_ref` from the result of `activate`. To suspend the first revision,
 pass that reference in `targets` with the interval you want to mask. When
@@ -102,16 +104,20 @@ the new function with `--function`, `--date` and `--inputs`. See the
 
 Keep the bundle, store, `results.json` and `commands.json` under the external
 `--work` directory. Use `driver.trace` and `driver.checks` for the lifecycle
-evidence. Write the partial trace and the error on failure and
-exit with status 1. Include a top-level `status` of `passed` or `failed` in
-`results.json`.
+evidence in `lifecycle.trace` and `lifecycle.checks` in `results.json`.
+Include a top-level `status` of `passed` or `failed` and `errors`, a list of
+error strings that is empty on success. Preserve the partial trace and
+checks, add the error to `errors` on failure and exit with status 1.
 
 In [`verify.py`](../verify.py), add a `run(...)` call and a `check(...)`
 immediately after the `tier-eligibility` check. Pass `sys.executable`, `-B`,
 the example's `run.py`, a fresh subdirectory of `w`, and the built
 `cel-handoff`, `cel-expr` and `lifecycle-core` binaries in `w / 'bin'`.
-Read the new example's `results.json`. Require both exit code 0 and status
-`passed`, and include the example's errors if either condition fails.
+Read the new example's `results.json`. Record a failed check with an error
+if the file is missing, unreadable, malformed or lacks a valid `status` or
+`errors` list. Preserve the example's errors, append any non-zero exit code
+and include stderr on failure even when the file exists. Pass only on exit
+code 0, status `passed` and an empty error list.
 
 ```python
 example_work = w / "export-example"
@@ -121,11 +127,28 @@ example = run("export-example", [
     "--author-binary", w / "bin/cel-expr", "--host", w / "bin/lifecycle-core",
 ])
 result_path = example_work / "results.json"
-result = json.loads(result_path.read_text()) if result_path.exists() else {
-    "status": "failed", "errors": [example.stderr],
-}
+try:
+    result = json.loads(result_path.read_text(encoding="utf-8"))
+    if not isinstance(result, dict):
+        raise ValueError("expected a JSON object")
+except (OSError, UnicodeError, ValueError) as exc:
+    result = {"status": "failed", "errors": [f"invalid results.json: {exc}"]}
+if not isinstance(result.get("errors"), list) or any(
+    not isinstance(error, str) for error in result["errors"]
+):
+    result["errors"] = [f"invalid results.json errors: {result.get('errors')!r}"]
+if result.get("status") not in ("passed", "failed"):
+    result["errors"].append("results.json status must be passed or failed")
+    result["status"] = "failed"
+if example.returncode != 0:
+    result["errors"].append(f"exit code {example.returncode}")
+if result.get("status") == "failed" and not result["errors"]:
+    result["errors"].append("results.json reports failed without an error")
+if example.stderr and (example.returncode != 0 or result["errors"]):
+    result["errors"].append(example.stderr)
 check("export-example", "Does the export example preserve its earlier answer?",
-      example.returncode == 0 and result["status"] == "passed", result)
+      example.returncode == 0 and result.get("status") == "passed"
+      and not result["errors"], result)
 ```
 
 Regenerate `checksums.json` with
