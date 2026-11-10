@@ -29,4 +29,6 @@ On 2026-10-29, the maintainer chose to announce Entelos as a source reference to
 
 A reference to copy needs no package release. A tag gives a stable snapshot that a reader can cite and copy.
 
+The v0.3.0 announcement candidate targets 2026-12-12. [#14](https://github.com/mohanraj00/entelos/issues/14) tracks the candidate, approval and record review, and release handoff. It depends on sidecar authentication (#125), the copy-proof docs (#60, #62 and #66) and evidence for Claude review (#114). The exit test requires the exact candidate to pass on Linux and macOS with the limits at the top of the README. The tag, quiet share and public post each require owner authorization.
+
 No issue here authorizes an unscoped model benchmark, a new domain policy, a public package release or production deployment. Choose the smallest change that completes the issue's stated workflow and preserve its failures/limits.
