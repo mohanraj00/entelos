@@ -16,6 +16,28 @@ The protocol is unstable. A later milestone states its compatibility.
 | `test_protocol.py` | The vector runner. It runs the session vectors through the socket of the Go sidecar. `verify.py` runs it as the `sidecar-protocol` check. |
 | `../lifecycle-core/protocol/` | The Go adapter. `../lifecycle-core/cmd/entelos-sidecar` serves it on a Unix domain socket. |
 
+## Unix socket authentication
+
+On the sidecar socket, prefix **each request frame** with the four ASCII bytes
+`ENT1` and the 64 lowercase ASCII hex digits of the operator's token. Send
+the frame length and JSON immediately after those 68 bytes, with no newline
+or separator. The prelude is outside the frame length. Responses use the
+ordinary frame format below.
+
+The sidecar checks the prelude and the current token before reading the frame
+length or JSON. A missing or wrong credential gets one `unauthenticated`
+response with `request_id` set to `""` and diagnostic stage
+`authentication`, then the sidecar closes the connection. The Host receives
+no request and writes no record. The first byte must arrive within 30 seconds
+of opening a connection. Once a prelude starts, it must finish within 30
+seconds. An authenticated connection can stay idle between requests. A clean
+EOF between requests ends the stream.
+
+The operator configures and rotates the token with
+[`--token-file`](../lifecycle-core/README.md#sidecar). This prelude is required
+starting with v0.3.0. Clients written for v0.2.0 must change their request
+framing before calling the v0.3.0 sidecar. The JSON messages remain at version 1.0.
+
 ## Frame
 
 A frame is a 4-byte unsigned big-endian length `N`, then `N` bytes of UTF-8 JSON.
@@ -90,12 +112,13 @@ A failure:
 
 | Stage | Source |
 |---|---|
+| `authentication` | The Unix socket token was missing, invalid or unavailable. The Host did not get the request. |
 | `protocol` | The frame, the envelope or the body schema. The Host did not get the request. |
 | `authority` | The host roles do not permit the operation. |
 | `host` | The Host failed with an unexpected error (`internal_error`). The message has no exception text and no paths. |
 | `lifecycle`, `admission`, `resolve`, `runtime`, `store`, `codec` | The Host and the store. The codes are the existing `Fault` codes of the lifecycle core in `src/lifecycle-core`. |
 
-The protocol adds four codes: `unsupported_version`, `invalid_frame`, `response_too_large` and `internal_error`. The receiver also sends `internal_error` if a Host result is outside the value domain, for example a float or an object key that is not a string. All other codes are the existing `Fault` codes, for example `invalid_request`, `forbidden`, `out_of_scope`, `invalid_interval`, `stale_revision`, `idempotency_conflict`, `artifact_unavailable`, `activation_expired` and `activation_revoked`.
+The protocol adds `unauthenticated`, `unsupported_version`, `invalid_frame`, `response_too_large` and `internal_error`. The receiver also sends `internal_error` if a Host result is outside the value domain, for example a float or an object key that is not a string. All other codes are the existing `Fault` codes, for example `invalid_request`, `forbidden`, `out_of_scope`, `invalid_interval`, `stale_revision`, `idempotency_conflict`, `artifact_unavailable`, `activation_expired` and `activation_revoked`.
 
 `message` is text for a person. A program must use `code` and `stage`. The vectors do not compare `message`.
 

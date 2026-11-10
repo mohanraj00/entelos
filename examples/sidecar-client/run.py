@@ -11,6 +11,7 @@ import json
 import os
 from pathlib import Path
 import re
+import secrets
 import socket
 import stat
 import struct
@@ -55,10 +56,14 @@ class Sidecar:
         self.name, self.directory, self.socket = name, work / 'sockets', name + '.sock'
         self.log_path = work / (name + '-sidecar.log')
         (work / (name + '.json')).write_bytes(encode(context))
+        self.token_file = self.directory / (name + '.token')
+        with os.fdopen(os.open(self.token_file, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600), 'w') as token:
+            token.write(secrets.token_hex(32) + '\n')
         self.log = open(self.log_path, 'wb')
         self.process = subprocess.Popen(
             [str(binary), '--socket', self.socket, '--repo', str(work / 'state.git'), '--context', str(work / (name + '.json')),
-             '--runtime', str(runtime), '--work', str(work / ('sidecar-' + name)), '--schema', str(SCHEMA)],
+             '--runtime', str(runtime), '--work', str(work / ('sidecar-' + name)), '--schema', str(SCHEMA),
+             '--token-file', str(self.token_file)],
             cwd=self.directory, stdout=subprocess.PIPE, stderr=self.log)
         line = self.process.stdout.readline()
         if json.loads(line or b'null') != {'socket': self.socket, 'status': 'listening'}:
@@ -108,14 +113,18 @@ class Client:
         self.counter += 1
         request = {'protocol': '1.0', 'request_id': '%s-%d' % (self.sidecar.name, self.counter), 'operation': operation, 'body': body}
         payload = json.dumps(request, separators=(',', ':'), ensure_ascii=False).encode()
-        self.conn.sendall(struct.pack('>I', len(payload)) + payload)
-        size = struct.unpack('>I', self.read(4))[0]
-        if not 1 <= size <= MAX_FRAME:
-            raise ValueError('response frame size %d is outside the bound' % size)
-        response = json.loads(self.read(size))
+        token = self.sidecar.token_file.read_bytes().removesuffix(b'\n')
+        self.conn.sendall(b'ENT1' + token + struct.pack('>I', len(payload)) + payload)
+        response = self.response()
         if response.get('request_id') != request['request_id'] or response.get('protocol') != '1.0':
             raise ValueError('the response does not echo the request: %r' % response)
         return request, response
+
+    def response(self):
+        size = struct.unpack('>I', self.read(4))[0]
+        if not 1 <= size <= MAX_FRAME:
+            raise ValueError('response frame size %d is outside the bound' % size)
+        return json.loads(self.read(size))
 
     def close(self):
         self.conn.close()
@@ -177,7 +186,21 @@ def loop(run, clients, fixture, record_bundle):
     described = run.send(reviewer, 'describe', 'describe', {'function': function, 'date': date}, write=False)
     loaded = run.send(reviewer, 'load', 'load', {'function': function, 'date': date})
     inputs = {'state': table['allowed_state'], 'archived': False}
-    answer = run.send(reviewer, 'invoke', 'invoke', {'function': function, 'date': date, 'expected_bundle_ref': proposal['bundle_ref'], 'inputs': inputs})
+    invoke = {'function': function, 'date': date, 'expected_bundle_ref': proposal['bundle_ref'], 'inputs': inputs}
+    unauthenticated = Client(reviewer.sidecar)
+    try:
+        request = {'protocol': '1.0', 'request_id': 'no-token', 'operation': 'invoke',
+                   'body': dict(invoke, expected_revision=run.cursor, request_key='no-token')}
+        # Send only the frame length. The denial must arrive before any JSON is sent.
+        unauthenticated.conn.sendall(struct.pack('>I', len(encode(request))))
+        refusal = unauthenticated.response()
+        run.check('invoke-without-token', refusal['status'] == 'unauthenticated' and refusal['request_id'] == ''
+                  and refusal['diagnostic']['stage'] == 'authentication', refusal)
+    finally:
+        unauthenticated.close()
+    inspected = run.send(reviewer, 'after-denied-invoke', 'inspect', {}, write=False)
+    run.check('denied-invoke-keeps-cursor', inspected['cursor'] == run.cursor, inspected['cursor'])
+    answer = run.send(reviewer, 'invoke', 'invoke', invoke)
     run.check('answer-value', answer['actual'].get('value') is fixture['expected']['initial_october_ready'],
               {'actual': answer['actual'], 'expected': fixture['expected']['initial_october_ready']})
     selection = answer['receipt'].get('selection', {})

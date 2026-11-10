@@ -17,12 +17,12 @@ Use a new path outside this checkout for `--work`. The directory must not exist.
 ## What the example does
 
 1. It starts three sidecars on one Git store. Each sidecar has one trusted host context: `author`, `runner` and `reviewer`. The sidecar reads the context from a file. A request cannot change it.
-2. It puts the sockets in a directory with mode 0700. It checks that each socket file has mode 0600.
+2. It puts the sockets in a directory with mode 0700. It creates a distinct token file with mode 0600 for each sidecar and checks that each socket has mode 0600.
 3. It sends `source` and `plan` to the reviewer socket. The plan has hand-written cases from the invented source table.
 4. It sends `propose` to the author socket. The bundle is the prepared record bundle with the fixed `allowed_state` of the `initial` table of `src/cel-lifecycle/fixtures/lifecycle-scenario.json`.
 5. It sends `qualify` to the runner socket. The report must have the status `passed`.
 6. It sends `decide` to the author socket. The response must be `forbidden` at the `authority` stage, because the author context has no reviewer role.
-7. It sends `decide`, `activate`, `describe`, `load` and `invoke` to the reviewer socket.
+7. It sends `decide`, `activate`, `describe` and `load` to the reviewer socket. It sends only the length of a tokenless `invoke` frame and checks for `unauthenticated` and an unchanged store cursor. It then sends an authenticated `invoke`.
 8. It compares the answer with `expected.initial_october_ready` of the fixture. The receipt must name the proposed snapshot and the activation event.
 9. It stops each sidecar with SIGTERM. Each sidecar must exit with status 0 and remove its socket file.
 
@@ -30,7 +30,7 @@ The example writes `results.json` to the work directory. The file has each check
 
 ## Limits
 
-- Local sockets only. The only access control is the file mode of the socket and of its directory. There is no authentication.
+- Local sockets only. Each request uses the token for its sidecar and runs under that sidecar's host context.
 - The example runs one path with one invented rule. It does not show a correction, a replay or concurrent clients.
 - The socket path is relative to the socket directory, because a full path can be longer than the `sun_path` limit (104 bytes on macOS).
 - POSIX only. Windows is not tested.

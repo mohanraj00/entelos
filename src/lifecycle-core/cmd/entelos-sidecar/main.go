@@ -1,7 +1,7 @@
 // Command entelos-sidecar serves the wire protocol 1.0 of src/protocol on a
 // local Unix domain socket, in front of the Go lifecycle Host. The host
 // context comes from a file that the operator selects; a request cannot
-// supply it. The only access control is the file mode 0600 of the socket.
+// supply it. Each socket request requires the operator's token.
 //
 // When the socket listens, the command writes one JSON line to stdout:
 // {"socket":"<path>","status":"listening"}. On SIGINT or SIGTERM, it closes
@@ -29,9 +29,10 @@ func run() int {
 	runtime := flag.String("runtime", "", "pinned CEL executable")
 	work := flag.String("work", "", "work directory")
 	schema := flag.String("schema", "", "the src/protocol/schema directory")
+	tokenFile := flag.String("token-file", "", "private file containing the sidecar token")
 	flag.Parse()
-	if *socket == "" || *repo == "" || *contextPath == "" || *runtime == "" || *work == "" || *schema == "" {
-		fmt.Fprintln(os.Stderr, "entelos-sidecar: --socket, --repo, --context, --runtime, --work and --schema are required")
+	if *socket == "" || *repo == "" || *contextPath == "" || *runtime == "" || *work == "" || *schema == "" || *tokenFile == "" {
+		fmt.Fprintln(os.Stderr, "entelos-sidecar: --socket, --repo, --context, --runtime, --work, --schema and --token-file are required")
 		return 2
 	}
 	schemas, err := protocol.LoadSchemas(*schema)
@@ -42,11 +43,14 @@ func run() int {
 	if err != nil {
 		return stop(err)
 	}
+	server, err := protocol.NewServer(protocol.NewAdapter(host, schemas), *tokenFile)
+	if err != nil {
+		return stop(err)
+	}
 	listener, err := protocol.Listen(*socket)
 	if err != nil {
 		return stop(err)
 	}
-	server := &protocol.Server{Adapter: protocol.NewAdapter(host, schemas)}
 	signals := make(chan os.Signal, 1)
 	signal.Notify(signals, syscall.SIGINT, syscall.SIGTERM)
 	done := make(chan error, 1)

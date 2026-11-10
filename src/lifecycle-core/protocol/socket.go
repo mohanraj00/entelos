@@ -108,11 +108,21 @@ func listenLocked(path string) (*net.UnixListener, error) {
 // Server serves an Adapter on a listener. Each connection has its own
 // goroutine. The Adapter sends one Host request at a time.
 type Server struct {
-	Adapter *Adapter
-	mu      sync.Mutex
-	conns   map[net.Conn]bool
-	wg      sync.WaitGroup
-	closed  bool
+	adapter   *Adapter
+	tokenFile string
+	mu        sync.Mutex
+	conns     map[net.Conn]bool
+	wg        sync.WaitGroup
+	closed    bool
+}
+
+// NewServer checks the operator's token file. Each request reads the file
+// again, so a replacement takes effect on connections that are already open.
+func NewServer(adapter *Adapter, tokenFile string) (*Server, error) {
+	if _, err := readToken(tokenFile); err != nil {
+		return nil, fmt.Errorf("token file: %w", err)
+	}
+	return &Server{adapter: adapter, tokenFile: tokenFile}, nil
 }
 
 // Serve accepts connections until the listener closes.
@@ -142,7 +152,9 @@ func (s *Server) Serve(listener net.Listener) error {
 		s.mu.Unlock()
 		go func() {
 			defer s.wg.Done()
-			s.Adapter.Serve(conn, conn)
+			if err := conn.SetReadDeadline(time.Now().Add(authWait)); err == nil {
+				s.adapter.serve(conn, conn, func() error { return authenticate(conn, s.tokenFile) })
+			}
 			conn.Close()
 			s.mu.Lock()
 			delete(s.conns, conn)

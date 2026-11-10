@@ -11,6 +11,7 @@ import json
 import re
 import os
 from pathlib import Path
+import secrets
 import shutil
 import socket
 import stat
@@ -160,9 +161,12 @@ class Sidecar:
     NAME='sidecar.sock'
     def __init__(self,binary,runtime,directory,context):
         self.directory=directory;(directory/'context.json').write_text(json.dumps(context))
+        token_file=directory/'sidecar.token';token=secrets.token_hex(32).encode('ascii')
+        with os.fdopen(os.open(token_file,os.O_WRONLY|os.O_CREAT|os.O_EXCL,0o600),'wb') as f:f.write(token+b'\n')
+        self.prelude=b'ENT1'+token
         self.log=open(directory/'sidecar.log','wb')
         self.process=subprocess.Popen([str(binary),'--socket',self.NAME,'--repo',str(directory/'store.git'),'--context',str(directory/'context.json'),
-                                       '--runtime',str(runtime),'--work',str(directory/'work'),'--schema',str(HERE/'schema')],
+                                       '--runtime',str(runtime),'--work',str(directory/'work'),'--schema',str(HERE/'schema'),'--token-file',str(token_file)],
                                       cwd=directory,stdout=subprocess.PIPE,stderr=self.log)
         line=self.process.stdout.readline()
         if json.loads(line or b'null')!={'socket':self.NAME,'status':'listening'}:
@@ -186,17 +190,27 @@ class Sidecar:
     def frame(self,payload):
         s=self.connect()
         try:
-            s.sendall(struct.pack('>I',len(payload))+payload)
+            s.sendall(self.prelude+struct.pack('>I',len(payload))+payload)
             body=self.read_frame(s)
             if body is None:raise ValueError('the sidecar sent no response')
             # An open connection answers the probe. A closed connection ends the stream.
-            try:s.sendall(struct.pack('>I',len(PROBE))+PROBE)
+            try:s.sendall(self.prelude+struct.pack('>I',len(PROBE))+PROBE)
             except RESET:pass
             probe=self.read_frame(s)
             if probe is not None and json.loads(probe).get('request_id')!='probe':raise ValueError('unexpected probe response')
         finally:s.close()
         return json.loads(body),probe is None,body
     def stream(self,data,step):
+        # The vectors describe frame bytes. Add authentication before each
+        # frame, including a final truncated frame.
+        wire=bytearray();offset=0
+        while offset<len(data):
+            header=data[offset:offset+4]
+            end=offset+4+int.from_bytes(header,'big')
+            wire.extend(self.prelude)
+            wire.extend(data[offset:end])
+            offset=end
+        data=wire
         s=self.connect();size=step.get('read_size') or len(data);out=b''
         try:
             try:
