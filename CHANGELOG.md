@@ -4,15 +4,28 @@ This file lists the changes for each snapshot tag. A tag is a stable snapshot to
 
 ## v0.3.0 (unreleased)
 
-- Retrying a write requires current access to the affected functions (#14).
+- Retrying a write requires current access to the affected functions (#133).
   An authorized retry still returns its original result and cursor.
 - The standalone verifier supports spaces in the path to the WASM launcher.
+- The sidecar requires a token on each request (#131). Each request frame
+  starts with the prelude `ENT1` and the 64 hex digits of the token. The
+  operator configures and rotates the token with `--token-file`. A missing or
+  wrong token gives `unauthenticated` with the stage `authentication`. See
+  [PROTOCOL.md](src/protocol/PROTOCOL.md#unix-socket-authentication).
+- Go callers create the socket server with `protocol.NewServer(adapter,
+  tokenFile)`. This replaces `protocol.Server{Adapter: ...}`.
+- [ADD_CONSUMER.md](docs/ADD_CONSUMER.md) tells how to add a consumer example
+  (#132). The [ci-trigger README](examples/ci-trigger/README.md) describes the
+  PR CI example (#111).
 
 ### Compatibility and limits
 
 - Record format remains `entelos.record/1`. The v0.1.0 store format is
   unsupported. Keep the original lifecycle and engine builds with the store
   for exact replay. See [compatibility and retention](docs/SUPPORT.md#compatibility-and-retention).
+- This is a breaking change for sidecar clients. A v0.2.0 client must add
+  the token prelude before it calls the v0.3.0 sidecar. The JSON messages
+  remain at version 1.0.
 - Use trusted local directories and a separate store for each scope. The
   callable profile accepts string and bool inputs and returns a bool.
 
@@ -47,7 +60,7 @@ This snapshot replaces the Python lifecycle with a Go core and adds a local side
 
 - This snapshot does not read a v0.1.0 store, and there is no migration tool. See [SUPPORT.md](docs/SUPPORT.md).
 - APIs, the protocol and the record format are unstable. The only callable profile is string/bool input and bool output.
-- The sidecar has no authentication. The only access control is the file mode of the socket and of its directory.
+- The sidecar has no authentication. The only access control is the file mode of the socket and of its directory. v0.3.0 adds a token (#131).
 - An ingested receipt is the statement of the executor. The Host does not run the rule again, and a content reference is not a signature.
 - The M5 security review covered the v0.1.0 Python path. Security-relevant M6 pull requests had a security review one at a time. No one repeated the review for the full Go path as one review.
 - The `inspect` and `record` reads do not check the scope. Use one store for each scope.
