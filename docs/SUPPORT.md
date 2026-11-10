@@ -14,6 +14,8 @@ APIs, JSON records and the local storage format may change before a release cont
 
 Each stored record has a `format` field. The current value is `entelos.record/1`. The number after the slash is the major version. A reader reads only the major version that it knows. If a record has no `format` field or an unknown major version, the read fails closed with the diagnostic `unsupported_record_format`. If the `format` value has a different shape, the read fails with `invalid_record`. The storage port spec and the `record-format` storage vector define this rule.
 
+v0.2.0 and v0.3.0 use the same record major. Record readability and execution compatibility are separate. A new lifecycle or engine build needs fresh qualification and approval before activation and load. For exact replay of an earlier receipt, retain the lifecycle and engine builds that the receipt names, along with its inputs and bundle. A retry of a stored write requires current access to the affected functions.
+
 Stores from v0.1.0 are not migrated. The v0.1.0 snapshot declared the records unstable, and its records have no `format` field. The current code does not read them; each read of such a record gives `unsupported_record_format`. There is no migration tool. To keep a v0.1.0 store readable, keep the v0.1.0 code and build with it. Compatibility replay across record formats needs its own explicit design and tests.
 
 ## Operating limits

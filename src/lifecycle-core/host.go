@@ -232,7 +232,49 @@ func (h *Host) Handle(request any) (result any, err error) {
 	if err != nil {
 		return nil, mapError(err)
 	}
+	if out["reused"] == true {
+		h.authorizeRetry(op, q, out["cursor"])
+	}
 	return out, nil
+}
+
+// A retry bypasses apply, which normally enforces scope and function access.
+// Recheck that access against the accepted root of the original write. This
+// also protects stored successes made before the retry authorization check.
+func (h *Host) authorizeRetry(op string, q Object, cursor any) {
+	switch op {
+	case "source", "propose", "suspend", "load", "invoke":
+		h.owned(Object{"function": item(q, "function"), "scope": h.ctx("scope")})
+		return
+	}
+	v := must(h.Store.Read(cursor))
+	switch op {
+	case "plan":
+		h.scoped(v, item(q, "source_ref"), "source")
+	case "qualify":
+		h.scoped(v, item(q, "snapshot_ref"), "snapshot")
+		h.scoped(v, item(q, "plan_ref"), "plan")
+	case "decide":
+		h.scoped(v, item(q, "report_ref"), "qualification")
+	case "activate":
+		h.scoped(v, item(q, "decision_ref"), "decision")
+	case "replay", "restate", "observe":
+		h.scoped(v, item(q, "receipt_ref"), "receipt")
+	case "claim", "checkpoint", "takeover":
+		id := text(item(q, "task_id"))
+		h.owned(object(item(item(v.State, "tasks"), id)))
+		if ref := lookup(q, "correction_snapshot", nil); truthy(ref) {
+			h.scoped(v, ref, "snapshot")
+		}
+	case "ack":
+		h.scoped(v, item(q, "event_ref"), "event")
+	case "ingest":
+		for _, entry := range elements(item(q, "entries")) {
+			h.scoped(v, item(entry, "snapshot_ref"), "snapshot")
+		}
+	default:
+		fail("invalid_request", "unimplemented retry authorization", "authority")
+	}
 }
 
 // mapError turns a requestError from a store into an invalid_request Fault.
