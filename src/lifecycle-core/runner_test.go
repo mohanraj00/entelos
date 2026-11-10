@@ -53,10 +53,10 @@ func (e *fakeEngine) Execute(files map[string][]byte, command string, inputs []b
 
 var engineBuild = "sha256:" + strings.Repeat("e", 64)
 
-// world is one in-memory store with one Host for each actor.
+// world is one store with one Host for each actor.
 type world struct {
 	t      *testing.T
-	store  *MemoryStore
+	store  Store
 	runner Runner
 	keys   int
 }
