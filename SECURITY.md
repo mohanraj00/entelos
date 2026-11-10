@@ -6,7 +6,7 @@ An external adapter must authorize access to retained results and history, inclu
 
 CEL receives explicit values and the pinned environment. It has no model, database, network or asynchronous host function here. The host process still has OS permissions. Cooperative cancellation and configured example limits are not a hard CPU/memory sandbox. Python ordinary-code examples are installed trusted code.
 
-The sidecar has no authentication. The only access control is the file mode 0600 of the socket and the mode of its directory. Each client that can open the socket acts with the host context that the operator selected. A request cannot supply this context.
+The sidecar checks a local bearer token before reading each request frame. The operator protects the token, socket, and their parent directories. Every authenticated client acts with the host context selected for that socket. Use distinct tokens for distinct contexts. The token provides no per-caller identity and does not protect against processes that can read the token or replace the socket. See the [sidecar setup](src/lifecycle-core/README.md#sidecar).
 
 The `ingest` operation records the statement of an executor. The Host checks the executor ID, the cursor sequence, the bundle and the build against the pinned snapshot, but it does not run the rule again. A content reference is not a signature, so these checks do not prove which executor made an entry. An application must trust the executor and must supply the expected module reference and the pin from a source that it trusts.
 

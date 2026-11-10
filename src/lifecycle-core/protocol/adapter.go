@@ -189,7 +189,20 @@ func hasFloat(v any) bool {
 // Serve reads length-prefixed frames until the end of the stream or a closing
 // error. A short read is not the end of the stream.
 func (a *Adapter) Serve(r io.Reader, w io.Writer) error {
+	return a.serve(r, w, nil)
+}
+
+func (a *Adapter) serve(r io.Reader, w io.Writer, authorize func() error) error {
 	for {
+		if authorize != nil {
+			switch authorize() {
+			case nil:
+			case io.EOF:
+				return nil
+			default:
+				return writeFrame(w, failure("", "unauthenticated", "authentication", errToken.Error()))
+			}
+		}
 		header := readExact(r, 4)
 		if len(header) == 0 {
 			return nil

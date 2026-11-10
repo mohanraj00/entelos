@@ -124,6 +124,8 @@ On 2026-11-06, M6 met its exit test at commit `bf51d0e`. `verify.py` passes on `
 
 After that exit test, ingest compares the response `implementation_ref` with the snapshot `engine_build`, and a different build gives `artifact_mismatch`. A Go test also plants records with an unknown format in a Git store and reads them through a real Unix socket with the sidecar server code. That test does not run the `entelos-sidecar` binary, and the protocol vectors cannot make such a record.
 
+Issue #125 adds a token check before each request on the sidecar socket. The server reads the operator's token file for each check, so token rotation applies to open connections. A denial reaches neither the request parser nor the Host. The JSON message version remains 1.0.
+
 Keep caller walkthrough and input-correction documentation bounded to the existing examples. Numeric/structured profiles, production DBs, authentication gateways and resident-worker coordination are outside the current implemented scope.
 
 ## Handoff rule
