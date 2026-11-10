@@ -28,6 +28,8 @@ Use [BACKLOG.md](BACKLOG.md) and the linked GitHub issues. [M6 Store-neutral cor
 
 [#14](https://github.com/mohanraj00/entelos/issues/14) tracks the v0.3.0 announcement candidate with a target of 2026-12-12. The candidate needs the sidecar authentication and copy-proof docs, a working Claude review, and a new security review of the Go approval and record path. Verify the exact candidate on Linux and macOS before asking the maintainer to tag it. The tag, quiet share and public post each need specific authorization.
 
+The Go review in [#136](https://github.com/mohanraj00/entelos/issues/136) found SEC-01: a malformed checkpoint could publish an unreadable root. A regression reproduced the failure on both stores. The local fix checks stored request field types and refuses encoded state that the decoder cannot read. Review and merge are pending.
+
 ### M1 First contact
 
 On 2026-10-30, the M1 work was complete in `main` (merge commit `e844246`):

@@ -195,6 +195,28 @@ func (h *Host) Handle(request any) (result any, err error) {
 		sort.Strings(extra)
 		return nil, NewFault("invalid_request", "unexpected fields: "+strings.Join(extra, ","), "")
 	}
+	// These request values are copied into records or task state. Check
+	// their types here for every transport, including the JSONL Host.
+	for _, name := range []string{"text", "reason", "origin", "message", "note", "owner", "correction_snapshot", "task_id", "checkpoint", "token", "status"} {
+		if value, present := q[name]; present {
+			if _, ok := value.(string); !ok {
+				return nil, NewFault("invalid_request", name+" must be a string", "")
+			}
+		}
+	}
+	for _, name := range []string{"supersedes", "targets"} {
+		if value, present := q[name]; present {
+			list, ok := value.(Array)
+			if !ok {
+				return nil, NewFault("invalid_request", name+" must be an array of strings", "")
+			}
+			for _, ref := range list {
+				if _, ok := ref.(string); !ok {
+					return nil, NewFault("invalid_request", name+" must be an array of strings", "")
+				}
+			}
+		}
+	}
 	defer func() {
 		if r := recover(); r != nil {
 			result, err = nil, recovered(r)

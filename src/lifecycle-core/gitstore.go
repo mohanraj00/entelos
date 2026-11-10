@@ -235,6 +235,10 @@ func (s *GitStore) Transact(expected, key, payload any, apply func(*View) (any, 
 		return nil, err
 	}
 	view.State["requests"].(Object)[k] = Object{"payload_ref": digest, "result": result}
+	state := Encode(view.State)
+	if _, err := Decode(state); err != nil {
+		return nil, err
+	}
 	entries := make(map[string]string, len(view.Entries)+len(view.pending)+1)
 	for name, oid := range view.Entries {
 		entries[name] = oid
@@ -243,7 +247,7 @@ func (s *GitStore) Transact(expected, key, payload any, apply func(*View) (any, 
 		out, err := s.Git(data, "hash-object", "-w", "--stdin")
 		return strings.TrimSpace(string(out)), err
 	}
-	if entries["state.json"], err = hash(Encode(view.State)); err != nil {
+	if entries["state.json"], err = hash(state); err != nil {
 		return nil, err
 	}
 	for ref, body := range view.pending {

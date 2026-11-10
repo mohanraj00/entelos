@@ -4,6 +4,7 @@ This file lists the changes for each snapshot tag. A tag is a stable snapshot to
 
 ## v0.3.0 (unreleased)
 
+- The Host rejects wrong field types, and both stores refuse state that is too deep to read (#136).
 - Retrying a write requires current access to the affected functions (#133).
   An authorized retry still returns its original result and cursor.
 - The standalone verifier supports spaces in the path to the WASM launcher.

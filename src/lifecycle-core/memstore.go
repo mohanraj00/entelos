@@ -115,7 +115,11 @@ func (s *MemoryStore) Transact(expected, key, payload any, apply func(*View) (an
 			return nil, err
 		}
 	}
-	state := Envelope(Media("state"), Encode(view.State))
+	raw := Encode(view.State)
+	if _, err := Decode(raw); err != nil {
+		return nil, err
+	}
+	state := Envelope(Media("state"), raw)
 	entries := make(map[string]string, len(view.Entries)+len(view.pending)+1)
 	for name, handle := range view.Entries {
 		entries[name] = handle
