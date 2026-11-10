@@ -2,7 +2,7 @@
 
 This file lists the changes for each snapshot tag. A tag is a stable snapshot to cite and copy. It is not a package release, and it does not promise a stable API or record format.
 
-## v0.3.0 (unreleased)
+## v0.3.0 (2026-11-11)
 
 - The Host rejects wrong field types, and both stores refuse state that is too deep to read (#136).
 - Retrying a write requires current access to the affected functions (#133).
@@ -29,6 +29,10 @@ This file lists the changes for each snapshot tag. A tag is a stable snapshot to
   remain at version 1.0.
 - Use trusted local directories and a separate store for each scope. The
   callable profile accepts string and bool inputs and returns a bool.
+- A local Codex security review covered the full Go approval and record path
+  at `9b8261d` (#136). It found one P2 issue, and #137 fixed it. The review
+  read the source. Its sandbox stopped `go test` and `go vet`, so the fix PR
+  ran them.
 
 ## v0.2.0 (2026-11-06)
 
