@@ -14,6 +14,7 @@ GitHub issues own live status. This map identifies bounded work for this source 
 | [Answer the first three questions](https://github.com/mohanraj00/entelos/issues/38) | Done: [COMPARISON.md](COMPARISON.md), merged in #48. |
 | [Review the Go approval and record path](https://github.com/mohanraj00/entelos/issues/136) | Done: the review found SEC-01 (P2), fixed in #137. |
 | [An approval API for proposals, evidence and verdicts](https://github.com/mohanraj00/entelos/issues/130) | Spec proposed: [APPROVAL.md](../src/protocol/approval/APPROVAL.md), schemas and hand-written vectors. No code implements it. Milestone v0.4. |
+| [Typed rule inputs and outputs](https://github.com/mohanraj00/entelos/issues/126) | Open: spec merged in #141, engine implementation merged in #144. Next: a lifecycle Host test of a typed bundle, with receipts and replay. |
 
 ## Milestones to a public announcement
 
