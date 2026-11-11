@@ -27,7 +27,7 @@ var schema = map[string]struct {
 	"plan":       {"reviewer", []string{"source_ref", "cases", "origin", "supersedes"}},
 	"propose":    {"author", []string{"function", "from", "until", "base_snapshot", "source_ref", "bundle", "reason", "stale_mode"}},
 	"qualify":    {"runner", []string{"snapshot_ref", "plan_ref"}},
-	"decide":     {"reviewer", []string{"report_ref", "reason"}},
+	"decide":     {"reviewer", []string{"report_ref", "reason", "disposition"}},
 	"activate":   {"reviewer", []string{"decision_ref", "targets"}},
 	"suspend":    {"reviewer", []string{"function", "from", "until", "targets", "reason"}},
 	"load":       {"worker", []string{"function", "date"}},
@@ -45,10 +45,13 @@ var schema = map[string]struct {
 	"record":     {"reviewer", []string{"ref", "kind", "cursor"}},
 	"receipt":    {"reader", []string{"receipt_ref"}},
 	"ingest":     {"worker", []string{"entries"}},
+	"proposals":  {"reviewer", []string{"cursor"}},
+	"proposal":   {"reviewer", []string{"snapshot_ref", "cursor"}},
 }
 
 // Reads are the operations that publish no state.
-var Reads = map[string]bool{"describe": true, "resolve": true, "inspect": true, "record": true, "receipt": true}
+var Reads = map[string]bool{"describe": true, "resolve": true, "inspect": true, "record": true, "receipt": true,
+	"proposals": true, "proposal": true}
 
 //go:embed *.go
 var sources embed.FS
@@ -91,6 +94,8 @@ type Host struct {
 	Runner   Runner
 	Context  Object
 	BuildRef string
+	// Clock gives the recorded times. Nil is the system clock.
+	Clock Clock
 }
 
 // NewHost checks the trusted host context. The CEL runner of rt qualifies
@@ -110,17 +115,29 @@ func NewHostWithRunner(store Store, rt Runtime, runner Runner, context any) (*Ho
 	if !ok {
 		return nil, NewFault("configuration_error", "host context must be an object", "")
 	}
-	for _, name := range []string{"actor", "roles", "scope", "runner_actor", "worker", "functions"} {
+	// A context without actor and roles is a host for principals. Each
+	// request then runs through As with the actor and roles of its own
+	// credential.
+	_, hasActor := ctx["actor"]
+	_, hasRoles := ctx["roles"]
+	if hasActor != hasRoles {
+		return nil, NewFault("configuration_error", "host actor and roles must both be present or both be absent", "")
+	}
+	for _, name := range []string{"scope", "runner_actor", "worker", "functions"} {
 		if _, ok := ctx[name]; !ok {
 			return nil, NewFault("configuration_error", "missing host context "+name, "")
 		}
 	}
-	for _, k := range []string{"actor", "scope", "runner_actor", "worker"} {
+	strs, lists := []string{"scope", "runner_actor", "worker"}, []string{"functions"}
+	if hasActor {
+		strs, lists = append(strs, "actor"), append(lists, "roles")
+	}
+	for _, k := range strs {
 		if s, ok := ctx[k].(string); !ok || s == "" {
 			return nil, NewFault("configuration_error", "host actor/scope/runner/worker must be nonempty strings", "")
 		}
 	}
-	for _, name := range []string{"roles", "functions"} {
+	for _, name := range lists {
 		list, ok := ctx[name].(Array)
 		valid := ok && len(list) > 0
 		for _, x := range list {
@@ -174,6 +191,9 @@ func (h *Host) Handle(request any) (result any, err error) {
 	spec, known := schema[op]
 	if !known {
 		return nil, NewFault("invalid_request", "unknown operation", "")
+	}
+	if _, ok := h.Context["actor"]; !ok {
+		return nil, NewFault("forbidden", "no principal for this request", "authority")
 	}
 	if !withinStrings(spec.role, toStrings(h.ctxList("roles"))) {
 		return nil, NewFault("forbidden", "host role does not permit "+op, "authority")
@@ -586,7 +606,12 @@ func (h *Host) readOperation(op string, q Object) any {
 	v := must(h.Store.Read(lookup(q, "cursor", nil)))
 	switch op {
 	case "inspect":
+		prepareIndex(v)
 		return Object{"cursor": v.Cursor, "state": v.State}
+	case "proposals":
+		return h.proposals(v)
+	case "proposal":
+		return h.proposal(v, q)
 	case "record":
 		return get(v, item(q, "ref"), text(item(q, "kind")))
 	case "receipt":
@@ -933,6 +958,7 @@ var interval4 = []string{"function", "scope", "from", "until"}
 func (h *Host) apply(v *View, op string, q Object) any {
 	actor := h.ctx("actor")
 	key := q["request_key"]
+	prepareIndex(v)
 	state := v.State
 	switch op {
 	case "source":
@@ -963,7 +989,7 @@ func (h *Host) apply(v *View, op string, q Object) any {
 		if !within(staleMode, Array{failClosed, continueStale}) {
 			fail("invalid_request", "stale_mode must be fail_closed or continue_stale", "")
 		}
-		headKey := strings.TrimSpace(string(Encode(Array{target["function"], target["scope"]})))
+		headKey := headKey(target["function"], target["scope"])
 		heads := object(item(state, "heads"))
 		head, ok := heads[headKey]
 		if !ok {
@@ -1013,11 +1039,12 @@ func (h *Host) apply(v *View, op string, q Object) any {
 		}
 		snapshot := merge(target, Object{"base_snapshot": q["base_snapshot"], "source_ref": q["source_ref"], "files": refs,
 			"bundle_ref": item(desc, "bundle_ref"), "engine_build": item(desc, "implementation_ref"), "reason": item(q, "reason"), "producer": actor,
-			"stale_mode": staleMode})
+			"stale_mode": staleMode, "submitted_at": h.now()})
 		ref := v.Put("snapshot", snapshot)
 		heads[headKey] = ref
 		return Object{"snapshot_ref": ref, "bundle_ref": item(desc, "bundle_ref")}
 	case "qualify":
+		index := reviews(v)
 		snapshot := h.scoped(v, item(q, "snapshot_ref"), "snapshot")
 		plan := h.scoped(v, item(q, "plan_ref"), "plan")
 		applicable := h.sourceValid(v, item(snapshot, "source_ref"), snapshot) && h.planValid(v, q["plan_ref"], snapshot)
@@ -1040,24 +1067,21 @@ func (h *Host) apply(v *View, op string, q Object) any {
 		report := merge(pick(snapshot, interval4...), Object{"snapshot_ref": q["snapshot_ref"], "source_ref": snapshot["source_ref"], "plan_ref": q["plan_ref"],
 			"runner": actor, "engine_build": expected, "lifecycle_build": h.BuildRef,
 			"status": status, "source_and_plan_applicable": applicable, "outcome": outcome, "diagnostic": diagnostic})
-		return Object{"report_ref": v.Put("qualification", report), "report": report}
+		ref := v.Put("qualification", report)
+		appendEntry(reviewEntry(index, text(q["snapshot_ref"]), true), "reports", ref)
+		return Object{"report_ref": ref, "report": report}
 	case "decide":
-		report, snapshot := h.reportValid(v, item(q, "report_ref"))
-		if !truthy(item(q, "reason")) {
-			fail("invalid_request", "admission reason required", "")
-		}
-		if equal(actor, item(snapshot, "producer")) || equal(actor, item(report, "runner")) {
-			fail("separation_required", "reviewer must differ from producer and runner", "admission")
-		}
-		record := merge(pick(snapshot, interval4...), Object{"snapshot_ref": item(report, "snapshot_ref"), "report_ref": q["report_ref"], "actor": actor,
-			"reason": q["reason"], "disposition": "accept", "runner_policy": h.ctx("runner_actor")})
-		return Object{"decision_ref": v.Put("decision", record)}
+		return h.decide(v, q)
 	case "activate":
+		index := reviews(v)
 		decision := h.scoped(v, item(q, "decision_ref"), "decision")
 		report, snapshot := h.reportValid(v, item(decision, "report_ref"))
 		if !equal(item(decision, "snapshot_ref"), item(report, "snapshot_ref")) || !equal(item(decision, "disposition"), "accept") ||
 			!equal(item(decision, "runner_policy"), h.ctx("runner_actor")) {
 			fail("invalid_decision", "decision bindings differ from qualification", "")
+		}
+		if hasReject(h.verdicts(v, reviewEntry(index, text(report["snapshot_ref"]), false))) {
+			fail("proposal_rejected", "a verdict on this snapshot is a reject", "admission")
 		}
 		event := merge(pick(snapshot, interval4...), Object{"kind": "enable", "snapshot_ref": report["snapshot_ref"], "report_ref": decision["report_ref"],
 			"decision_ref": q["decision_ref"], "targets": lookup(q, "targets", Array{}), "actor": actor})

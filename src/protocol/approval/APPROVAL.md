@@ -2,7 +2,7 @@
 
 This file specifies the approval API of issue [#130](https://github.com/mohanraj00/entelos/issues/130). A reviewer client uses it to list the open proposals, read the evidence of one proposal and record a verdict. The reviewer does not need Git. Entelos does not supply a user interface.
 
-Status: **proposed**. No code implements this file. The schemas and vectors in this directory are the contract for the implementation PR. The vectors have expected values that a person wrote from this text. No candidate output made them. [`check_spec.py`](check_spec.py) checks their structure and their arithmetic. It does not run a Host.
+Status: **implemented**. The Go Host and the sidecar in [`src/lifecycle-core`](../../lifecycle-core) implement this file. The schemas and vectors in this directory are the contract. The vectors have expected values that a person wrote from this text. No candidate output made them. [`check_spec.py`](check_spec.py) checks their structure and their arithmetic. It does not run a Host. The Go test `TestApprovalVectors` in [`approval_vectors_test.go`](../../lifecycle-core/protocol/approval_vectors_test.go) runs each step against the sidecar socket and compares the response with the vector.
 
 The API extends [wire protocol 1.0](../PROTOCOL.md) to version 1.1. A 1.0 client sees no change.
 
@@ -217,11 +217,13 @@ The implementation PR must change these existing 1.0 files, and name each change
 | `schema/envelope.schema.json` | `success.protocol` and `failure.protocol` change from `const` `"1.0"` to `enum` `["1.0","1.1"]`. | A 1.1 response is valid. |
 | `vectors/envelope-schema.json` | Add a valid case with `"1.1"` and an invalid case with `"1.2"` for `success` and for `failure`. | The new enum needs cases on both sides. |
 | `vectors/session-envelope.json` | Step `higher-minor`: change the request version from `"1.1"` to `"1.2"`. The expected `unsupported_version` response with `"1.0"` stays. | 1.1 is now supported, so `"1.1"` no longer tests an unsupported minor version. |
-| `vectors/session-envelope.json` | Step `current-version`: add `"reviews":{}` to the expected state. | A new store has the review index. |
+| `vectors/session-envelope.json` | Steps `current-version`, `stream-two-frames`, `stream-reads-1-byte`, `stream-reads-3-bytes`, `stream-short-read-truncated` and `stream-writes-3-bytes`: add `"reviews":{}` to the expected state. | A new store has the review index. The first spec named only `current-version`. Each stream step also sends `inspect` to a new store. |
 | `vectors/session-lifecycle.json` | Step `inspect-empty`: add `"reviews":{}` to the expected state. | The same reason. |
 | `test_protocol.py` | The runner and its sidecar self-test expect the response version from the rule above: the request version if it is `"1.0"` or `"1.1"`, else `"1.0"`. | The runner must check the 1.1 rule. |
 
 All other expected values in `../vectors/` stay the same, because each other step sends a 1.0 request or an unreadable frame, and gets `"1.0"`. The old vectors stay in the history of the repository. The implementation PR changes them in place and names each step in its description.
+
+The implementation PR also corrected one vector in this directory. In `approval-verdicts.json`, the step `unknown-token` expected `"protocol":"1.1"`. The sidecar does not read a frame with an unknown token, so the version rule above gives `"1.0"`. The step now expects `"1.0"`, and `check_spec.py` checks this case.
 
 ## Vectors
 
@@ -235,7 +237,7 @@ All other expected values in `../vectors/` stay the same, because each other ste
 - `{"$type":"object"}` matches any object.
 - `{"$wait":{"since":"snap-1","seconds":172800}}` in an expected value matches the integer `seconds`. `since` names the `$capture` of a `propose` step. The checker uses it to compare the hand-written value with the step clocks.
 - `protocol_version` at the top level is `1.1`. It names the receiver version that the file needs. The 1.0 runner reads only `../vectors/session-*.json`, so it does not read these files.
-- `parity` at the top level names the steps that the runner also sends to the JSONL host, with the same principal and clock. The `$capture` values of those steps must be equal on both transports.
+- `parity` at the top level names the steps that the runner also sends to a second Host on a separate store, through `HandleAs` in the same process, with the same principal and clock. The record references (`sha256:` values) in the `$capture` values of those steps must be equal on both paths. A cursor is a Git commit of one store, so the cursor values can differ.
 
 `check_spec.py` checks these rules without a Host:
 

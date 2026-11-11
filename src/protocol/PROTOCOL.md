@@ -4,7 +4,7 @@ This file defines the versioned wire protocol between an application module and 
 
 The protocol is unstable. A later milestone states its compatibility.
 
-Version 1.1 is proposed in [approval/APPROVAL.md](approval/APPROVAL.md) for issue [#130](https://github.com/mohanraj00/entelos/issues/130). This file defines only 1.0. No code implements 1.1.
+Version 1.1 is defined in [approval/APPROVAL.md](approval/APPROVAL.md) for issue [#130](https://github.com/mohanraj00/entelos/issues/130). This file defines only 1.0. The Go Host and the sidecar implement 1.0 and 1.1.
 
 ## Files
 

@@ -34,7 +34,7 @@ The v0.4 milestone starts with [#126](https://github.com/mohanraj00/entelos/issu
 
 ### v0.4 approval API
 
-On 2026-11-11, a spec for [#130](https://github.com/mohanraj00/entelos/issues/130) was proposed in [APPROVAL.md](../src/protocol/approval/APPROVAL.md). It adds protocol 1.1 with `proposals`, `proposal`, a `reject` disposition for `decide`, a credentials file for each reviewer and a Host clock. The schemas and vectors are hand-written. `check_spec.py` checks their structure and clock arithmetic. No Host runs them yet.
+On 2026-11-11, a spec for [#130](https://github.com/mohanraj00/entelos/issues/130) was proposed in [APPROVAL.md](../src/protocol/approval/APPROVAL.md). It adds protocol 1.1 with `proposals`, `proposal`, a `reject` disposition for `decide`, a credentials file for each reviewer and a Host clock. The schemas and vectors are hand-written. `check_spec.py` checks their structure and clock arithmetic. The implementation PR adds 1.1 to the Go Host and the sidecar. The Go test `TestApprovalVectors` runs all 46 vector steps against the sidecar socket. The implementation is not released.
 
 ### M1 First contact
 

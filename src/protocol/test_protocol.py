@@ -266,11 +266,18 @@ def run_file(path,sidecar):
     if errors:return len(doc['steps']),errors,str(directory)
     shutil.rmtree(directory);return len(doc['steps']),errors,None
 
+def response_version(step):
+    """APPROVAL.md: a response has the version of its request when the receiver supports it. Each other response has 1.0."""
+    request=step.get('request')
+    version=request.get('protocol') if isinstance(request,dict) else None
+    return version if version in ('1.0','1.1') else '1.0'
+
 def run_step(transport,step,bound,name):
     errors=[];expect=step['expect']
     if 'stream_hex' in step:
         pairs=framed(transport.stream(bytes.fromhex(step['stream_hex']),step));got=[r for r,payload in pairs]
         errors+=match(expect['responses'],got,bound,name)
+        errors+=[name+': response version is not 1.0' for r in got if r.get('protocol')!='1.0']
         errors+=[name+': response exceeds the frame bound' for r in got if len(canonical(r))>MAX_FRAME]
         for i,(r,payload) in enumerate(pairs):
             # Each frame payload must be exactly the canonical bytes of its own object.
@@ -288,6 +295,7 @@ def run_step(transport,step,bound,name):
     # Through a socket, the exact payload bytes must also be the canonical bytes of the object.
     if raw is not None and raw!=canonical(response):errors.append(name+': payload is not canonical')
     errors+=match(expect['response'],response,bound,name)
+    if response.get('protocol')!=response_version(step):errors.append(name+': response version is not '+response_version(step))
     errors+=shape(response,step.get('request',{}).get('operation'))
     if close!=expect.get('close',False):errors.append(name+': close=%r'%close)
     return errors

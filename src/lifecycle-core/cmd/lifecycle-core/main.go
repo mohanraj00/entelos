@@ -23,6 +23,7 @@ func run() int {
 	context := flag.String("context", "", "trusted host context, not caller input")
 	runtime := flag.String("runtime", "", "pinned CEL executable")
 	work := flag.String("work", "", "work directory")
+	clockFile := flag.String("clock-file", "", "for tests only: a file with the time of the next request")
 	flag.Parse()
 	if *repo == "" || *context == "" || *runtime == "" || *work == "" {
 		fmt.Fprintln(os.Stderr, "lifecycle-core: --repo, --context, --runtime and --work are required")
@@ -38,6 +39,9 @@ func run() int {
 	if err != nil {
 		write(configuration(err))
 		return 1
+	}
+	if *clockFile != "" {
+		host.Clock = lifecycle.FileClock{Path: *clockFile}
 	}
 	in := bufio.NewReaderSize(os.Stdin, maxRequest+1)
 	for {
