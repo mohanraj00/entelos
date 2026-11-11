@@ -1,0 +1,994 @@
+{
+ "description": "Reject verdicts, a failed qualification and a superseded proposal. Expected values are hand-written from APPROVAL.md.",
+ "protocol_version": "1.1",
+ "context": {
+  "scope": "demo",
+  "runner_actor": "fixture-runner",
+  "worker": "local-worker",
+  "functions": [
+   "record.visible"
+  ]
+ },
+ "principals": {
+  "author-a": {
+   "actor": "author-a",
+   "roles": [
+    "author",
+    "reviewer"
+   ]
+  },
+  "runner": {
+   "actor": "fixture-runner",
+   "roles": [
+    "runner"
+   ]
+  },
+  "reviewer-a": {
+   "actor": "reviewer-a",
+   "roles": [
+    "reviewer"
+   ]
+  },
+  "reviewer-b": {
+   "actor": "reviewer-b",
+   "roles": [
+    "reviewer"
+   ]
+  },
+  "reviewer-c": {
+   "actor": "reviewer-c",
+   "roles": [
+    "reviewer"
+   ]
+  },
+  "caller-c": {
+   "actor": "caller-c",
+   "roles": [
+    "caller"
+   ]
+  }
+ },
+ "clock": "2026-11-20T09:00:00Z",
+ "steps": [
+  {
+   "name": "source",
+   "principal": "reviewer-a",
+   "request": {
+    "protocol": "1.1",
+    "request_id": "r-1",
+    "operation": "source",
+    "body": {
+     "function": "record.visible",
+     "from": "2026-10-01",
+     "until": "2026-12-01",
+     "supersedes": [],
+     "reason": "initial requirement",
+     "text": "Invented source table: visible state ready; archived records are invisible.",
+     "expected_revision": "",
+     "request_key": "r-k-source"
+    }
+   },
+   "expect": {
+    "response": {
+     "protocol": "1.1",
+     "request_id": "r-1",
+     "status": "ok",
+     "result": {
+      "cursor": {
+       "$capture": "r-c1"
+      },
+      "result": {
+       "source_ref": {
+        "$capture": "source-1"
+       }
+      },
+      "reused": false
+     }
+    }
+   }
+  },
+  {
+   "name": "plan",
+   "principal": "reviewer-a",
+   "request": {
+    "protocol": "1.1",
+    "request_id": "r-2",
+    "operation": "plan",
+    "body": {
+     "source_ref": {
+      "$use": "source-1"
+     },
+     "cases": [
+      {
+       "case": "visible",
+       "inputs": {
+        "state": "ready",
+        "archived": false
+       },
+       "status": "ok",
+       "value": true
+      },
+      {
+       "case": "other-state",
+       "inputs": {
+        "state": "closed",
+        "archived": false
+       },
+       "status": "ok",
+       "value": false
+      },
+      {
+       "case": "archived",
+       "inputs": {
+        "state": "ready",
+        "archived": true
+       },
+       "status": "ok",
+       "value": false
+      }
+     ],
+     "supersedes": [],
+     "origin": "Hand-written cases from the invented source table",
+     "expected_revision": {
+      "$use": "r-c1"
+     },
+     "request_key": "r-k-plan"
+    }
+   },
+   "expect": {
+    "response": {
+     "protocol": "1.1",
+     "request_id": "r-2",
+     "status": "ok",
+     "result": {
+      "cursor": {
+       "$capture": "r-c2"
+      },
+      "result": {
+       "plan_ref": {
+        "$capture": "plan-1"
+       }
+      },
+      "reused": false
+     }
+    }
+   }
+  },
+  {
+   "name": "propose",
+   "principal": "author-a",
+   "request": {
+    "protocol": "1.1",
+    "request_id": "r-3",
+    "operation": "propose",
+    "body": {
+     "function": "record.visible",
+     "from": "2026-10-01",
+     "until": "2026-12-01",
+     "base_snapshot": "",
+     "source_ref": {
+      "$use": "source-1"
+     },
+     "bundle": {
+      "$record_bundle": {
+       "allowed_state": "ready"
+      }
+     },
+     "reason": "initial proposal",
+     "expected_revision": {
+      "$use": "r-c2"
+     },
+     "request_key": "r-k-propose"
+    }
+   },
+   "expect": {
+    "response": {
+     "protocol": "1.1",
+     "request_id": "r-3",
+     "status": "ok",
+     "result": {
+      "cursor": {
+       "$capture": "r-c3"
+      },
+      "result": {
+       "snapshot_ref": {
+        "$capture": "snap-1"
+       },
+       "bundle_ref": {
+        "$capture": "bundle-1"
+       }
+      },
+      "reused": false
+     }
+    }
+   }
+  },
+  {
+   "name": "qualify",
+   "principal": "runner",
+   "request": {
+    "protocol": "1.1",
+    "request_id": "r-4",
+    "operation": "qualify",
+    "body": {
+     "snapshot_ref": {
+      "$use": "snap-1"
+     },
+     "plan_ref": {
+      "$use": "plan-1"
+     },
+     "expected_revision": {
+      "$use": "r-c3"
+     },
+     "request_key": "r-k-qualify"
+    }
+   },
+   "expect": {
+    "response": {
+     "protocol": "1.1",
+     "request_id": "r-4",
+     "status": "ok",
+     "result": {
+      "cursor": {
+       "$capture": "r-c4"
+      },
+      "result": {
+       "report_ref": {
+        "$capture": "report-1"
+       },
+       "report": {
+        "$subset": {
+         "status": "passed"
+        }
+       }
+      },
+      "reused": false
+     }
+    }
+   }
+  },
+  {
+   "name": "accept",
+   "principal": "reviewer-a",
+   "request": {
+    "protocol": "1.1",
+    "request_id": "r-5",
+    "operation": "decide",
+    "body": {
+     "report_ref": {
+      "$use": "report-1"
+     },
+     "reason": "looks right",
+     "expected_revision": {
+      "$use": "r-c4"
+     },
+     "request_key": "r-k-accept"
+    }
+   },
+   "expect": {
+    "response": {
+     "protocol": "1.1",
+     "request_id": "r-5",
+     "status": "ok",
+     "result": {
+      "cursor": {
+       "$capture": "r-c5"
+      },
+      "result": {
+       "decision_ref": {
+        "$capture": "decision-1"
+       },
+       "decision": {
+        "format": "entelos.record/1",
+        "function": "record.visible",
+        "scope": "demo",
+        "from": "2026-10-01",
+        "until": "2026-12-01",
+        "snapshot_ref": {
+         "$use": "snap-1"
+        },
+        "report_ref": {
+         "$use": "report-1"
+        },
+        "actor": "reviewer-a",
+        "reason": "looks right",
+        "disposition": "accept",
+        "runner_policy": "fixture-runner",
+        "decided_at": "2026-11-20T09:00:00Z"
+       }
+      },
+      "reused": false
+     }
+    }
+   }
+  },
+  {
+   "name": "reject",
+   "principal": "reviewer-b",
+   "clock": "2026-11-20T11:00:00Z",
+   "request": {
+    "protocol": "1.1",
+    "request_id": "r-6",
+    "operation": "decide",
+    "body": {
+     "report_ref": {
+      "$use": "report-1"
+     },
+     "reason": "the source table is not final",
+     "disposition": "reject",
+     "expected_revision": {
+      "$use": "r-c5"
+     },
+     "request_key": "r-k-reject"
+    }
+   },
+   "expect": {
+    "response": {
+     "protocol": "1.1",
+     "request_id": "r-6",
+     "status": "ok",
+     "result": {
+      "cursor": {
+       "$capture": "r-c6"
+      },
+      "result": {
+       "decision_ref": {
+        "$capture": "decision-2"
+       },
+       "decision": {
+        "format": "entelos.record/1",
+        "function": "record.visible",
+        "scope": "demo",
+        "from": "2026-10-01",
+        "until": "2026-12-01",
+        "snapshot_ref": {
+         "$use": "snap-1"
+        },
+        "report_ref": {
+         "$use": "report-1"
+        },
+        "actor": "reviewer-b",
+        "reason": "the source table is not final",
+        "disposition": "reject",
+        "runner_policy": "fixture-runner",
+        "decided_at": "2026-11-20T11:00:00Z"
+       }
+      },
+      "reused": false
+     }
+    }
+   }
+  },
+  {
+   "name": "accept-after-reject",
+   "principal": "reviewer-c",
+   "request": {
+    "protocol": "1.1",
+    "request_id": "r-7",
+    "operation": "decide",
+    "body": {
+     "report_ref": {
+      "$use": "report-1"
+     },
+     "reason": "I disagree",
+     "expected_revision": {
+      "$use": "r-c6"
+     },
+     "request_key": "r-k-accept-after-reject"
+    }
+   },
+   "expect": {
+    "response": {
+     "protocol": "1.1",
+     "request_id": "r-7",
+     "status": "proposal_rejected",
+     "diagnostic": {
+      "code": "proposal_rejected",
+      "stage": "admission",
+      "message": {
+       "$type": "string"
+      }
+     }
+    }
+   }
+  },
+  {
+   "name": "activate-after-reject",
+   "principal": "reviewer-a",
+   "request": {
+    "protocol": "1.1",
+    "request_id": "r-8",
+    "operation": "activate",
+    "body": {
+     "decision_ref": {
+      "$use": "decision-1"
+     },
+     "targets": [],
+     "expected_revision": {
+      "$use": "r-c6"
+     },
+     "request_key": "r-k-activate-after-reject"
+    }
+   },
+   "expect": {
+    "response": {
+     "protocol": "1.1",
+     "request_id": "r-8",
+     "status": "proposal_rejected",
+     "diagnostic": {
+      "code": "proposal_rejected",
+      "stage": "admission",
+      "message": {
+       "$type": "string"
+      }
+     }
+    }
+   }
+  },
+  {
+   "name": "read-rejected",
+   "principal": "reviewer-c",
+   "request": {
+    "protocol": "1.1",
+    "request_id": "r-9",
+    "operation": "proposal",
+    "body": {
+     "snapshot_ref": {
+      "$use": "snap-1"
+     }
+    }
+   },
+   "expect": {
+    "response": {
+     "protocol": "1.1",
+     "request_id": "r-9",
+     "status": "ok",
+     "result": {
+      "cursor": {
+       "$type": "string"
+      },
+      "as_of": "2026-11-20T11:00:00Z",
+      "proposal": {
+       "snapshot_ref": {
+        "$use": "snap-1"
+       },
+       "function": "record.visible",
+       "scope": "demo",
+       "from": "2026-10-01",
+       "until": "2026-12-01",
+       "producer": "author-a",
+       "reason": "initial proposal",
+       "bundle_ref": {
+        "$use": "bundle-1"
+       },
+       "stale_mode": "fail_closed",
+       "state": "rejected",
+       "refusal": "",
+       "report_refs": [
+        {
+         "$use": "report-1"
+        }
+       ],
+       "decision_refs": [
+        {
+         "$use": "decision-1"
+        },
+        {
+         "$use": "decision-2"
+        }
+       ],
+       "submitted_at": "2026-11-20T09:00:00Z",
+       "wait_seconds": {
+        "$wait": {
+         "since": "snap-1",
+         "seconds": 7200
+        }
+       }
+      },
+      "snapshot": {
+       "$type": "object"
+      },
+      "source": {
+       "$type": "object"
+      },
+      "bundle": {
+       "$type": "object"
+      },
+      "reports": [
+       {
+        "report_ref": {
+         "$use": "report-1"
+        },
+        "report": {
+         "$type": "object"
+        },
+        "plan_ref": {
+         "$use": "plan-1"
+        },
+        "plan": {
+         "$type": "object"
+        },
+        "refusal": "proposal_rejected"
+       }
+      ],
+      "decisions": [
+       {
+        "decision_ref": {
+         "$use": "decision-1"
+        },
+        "decision": {
+         "$type": "object"
+        }
+       },
+       {
+        "decision_ref": {
+         "$use": "decision-2"
+        },
+        "decision": {
+         "$subset": {
+          "disposition": "reject"
+         }
+        }
+       }
+      ]
+     }
+    }
+   }
+  },
+  {
+   "name": "list-after-reject",
+   "principal": "reviewer-c",
+   "request": {
+    "protocol": "1.1",
+    "request_id": "r-10",
+    "operation": "proposals",
+    "body": {}
+   },
+   "expect": {
+    "response": {
+     "protocol": "1.1",
+     "request_id": "r-10",
+     "status": "ok",
+     "result": {
+      "cursor": {
+       "$type": "string"
+      },
+      "as_of": "2026-11-20T11:00:00Z",
+      "proposals": []
+     }
+    }
+   }
+  },
+  {
+   "name": "propose-failing",
+   "principal": "author-a",
+   "clock": "2026-11-21T09:00:00Z",
+   "request": {
+    "protocol": "1.1",
+    "request_id": "r-11",
+    "operation": "propose",
+    "body": {
+     "function": "record.visible",
+     "from": "2026-10-01",
+     "until": "2026-12-01",
+     "base_snapshot": {
+      "$use": "snap-1"
+     },
+     "source_ref": {
+      "$use": "source-1"
+     },
+     "bundle": {
+      "$record_bundle": {
+       "allowed_state": "closed"
+      }
+     },
+     "reason": "second revision",
+     "expected_revision": {
+      "$use": "r-c6"
+     },
+     "request_key": "r-k-propose-failing"
+    }
+   },
+   "expect": {
+    "response": {
+     "protocol": "1.1",
+     "request_id": "r-11",
+     "status": "ok",
+     "result": {
+      "cursor": {
+       "$capture": "r-c11"
+      },
+      "result": {
+       "snapshot_ref": {
+        "$capture": "snap-2"
+       },
+       "bundle_ref": {
+        "$capture": "bundle-2"
+       }
+      },
+      "reused": false
+     }
+    }
+   }
+  },
+  {
+   "name": "qualify-failing",
+   "principal": "runner",
+   "request": {
+    "protocol": "1.1",
+    "request_id": "r-12",
+    "operation": "qualify",
+    "body": {
+     "snapshot_ref": {
+      "$use": "snap-2"
+     },
+     "plan_ref": {
+      "$use": "plan-1"
+     },
+     "expected_revision": {
+      "$use": "r-c11"
+     },
+     "request_key": "r-k-qualify-failing"
+    }
+   },
+   "expect": {
+    "response": {
+     "protocol": "1.1",
+     "request_id": "r-12",
+     "status": "ok",
+     "result": {
+      "cursor": {
+       "$capture": "r-c12"
+      },
+      "result": {
+       "report_ref": {
+        "$capture": "report-2"
+       },
+       "report": {
+        "$subset": {
+         "status": "failed"
+        }
+       }
+      },
+      "reused": false
+     }
+    }
+   }
+  },
+  {
+   "name": "list-not-approvable",
+   "principal": "reviewer-a",
+   "clock": "2026-11-21T12:00:00Z",
+   "request": {
+    "protocol": "1.1",
+    "request_id": "r-13",
+    "operation": "proposals",
+    "body": {}
+   },
+   "expect": {
+    "response": {
+     "protocol": "1.1",
+     "request_id": "r-13",
+     "status": "ok",
+     "result": {
+      "cursor": {
+       "$type": "string"
+      },
+      "as_of": "2026-11-21T12:00:00Z",
+      "proposals": [
+       {
+        "snapshot_ref": {
+         "$use": "snap-2"
+        },
+        "function": "record.visible",
+        "scope": "demo",
+        "from": "2026-10-01",
+        "until": "2026-12-01",
+        "producer": "author-a",
+        "reason": "second revision",
+        "bundle_ref": {
+         "$use": "bundle-2"
+        },
+        "stale_mode": "fail_closed",
+        "state": "not_approvable",
+        "refusal": "qualification_failed",
+        "report_refs": [
+         {
+          "$use": "report-2"
+         }
+        ],
+        "decision_refs": [],
+        "submitted_at": "2026-11-21T09:00:00Z",
+        "wait_seconds": {
+         "$wait": {
+          "since": "snap-2",
+          "seconds": 10800
+         }
+        }
+       }
+      ]
+     }
+    }
+   }
+  },
+  {
+   "name": "accept-failed-report",
+   "principal": "reviewer-a",
+   "request": {
+    "protocol": "1.1",
+    "request_id": "r-14",
+    "operation": "decide",
+    "body": {
+     "report_ref": {
+      "$use": "report-2"
+     },
+     "reason": "approve anyway",
+     "expected_revision": {
+      "$use": "r-c12"
+     },
+     "request_key": "r-k-accept-failed-report"
+    }
+   },
+   "expect": {
+    "response": {
+     "protocol": "1.1",
+     "request_id": "r-14",
+     "status": "qualification_failed",
+     "diagnostic": {
+      "code": "qualification_failed",
+      "stage": "admission",
+      "message": {
+       "$type": "string"
+      }
+     }
+    }
+   }
+  },
+  {
+   "name": "propose-third",
+   "principal": "author-a",
+   "clock": "2026-11-21T13:00:00Z",
+   "request": {
+    "protocol": "1.1",
+    "request_id": "r-15",
+    "operation": "propose",
+    "body": {
+     "function": "record.visible",
+     "from": "2026-10-01",
+     "until": "2026-12-01",
+     "base_snapshot": {
+      "$use": "snap-2"
+     },
+     "source_ref": {
+      "$use": "source-1"
+     },
+     "bundle": {
+      "$record_bundle": {
+       "allowed_state": "ready"
+      }
+     },
+     "reason": "third revision",
+     "expected_revision": {
+      "$use": "r-c12"
+     },
+     "request_key": "r-k-propose-third"
+    }
+   },
+   "expect": {
+    "response": {
+     "protocol": "1.1",
+     "request_id": "r-15",
+     "status": "ok",
+     "result": {
+      "cursor": {
+       "$capture": "r-c15"
+      },
+      "result": {
+       "snapshot_ref": {
+        "$capture": "snap-3"
+       },
+       "bundle_ref": {
+        "$capture": "bundle-3"
+       }
+      },
+      "reused": false
+     }
+    }
+   }
+  },
+  {
+   "name": "read-superseded",
+   "principal": "reviewer-a",
+   "request": {
+    "protocol": "1.1",
+    "request_id": "r-16",
+    "operation": "proposal",
+    "body": {
+     "snapshot_ref": {
+      "$use": "snap-2"
+     }
+    }
+   },
+   "expect": {
+    "response": {
+     "protocol": "1.1",
+     "request_id": "r-16",
+     "status": "ok",
+     "result": {
+      "cursor": {
+       "$type": "string"
+      },
+      "as_of": "2026-11-21T13:00:00Z",
+      "proposal": {
+       "snapshot_ref": {
+        "$use": "snap-2"
+       },
+       "function": "record.visible",
+       "scope": "demo",
+       "from": "2026-10-01",
+       "until": "2026-12-01",
+       "producer": "author-a",
+       "reason": "second revision",
+       "bundle_ref": {
+        "$use": "bundle-2"
+       },
+       "stale_mode": "fail_closed",
+       "state": "superseded",
+       "refusal": "",
+       "report_refs": [
+        {
+         "$use": "report-2"
+        }
+       ],
+       "decision_refs": [],
+       "submitted_at": "2026-11-21T09:00:00Z",
+       "wait_seconds": {
+        "$wait": {
+         "since": "snap-2",
+         "seconds": 14400
+        }
+       }
+      },
+      "snapshot": {
+       "$type": "object"
+      },
+      "source": {
+       "$type": "object"
+      },
+      "bundle": {
+       "$type": "object"
+      },
+      "reports": [
+       {
+        "report_ref": {
+         "$use": "report-2"
+        },
+        "report": {
+         "$type": "object"
+        },
+        "plan_ref": {
+         "$use": "plan-1"
+        },
+        "plan": {
+         "$type": "object"
+        },
+        "refusal": "qualification_failed"
+       }
+      ],
+      "decisions": []
+     }
+    }
+   }
+  },
+  {
+   "name": "list-third",
+   "principal": "reviewer-a",
+   "request": {
+    "protocol": "1.1",
+    "request_id": "r-17",
+    "operation": "proposals",
+    "body": {}
+   },
+   "expect": {
+    "response": {
+     "protocol": "1.1",
+     "request_id": "r-17",
+     "status": "ok",
+     "result": {
+      "cursor": {
+       "$type": "string"
+      },
+      "as_of": "2026-11-21T13:00:00Z",
+      "proposals": [
+       {
+        "snapshot_ref": {
+         "$use": "snap-3"
+        },
+        "function": "record.visible",
+        "scope": "demo",
+        "from": "2026-10-01",
+        "until": "2026-12-01",
+        "producer": "author-a",
+        "reason": "third revision",
+        "bundle_ref": {
+         "$use": "bundle-3"
+        },
+        "stale_mode": "fail_closed",
+        "state": "awaiting_qualification",
+        "refusal": "",
+        "report_refs": [],
+        "decision_refs": [],
+        "submitted_at": "2026-11-21T13:00:00Z",
+        "wait_seconds": {
+         "$wait": {
+          "since": "snap-3",
+          "seconds": 0
+         }
+        }
+       }
+      ]
+     }
+    }
+   }
+  },
+  {
+   "name": "reject-superseded",
+   "principal": "reviewer-a",
+   "request": {
+    "protocol": "1.1",
+    "request_id": "r-18",
+    "operation": "decide",
+    "body": {
+     "report_ref": {
+      "$use": "report-2"
+     },
+     "reason": "the fixed value is wrong",
+     "disposition": "reject",
+     "expected_revision": {
+      "$use": "r-c15"
+     },
+     "request_key": "r-k-reject-superseded"
+    }
+   },
+   "expect": {
+    "response": {
+     "protocol": "1.1",
+     "request_id": "r-18",
+     "status": "ok",
+     "result": {
+      "cursor": {
+       "$capture": "r-c18"
+      },
+      "result": {
+       "decision_ref": {
+        "$capture": "decision-3"
+       },
+       "decision": {
+        "format": "entelos.record/1",
+        "function": "record.visible",
+        "scope": "demo",
+        "from": "2026-10-01",
+        "until": "2026-12-01",
+        "snapshot_ref": {
+         "$use": "snap-2"
+        },
+        "report_ref": {
+         "$use": "report-2"
+        },
+        "actor": "reviewer-a",
+        "reason": "the fixed value is wrong",
+        "disposition": "reject",
+        "runner_policy": "fixture-runner",
+        "decided_at": "2026-11-21T13:00:00Z"
+       }
+      },
+      "reused": false
+     }
+    }
+   }
+  }
+ ],
+ "parity": [
+  "reject"
+ ]
+}
