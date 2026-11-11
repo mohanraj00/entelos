@@ -1,0 +1,950 @@
+{
+ "format": "typed-profile-vector/v1",
+ "id": "declarations",
+ "description": "Load refusals for the profile name, the limits, the type declarations, the output declaration and the fixed values. Each step replaces top-level keys of the vector bundle.",
+ "bundle": {
+  "function_id": "declaration.check",
+  "profile": "cel-typed/v1",
+  "caller_variables": [
+   "a"
+  ],
+  "limits": {
+   "max_request_bytes": 4096,
+   "max_string_utf8_bytes": 256,
+   "max_source_utf8_bytes": 4096,
+   "parser_recursion_limit": 64,
+   "evaluation_cost_limit": 1000,
+   "max_list_items": 4
+  },
+  "environment": {
+   "name": "declarations",
+   "variables": [
+    {
+     "name": "a",
+     "type": "int"
+    }
+   ],
+   "output": {
+    "type": "bool"
+   }
+  },
+  "source": "a > 0\n",
+  "fixed": {}
+ },
+ "steps": [
+  {
+   "name": "valid",
+   "op": "load",
+   "expect": {
+    "ok": true
+   }
+  },
+  {
+   "name": "unknown-profile",
+   "op": "load",
+   "replace": {
+    "profile": "cel-typed/v2"
+   },
+   "expect": {
+    "diagnostic": {
+     "code": "unsupported_profile",
+     "stage": "profile",
+     "field": "/profile"
+    }
+   }
+  },
+  {
+   "name": "old-profile-with-int",
+   "op": "load",
+   "replace": {
+    "profile": "cel-string-bool/v1",
+    "limits": {
+     "max_request_bytes": 4096,
+     "max_string_utf8_bytes": 256,
+     "max_source_utf8_bytes": 4096,
+     "parser_recursion_limit": 64,
+     "evaluation_cost_limit": 1000
+    },
+    "environment": {
+     "name": "declarations",
+     "variables": [
+      {
+       "name": "a",
+       "type": "int"
+      }
+     ]
+    }
+   },
+   "expect": {
+    "diagnostic": {
+     "code": "unsupported_profile",
+     "stage": "environment",
+     "field": "/variables/0/type"
+    }
+   }
+  },
+  {
+   "name": "old-profile-with-list-limit",
+   "op": "load",
+   "replace": {
+    "profile": "cel-string-bool/v1",
+    "environment": {
+     "name": "declarations",
+     "variables": [
+      {
+       "name": "a",
+       "type": "bool"
+      }
+     ]
+    },
+    "source": "a\n"
+   },
+   "expect": {
+    "diagnostic": {
+     "code": "invalid_bundle",
+     "stage": "profile",
+     "field": "/limits"
+    }
+   }
+  },
+  {
+   "name": "missing-list-limit",
+   "op": "load",
+   "replace": {
+    "limits": {
+     "max_request_bytes": 4096,
+     "max_string_utf8_bytes": 256,
+     "max_source_utf8_bytes": 4096,
+     "parser_recursion_limit": 64,
+     "evaluation_cost_limit": 1000
+    }
+   },
+   "expect": {
+    "diagnostic": {
+     "code": "invalid_bundle",
+     "stage": "profile",
+     "field": "/limits"
+    }
+   }
+  },
+  {
+   "name": "list-limit-above-ceiling",
+   "op": "load",
+   "replace": {
+    "limits": {
+     "max_request_bytes": 4096,
+     "max_string_utf8_bytes": 256,
+     "max_source_utf8_bytes": 4096,
+     "parser_recursion_limit": 64,
+     "evaluation_cost_limit": 1000,
+     "max_list_items": 65
+    }
+   },
+   "expect": {
+    "diagnostic": {
+     "code": "invalid_bundle",
+     "stage": "profile",
+     "field": "/limits"
+    }
+   }
+  },
+  {
+   "name": "float-type",
+   "op": "load",
+   "replace": {
+    "environment": {
+     "name": "declarations",
+     "variables": [
+      {
+       "name": "a",
+       "type": "int"
+      },
+      {
+       "name": "b",
+       "type": "double"
+      }
+     ],
+     "output": {
+      "type": "bool"
+     }
+    }
+   },
+   "expect": {
+    "diagnostic": {
+     "code": "unsupported_profile",
+     "stage": "environment",
+     "field": "/variables/1/type"
+    }
+   }
+  },
+  {
+   "name": "timestamp-type",
+   "op": "load",
+   "replace": {
+    "environment": {
+     "name": "declarations",
+     "variables": [
+      {
+       "name": "a",
+       "type": "int"
+      },
+      {
+       "name": "b",
+       "type": "timestamp"
+      }
+     ],
+     "output": {
+      "type": "bool"
+     }
+    }
+   },
+   "expect": {
+    "diagnostic": {
+     "code": "unsupported_profile",
+     "stage": "environment",
+     "field": "/variables/1/type"
+    }
+   }
+  },
+  {
+   "name": "missing-type",
+   "op": "load",
+   "replace": {
+    "environment": {
+     "name": "declarations",
+     "variables": [
+      {
+       "name": "a",
+       "type": "int"
+      },
+      {
+       "name": "b"
+      }
+     ],
+     "output": {
+      "type": "bool"
+     }
+    }
+   },
+   "expect": {
+    "diagnostic": {
+     "code": "unsupported_profile",
+     "stage": "environment",
+     "field": "/variables/1/type"
+    }
+   }
+  },
+  {
+   "name": "items-on-scalar",
+   "op": "load",
+   "replace": {
+    "environment": {
+     "name": "declarations",
+     "variables": [
+      {
+       "name": "a",
+       "type": "int"
+      },
+      {
+       "name": "b",
+       "type": "int",
+       "items": "int"
+      }
+     ],
+     "output": {
+      "type": "bool"
+     }
+    }
+   },
+   "expect": {
+    "diagnostic": {
+     "code": "invalid_environment",
+     "stage": "environment",
+     "field": "/variables/1/items"
+    }
+   }
+  },
+  {
+   "name": "fields-on-list",
+   "op": "load",
+   "replace": {
+    "environment": {
+     "name": "declarations",
+     "variables": [
+      {
+       "name": "a",
+       "type": "int"
+      },
+      {
+       "name": "b",
+       "type": "list",
+       "items": "int",
+       "fields": [
+        {
+         "name": "x",
+         "type": "int"
+        }
+       ]
+      }
+     ],
+     "output": {
+      "type": "bool"
+     }
+    }
+   },
+   "expect": {
+    "diagnostic": {
+     "code": "invalid_environment",
+     "stage": "environment",
+     "field": "/variables/1/fields"
+    }
+   }
+  },
+  {
+   "name": "list-without-items",
+   "op": "load",
+   "replace": {
+    "environment": {
+     "name": "declarations",
+     "variables": [
+      {
+       "name": "a",
+       "type": "int"
+      },
+      {
+       "name": "b",
+       "type": "list"
+      }
+     ],
+     "output": {
+      "type": "bool"
+     }
+    }
+   },
+   "expect": {
+    "diagnostic": {
+     "code": "invalid_environment",
+     "stage": "environment",
+     "field": "/variables/1/items"
+    }
+   }
+  },
+  {
+   "name": "list-of-lists",
+   "op": "load",
+   "replace": {
+    "environment": {
+     "name": "declarations",
+     "variables": [
+      {
+       "name": "a",
+       "type": "int"
+      },
+      {
+       "name": "b",
+       "type": "list",
+       "items": "list"
+      }
+     ],
+     "output": {
+      "type": "bool"
+     }
+    }
+   },
+   "expect": {
+    "diagnostic": {
+     "code": "unsupported_profile",
+     "stage": "environment",
+     "field": "/variables/1/items"
+    }
+   }
+  },
+  {
+   "name": "list-of-records",
+   "op": "load",
+   "replace": {
+    "environment": {
+     "name": "declarations",
+     "variables": [
+      {
+       "name": "a",
+       "type": "int"
+      },
+      {
+       "name": "b",
+       "type": "list",
+       "items": "record"
+      }
+     ],
+     "output": {
+      "type": "bool"
+     }
+    }
+   },
+   "expect": {
+    "diagnostic": {
+     "code": "unsupported_profile",
+     "stage": "environment",
+     "field": "/variables/1/items"
+    }
+   }
+  },
+  {
+   "name": "record-without-fields",
+   "op": "load",
+   "replace": {
+    "environment": {
+     "name": "declarations",
+     "variables": [
+      {
+       "name": "a",
+       "type": "int"
+      },
+      {
+       "name": "b",
+       "type": "record"
+      }
+     ],
+     "output": {
+      "type": "bool"
+     }
+    }
+   },
+   "expect": {
+    "diagnostic": {
+     "code": "invalid_environment",
+     "stage": "environment",
+     "field": "/variables/1/fields"
+    }
+   }
+  },
+  {
+   "name": "record-empty-fields",
+   "op": "load",
+   "replace": {
+    "environment": {
+     "name": "declarations",
+     "variables": [
+      {
+       "name": "a",
+       "type": "int"
+      },
+      {
+       "name": "b",
+       "type": "record",
+       "fields": []
+      }
+     ],
+     "output": {
+      "type": "bool"
+     }
+    }
+   },
+   "expect": {
+    "diagnostic": {
+     "code": "invalid_environment",
+     "stage": "environment",
+     "field": "/variables/1/fields"
+    }
+   }
+  },
+  {
+   "name": "record-too-many-fields",
+   "op": "load",
+   "replace": {
+    "environment": {
+     "name": "declarations",
+     "variables": [
+      {
+       "name": "a",
+       "type": "int"
+      },
+      {
+       "name": "b",
+       "type": "record",
+       "fields": [
+        {
+         "name": "f0",
+         "type": "bool"
+        },
+        {
+         "name": "f1",
+         "type": "bool"
+        },
+        {
+         "name": "f2",
+         "type": "bool"
+        },
+        {
+         "name": "f3",
+         "type": "bool"
+        },
+        {
+         "name": "f4",
+         "type": "bool"
+        },
+        {
+         "name": "f5",
+         "type": "bool"
+        },
+        {
+         "name": "f6",
+         "type": "bool"
+        },
+        {
+         "name": "f7",
+         "type": "bool"
+        },
+        {
+         "name": "f8",
+         "type": "bool"
+        },
+        {
+         "name": "f9",
+         "type": "bool"
+        },
+        {
+         "name": "f10",
+         "type": "bool"
+        },
+        {
+         "name": "f11",
+         "type": "bool"
+        },
+        {
+         "name": "f12",
+         "type": "bool"
+        },
+        {
+         "name": "f13",
+         "type": "bool"
+        },
+        {
+         "name": "f14",
+         "type": "bool"
+        },
+        {
+         "name": "f15",
+         "type": "bool"
+        },
+        {
+         "name": "f16",
+         "type": "bool"
+        }
+       ]
+      }
+     ],
+     "output": {
+      "type": "bool"
+     }
+    }
+   },
+   "expect": {
+    "diagnostic": {
+     "code": "invalid_environment",
+     "stage": "environment",
+     "field": "/variables/1/fields"
+    }
+   }
+  },
+  {
+   "name": "record-duplicate-field",
+   "op": "load",
+   "replace": {
+    "environment": {
+     "name": "declarations",
+     "variables": [
+      {
+       "name": "a",
+       "type": "int"
+      },
+      {
+       "name": "b",
+       "type": "record",
+       "fields": [
+        {
+         "name": "x",
+         "type": "int"
+        },
+        {
+         "name": "x",
+         "type": "bool"
+        }
+       ]
+      }
+     ],
+     "output": {
+      "type": "bool"
+     }
+    }
+   },
+   "expect": {
+    "diagnostic": {
+     "code": "invalid_environment",
+     "stage": "environment",
+     "field": "/variables/1/fields/1"
+    }
+   }
+  },
+  {
+   "name": "record-bad-field-name",
+   "op": "load",
+   "replace": {
+    "environment": {
+     "name": "declarations",
+     "variables": [
+      {
+       "name": "a",
+       "type": "int"
+      },
+      {
+       "name": "b",
+       "type": "record",
+       "fields": [
+        {
+         "name": "x-y",
+         "type": "int"
+        }
+       ]
+      }
+     ],
+     "output": {
+      "type": "bool"
+     }
+    }
+   },
+   "expect": {
+    "diagnostic": {
+     "code": "invalid_environment",
+     "stage": "environment",
+     "field": "/variables/1/fields/0"
+    }
+   }
+  },
+  {
+   "name": "record-in-record",
+   "op": "load",
+   "replace": {
+    "environment": {
+     "name": "declarations",
+     "variables": [
+      {
+       "name": "a",
+       "type": "int"
+      },
+      {
+       "name": "b",
+       "type": "record",
+       "fields": [
+        {
+         "name": "x",
+         "type": "record",
+         "fields": [
+          {
+           "name": "y",
+           "type": "int"
+          }
+         ]
+        }
+       ]
+      }
+     ],
+     "output": {
+      "type": "bool"
+     }
+    }
+   },
+   "expect": {
+    "diagnostic": {
+     "code": "unsupported_profile",
+     "stage": "environment",
+     "field": "/variables/1/fields/0/type"
+    }
+   }
+  },
+  {
+   "name": "record-field-list-of-lists",
+   "op": "load",
+   "replace": {
+    "environment": {
+     "name": "declarations",
+     "variables": [
+      {
+       "name": "a",
+       "type": "int"
+      },
+      {
+       "name": "b",
+       "type": "record",
+       "fields": [
+        {
+         "name": "x",
+         "type": "list",
+         "items": "list"
+        }
+       ]
+      }
+     ],
+     "output": {
+      "type": "bool"
+     }
+    }
+   },
+   "expect": {
+    "diagnostic": {
+     "code": "unsupported_profile",
+     "stage": "environment",
+     "field": "/variables/1/fields/0/items"
+    }
+   }
+  },
+  {
+   "name": "unknown-declaration-key",
+   "op": "load",
+   "replace": {
+    "environment": {
+     "name": "declarations",
+     "variables": [
+      {
+       "name": "a",
+       "type": "int"
+      },
+      {
+       "name": "b",
+       "type": "int",
+       "optional": true
+      }
+     ],
+     "output": {
+      "type": "bool"
+     }
+    }
+   },
+   "expect": {
+    "diagnostic": {
+     "code": "unsupported_profile",
+     "stage": "environment",
+     "field": "/environment"
+    }
+   }
+  },
+  {
+   "name": "missing-output",
+   "op": "load",
+   "replace": {
+    "environment": {
+     "name": "declarations",
+     "variables": [
+      {
+       "name": "a",
+       "type": "int"
+      }
+     ]
+    }
+   },
+   "expect": {
+    "diagnostic": {
+     "code": "invalid_environment",
+     "stage": "environment",
+     "field": "/output"
+    }
+   }
+  },
+  {
+   "name": "float-output",
+   "op": "load",
+   "replace": {
+    "environment": {
+     "name": "declarations",
+     "variables": [
+      {
+       "name": "a",
+       "type": "int"
+      }
+     ],
+     "output": {
+      "type": "double"
+     }
+    }
+   },
+   "expect": {
+    "diagnostic": {
+     "code": "unsupported_profile",
+     "stage": "environment",
+     "field": "/output/type"
+    }
+   }
+  },
+  {
+   "name": "fixed-int-as-string",
+   "op": "load",
+   "replace": {
+    "environment": {
+     "name": "declarations",
+     "variables": [
+      {
+       "name": "a",
+       "type": "int"
+      },
+      {
+       "name": "b",
+       "type": "int"
+      }
+     ],
+     "output": {
+      "type": "bool"
+     }
+    },
+    "fixed": {
+     "b": "700"
+    }
+   },
+   "expect": {
+    "diagnostic": {
+     "code": "invalid_bindings",
+     "stage": "bindings",
+     "field": "/b"
+    }
+   }
+  },
+  {
+   "name": "fixed-int-with-fraction",
+   "op": "load",
+   "replace": {
+    "environment": {
+     "name": "declarations",
+     "variables": [
+      {
+       "name": "a",
+       "type": "int"
+      },
+      {
+       "name": "b",
+       "type": "int"
+      }
+     ],
+     "output": {
+      "type": "bool"
+     }
+    },
+    "fixed": {
+     "b": 700.5
+    }
+   },
+   "expect": {
+    "diagnostic": {
+     "code": "invalid_bindings",
+     "stage": "bindings",
+     "field": "/b"
+    }
+   }
+  },
+  {
+   "name": "fixed-date-short",
+   "op": "load",
+   "replace": {
+    "environment": {
+     "name": "declarations",
+     "variables": [
+      {
+       "name": "a",
+       "type": "int"
+      },
+      {
+       "name": "b",
+       "type": "date"
+      }
+     ],
+     "output": {
+      "type": "bool"
+     }
+    },
+    "fixed": {
+     "b": "2026-1-1"
+    }
+   },
+   "expect": {
+    "diagnostic": {
+     "code": "invalid_bindings",
+     "stage": "bindings",
+     "field": "/b"
+    }
+   }
+  },
+  {
+   "name": "fixed-list-too-long",
+   "op": "load",
+   "replace": {
+    "environment": {
+     "name": "declarations",
+     "variables": [
+      {
+       "name": "a",
+       "type": "int"
+      },
+      {
+       "name": "b",
+       "type": "list",
+       "items": "int"
+      }
+     ],
+     "output": {
+      "type": "bool"
+     }
+    },
+    "fixed": {
+     "b": [
+      1,
+      2,
+      3,
+      4,
+      5
+     ]
+    }
+   },
+   "expect": {
+    "diagnostic": {
+     "code": "invalid_bindings",
+     "stage": "bindings",
+     "field": "/b"
+    }
+   }
+  },
+  {
+   "name": "fixed-record-valid",
+   "op": "load",
+   "replace": {
+    "environment": {
+     "name": "declarations",
+     "variables": [
+      {
+       "name": "a",
+       "type": "int"
+      },
+      {
+       "name": "b",
+       "type": "record",
+       "fields": [
+        {
+         "name": "x",
+         "type": "date"
+        }
+       ]
+      }
+     ],
+     "output": {
+      "type": "bool"
+     }
+    },
+    "fixed": {
+     "b": {
+      "x": "2026-01-01"
+     }
+    }
+   },
+   "expect": {
+    "ok": true
+   }
+  }
+ ]
+}

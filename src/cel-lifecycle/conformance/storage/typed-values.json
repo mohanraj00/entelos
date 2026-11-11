@@ -1,0 +1,160 @@
+{
+ "format": "storage-port-vector/v1",
+ "id": "typed-values",
+ "description": "Canonical record bytes for the values of the typed profile cel-typed/v1: int, date, list and record. Object keys are sorted. The integer token -0 becomes 0. A number with a fraction or an exponent keeps float text, so the engine can refuse it as an int and the receipt keeps the refused input. The expected references are SHA-256 values of the stated text.",
+ "invariants": [
+  "immutable_content_identity"
+ ],
+ "steps": [
+  {
+   "op": "transact",
+   "expected": "",
+   "key": "key-1",
+   "payload": {
+    "request": {
+     "op": "example.write",
+     "value": 1
+    },
+    "actor": "actor-a"
+   },
+   "apply": {
+    "actions": [
+     {
+      "put_raw": "application/json",
+      "text": "{\"observed_on\":\"2026-03-14\",\"score\":812,\"sources\":[\"registry\",\"survey\"]}\n",
+      "expect_ref": "sha256:f4360512c7c1f92180bdda77194323eebd38515318386e335567f2c778fda322"
+     },
+     {
+      "put": "note",
+      "value": {
+       "value": {
+        "reason": "eligible",
+        "admit": true
+       },
+       "inputs": {
+        "sources": [
+         "registry",
+         "survey"
+        ],
+        "score": 812,
+        "observed_on": "2026-03-14"
+       }
+      },
+      "expect_ref": "sha256:e7bc4a930ee43fa8b5720a499cea6254799058dc249a4f938f6647a96eab3b80"
+     },
+     {
+      "put": "note",
+      "value": {
+       "inputs": {
+        "score": -0,
+        "a": 812.0,
+        "b": 1E3,
+        "c": 9007199254740992,
+        "d": -9007199254740991
+       }
+      },
+      "expect_ref": "sha256:f41f1b4483e03a6fa8147beef6ca3e82cec14ddb2d98bd1e554c7462e3c61ef0"
+     },
+     {
+      "put": "note",
+      "value": {
+       "value": {
+        "tags": [
+         "café",
+         "hold"
+        ],
+        "start": "2026-05-01",
+        "end": "2026-06-01"
+       }
+      },
+      "expect_ref": "sha256:073970c98a2f703ca96ceeb14e10a71bec07f77629f0ae31ab8b5f482befe018"
+     },
+     {
+      "put": "note",
+      "value": {
+       "inputs": {
+        "score": 0,
+        "a": 8.12e2,
+        "b": 1000.0,
+        "c": 9007199254740992,
+        "d": -9007199254740991
+       }
+      },
+      "expect_ref": "sha256:f41f1b4483e03a6fa8147beef6ca3e82cec14ddb2d98bd1e554c7462e3c61ef0"
+     },
+     {
+      "get_raw": "sha256:f4360512c7c1f92180bdda77194323eebd38515318386e335567f2c778fda322",
+      "mime": "application/json",
+      "expect": {
+       "text": "{\"observed_on\":\"2026-03-14\",\"score\":812,\"sources\":[\"registry\",\"survey\"]}\n"
+      }
+     },
+     {
+      "get_raw": "sha256:e7bc4a930ee43fa8b5720a499cea6254799058dc249a4f938f6647a96eab3b80",
+      "mime": "application/vnd.cel-lifecycle.note+json",
+      "expect": {
+       "text": "{\"format\":\"entelos.record/1\",\"inputs\":{\"observed_on\":\"2026-03-14\",\"score\":812,\"sources\":[\"registry\",\"survey\"]},\"value\":{\"admit\":true,\"reason\":\"eligible\"}}\n"
+      }
+     },
+     {
+      "get_raw": "sha256:f41f1b4483e03a6fa8147beef6ca3e82cec14ddb2d98bd1e554c7462e3c61ef0",
+      "mime": "application/vnd.cel-lifecycle.note+json",
+      "expect": {
+       "text": "{\"format\":\"entelos.record/1\",\"inputs\":{\"a\":812.0,\"b\":1000.0,\"c\":9007199254740992,\"d\":-9007199254740991,\"score\":0}}\n"
+      }
+     },
+     {
+      "get_raw": "sha256:073970c98a2f703ca96ceeb14e10a71bec07f77629f0ae31ab8b5f482befe018",
+      "mime": "application/vnd.cel-lifecycle.note+json",
+      "expect": {
+       "text": "{\"format\":\"entelos.record/1\",\"value\":{\"end\":\"2026-06-01\",\"start\":\"2026-05-01\",\"tags\":[\"café\",\"hold\"]}}\n"
+      }
+     }
+    ],
+    "result": "stored"
+   },
+   "expect": {
+    "reused": false,
+    "result": "stored",
+    "apply_calls": 1,
+    "bind": "c1"
+   }
+  },
+  {
+   "op": "read",
+   "actions": [
+    {
+     "get_raw": "sha256:f4360512c7c1f92180bdda77194323eebd38515318386e335567f2c778fda322",
+     "mime": "application/json",
+     "expect": {
+      "text": "{\"observed_on\":\"2026-03-14\",\"score\":812,\"sources\":[\"registry\",\"survey\"]}\n"
+     }
+    },
+    {
+     "get_raw": "sha256:e7bc4a930ee43fa8b5720a499cea6254799058dc249a4f938f6647a96eab3b80",
+     "mime": "application/vnd.cel-lifecycle.note+json",
+     "expect": {
+      "text": "{\"format\":\"entelos.record/1\",\"inputs\":{\"observed_on\":\"2026-03-14\",\"score\":812,\"sources\":[\"registry\",\"survey\"]},\"value\":{\"admit\":true,\"reason\":\"eligible\"}}\n"
+     }
+    },
+    {
+     "get_raw": "sha256:f41f1b4483e03a6fa8147beef6ca3e82cec14ddb2d98bd1e554c7462e3c61ef0",
+     "mime": "application/vnd.cel-lifecycle.note+json",
+     "expect": {
+      "text": "{\"format\":\"entelos.record/1\",\"inputs\":{\"a\":812.0,\"b\":1000.0,\"c\":9007199254740992,\"d\":-9007199254740991,\"score\":0}}\n"
+     }
+    },
+    {
+     "get_raw": "sha256:073970c98a2f703ca96ceeb14e10a71bec07f77629f0ae31ab8b5f482befe018",
+     "mime": "application/vnd.cel-lifecycle.note+json",
+     "expect": {
+      "text": "{\"format\":\"entelos.record/1\",\"value\":{\"end\":\"2026-06-01\",\"start\":\"2026-05-01\",\"tags\":[\"café\",\"hold\"]}}\n"
+     }
+    }
+   ],
+   "expect": {
+    "cursor": "$c1"
+   }
+  }
+ ]
+}
