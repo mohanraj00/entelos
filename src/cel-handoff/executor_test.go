@@ -56,7 +56,7 @@ type vector struct {
 				StaleReason string `json:"stale_reason"`
 				Response    struct {
 					Status     string      `json:"status"`
-					Value      *bool       `json:"value"`
+					Value      any         `json:"value"`
 					Diagnostic *vectorDiag `json:"diagnostic"`
 				} `json:"response"`
 			} `json:"entry"`
@@ -186,7 +186,7 @@ func TestExecutorVectors(t *testing.T) {
 func TestEntryJSONHasTheIngestFields(t *testing.T) {
 	value := true
 	raw, err := h.MarshalEntry(&h.Entry{Cursor: 3, SnapshotRef: "s", Date: "2026-11-15", InputsRef: "i",
-		Response: h.Response{Status: "ok", Value: &value, BundleRef: "<b>"}, StaleReason: ""})
+		Response: h.Response{Status: "ok", Value: value, BundleRef: "<b>"}, StaleReason: ""})
 	if err != nil {
 		t.Fatal(err)
 	}

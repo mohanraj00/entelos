@@ -4,7 +4,7 @@ This map points to executable reference contracts. It is not a separately versio
 
 | Surface | Source | Behavior |
 |---|---|---|
-| Typed host | [handoff.go](../src/cel-handoff/handoff.go) | Exact bundle/build, declared caller fields, disjoint fixed values, string/bool inputs and bool result. |
+| Typed host | [handoff.go](../src/cel-handoff/handoff.go) | Exact bundle/build, declared caller fields, disjoint fixed values, string/bool inputs and bool result for `cel-string-bool/v1`; declared typed inputs and output for `cel-typed/v1` ([typed.go](../src/cel-handoff/typed.go)). |
 | Authoring | [prepare.py](../src/cel-handoff/tools/prepare.py) and pinned upstream CEL CLI | One environment describes the author/host declarations; tests remain host-owned. |
 | Calling | [caller.py](../src/lifecycle-core/client/caller.py) | Discover a typed contract, then send named values and expected bundle identity without source or tests. |
 | Lifecycle | [host.go](../src/lifecycle-core/host.go) and the JSONL host [lifecycle-core](../src/lifecycle-core/cmd/lifecycle-core/main.go) | Qualification/report binding, separate admission, interval selection, preparation, receipt and correction operations. |
@@ -14,7 +14,7 @@ This map points to executable reference contracts. It is not a separately versio
 | Local storage | [gitstore.go](../src/lifecycle-core/gitstore.go) | Immutable objects, captured historical roots, request-key recovery and single-root compare-and-swap. |
 | Application boundary | [adapter.py](../examples/ci-trigger/adapter.py) | Project a nested event, retain raw/projection audit links; no atomic webhook ingress or pipeline effect is implemented. |
 
-A typed profile, `cel-typed/v1`, is proposed in [typed-profile-spec.md](../src/cel-lifecycle/typed-profile-spec.md) (#126). It adds `int`, `date`, `list` and `record` types and a declared output type. No host code implements it yet.
+A typed profile, `cel-typed/v1`, is specified in [typed-profile-spec.md](../src/cel-lifecycle/typed-profile-spec.md) (#126). It adds `int`, `date`, `list` and `record` types and a declared output type. The engine implements it in [typed.go](../src/cel-handoff/typed.go), and `TestTypedProfileVectors` runs the typed vectors. The executor and the WASM bridge refuse a typed bundle with `unsupported_profile`.
 
 The JSON CLI schemas and typed faults are defined in source. Qualification success does not activate a proposal. Caller discovery must be checked again after source/profile/bundle changes. Invalid input and a successful false result remain different outcomes.
 
