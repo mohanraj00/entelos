@@ -49,7 +49,7 @@ These rules apply:
 - `token_sha256` is the SHA-256 digest of the 64 ASCII hex digits of the token. The file does not contain a token. A copy of the file does not give a usable credential.
 - Each `token_sha256` and each `actor` must be unique. Each role must be a Host role name. A duplicate or an unknown role is `configuration_error`.
 - For each frame, the sidecar calculates the digest of the prelude token. It compares that digest with each entry in constant time, and it compares all entries. If no entry agrees, the response is `unauthenticated`, as in 1.0.
-- The sidecar reads the file again for each new connection. Thus a removed principal cannot open a new connection. An open connection keeps the principals that it read.
+- The sidecar reads the file again for each request frame, before it reads the frame length. Thus a removed principal gets `unauthenticated` on its next frame, also on a connection that is already open. If the sidecar cannot read the file, or the file is not valid, the frame gets `unauthenticated` and the Host receives no request.
 - The Host context for the frame is the context file plus the `actor` and `roles` of the principal. The client cannot change them.
 
 The digest is a verifier for a secret token. It is not a signature and it gives no authority by itself. The application authenticates the person to its own interface. Entelos authenticates the credential and selects the actor and the roles. A panel that holds the credentials of many reviewers can act as each of them. The operator must issue one credential to each reviewer and give it only to the panel session of that reviewer.
@@ -74,7 +74,12 @@ The Host adds `reviews` to the store state. It is an object. Each key is a `snap
 - `decide` appends its `decision_ref` to the entry of the snapshot of its report.
 - A new store starts with `"reviews":{}`. Thus the `inspect-empty` vector of 1.0 changes. The implementation PR must change that expected value and say so.
 
-A store from v0.3.0 has no `reviews`. Its decisions are not in an index, so the Host cannot tell which proposals are open. On such a store, `proposals` and `proposal` refuse with `index_unavailable`. The other operations do not use the index for a refusal. There is no migration in this version.
+A store from v0.3.0 has no `reviews`. Its decisions are not in an index, so the Host cannot tell which proposals are open. The checks `duplicate_verdict` and `proposal_rejected` also need the complete verdict history of a snapshot. Thus the Host fails closed on such a store:
+
+- `proposals`, `proposal`, `qualify`, `decide` and `activate` refuse with `index_unavailable`. The Host writes no record and does not make a partial index.
+- The other operations do not use the index. For example, `resolve`, `invoke`, `replay` and `restate` work as in 1.0.
+
+Thus a v0.3.0 store cannot get a new report, verdict or activation. There is no migration in this version. A later migration must build the index from all the stored decisions before the Host accepts it.
 
 ## Proposal states
 
@@ -138,6 +143,8 @@ Body in 1.1: `{"report_ref", "reason", "disposition"?, "expected_revision", "req
 
 The Host does the checks in this order. The first check that fails gives the refusal.
 
+Before each other check, the store must have `state.reviews`: `index_unavailable`.
+
 For `accept`:
 
 1. The report and its snapshot are in scope: `artifact_unavailable`, `invalid_record` or `out_of_scope`.
@@ -172,7 +179,7 @@ Two verdicts with `accept` from different actors are permitted. Both stay in the
 
 ### `activate` (write)
 
-`activate` keeps its 1.0 body and checks. After those checks, it refuses with `proposal_rejected` if a verdict on the snapshot is a `reject`.
+`activate` keeps its 1.0 body and checks. Before those checks, it refuses with `index_unavailable` if the store has no `state.reviews`. After those checks, it refuses with `proposal_rejected` if a verdict on the snapshot is a `reject`.
 
 ## Refusal codes
 
@@ -187,7 +194,7 @@ The codes in **bold** are new in 1.1. The other codes have the meaning of 1.0.
 | `artifact_unavailable` | `store` | `proposal`, `decide` | The reference is not in the store. |
 | `invalid_record` | `store` | `proposal`, `decide` | The reference is a record of another kind. |
 | `out_of_scope` | Host | `proposal`, `decide` | The record has another scope or a function that is not installed. |
-| **`index_unavailable`** | `store` | `proposals`, `proposal` | The store has no `state.reviews`. |
+| **`index_unavailable`** | `store` | `proposals`, `proposal`, `qualify`, `decide`, `activate` | The store has no `state.reviews`. |
 | `qualification_failed` | `admission` | `decide` accept | The report did not pass, or its bindings differ. |
 | `untrusted_runner` | `admission` | `decide` accept | The report is not from the installed runner. |
 | `implementation_unavailable` | `admission` | `decide` accept | The qualified build is not installed. |
@@ -227,7 +234,8 @@ A 1.1 receiver accepts the minor versions 0 and 1. A response has the version of
 
 ## Coverage limits
 
-- `index_unavailable` needs a store from v0.3.0. The implementation PR adds a Go test with such a store. No vector covers it.
+- `index_unavailable` needs a store from v0.3.0. The implementation PR adds a Go test with such a store for each of the five operations. The test also checks that the root does not change. No vector covers it.
+- The vectors do not remove a principal while a connection is open. The implementation PR adds a Go test: a frame after the removal on the same connection gets `unauthenticated`.
 - `untrusted_runner`, `implementation_unavailable`, `stale_qualification`, `stale_revision`, `idempotency_conflict` and `response_too_large` keep their 1.0 tests. The approval vectors do not repeat them.
 - The vectors do not test the file mode and owner checks of the credentials file. The implementation PR adds Go tests for them.
 - The vectors do not prove constant-time comparison. A code review must check it.
