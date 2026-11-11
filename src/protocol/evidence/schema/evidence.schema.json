@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "entelos.evidence/1",
+  "title": "Admission evidence of an external producer",
+  "type": "object",
+  "required": ["format", "producer", "facts"],
+  "additionalProperties": false,
+  "properties": {
+    "format": {"type": "string", "const": "entelos.evidence/1"},
+    "producer": {"$ref": "#/$defs/producer"},
+    "facts": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/fact"}}
+  },
+  "$defs": {
+    "name": {"type": "string", "pattern": "^[A-Za-z0-9._-]{1,128}$"},
+    "digest": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "producer": {
+      "type": "object",
+      "required": ["id", "version"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {"$ref": "#/$defs/name"},
+        "version": {"$ref": "#/$defs/name"}
+      }
+    },
+    "span": {
+      "type": "object",
+      "required": ["start", "end"],
+      "additionalProperties": false,
+      "properties": {
+        "start": {"type": "integer", "minimum": 0},
+        "end": {"type": "integer", "minimum": 1}
+      }
+    },
+    "review": {
+      "type": "object",
+      "required": ["outcome", "reviewer", "reviewer_kind"],
+      "additionalProperties": false,
+      "properties": {
+        "outcome": {"type": "string", "enum": ["confirmed", "rejected"]},
+        "reviewer": {"$ref": "#/$defs/name"},
+        "reviewer_kind": {"type": "string", "enum": ["human", "model"]}
+      }
+    },
+    "fact": {
+      "type": "object",
+      "required": ["fact_id", "receipt_digest", "source_digest", "span", "admission"],
+      "additionalProperties": false,
+      "properties": {
+        "fact_id": {"$ref": "#/$defs/name"},
+        "receipt_digest": {"$ref": "#/$defs/digest"},
+        "source_digest": {"$ref": "#/$defs/digest"},
+        "span": {"$ref": "#/$defs/span"},
+        "admission": {"type": "string", "enum": ["automatic", "reviewed"]},
+        "review": {"$ref": "#/$defs/review"}
+      }
+    }
+  }
+}

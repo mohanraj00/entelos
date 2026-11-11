@@ -36,6 +36,10 @@ The v0.4 milestone starts with [#126](https://github.com/mohanraj00/entelos/issu
 
 On 2026-11-11, a spec for [#130](https://github.com/mohanraj00/entelos/issues/130) was proposed in [APPROVAL.md](../src/protocol/approval/APPROVAL.md). It adds protocol 1.1 with `proposals`, `proposal`, a `reject` disposition for `decide`, a credentials file for each reviewer and a Host clock. The schemas and vectors are hand-written. `check_spec.py` checks their structure and clock arithmetic. The implementation PR adds 1.1 to the Go Host and the sidecar. The Go test `TestApprovalVectors` runs all 46 vector steps against the sidecar socket. The implementation is not released.
 
+### v0.4 evidence format
+
+On 2026-11-12, the evidence format `entelos.evidence/1` for [#148](https://github.com/mohanraj00/entelos/issues/148) was proposed in [EVIDENCE.md](../src/protocol/evidence/EVIDENCE.md). It is the first part of #104. It gives the digests, spans and reviews of the facts that a proposal cites, nine refusal rules in a fixed order and three bool policy inputs. The 31 vectors are hand-written. `check_spec.py` applies the rules to them. No Host reads the format.
+
 ### M1 First contact
 
 On 2026-10-30, the M1 work was complete in `main` (merge commit `e844246`):
