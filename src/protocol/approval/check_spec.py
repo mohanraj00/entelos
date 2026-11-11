@@ -102,7 +102,9 @@ def check_file(name,doc,codes,new_seen):
         elif op in V10:root=V10[op]['$defs']
         elif op in APPROVAL:root=None
         else:errors.append(where+': unknown operation '+op);continue
-        if response['protocol']!=(version if supported else '1.0'):errors.append(where+': wrong response version')
+        # The sidecar does not read a frame that fails authentication, so its response has 1.0.
+        readable=step.get('principal')!='$unknown'
+        if response['protocol']!=(version if supported and readable else '1.0'):errors.append(where+': wrong response version')
         for value in walk(request['body']):
             if isinstance(value,dict) and '$use' in value and value['$use'] not in captures:errors.append(where+': $use before $capture: '+value['$use'])
         if root and response['status']=='ok':
@@ -153,6 +155,7 @@ def self_test(docs):
         'decision-without-time':lambda d:step(d,'accept')['expect']['response']['result']['result']['decision'].pop('decided_at'),
         'clock-back':lambda d:step(d,'accept').update(clock='2026-11-01T00:00:00Z'),
         'version-not-echoed':lambda d:step(d,'accept')['expect']['response'].update(protocol='1.0'),
+        'unauthenticated-echoed':lambda d:step(d,'unknown-token')['expect']['response'].update(protocol='1.1'),
     }
     missed=[name for name,f in cases.items() if not run(mutate(f))]
     return ['self-test: no error for '+m for m in missed]
@@ -162,7 +165,7 @@ def main():
     docs={p.name:json.loads(p.read_text()) for p in sorted((HERE/'vectors').glob('approval-*.json'))}
     errors=run(docs)+self_test(docs)
     print(json.dumps({'passed':not errors,'files':sorted(docs),'steps':sum(len(d['steps']) for d in docs.values()),'errors':errors,
-        'scope':'Proposed approval API vectors: structure, schemas, refusal codes and clock arithmetic. No Host ran.'},indent=2))
+        'scope':'Approval API vectors: structure, schemas, refusal codes and clock arithmetic. This checker runs no Host; TestApprovalVectors in src/lifecycle-core/protocol runs them.'},indent=2))
     return bool(errors)
 
 if __name__=='__main__':raise SystemExit(main())

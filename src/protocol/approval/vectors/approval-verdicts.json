@@ -626,7 +626,7 @@
    },
    "expect": {
     "response": {
-     "protocol": "1.1",
+     "protocol": "1.0",
      "request_id": "",
      "status": "unauthenticated",
      "diagnostic": {
