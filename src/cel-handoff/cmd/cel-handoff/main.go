@@ -13,7 +13,7 @@ import (
 	"path/filepath"
 	"runtime/debug"
 
-	h "example.org/cel-handoff"
+	h "github.com/mohanraj00/entelos/src/cel-handoff"
 )
 
 func emit(v any) {

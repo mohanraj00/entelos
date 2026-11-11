@@ -26,7 +26,7 @@ import (
 	"testing"
 	"time"
 
-	lifecycle "example.org/lifecycle-core"
+	lifecycle "github.com/mohanraj00/entelos/src/lifecycle-core"
 )
 
 var bundleFiles = map[string]string{"manifest": "manifest.json", "environment": "env.json", "source": "rule.cel", "fixed": "fixed.json"}

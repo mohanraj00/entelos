@@ -11,7 +11,7 @@ import (
 	"os"
 	"path/filepath"
 
-	lifecycle "example.org/lifecycle-core"
+	lifecycle "github.com/mohanraj00/entelos/src/lifecycle-core"
 )
 
 const maxRequest = 1048576

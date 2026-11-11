@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	lifecycle "example.org/lifecycle-core"
+	lifecycle "github.com/mohanraj00/entelos/src/lifecycle-core"
 )
 
 // The tests use a relative socket path in a new working directory, because

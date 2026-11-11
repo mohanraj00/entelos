@@ -14,7 +14,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	lifecycle "example.org/lifecycle-core"
+	lifecycle "github.com/mohanraj00/entelos/src/lifecycle-core"
 )
 
 // Schemas holds the envelope definitions and one schema for each operation.

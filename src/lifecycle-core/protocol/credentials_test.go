@@ -13,7 +13,7 @@ import (
 	"testing"
 	"time"
 
-	lifecycle "example.org/lifecycle-core"
+	lifecycle "github.com/mohanraj00/entelos/src/lifecycle-core"
 )
 
 const credentialsPath = "credentials.json"

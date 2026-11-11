@@ -21,8 +21,8 @@ import (
 	"path/filepath"
 	"syscall"
 
-	lifecycle "example.org/lifecycle-core"
-	"example.org/lifecycle-core/protocol"
+	lifecycle "github.com/mohanraj00/entelos/src/lifecycle-core"
+	"github.com/mohanraj00/entelos/src/lifecycle-core/protocol"
 )
 
 func main() { os.Exit(run()) }

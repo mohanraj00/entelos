@@ -10,7 +10,7 @@ import (
 	"io"
 	"regexp"
 
-	lifecycle "example.org/lifecycle-core"
+	lifecycle "github.com/mohanraj00/entelos/src/lifecycle-core"
 )
 
 // CredentialsFormat is the format value of a credentials file.

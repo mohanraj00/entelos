@@ -15,7 +15,7 @@ import (
 	"os"
 	"syscall/js"
 
-	h "example.org/cel-handoff"
+	h "github.com/mohanraj00/entelos/src/cel-handoff"
 )
 
 // bridgeMode is true when the module has no command arguments. The Go
