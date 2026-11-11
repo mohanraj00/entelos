@@ -82,6 +82,28 @@ func TestFaultMapping(t *testing.T) {
 	wantFailure(t, got, "stale_revision", "lifecycle")
 }
 
+// A 1.1 request with a result over the frame bound gets a 1.1
+// response_too_large failure, as the version rule of APPROVAL.md says.
+func TestResponseTooLargeKeepsTheRequestVersion(t *testing.T) {
+	big := stubHost{result: lifecycle.Object{"cursor": "", "state": lifecycle.Object{"blob": strings.Repeat("x", MaxFrame)}}}
+	a := NewAdapter(big, loadTestSchemas(t))
+	for _, version := range []string{"1.0", "1.1"} {
+		payload := []byte(`{"body":{},"operation":"inspect","protocol":"` + version + `","request_id":"r"}`)
+		got, _ := a.Frame(payload)
+		if got["status"] != "response_too_large" || got["protocol"] != version {
+			t.Errorf("%s: %s", version, lifecycle.Encode(got))
+		}
+		var b bytes.Buffer
+		if err := writeFrame(&b, a.Message(lifecycle.Object{"protocol": version, "request_id": "r", "operation": "inspect", "body": lifecycle.Object{}})); err != nil {
+			t.Fatal(err)
+		}
+		written, err := lifecycle.Decode(b.Bytes()[4:])
+		if err != nil || written.(lifecycle.Object)["protocol"] != version || written.(lifecycle.Object)["status"] != "response_too_large" {
+			t.Errorf("%s: writeFrame wrote %s", version, b.Bytes()[4:])
+		}
+	}
+}
+
 // A success result over the frame bound gives response_too_large, and the
 // frame stays in the bound.
 func TestResponseTooLarge(t *testing.T) {

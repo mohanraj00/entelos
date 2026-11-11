@@ -343,17 +343,22 @@ func failure(id, code, stage, message string) lifecycle.Object {
 
 // limit gives a response that encodes and that is in the frame bound. A result
 // outside the value domain gives internal_error. A result over the bound
-// gives response_too_large.
+// gives response_too_large. The failure keeps the version of the response,
+// so a 1.1 request gets a 1.1 failure.
 func limit(response lifecycle.Object) lifecycle.Object {
 	id, _ := response["request_id"].(string)
 	body, err := Canonical(response)
-	if err != nil {
-		return internal(id)
-	}
-	if len(body) <= MaxFrame {
+	if err == nil && len(body) <= MaxFrame {
 		return response
 	}
-	return failure(id, "response_too_large", "protocol", "the response exceeds the frame byte bound")
+	out := internal(id)
+	if err == nil {
+		out = failure(id, "response_too_large", "protocol", "the response exceeds the frame byte bound")
+	}
+	if version, ok := response["protocol"].(string); ok {
+		out["protocol"] = version
+	}
+	return out
 }
 
 // writeFrame writes one complete frame. After a short write, it writes the
