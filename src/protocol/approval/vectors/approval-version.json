@@ -1,0 +1,340 @@
+{
+ "description": "Protocol version and request shape of the approval API. Expected values are hand-written from APPROVAL.md.",
+ "protocol_version": "1.1",
+ "context": {
+  "scope": "demo",
+  "runner_actor": "fixture-runner",
+  "worker": "local-worker",
+  "functions": [
+   "record.visible"
+  ]
+ },
+ "principals": {
+  "author-a": {
+   "actor": "author-a",
+   "roles": [
+    "author",
+    "reviewer"
+   ]
+  },
+  "runner": {
+   "actor": "fixture-runner",
+   "roles": [
+    "runner"
+   ]
+  },
+  "reviewer-a": {
+   "actor": "reviewer-a",
+   "roles": [
+    "reviewer"
+   ]
+  },
+  "reviewer-b": {
+   "actor": "reviewer-b",
+   "roles": [
+    "reviewer"
+   ]
+  },
+  "reviewer-c": {
+   "actor": "reviewer-c",
+   "roles": [
+    "reviewer"
+   ]
+  },
+  "caller-c": {
+   "actor": "caller-c",
+   "roles": [
+    "caller"
+   ]
+  }
+ },
+ "clock": "2026-11-20T09:00:00Z",
+ "steps": [
+  {
+   "name": "inspect-1.0",
+   "principal": "reviewer-a",
+   "request": {
+    "protocol": "1.0",
+    "request_id": "e-1",
+    "operation": "inspect",
+    "body": {}
+   },
+   "expect": {
+    "response": {
+     "protocol": "1.0",
+     "request_id": "e-1",
+     "status": "ok",
+     "result": {
+      "cursor": "",
+      "state": {
+       "schema": "local-lifecycle/v1",
+       "heads": {},
+       "sources": [],
+       "plans": [],
+       "events": [],
+       "requests": {},
+       "workers": {},
+       "receipts": [],
+       "tasks": {},
+       "outbox": {},
+       "reviews": {}
+      }
+     }
+    }
+   }
+  },
+  {
+   "name": "inspect-1.1",
+   "principal": "reviewer-a",
+   "request": {
+    "protocol": "1.1",
+    "request_id": "e-2",
+    "operation": "inspect",
+    "body": {}
+   },
+   "expect": {
+    "response": {
+     "protocol": "1.1",
+     "request_id": "e-2",
+     "status": "ok",
+     "result": {
+      "cursor": "",
+      "state": {
+       "schema": "local-lifecycle/v1",
+       "heads": {},
+       "sources": [],
+       "plans": [],
+       "events": [],
+       "requests": {},
+       "workers": {},
+       "receipts": [],
+       "tasks": {},
+       "outbox": {},
+       "reviews": {}
+      }
+     }
+    }
+   }
+  },
+  {
+   "name": "proposals-in-1.0",
+   "principal": "reviewer-a",
+   "request": {
+    "protocol": "1.0",
+    "request_id": "e-3",
+    "operation": "proposals",
+    "body": {}
+   },
+   "expect": {
+    "response": {
+     "protocol": "1.0",
+     "request_id": "e-3",
+     "status": "invalid_request",
+     "diagnostic": {
+      "code": "invalid_request",
+      "stage": "protocol",
+      "message": {
+       "$type": "string"
+      }
+     }
+    }
+   }
+  },
+  {
+   "name": "disposition-in-1.0",
+   "principal": "reviewer-a",
+   "request": {
+    "protocol": "1.0",
+    "request_id": "e-4",
+    "operation": "decide",
+    "body": {
+     "report_ref": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+     "reason": "r",
+     "disposition": "accept",
+     "expected_revision": "",
+     "request_key": "e-k-disposition-in-1.0"
+    }
+   },
+   "expect": {
+    "response": {
+     "protocol": "1.0",
+     "request_id": "e-4",
+     "status": "invalid_request",
+     "diagnostic": {
+      "code": "invalid_request",
+      "stage": "protocol",
+      "message": {
+       "$type": "string"
+      }
+     }
+    }
+   }
+  },
+  {
+   "name": "unknown-disposition",
+   "principal": "reviewer-a",
+   "request": {
+    "protocol": "1.1",
+    "request_id": "e-5",
+    "operation": "decide",
+    "body": {
+     "report_ref": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+     "reason": "r",
+     "disposition": "maybe",
+     "expected_revision": "",
+     "request_key": "e-k-unknown-disposition"
+    }
+   },
+   "expect": {
+    "response": {
+     "protocol": "1.1",
+     "request_id": "e-5",
+     "status": "invalid_request",
+     "diagnostic": {
+      "code": "invalid_request",
+      "stage": "protocol",
+      "message": {
+       "$type": "string"
+      }
+     }
+    }
+   }
+  },
+  {
+   "name": "empty-reason",
+   "principal": "reviewer-a",
+   "request": {
+    "protocol": "1.1",
+    "request_id": "e-6",
+    "operation": "decide",
+    "body": {
+     "report_ref": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+     "reason": "",
+     "disposition": "reject",
+     "expected_revision": "",
+     "request_key": "e-k-empty-reason"
+    }
+   },
+   "expect": {
+    "response": {
+     "protocol": "1.1",
+     "request_id": "e-6",
+     "status": "invalid_request",
+     "diagnostic": {
+      "code": "invalid_request",
+      "stage": "protocol",
+      "message": {
+       "$type": "string"
+      }
+     }
+    }
+   }
+  },
+  {
+   "name": "unknown-snapshot",
+   "principal": "reviewer-a",
+   "request": {
+    "protocol": "1.1",
+    "request_id": "e-7",
+    "operation": "proposal",
+    "body": {
+     "snapshot_ref": "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+    }
+   },
+   "expect": {
+    "response": {
+     "protocol": "1.1",
+     "request_id": "e-7",
+     "status": "artifact_unavailable",
+     "diagnostic": {
+      "code": "artifact_unavailable",
+      "stage": "store",
+      "message": {
+       "$type": "string"
+      }
+     }
+    }
+   }
+  },
+  {
+   "name": "unknown-report-reject",
+   "principal": "reviewer-a",
+   "request": {
+    "protocol": "1.1",
+    "request_id": "e-8",
+    "operation": "decide",
+    "body": {
+     "report_ref": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+     "reason": "r",
+     "disposition": "reject",
+     "expected_revision": "",
+     "request_key": "e-k-unknown-report-reject"
+    }
+   },
+   "expect": {
+    "response": {
+     "protocol": "1.1",
+     "request_id": "e-8",
+     "status": "artifact_unavailable",
+     "diagnostic": {
+      "code": "artifact_unavailable",
+      "stage": "store",
+      "message": {
+       "$type": "string"
+      }
+     }
+    }
+   }
+  },
+  {
+   "name": "proposals-with-request-key",
+   "principal": "reviewer-a",
+   "request": {
+    "protocol": "1.1",
+    "request_id": "e-9",
+    "operation": "proposals",
+    "body": {
+     "request_key": "k"
+    }
+   },
+   "expect": {
+    "response": {
+     "protocol": "1.1",
+     "request_id": "e-9",
+     "status": "invalid_request",
+     "diagnostic": {
+      "code": "invalid_request",
+      "stage": "protocol",
+      "message": {
+       "$type": "string"
+      }
+     }
+    }
+   }
+  },
+  {
+   "name": "minor-2",
+   "principal": "reviewer-a",
+   "request": {
+    "protocol": "1.2",
+    "request_id": "e-10",
+    "operation": "proposals",
+    "body": {}
+   },
+   "expect": {
+    "response": {
+     "protocol": "1.0",
+     "request_id": "e-10",
+     "status": "unsupported_version",
+     "diagnostic": {
+      "code": "unsupported_version",
+      "stage": "protocol",
+      "message": {
+       "$type": "string"
+      }
+     }
+    }
+   }
+  }
+ ]
+}

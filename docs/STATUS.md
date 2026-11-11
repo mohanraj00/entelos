@@ -32,6 +32,10 @@ The Go review in [#136](https://github.com/mohanraj00/entelos/issues/136) found 
 
 The v0.4 milestone starts with [#126](https://github.com/mohanraj00/entelos/issues/126), typed rule inputs and outputs. The spec [typed-profile-spec.md](../src/cel-lifecycle/typed-profile-spec.md) proposes the profile `cel-typed/v1`, with vectors in [conformance/typed/](../src/cel-lifecycle/conformance/typed/). The spec is in review. No host code implements it, and no harness runs the typed vectors yet.
 
+### v0.4 approval API
+
+On 2026-11-11, a spec for [#130](https://github.com/mohanraj00/entelos/issues/130) was proposed in [APPROVAL.md](../src/protocol/approval/APPROVAL.md). It adds protocol 1.1 with `proposals`, `proposal`, a `reject` disposition for `decide`, a credentials file for each reviewer and a Host clock. The schemas and vectors are hand-written. `check_spec.py` checks their structure and clock arithmetic. No Host runs them yet.
+
 ### M1 First contact
 
 On 2026-10-30, the M1 work was complete in `main` (merge commit `e844246`):

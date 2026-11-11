@@ -1,0 +1,145 @@
+{
+ "$defs": {
+  "proposal_item": {
+   "additionalProperties": false,
+   "properties": {
+    "bundle_ref": {
+     "pattern": "^sha256:[0-9a-f]{64}$",
+     "type": "string"
+    },
+    "decision_refs": {
+     "items": {
+      "pattern": "^sha256:[0-9a-f]{64}$",
+      "type": "string"
+     },
+     "type": "array"
+    },
+    "from": {
+     "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$",
+     "type": "string"
+    },
+    "function": {
+     "minLength": 1,
+     "type": "string"
+    },
+    "producer": {
+     "minLength": 1,
+     "type": "string"
+    },
+    "reason": {
+     "minLength": 1,
+     "type": "string"
+    },
+    "refusal": {
+     "enum": [
+      "",
+      "qualification_failed",
+      "untrusted_runner",
+      "implementation_unavailable",
+      "stale_qualification",
+      "proposal_rejected"
+     ]
+    },
+    "report_refs": {
+     "items": {
+      "pattern": "^sha256:[0-9a-f]{64}$",
+      "type": "string"
+     },
+     "type": "array"
+    },
+    "scope": {
+     "minLength": 1,
+     "type": "string"
+    },
+    "snapshot_ref": {
+     "pattern": "^sha256:[0-9a-f]{64}$",
+     "type": "string"
+    },
+    "stale_mode": {
+     "enum": [
+      "fail_closed",
+      "continue_stale"
+     ]
+    },
+    "state": {
+     "enum": [
+      "rejected",
+      "accepted",
+      "superseded",
+      "awaiting_qualification",
+      "awaiting_verdict",
+      "not_approvable"
+     ]
+    },
+    "submitted_at": {
+     "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+     "type": "string"
+    },
+    "until": {
+     "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$",
+     "type": "string"
+    },
+    "wait_seconds": {
+     "maximum": 9007199254740991,
+     "minimum": -9007199254740991,
+     "type": "integer"
+    }
+   },
+   "required": [
+    "bundle_ref",
+    "decision_refs",
+    "from",
+    "function",
+    "producer",
+    "reason",
+    "refusal",
+    "report_refs",
+    "scope",
+    "snapshot_ref",
+    "stale_mode",
+    "state",
+    "until"
+   ],
+   "type": "object"
+  },
+  "request_body": {
+   "additionalProperties": false,
+   "properties": {
+    "cursor": {
+     "type": "string"
+    }
+   },
+   "required": [],
+   "type": "object"
+  },
+  "result": {
+   "additionalProperties": false,
+   "properties": {
+    "as_of": {
+     "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+     "type": "string"
+    },
+    "cursor": {
+     "type": "string"
+    },
+    "proposals": {
+     "items": {
+      "$ref": "#/$defs/proposal_item"
+     },
+     "type": "array"
+    }
+   },
+   "required": [
+    "as_of",
+    "cursor",
+    "proposals"
+   ],
+   "type": "object"
+  }
+ },
+ "$id": "https://github.com/mohanraj00/entelos/blob/main/src/protocol/approval/schema/proposals.schema.json",
+ "$schema": "https://json-schema.org/draft/2020-12/schema",
+ "title": "proposals",
+ "x-entelos-access": "read",
+ "x-entelos-protocol": "1.1"
+}

@@ -649,28 +649,74 @@ func TestInvokeRequestKeyBindsTheWorker(t *testing.T) {
 }
 
 func TestRetryRequiresCurrentFunctionAccess(t *testing.T) {
-	for _, tc := range []struct{ role, op string }{{"caller", "invoke"}, {"reader", "replay"}} {
+	base := newFixture(t)
+	view, err := base.store.Read(nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	snapshot := base.ok(view.Get(base.pin("correction_snapshot"), "snapshot"))
+	decision := base.ok(view.Get(base.pin("decision"), "decision"))
+	report := base.ok(view.Get(decision["report_ref"], "qualification"))
+	bundle := Object{}
+	for name, raw := range base.host("author", nil).files(view, snapshot) {
+		bundle[name] = string(raw)
+	}
+	target := pick(snapshot, "function", "from", "until")
+	call := Object{"function": snapshot["function"], "date": "2026-11-15"}
+	for _, tc := range []struct {
+		role, op string
+		fields   Object
+	}{
+		{"reviewer", "source", merge(target, Object{"text": "retry source", "reason": "check retry access"})},
+		{"reviewer", "plan", Object{"source_ref": snapshot["source_ref"], "cases": cases("approved"), "origin": "retry cases"}},
+		{"author", "propose", merge(target, Object{"source_ref": snapshot["source_ref"], "base_snapshot": base.pin("correction_snapshot"),
+			"bundle": bundle, "reason": "check retry access"})},
+		{"runner", "qualify", Object{"snapshot_ref": base.pin("correction_snapshot"), "plan_ref": report["plan_ref"]}},
+		{"reviewer", "decide", Object{"report_ref": decision["report_ref"], "reason": "check retry access"}},
+		{"reviewer", "activate", Object{"decision_ref": base.pin("decision"), "targets": Array{base.pin("correction_event")}}},
+		{"reviewer", "suspend", merge(target, Object{"targets": Array{base.pin("correction_event")}, "reason": "check retry access"})},
+		{"worker", "load", call},
+		{"caller", "invoke", merge(call, Object{"expected_bundle_ref": snapshot["bundle_ref"], "inputs": Object{"state": "reviewed", "archived": false}})},
+		{"reader", "replay", Object{"receipt_ref": base.pin("old_receipt"), "reason": "check retry access"}},
+		{"reader", "restate", Object{"receipt_ref": base.pin("old_receipt"), "cursor": base.pin("correction_cursor"), "reason": "check retry access"}},
+		{"observer", "observe", Object{"receipt_ref": base.pin("old_receipt"), "route": "source", "message": "check retry access"}},
+		{"maintainer", "claim", nil},
+		{"maintainer", "checkpoint", nil},
+		{"reviewer", "takeover", nil},
+		{"worker", "ack", Object{"event_ref": base.pin("correction_event")}},
+		{"executor", "ingest", Object{"entries": Array{Object{"cursor": Int{"2"}, "snapshot_ref": base.pin("correction_snapshot"),
+			"date": "2026-11-15", "inputs_ref": InputDigest(Object{"state": "reviewed", "archived": false}),
+			"response": Object{"bundle_ref": snapshot["bundle_ref"], "implementation_ref": snapshot["engine_build"]}}}}},
+	} {
 		t.Run(tc.op, func(t *testing.T) {
 			f := newFixture(t)
-			fields := Object{"receipt_ref": f.pin("old_receipt"), "reason": "check retry access"}
-			if tc.op == "invoke" {
-				view, err := f.store.Read(nil)
-				if err != nil {
-					t.Fatal(err)
+			fields := tc.fields
+			if fields == nil {
+				// Make an open task. The scenario task is complete.
+				task := f.ok(f.host("observer", nil).Handle(f.request("observe", Object{"receipt_ref": f.pin("old_receipt"),
+					"route": "source", "message": "check retry access", "request_key": t.Name() + "/observe"})))["result"].(Object)
+				fields = Object{"task_id": task["task_id"], "checkpoint": "0"}
+				if tc.op == "checkpoint" {
+					claimed := f.ok(f.host("maintainer", nil).Handle(f.request("claim", merge(fields, Object{"request_key": t.Name() + "/claim"}))))["result"].(Object)
+					fields = merge(pick(claimed, "task_id", "checkpoint", "token"), Object{"status": "working", "note": "check retry access",
+						"correction_snapshot": f.pin("correction_snapshot")})
 				}
-				snapshot, err := view.Get(f.pin("correction_snapshot"), "snapshot")
-				if err != nil {
-					t.Fatal(err)
+				if tc.op == "takeover" {
+					fields = merge(fields, Object{"owner": "other-maintainer", "reason": "check retry access"})
 				}
-				fields = Object{"function": "record.visible", "date": "2026-11-15", "expected_bundle_ref": snapshot["bundle_ref"],
-					"inputs": Object{"state": "reviewed", "archived": false}}
 			}
 			q := f.request(tc.op, fields)
 			allowed := f.host(tc.role, nil)
 			first := f.ok(allowed.Handle(copyObject(q)))
+			if first["reused"] != false {
+				t.Fatal("the first write reused a result")
+			}
 			before := f.root()
 			narrowed := f.host(tc.role, func(c Object) { c["functions"] = Array{"other.function"} })
 			f.expect("out_of_scope")(narrowed.Handle(copyObject(q)))
+			if f.root() != before {
+				t.Fatal("a refused retry changed the state")
+			}
 			retry := f.ok(allowed.Handle(copyObject(q)))
 			if retry["reused"] != true || retry["cursor"] != first["cursor"] || !equal(retry["result"], first["result"]) {
 				t.Fatalf("authorized retry differs from the first result: %v", retry)
