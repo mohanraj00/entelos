@@ -44,7 +44,8 @@
        "workers": {},
        "receipts": [],
        "tasks": {},
-       "outbox": {}
+       "outbox": {},
+       "reviews": {}
       }
      }
     }
@@ -99,7 +100,7 @@
   {
    "name": "higher-minor",
    "request": {
-    "protocol": "1.1",
+    "protocol": "1.2",
     "request_id": "r-11",
     "operation": "inspect",
     "body": {}
@@ -438,7 +439,8 @@
         "workers": {},
         "receipts": [],
         "tasks": {},
-        "outbox": {}
+        "outbox": {},
+        "reviews": {}
        }
       }
      },
@@ -458,7 +460,8 @@
         "workers": {},
         "receipts": [],
         "tasks": {},
-        "outbox": {}
+        "outbox": {},
+        "reviews": {}
        }
       }
      }
@@ -488,7 +491,8 @@
         "workers": {},
         "receipts": [],
         "tasks": {},
-        "outbox": {}
+        "outbox": {},
+        "reviews": {}
        }
       }
      },
@@ -508,7 +512,8 @@
         "workers": {},
         "receipts": [],
         "tasks": {},
-        "outbox": {}
+        "outbox": {},
+        "reviews": {}
        }
       }
      }
@@ -538,7 +543,8 @@
         "workers": {},
         "receipts": [],
         "tasks": {},
-        "outbox": {}
+        "outbox": {},
+        "reviews": {}
        }
       }
      }
@@ -568,7 +574,8 @@
         "workers": {},
         "receipts": [],
         "tasks": {},
-        "outbox": {}
+        "outbox": {},
+        "reviews": {}
        }
       }
      },
@@ -666,7 +673,8 @@
         "workers": {},
         "receipts": [],
         "tasks": {},
-        "outbox": {}
+        "outbox": {},
+        "reviews": {}
        }
       }
      },
@@ -686,7 +694,8 @@
         "workers": {},
         "receipts": [],
         "tasks": {},
-        "outbox": {}
+        "outbox": {},
+        "reviews": {}
        }
       }
      }

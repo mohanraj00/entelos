@@ -706,13 +706,21 @@ func TestRetryRequiresCurrentFunctionAccess(t *testing.T) {
 				}
 			}
 			q := f.request(tc.op, fields)
-			allowed := f.host(tc.role, nil)
+			// The scenario reviewer already has a verdict on this snapshot,
+			// and 1.1 refuses a second verdict of one actor. A second
+			// reviewer makes the decide write.
+			as := func(c Object) {
+				if tc.op == "decide" {
+					c["actor"] = "second-reviewer"
+				}
+			}
+			allowed := f.host(tc.role, as)
 			first := f.ok(allowed.Handle(copyObject(q)))
 			if first["reused"] != false {
 				t.Fatal("the first write reused a result")
 			}
 			before := f.root()
-			narrowed := f.host(tc.role, func(c Object) { c["functions"] = Array{"other.function"} })
+			narrowed := f.host(tc.role, func(c Object) { as(c); c["functions"] = Array{"other.function"} })
 			f.expect("out_of_scope")(narrowed.Handle(copyObject(q)))
 			if f.root() != before {
 				t.Fatal("a refused retry changed the state")

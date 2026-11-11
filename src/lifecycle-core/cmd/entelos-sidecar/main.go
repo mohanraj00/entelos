@@ -1,7 +1,12 @@
-// Command entelos-sidecar serves the wire protocol 1.0 of src/protocol on a
-// local Unix domain socket, in front of the Go lifecycle Host. The host
-// context comes from a file that the operator selects; a request cannot
-// supply it. Each socket request requires the operator's token.
+// Command entelos-sidecar serves the wire protocol 1.0 of src/protocol and
+// the approval API 1.1 of src/protocol/approval on a local Unix domain
+// socket, in front of the Go lifecycle Host. The host context comes from a
+// file that the operator selects; a request cannot supply it. Each socket
+// request requires a credential of the operator: the one token of
+// --token-file, or one principal of --credentials-file.
+//
+// --clock-file is for conformance tests only. The Host then reads its time
+// from that file for each request, not from the system clock.
 //
 // When the socket listens, the command writes one JSON line to stdout:
 // {"socket":"<path>","status":"listening"}. On SIGINT or SIGTERM, it closes
@@ -28,22 +33,36 @@ func run() int {
 	contextPath := flag.String("context", "", "trusted host context, not caller input")
 	runtime := flag.String("runtime", "", "pinned CEL executable")
 	work := flag.String("work", "", "work directory")
-	schema := flag.String("schema", "", "the src/protocol/schema directory")
+	schema := flag.String("schema", "", "the src/protocol/schema directory; the approval schemas are in ../approval/schema")
 	tokenFile := flag.String("token-file", "", "private file containing the sidecar token")
+	credentialsFile := flag.String("credentials-file", "", "private file with one token digest, actor and roles for each principal")
+	clockFile := flag.String("clock-file", "", "for tests only: a file with the time of the next request")
 	flag.Parse()
-	if *socket == "" || *repo == "" || *contextPath == "" || *runtime == "" || *work == "" || *schema == "" || *tokenFile == "" {
-		fmt.Fprintln(os.Stderr, "entelos-sidecar: --socket, --repo, --context, --runtime, --work, --schema and --token-file are required")
+	if *socket == "" || *repo == "" || *contextPath == "" || *runtime == "" || *work == "" || *schema == "" || (*tokenFile == "") == (*credentialsFile == "") {
+		fmt.Fprintln(os.Stderr, "entelos-sidecar: --socket, --repo, --context, --runtime, --work, --schema and one of --token-file or --credentials-file are required")
 		return 2
 	}
 	schemas, err := protocol.LoadSchemas(*schema)
 	if err != nil {
 		return stop(err)
 	}
-	host, err := open(*repo, *contextPath, *runtime, *work)
+	if err := schemas.LoadApproval(protocol.ApprovalDir(*schema)); err != nil {
+		return stop(err)
+	}
+	host, err := open(*repo, *contextPath, *runtime, *work, *credentialsFile != "")
 	if err != nil {
 		return stop(err)
 	}
-	server, err := protocol.NewServer(protocol.NewAdapter(host, schemas), *tokenFile)
+	if *clockFile != "" {
+		host.Clock = lifecycle.FileClock{Path: *clockFile}
+	}
+	adapter := protocol.NewAdapter(host, schemas)
+	var server *protocol.Server
+	if *credentialsFile != "" {
+		server, err = protocol.NewCredentialServer(adapter, *credentialsFile)
+	} else {
+		server, err = protocol.NewServer(adapter, *tokenFile)
+	}
 	if err != nil {
 		return stop(err)
 	}
@@ -77,7 +96,10 @@ func stop(err error) int {
 	return 1
 }
 
-func open(repo, contextPath, binary, work string) (*lifecycle.Host, error) {
+// open makes the Host. With principals, the context must not contain actor
+// or roles, so each actor comes from one source. Without principals, the
+// context must contain both.
+func open(repo, contextPath, binary, work string, principals bool) (*lifecycle.Host, error) {
 	raw, err := os.ReadFile(contextPath)
 	if err != nil {
 		return nil, err
@@ -85,6 +107,15 @@ func open(repo, contextPath, binary, work string) (*lifecycle.Host, error) {
 	context, err := lifecycle.Decode(raw)
 	if err != nil {
 		return nil, err
+	}
+	ctx, _ := context.(lifecycle.Object)
+	_, hasActor := ctx["actor"]
+	_, hasRoles := ctx["roles"]
+	switch {
+	case principals && (hasActor || hasRoles):
+		return nil, lifecycle.NewFault("configuration_error", "with --credentials-file, the context must not contain actor or roles", "")
+	case !principals && (!hasActor || !hasRoles):
+		return nil, lifecycle.NewFault("configuration_error", "with --token-file, the context must contain actor and roles", "")
 	}
 	store, err := lifecycle.OpenGitStore(repo)
 	if err != nil {

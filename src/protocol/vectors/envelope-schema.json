@@ -47,6 +47,28 @@
    "valid": false
   },
   {
+   "name": "success-version-1.1",
+   "def": "success",
+   "value": {
+    "protocol": "1.1",
+    "request_id": "r-1",
+    "status": "ok",
+    "result": {}
+   },
+   "valid": true
+  },
+  {
+   "name": "success-version-1.2",
+   "def": "success",
+   "value": {
+    "protocol": "1.2",
+    "request_id": "r-1",
+    "status": "ok",
+    "result": {}
+   },
+   "valid": false
+  },
+  {
    "name": "failure-valid",
    "def": "failure",
    "value": {
@@ -60,6 +82,36 @@
     }
    },
    "valid": true
+  },
+  {
+   "name": "failure-version-1.1",
+   "def": "failure",
+   "value": {
+    "protocol": "1.1",
+    "request_id": "r-1",
+    "status": "invalid_request",
+    "diagnostic": {
+     "code": "invalid_request",
+     "stage": "protocol",
+     "message": "m"
+    }
+   },
+   "valid": true
+  },
+  {
+   "name": "failure-version-1.2",
+   "def": "failure",
+   "value": {
+    "protocol": "1.2",
+    "request_id": "r-1",
+    "status": "invalid_request",
+    "diagnostic": {
+     "code": "invalid_request",
+     "stage": "protocol",
+     "message": "m"
+    }
+   },
+   "valid": false
   },
   {
    "name": "failure-empty-request-id",

@@ -13,11 +13,12 @@ import (
 	lifecycle "example.org/lifecycle-core"
 )
 
-// Protocol constants. PROTOCOL.md states each value.
+// Protocol constants. PROTOCOL.md and approval/APPROVAL.md state each
+// value. Version is the lowest supported version. A response to a request
+// that has no supported version has this version.
 const (
 	Version    = "1.0"
 	major      = 1
-	minor      = 0
 	MaxFrame   = 1048576
 	maxMessage = 1024
 	maxID      = 128
@@ -27,6 +28,19 @@ const (
 // Handler runs one Host request. *lifecycle.Host is a Handler.
 type Handler interface {
 	Handle(request any) (any, error)
+}
+
+// PrincipalHandler runs one Host request as one principal. *lifecycle.Host
+// is a PrincipalHandler.
+type PrincipalHandler interface {
+	HandleAs(actor string, roles []string, request any) (any, error)
+}
+
+// Principal is the actor and the roles of one credential. The operator
+// writes them. A request cannot select them.
+type Principal struct {
+	Actor string
+	Roles []string
 }
 
 // Adapter maps protocol frames to Host requests. It sends one Host request at
@@ -51,45 +65,74 @@ func requestID(request lifecycle.Object) string {
 	return ""
 }
 
-// checkVersion runs before all other checks, as PROTOCOL.md states.
-func (a *Adapter) checkVersion(request lifecycle.Object) error {
+// maxMinor is the highest supported minor version: 1 with the approval
+// schemas, else 0.
+func (a *Adapter) maxMinor() int {
+	if a.Schemas.Approval != nil {
+		return 1
+	}
+	return 0
+}
+
+// checkVersion runs before all other checks, as PROTOCOL.md states. It gives
+// the minor version of the request.
+func (a *Adapter) checkVersion(request lifecycle.Object) (int, error) {
 	version, ok := request["protocol"]
 	if !ok {
-		return invalid("missing field: protocol")
+		return 0, invalid("missing field: protocol")
 	}
 	env := a.Schemas.Envelope
 	if err := a.Schemas.Validate(env["version"].(lifecycle.Object), version, "protocol", env); err != nil {
-		return err
+		return 0, err
 	}
 	left, right, _ := strings.Cut(version.(string), ".")
 	x, _ := strconv.Atoi(left)
 	y, _ := strconv.Atoi(right)
-	if x != major || y > minor {
-		return &requestError{"unsupported_version", "this receiver supports protocol " + Version + " only"}
+	if x != major || y > a.maxMinor() {
+		return 0, &requestError{"unsupported_version", fmt.Sprintf("this receiver supports protocol 1.0 to 1.%d only", a.maxMinor())}
 	}
-	return nil
+	return y, nil
 }
 
-func (a *Adapter) check(request lifecycle.Object) (string, error) {
-	if err := a.checkVersion(request); err != nil {
-		return "", err
+func (a *Adapter) check(request lifecycle.Object) (string, int, error) {
+	y, err := a.checkVersion(request)
+	if err != nil {
+		return "", 0, err
 	}
 	env := a.Schemas.Envelope
 	if err := a.Schemas.Validate(env["request"].(lifecycle.Object), request, "request", env); err != nil {
-		return "", err
+		return "", 0, err
 	}
 	op := request["operation"].(string)
-	defs, known := a.Schemas.Operations[op]
+	defs, known := a.Schemas.Operation(op, y)
 	if !known {
-		return "", invalid("unknown operation")
+		return "", 0, invalid("unknown operation")
 	}
-	return op, a.Schemas.Validate(defs["request_body"].(lifecycle.Object), request["body"], "body", defs)
+	return op, y, a.Schemas.Validate(defs["request_body"].(lifecycle.Object), request["body"], "body", defs)
 }
 
-// Message maps one parsed request object to one response object.
+// Message maps one parsed request object to one response object. The Host
+// context gives the actor and the roles.
 func (a *Adapter) Message(request lifecycle.Object) lifecycle.Object {
+	return a.MessageAs(nil, request)
+}
+
+// MessageAs maps one parsed request object to one response object for one
+// principal. A nil principal uses the actor and the roles of the Host
+// context.
+func (a *Adapter) MessageAs(p *Principal, request lifecycle.Object) lifecycle.Object {
+	response := a.message(p, request)
+	// A response has the version of its request when this receiver supports
+	// it. Each other response has the lowest supported version, 1.0.
+	if _, err := a.checkVersion(request); err == nil {
+		response["protocol"] = request["protocol"]
+	}
+	return response
+}
+
+func (a *Adapter) message(p *Principal, request lifecycle.Object) lifecycle.Object {
 	id := requestID(request)
-	op, err := a.check(request)
+	op, y, err := a.check(request)
 	if err != nil {
 		var re *requestError
 		if errors.As(err, &re) {
@@ -104,7 +147,7 @@ func (a *Adapter) Message(request lifecycle.Object) lifecycle.Object {
 	// The checked operation controls the dispatch. A body key "op" cannot
 	// replace it.
 	q["op"] = op
-	result, err := a.handle(q)
+	result, err := a.handle(p, q)
 	var fault *lifecycle.Fault
 	switch {
 	case errors.As(err, &fault):
@@ -112,13 +155,32 @@ func (a *Adapter) Message(request lifecycle.Object) lifecycle.Object {
 	case err != nil:
 		return internal(id)
 	}
+	if op == "decide" && y == 0 {
+		result = decideResult10(result)
+	}
 	return lifecycle.Object{"protocol": Version, "request_id": id, "status": "ok", "result": result}
+}
+
+// decideResult10 keeps only decision_ref in the decide result, so the 1.0
+// result does not change.
+func decideResult10(result any) any {
+	out, ok := result.(lifecycle.Object)
+	inner, has := out["result"].(lifecycle.Object)
+	if !ok || !has {
+		return result
+	}
+	copied := lifecycle.Object{}
+	for k, v := range out {
+		copied[k] = v
+	}
+	copied["result"] = lifecycle.Object{"decision_ref": inner["decision_ref"]}
+	return copied
 }
 
 // errPanic marks a Host panic. The response does not show the panic text.
 var errPanic = errors.New("the host stopped with a panic")
 
-func (a *Adapter) handle(q lifecycle.Object) (result any, err error) {
+func (a *Adapter) handle(p *Principal, q lifecycle.Object) (result any, err error) {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 	defer func() {
@@ -126,12 +188,24 @@ func (a *Adapter) handle(q lifecycle.Object) (result any, err error) {
 			result, err = nil, errPanic
 		}
 	}()
-	return a.Host.Handle(q)
+	if p == nil {
+		return a.Host.Handle(q)
+	}
+	host, ok := a.Host.(PrincipalHandler)
+	if !ok {
+		return nil, errors.New("the host cannot run a request as a principal")
+	}
+	return host.HandleAs(p.Actor, p.Roles, q)
 }
 
 // Frame gives the response object for one frame payload, and true if the
 // connection must close.
 func (a *Adapter) Frame(payload []byte) (lifecycle.Object, bool) {
+	return a.FrameAs(nil, payload)
+}
+
+// FrameAs is Frame for one principal.
+func (a *Adapter) FrameAs(p *Principal, payload []byte) (lifecycle.Object, bool) {
 	if len(payload) == 0 {
 		return failure("", "invalid_frame", "protocol", "empty frame"), true
 	}
@@ -139,7 +213,7 @@ func (a *Adapter) Frame(payload []byte) (lifecycle.Object, bool) {
 	if err != nil {
 		return failure("", "invalid_request", "protocol", err.Error()), false
 	}
-	return limit(a.Message(request)), false
+	return limit(a.MessageAs(p, request)), false
 }
 
 // parse is strict JSON: UTF-8, one object, no duplicate keys, integers only,
@@ -192,11 +266,14 @@ func (a *Adapter) Serve(r io.Reader, w io.Writer) error {
 	return a.serve(r, w, nil)
 }
 
-func (a *Adapter) serve(r io.Reader, w io.Writer, authorize func() error) error {
+func (a *Adapter) serve(r io.Reader, w io.Writer, authorize func() (*Principal, error)) error {
 	for {
+		var principal *Principal
 		if authorize != nil {
-			switch authorize() {
+			p, err := authorize()
+			switch err {
 			case nil:
+				principal = p
 			case io.EOF:
 				return nil
 			default:
@@ -218,7 +295,7 @@ func (a *Adapter) serve(r io.Reader, w io.Writer, authorize func() error) error 
 		if len(payload) < int(size) {
 			return writeFrame(w, failure("", "invalid_frame", "protocol", "truncated frame payload"))
 		}
-		response, closing := a.Frame(payload)
+		response, closing := a.FrameAs(principal, payload)
 		if err := writeFrame(w, response); err != nil {
 			return err
 		}
@@ -266,17 +343,22 @@ func failure(id, code, stage, message string) lifecycle.Object {
 
 // limit gives a response that encodes and that is in the frame bound. A result
 // outside the value domain gives internal_error. A result over the bound
-// gives response_too_large.
+// gives response_too_large. The failure keeps the version of the response,
+// so a 1.1 request gets a 1.1 failure.
 func limit(response lifecycle.Object) lifecycle.Object {
 	id, _ := response["request_id"].(string)
 	body, err := Canonical(response)
-	if err != nil {
-		return internal(id)
-	}
-	if len(body) <= MaxFrame {
+	if err == nil && len(body) <= MaxFrame {
 		return response
 	}
-	return failure(id, "response_too_large", "protocol", "the response exceeds the frame byte bound")
+	out := internal(id)
+	if err == nil {
+		out = failure(id, "response_too_large", "protocol", "the response exceeds the frame byte bound")
+	}
+	if version, ok := response["protocol"].(string); ok {
+		out["protocol"] = version
+	}
+	return out
 }
 
 // writeFrame writes one complete frame. After a short write, it writes the

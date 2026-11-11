@@ -110,10 +110,12 @@ func listenLocked(path string) (*net.UnixListener, error) {
 type Server struct {
 	adapter   *Adapter
 	tokenFile string
-	mu        sync.Mutex
-	conns     map[net.Conn]bool
-	wg        sync.WaitGroup
-	closed    bool
+	// credentialsFile is set for a sidecar with many principals.
+	credentialsFile string
+	mu              sync.Mutex
+	conns           map[net.Conn]bool
+	wg              sync.WaitGroup
+	closed          bool
 }
 
 // NewServer checks the operator's token file. Each request reads the file
@@ -123,6 +125,23 @@ func NewServer(adapter *Adapter, tokenFile string) (*Server, error) {
 		return nil, fmt.Errorf("token file: %w", err)
 	}
 	return &Server{adapter: adapter, tokenFile: tokenFile}, nil
+}
+
+// NewCredentialServer checks the operator's credentials file. Each request
+// frame reads the file again, so a removed principal gets unauthenticated on
+// its next frame, also on a connection that is already open.
+func NewCredentialServer(adapter *Adapter, credentialsFile string) (*Server, error) {
+	if _, err := readCredentials(credentialsFile); err != nil {
+		return nil, fmt.Errorf("credentials file: %w", err)
+	}
+	return &Server{adapter: adapter, credentialsFile: credentialsFile}, nil
+}
+
+func (s *Server) authorize(conn net.Conn) func() (*Principal, error) {
+	if s.credentialsFile != "" {
+		return func() (*Principal, error) { return authenticatePrincipal(conn, s.credentialsFile) }
+	}
+	return func() (*Principal, error) { return nil, authenticate(conn, s.tokenFile) }
 }
 
 // Serve accepts connections until the listener closes.
@@ -153,7 +172,7 @@ func (s *Server) Serve(listener net.Listener) error {
 		go func() {
 			defer s.wg.Done()
 			if err := conn.SetReadDeadline(time.Now().Add(authWait)); err == nil {
-				s.adapter.serve(conn, conn, func() error { return authenticate(conn, s.tokenFile) })
+				s.adapter.serve(conn, conn, s.authorize(conn))
 			}
 			conn.Close()
 			s.mu.Lock()

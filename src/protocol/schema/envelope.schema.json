@@ -30,7 +30,7 @@
    "type": "object",
    "required": ["protocol", "request_id", "result", "status"],
    "properties": {
-    "protocol": {"const": "1.0"},
+    "protocol": {"enum": ["1.0", "1.1"]},
     "request_id": {"$ref": "#/$defs/request_id"},
     "status": {"const": "ok"},
     "result": {}
@@ -41,7 +41,7 @@
    "type": "object",
    "required": ["diagnostic", "protocol", "request_id", "status"],
    "properties": {
-    "protocol": {"const": "1.0"},
+    "protocol": {"enum": ["1.0", "1.1"]},
     "request_id": {"type": "string", "maxLength": 128},
     "status": {"type": "string", "minLength": 1},
     "diagnostic": {"$ref": "#/$defs/diagnostic"}

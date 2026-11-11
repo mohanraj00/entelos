@@ -45,13 +45,16 @@ The `sidecar-protocol` check in `verify.py` builds `cmd/entelos-sidecar`. Then i
 
 ```sh
 entelos-sidecar --socket <path> --repo <store.git> --context <context.json> --runtime <cel-handoff> --work <dir> --schema src/protocol/schema --token-file <path>
+entelos-sidecar ... --credentials-file <path>
 ```
 
 - The host context comes from the `--context` file. A request cannot supply the actor, the roles or the scope. The context fields are `actor`, `roles`, `scope`, `runner_actor`, `worker`, `functions` and the optional boolean `upload_inputs`, the ingest upload policy. See [CONTRACTS.md](../../docs/CONTRACTS.md#receipt-provenance-and-ingest).
 - The sidecar reads the schemas from `--schema` at start. If an operation schema does not agree with the Host read operations, the sidecar does not start.
 - Create the token in a private directory, for example with `(umask 077; set -C; openssl rand -hex 32 > sidecar.token)`. The token file must be a regular file owned by the sidecar user with mode 0600. It contains exactly 64 lowercase hex digits and may end with one newline. The sidecar refuses to start with an invalid file. Pass only the file path on the command line.
 - The client sends the [token prelude](../protocol/PROTOCOL.md#unix-socket-authentication) before each request. To rotate, create a new token file in the same directory, then rename it over the old file. The sidecar opens the file for each authentication check, including on existing connections. An unavailable or invalid file denies new requests. A request that has passed the token check can finish.
-- A Go embedding that serves a listener constructs it with `protocol.NewServer(adapter, tokenFile)`. This replaces construction with a `Server{Adapter: ...}` literal.
+- With `--credentials-file` in place of `--token-file`, each reviewer has a token of its own. The file format, the checks and the rotation are in [APPROVAL.md](../protocol/approval/APPROVAL.md). The context file then has no `actor` and no `roles`, because each request runs as the principal of its token. The sidecar also reads the approval schemas from `../approval/schema` next to `--schema`, and accepts protocol 1.1.
+- `--clock-file <path>` replaces the system clock with the time in that file. Use it only in tests.
+- A Go embedding that serves a listener constructs it with `protocol.NewServer(adapter, tokenFile)` or `protocol.NewCredentialServer(adapter, credentialsFile)`. This replaces construction with a `Server{Adapter: ...}` literal.
 - The socket file has mode 0600. The umask is 0177 while the sidecar makes the socket, so the mode is 0600 from the start.
 - If the socket path exists, the sidecar removes it only if it is a stale socket: a socket file with no listener. If the path is another file type or a socket with a listener, the sidecar does not start.
 - While the sidecar starts, it holds an exclusive lock on `<path>.lock` for the stale check, the removal and the bind. It releases the lock when the socket listens. Thus two sidecars that start at the same time at one stale socket cannot both remove it. The lock file stays, with mode 0600. If the lock path is not a regular file that the current user owns and can read and write, or another process holds the lock for 10 seconds, the sidecar does not start.

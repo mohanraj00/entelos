@@ -28,6 +28,9 @@ func loadTestSchemas(t *testing.T) *Schemas {
 	if err != nil {
 		t.Fatal(err)
 	}
+	if err := s.LoadApproval(ApprovalDir(filepath.Join(protocolDir, "schema"))); err != nil {
+		t.Fatal(err)
+	}
 	return s
 }
 
@@ -239,7 +242,11 @@ func shape(s *Schemas, response any, operation any) []string {
 		if err := s.Validate(env["success"].(lifecycle.Object), response, "response", env); err != nil {
 			return []string{"response schema: " + err.Error()}
 		}
-		defs, known := s.Operations[fmt.Sprint(operation)]
+		minor := 0
+		if obj["protocol"] == "1.1" {
+			minor = 1
+		}
+		defs, known := s.Operation(fmt.Sprint(operation), minor)
 		if !known {
 			return []string{"response schema: a success needs a known operation"}
 		}

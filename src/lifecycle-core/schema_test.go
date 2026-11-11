@@ -39,9 +39,12 @@ func checkPatterns(t *testing.T, node any, where string) {
 }
 
 func TestProtocolSchemasAgreeWithTheHostTable(t *testing.T) {
+	// The 1.1 table is the 1.0 schemas with the approval schemas over them.
+	// The credentials file is not an operation.
 	paths, _ := filepath.Glob(filepath.Join("..", "protocol", "schema", "*.schema.json"))
+	approval, _ := filepath.Glob(filepath.Join("..", "protocol", "approval", "schema", "*.schema.json"))
 	files := Object{}
-	for _, path := range paths {
+	for _, path := range append(paths, approval...) {
 		raw, err := os.ReadFile(path)
 		if err != nil {
 			t.Fatal(err)
@@ -52,7 +55,7 @@ func TestProtocolSchemasAgreeWithTheHostTable(t *testing.T) {
 		}
 		name := strings.TrimSuffix(filepath.Base(path), ".schema.json")
 		checkPatterns(t, doc, name)
-		if name != "envelope" {
+		if name != "envelope" && name != "credentials" {
 			files[name] = doc
 		}
 	}

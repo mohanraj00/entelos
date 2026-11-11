@@ -21,7 +21,73 @@ import (
 type Schemas struct {
 	Envelope   lifecycle.Object            // the $defs of envelope.schema.json
 	Operations map[string]lifecycle.Object // the $defs of each <operation>.schema.json
-	patterns   map[string]*regexp.Regexp
+	// Approval holds the $defs of the approval API 1.1 schemas. Protocol
+	// 1.1 uses each of them in place of the 1.0 schema of the same name.
+	// Without them, the adapter supports protocol 1.0 only.
+	Approval map[string]lifecycle.Object
+	patterns map[string]*regexp.Regexp
+}
+
+// ApprovalDir gives the approval schema directory next to the 1.0 schema
+// directory: src/protocol/approval/schema.
+func ApprovalDir(schemaDir string) string {
+	return filepath.Join(schemaDir, "..", "approval", "schema")
+}
+
+// LoadApproval reads the approval API 1.1 operation schemas. The file
+// credentials.schema.json is the sidecar credentials file, not an operation.
+func (s *Schemas) LoadApproval(dir string) error {
+	paths, err := filepath.Glob(filepath.Join(dir, "*.schema.json"))
+	if err != nil {
+		return err
+	}
+	ops := map[string]lifecycle.Object{}
+	for _, path := range paths {
+		name := strings.TrimSuffix(filepath.Base(path), ".schema.json")
+		if name == "credentials" {
+			continue
+		}
+		raw, err := os.ReadFile(path)
+		if err != nil {
+			return err
+		}
+		value, err := lifecycle.Decode(raw)
+		if err != nil {
+			return fmt.Errorf("%s: %w", path, err)
+		}
+		doc, ok := value.(lifecycle.Object)
+		defs, hasDefs := doc["$defs"].(lifecycle.Object)
+		if !ok || !hasDefs || doc["x-entelos-protocol"] != "1.1" {
+			return fmt.Errorf("%s: a $defs object and x-entelos-protocol 1.1 are required", path)
+		}
+		if err := s.compile(doc, path); err != nil {
+			return err
+		}
+		_, hasBody := defs["request_body"].(lifecycle.Object)
+		_, hasResult := defs["result"].(lifecycle.Object)
+		access := doc["x-entelos-access"]
+		if !hasBody || !hasResult || (access == "read") != lifecycle.Reads[name] || (access != "read" && access != "write") {
+			return fmt.Errorf("%s: request_body, result and an access that agrees with the Host are required", path)
+		}
+		ops[name] = defs
+	}
+	if len(ops) == 0 {
+		return fmt.Errorf("%s: no approval operation schema", dir)
+	}
+	s.Approval = ops
+	return nil
+}
+
+// Operation gives the schema $defs of an operation for a protocol minor
+// version.
+func (s *Schemas) Operation(name string, minor int) (lifecycle.Object, bool) {
+	if minor >= 1 {
+		if defs, ok := s.Approval[name]; ok {
+			return defs, true
+		}
+	}
+	defs, ok := s.Operations[name]
+	return defs, ok
 }
 
 // requestError is a protocol failure before the Host gets the request.
