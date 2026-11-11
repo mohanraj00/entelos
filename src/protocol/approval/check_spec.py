@@ -102,7 +102,7 @@ def check_file(name,doc,codes,new_seen):
         elif op in V10:root=V10[op]['$defs']
         elif op in APPROVAL:root=None
         else:errors.append(where+': unknown operation '+op);continue
-        if response['protocol']!=(version if supported else '1.1'):errors.append(where+': wrong response version')
+        if response['protocol']!=(version if supported else '1.0'):errors.append(where+': wrong response version')
         for value in walk(request['body']):
             if isinstance(value,dict) and '$use' in value and value['$use'] not in captures:errors.append(where+': $use before $capture: '+value['$use'])
         if root and response['status']=='ok':

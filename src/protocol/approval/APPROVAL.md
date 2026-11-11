@@ -208,7 +208,20 @@ The codes in **bold** are new in 1.1. The other codes have the meaning of 1.0.
 
 ## Protocol version
 
-A 1.1 receiver accepts the minor versions 0 and 1. A response has the version of its request when the receiver supports that version. A response to a request with a missing, invalid or unsupported version has `"protocol":"1.1"`. Thus the 1.0 vectors keep their expected values, except the version of the `unsupported_version` responses and the `inspect-empty` state. The implementation PR must change those values and name each one.
+A 1.1 receiver accepts the minor versions 0 and 1. A response has the version of its request when the receiver supports that version. For each other response, the version is `"1.0"`, the lowest version that the receiver supports. Thus a 1.0 client can read each failure. This applies to a request with a missing, invalid or unsupported version, and to a frame that is not a readable request.
+
+The implementation PR must change these existing 1.0 files, and name each change:
+
+| File | Change | Reason |
+|---|---|---|
+| `schema/envelope.schema.json` | `success.protocol` and `failure.protocol` change from `const` `"1.0"` to `enum` `["1.0","1.1"]`. | A 1.1 response is valid. |
+| `vectors/envelope-schema.json` | Add a valid case with `"1.1"` and an invalid case with `"1.2"` for `success` and for `failure`. | The new enum needs cases on both sides. |
+| `vectors/session-envelope.json` | Step `higher-minor`: change the request version from `"1.1"` to `"1.2"`. The expected `unsupported_version` response with `"1.0"` stays. | 1.1 is now supported, so `"1.1"` no longer tests an unsupported minor version. |
+| `vectors/session-envelope.json` | Step `current-version`: add `"reviews":{}` to the expected state. | A new store has the review index. |
+| `vectors/session-lifecycle.json` | Step `inspect-empty`: add `"reviews":{}` to the expected state. | The same reason. |
+| `test_protocol.py` | The runner and its sidecar self-test expect the response version from the rule above: the request version if it is `"1.0"` or `"1.1"`, else `"1.0"`. | The runner must check the 1.1 rule. |
+
+All other expected values in `../vectors/` stay the same, because each other step sends a 1.0 request or an unreadable frame, and gets `"1.0"`. The old vectors stay in the history of the repository. The implementation PR changes them in place and names each step in its description.
 
 ## Vectors
 
