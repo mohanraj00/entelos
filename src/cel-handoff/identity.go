@@ -9,7 +9,7 @@ import (
 	"sync"
 )
 
-//go:embed handoff.go json.go identity.go executor.go cmd/cel-handoff/*.go go.mod go.sum
+//go:embed handoff.go json.go identity.go executor.go typed.go cmd/cel-handoff/*.go go.mod go.sum
 var implementation embed.FS
 var buildOnce sync.Once
 var buildRef string

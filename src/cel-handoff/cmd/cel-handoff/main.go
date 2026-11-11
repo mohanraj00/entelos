@@ -3,6 +3,7 @@ package main
 
 import (
 	"bufio"
+	"bytes"
 	"context"
 	"encoding/json"
 	"flag"
@@ -85,8 +86,11 @@ func main() {
 			fail(&h.Diagnostic{Code: "invalid_cases", Stage: "check", Message: err.Error()})
 		}
 		// Check data is host-owned. It is not an invocation field or serving authority.
+		// A JSON integer stays a token, so a typed case keeps its exact text.
 		var cases []h.Case
-		if err := json.Unmarshal(raw, &cases); err != nil {
+		dec := json.NewDecoder(bytes.NewReader(raw))
+		dec.UseNumber()
+		if err := dec.Decode(&cases); err != nil {
 			fail(&h.Diagnostic{Code: "invalid_cases", Stage: "check", Message: err.Error()})
 		}
 		report := b.Check(context.Background(), cases)

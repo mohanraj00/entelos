@@ -68,6 +68,10 @@ func NewExecutor(pinJSON []byte, f Files) (*Executor, *Diagnostic) {
 	if d != nil {
 		return nil, d
 	}
+	// The executor vectors cover only cel-string-bool/v1.
+	if b.manifest.Profile != "cel-string-bool/v1" {
+		return nil, diag("unsupported_profile", "profile", "/profile", "the executor supports only cel-string-bool/v1")
+	}
 	// The checks run in a fixed order, so one pin always gives the same diagnostic.
 	for _, c := range []struct{ field, value string }{{"/function", pin.Function}, {"/scope", pin.Scope}} {
 		if c.value == "" {

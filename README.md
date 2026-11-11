@@ -150,7 +150,7 @@ Three smaller examples show other uses:
 
 ## Limits
 
-The callable profile accepts named string/bool variables and a boolean result. Numbers, structured wire types and custom extensions are unsupported. Internal expressions use the pinned CEL standard language. Resource ceilings are configured example bounds, not measured production-safe defaults.
+The callable profile `cel-string-bool/v1` accepts named string/bool variables and a boolean result. The engine also implements `cel-typed/v1` with integers, dates, lists and records ([typed-profile-spec.md](src/cel-lifecycle/typed-profile-spec.md)). The executor and the WASM bridge refuse a typed bundle. Floating-point numbers and custom extensions are unsupported. Internal expressions use the pinned CEL standard language. Resource ceilings are configured example bounds, not measured production-safe defaults.
 
 This is local reference code with unstable APIs and records. Host context and repository writers are trusted. It is not a network authentication boundary, distributed database, resident-worker coordinator or hosted service. Preparation acknowledgement records a successful ephemeral preparation; each call prepares and checks its exact closure again.
 

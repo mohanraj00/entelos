@@ -2,6 +2,7 @@
 package handoff
 
 import (
+	"bytes"
 	"cel.dev/cel-go/interpreter"
 	"context"
 	"crypto/sha256"
@@ -23,6 +24,8 @@ type Limits struct {
 	MaxSourceBytes  int    `json:"max_source_utf8_bytes"`
 	ParserRecursion int    `json:"parser_recursion_limit"`
 	EvaluationCost  uint64 `json:"evaluation_cost_limit"`
+	// MaxListItems is only for cel-typed/v1.
+	MaxListItems int `json:"max_list_items,omitempty"`
 }
 type Manifest struct {
 	FunctionID        string   `json:"function_id"`
@@ -34,15 +37,21 @@ type Manifest struct {
 	FixedRef          string   `json:"fixed_ref"`
 	Limits            Limits   `json:"limits"`
 }
+
+// Variable is a type declaration. Items, Fields and the environment Output
+// are only for cel-typed/v1.
 type Variable struct {
-	Name        string `json:"name"`
-	Type        string `json:"type"`
-	Description string `json:"description,omitempty"`
+	Name        string      `json:"name,omitempty"`
+	Type        string      `json:"type"`
+	Description string      `json:"description,omitempty"`
+	Items       *string     `json:"items,omitempty"`
+	Fields      *[]Variable `json:"fields,omitempty"`
 }
 type Environment struct {
 	Name        string     `json:"name"`
 	Description string     `json:"description,omitempty"`
 	Variables   []Variable `json:"variables"`
+	Output      *Variable  `json:"output,omitempty"`
 }
 type Location struct {
 	Line    int    `json:"line"`
@@ -72,8 +81,9 @@ type Descriptor struct {
 	Limits            Limits         `json:"limits"`
 }
 type Response struct {
-	Status            string      `json:"status"`
-	Value             *bool       `json:"value,omitempty"`
+	Status string `json:"status"`
+	// Value is the wire value of the output: a bool for cel-string-bool/v1.
+	Value             any         `json:"value,omitempty"`
 	BundleRef         string      `json:"bundle_ref,omitempty"`
 	ImplementationRef string      `json:"implementation_ref,omitempty"`
 	Diagnostic        *Diagnostic `json:"diagnostic,omitempty"`
@@ -83,9 +93,12 @@ type Bundle struct {
 	manifest  Manifest
 	variables map[string]Variable
 	fixed     map[string]any
+	output    Variable
 	ref       string
 	program   cel.Program
 }
+
+var validName = regexp.MustCompile(`^[A-Za-z_][A-Za-z_0-9]*$`)
 
 func Digest(media string, body []byte) string {
 	sum := sha256.Sum256(append([]byte(media+"\x00"), body...))
@@ -110,11 +123,16 @@ func Load(f Files) (*Bundle, *Diagnostic) {
 	if m.EnvironmentRef != Digest("application/json", f.Environment) || m.SourceRef != Digest("text/plain", f.Source) || m.FixedRef != Digest("application/json", f.Fixed) {
 		return nil, diag("artifact_mismatch", "bundle", "/manifest", "component bytes do not match manifest references")
 	}
-	if m.Profile != "cel-string-bool/v1" {
-		return nil, diag("unsupported_profile", "profile", "/profile", "only cel-string-bool/v1 is supported")
+	typed := m.Profile == typedProfile
+	if m.Profile != "cel-string-bool/v1" && !typed {
+		return nil, diag("unsupported_profile", "profile", "/profile", "only cel-string-bool/v1 and cel-typed/v1 are supported")
 	}
 	l := m.Limits
-	if m.FunctionID == "" || len(m.CallerVariables) == 0 || l.MaxRequestBytes <= 0 || l.MaxRequestBytes > 4096 || l.MaxStringBytes <= 0 || l.MaxStringBytes > 256 || l.MaxSourceBytes <= 0 || l.MaxSourceBytes > 4096 || l.ParserRecursion <= 0 || l.ParserRecursion > 64 || l.EvaluationCost == 0 || l.EvaluationCost > 1000 {
+	badList := l.MaxListItems != 0
+	if typed {
+		badList = l.MaxListItems <= 0 || l.MaxListItems > maxListItems
+	}
+	if m.FunctionID == "" || len(m.CallerVariables) == 0 || l.MaxRequestBytes <= 0 || l.MaxRequestBytes > 4096 || l.MaxStringBytes <= 0 || l.MaxStringBytes > 256 || l.MaxSourceBytes <= 0 || l.MaxSourceBytes > 4096 || l.ParserRecursion <= 0 || l.ParserRecursion > 64 || l.EvaluationCost == 0 || l.EvaluationCost > 1000 || badList {
 		return nil, diag("invalid_bundle", "profile", "/limits", "positive limits within the reference ceilings and a function/caller contract are required")
 	}
 	if len(f.Source) > l.MaxSourceBytes || !utf8.Valid(f.Source) {
@@ -124,8 +142,25 @@ func Load(f Files) (*Bundle, *Diagnostic) {
 	if err := strictJSON(f.Environment, &env); err != nil {
 		return nil, diag("unsupported_profile", "environment", "/environment", err.Error())
 	}
+	// The typed keys are unknown fields in cel-string-bool/v1. An output
+	// declaration has no name.
+	var stringBool struct {
+		Name        string `json:"name"`
+		Description string `json:"description"`
+		Variables   []struct {
+			Name        string `json:"name"`
+			Type        string `json:"type"`
+			Description string `json:"description"`
+		} `json:"variables"`
+	}
+	if !typed {
+		if err := strictJSON(f.Environment, &stringBool); err != nil {
+			return nil, diag("unsupported_profile", "environment", "/environment", err.Error())
+		}
+	} else if env.Output != nil && env.Output.Name != "" {
+		return nil, diag("unsupported_profile", "environment", "/environment", "an output declaration has no name")
+	}
 	options := []cel.EnvOption{cel.ParserExpressionSizeLimit(l.MaxSourceBytes), cel.ParserRecursionLimit(l.ParserRecursion)}
-	validName := regexp.MustCompile(`^[A-Za-z_][A-Za-z_0-9]*$`)
 	if env.Name == "" || len(env.Variables) == 0 {
 		return nil, diag("invalid_environment", "environment", "/environment", "name and declarations are required")
 	}
@@ -138,15 +173,32 @@ func Load(f Files) (*Bundle, *Diagnostic) {
 			return nil, diag("invalid_environment", "environment", field, "duplicate variable")
 		}
 		typ := cel.StringType
-		switch v.Type {
-		case "string":
-		case "bool":
+		switch {
+		case typed:
+			var d *Diagnostic
+			if typ, d = checkDecl(v, field, false); d != nil {
+				return nil, d
+			}
+		case v.Type == "string":
+		case v.Type == "bool":
 			typ = cel.BoolType
 		default:
 			return nil, diag("unsupported_profile", "environment", field+"/type", "only string and bool declarations are supported")
 		}
 		b.variables[v.Name] = v
 		options = append(options, cel.Variable(v.Name, typ))
+	}
+	b.output = Variable{Type: "bool"}
+	outType := cel.BoolType
+	if typed {
+		if env.Output == nil {
+			return nil, diag("invalid_environment", "environment", "/output", "an output declaration is required")
+		}
+		var d *Diagnostic
+		if outType, d = checkDecl(*env.Output, "/output", false); d != nil {
+			return nil, d
+		}
+		b.output = *env.Output
 	}
 	if err := strictJSON(f.Fixed, &b.fixed); err != nil || b.fixed == nil {
 		return nil, diag("invalid_bindings", "bindings", "/fixed", "fixed bindings must be a JSON object with unique keys")
@@ -163,9 +215,17 @@ func Load(f Files) (*Bundle, *Diagnostic) {
 		if !ok || caller[name] {
 			return nil, diag("invalid_bindings", "bindings", pointer(name), "fixed and caller bindings must be declared and disjoint")
 		}
-		if err := validateValue(b.fixed[name], v.Type, l.MaxStringBytes); err != nil {
+		if !typed {
+			if err := validateValue(b.fixed[name], v.Type, l.MaxStringBytes); err != nil {
+				return nil, diag("invalid_bindings", "bindings", pointer(name), err.Error())
+			}
+			continue
+		}
+		value, err := fromWire(b.fixed[name], v, l, pointer(name))
+		if err != nil {
 			return nil, diag("invalid_bindings", "bindings", pointer(name), err.Error())
 		}
+		b.fixed[name] = value
 	}
 	for name := range b.variables {
 		if !caller[name] {
@@ -186,8 +246,8 @@ func Load(f Files) (*Bundle, *Diagnostic) {
 		}
 		return nil, d
 	}
-	if ast.OutputType() != cel.BoolType {
-		return nil, diag("output_type", "compile", "/source", "expected bool, got "+ast.OutputType().String())
+	if !typed && ast.OutputType() != cel.BoolType || typed && !assignable(outType, ast.OutputType()) {
+		return nil, diag("output_type", "compile", "/source", "expected "+outType.String()+", got "+ast.OutputType().String())
 	}
 	b.program, err = e.Program(ast, cel.CostLimit(l.EvaluationCost), cel.InterruptCheckFrequency(1))
 	if err != nil {
@@ -196,6 +256,13 @@ func Load(f Files) (*Bundle, *Diagnostic) {
 	return b, nil
 }
 func (b *Bundle) Describe() Descriptor {
+	if b.manifest.Profile == typedProfile {
+		properties := map[string]any{}
+		for _, name := range b.manifest.CallerVariables {
+			properties[name] = schema(b.variables[name], b.manifest.Limits)
+		}
+		return Descriptor{FunctionID: b.manifest.FunctionID, BundleRef: b.ref, ImplementationRef: BuildID(), Profile: b.manifest.Profile, Inputs: map[string]any{"type": "object", "properties": properties, "required": append([]string{}, b.manifest.CallerVariables...), "additionalProperties": false}, Output: schema(b.output, b.manifest.Limits), Limits: b.manifest.Limits}
+	}
 	properties := map[string]any{}
 	for _, name := range b.manifest.CallerVariables {
 		v := b.variables[name]
@@ -230,6 +297,7 @@ func (b *Bundle) Run(ctx context.Context, raw []byte) Response {
 	if req.BundleRef != b.ref {
 		return failure("artifact_mismatch", "bundle", "/bundle_ref", "an exact expected bundle reference is required")
 	}
+	typed := b.manifest.Profile == typedProfile
 	caller := map[string]bool{}
 	for _, name := range b.manifest.CallerVariables {
 		caller[name] = true
@@ -248,7 +316,13 @@ func (b *Bundle) Run(ctx context.Context, raw []byte) Response {
 		if !found {
 			return failure("needs_input", "input", pointer(name), "required input is absent")
 		}
-		if err := validateValue(value, b.variables[name].Type, b.manifest.Limits.MaxStringBytes); err != nil {
+		if typed {
+			native, err := fromWire(value, b.variables[name], b.manifest.Limits, pointer(name))
+			if err != nil {
+				return failure("invalid_input", "input", err.at, err.message)
+			}
+			value = native
+		} else if err := validateValue(value, b.variables[name].Type, b.manifest.Limits.MaxStringBytes); err != nil {
 			return failure("invalid_input", "input", pointer(name), err.Error())
 		}
 		vars[name] = value
@@ -267,11 +341,19 @@ func (b *Bundle) Run(ctx context.Context, raw []byte) Response {
 		}
 		return failure("evaluation_error", "evaluate", "/source", err.Error())
 	}
-	value, ok := out.Value().(bool)
-	if !ok {
+	var value any
+	if typed {
+		wire, err := toWire(out, b.output, b.manifest.Limits, "/value")
+		if err != nil {
+			return failure("output_type", "output", err.at, err.message)
+		}
+		value = wire
+	} else if v, ok := out.Value().(bool); ok {
+		value = v
+	} else {
 		return failure("output_type", "output", "", fmt.Sprint(out))
 	}
-	return Response{Status: "ok", Value: &value, BundleRef: b.ref, ImplementationRef: BuildID(), Cost: details.ActualCost()}
+	return Response{Status: "ok", Value: value, BundleRef: b.ref, ImplementationRef: BuildID(), Cost: details.ActualCost()}
 }
 func validateValue(value any, typ string, maxBytes int) error {
 	switch typ {
@@ -308,8 +390,9 @@ type Case struct {
 	Name   string         `json:"case"`
 	Inputs map[string]any `json:"inputs"`
 	Status string         `json:"status"`
-	Value  *bool          `json:"value,omitempty"`
-	Field  string         `json:"field,omitempty"`
+	// Value is the expected wire value. A JSON integer must be a json.Number.
+	Value any    `json:"value,omitempty"`
+	Field string `json:"field,omitempty"`
 }
 type CaseResult struct {
 	Name   string   `json:"case"`
@@ -337,9 +420,15 @@ func (b *Bundle) Check(ctx context.Context, cases []Case) Report {
 		passed := err == nil && c.Name != "" && !names[c.Name] && actual.Status == c.Status
 		names[c.Name] = true
 		if c.Status == "ok" {
+			// The canonical bytes of a valid expected value must equal those
+			// of the actual value. An invalid expected value fails the case.
 			passed = passed && c.Value != nil && actual.Value != nil
-			if c.Value != nil && actual.Value != nil {
-				passed = passed && *actual.Value == *c.Value
+			if passed {
+				_, bad := fromWire(c.Value, b.output, b.manifest.Limits, "/value")
+				var want, got bytes.Buffer
+				canonical(&want, c.Value)
+				canonical(&got, actual.Value)
+				passed = bad == nil && bytes.Equal(want.Bytes(), got.Bytes())
 			}
 		} else {
 			passed = passed && c.Value == nil && actual.Value == nil

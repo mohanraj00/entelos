@@ -1,10 +1,10 @@
 # Typed callable profile `cel-typed/v1`
 
-Status: proposed. This file is a specification for review. No host code implements it. Issue [#126](https://github.com/mohanraj00/entelos/issues/126) tracks the work.
+Status: implemented in the engine `src/cel-handoff` ([typed.go](../cel-handoff/typed.go)). The executor and the WASM bridge do not implement it. Issue [#126](https://github.com/mohanraj00/entelos/issues/126) tracks the work.
 
 The current profile `cel-string-bool/v1` accepts string and bool inputs and gives a bool result. This file specifies a second profile, `cel-typed/v1`. A rule of this profile has a declared type for each input and for its output. The types are integers, dates, lists and records, and the two current types.
 
-The JSON vectors in [conformance/typed/](conformance/typed/) state the expected results of this profile. No harness runs them yet. The vector [storage/typed-values.json](conformance/storage/typed-values.json) records the canonical bytes of each type. The current storage harness runs that vector.
+The JSON vectors in [conformance/typed/](conformance/typed/) state the expected results of this profile. `TestTypedProfileVectors` in [typed_vectors_test.go](../cel-handoff/typed_vectors_test.go) runs them on the engine. The vector [storage/typed-values.json](conformance/storage/typed-values.json) records the canonical bytes of each type. The current storage harness runs that vector.
 
 ## Scope
 
@@ -223,7 +223,7 @@ The expected values come from this specification and from the CEL semantics of e
 
 ## Limits
 
-- This profile is proposed. The vectors in `conformance/typed/` have no harness, and no host code is in this change.
+- The engine implements this profile, and the vector harness runs on the engine only. No test runs a typed bundle through the lifecycle Host, the executor or the WASM bridge.
 - A record is a `map(string, dyn)` in CEL. An expression such as `window.start + 1` compiles, then fails in the evaluation with `evaluation_error`.
 - The profile has no floating-point type. A decimal score needs an integer unit, for example basis points.
 - The `int` range is smaller than the CEL `int` range.

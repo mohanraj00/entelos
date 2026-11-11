@@ -36,7 +36,7 @@ func TestCallerCanDiscoverAndInvokeFixedRule(t *testing.T) {
 	b := load(t, fixture(t))
 	d := b.Describe()
 	got := b.Run(context.Background(), request(d.BundleRef, map[string]any{"state": "ready", "archived": false}))
-	if got.Status != "ok" || got.Value == nil || !*got.Value {
+	if got.Status != "ok" || got.Value != true {
 		t.Fatalf("matching record: %+v", got)
 	}
 	props := d.Inputs["properties"].(map[string]any)
@@ -75,7 +75,7 @@ func TestStrictCallerFixture(t *testing.T) {
 			if got.Status != c.Status {
 				t.Fatalf("status %s want %s: %+v", got.Status, c.Status, got)
 			}
-			if c.Value != nil && (got.Value == nil || *got.Value != *c.Value) {
+			if c.Value != nil && got.Value != *c.Value {
 				t.Fatalf("value %+v want %v", got, *c.Value)
 			}
 			if c.Field != "" && (got.Diagnostic == nil || got.Diagnostic.Field != c.Field) {
@@ -242,9 +242,9 @@ func TestCheckRetainsFailedExpectationsWithoutActivation(t *testing.T) {
 	b := load(t, fixture(t))
 	yes := true
 	no := false
-	cases := []h.Case{{Name: "known-true", Inputs: map[string]any{"state": "ready", "archived": false}, Status: "ok", Value: &yes}, {Name: "deliberately-wrong-expectation", Inputs: map[string]any{"state": "ready", "archived": false}, Status: "ok", Value: &no}}
+	cases := []h.Case{{Name: "known-true", Inputs: map[string]any{"state": "ready", "archived": false}, Status: "ok", Value: yes}, {Name: "deliberately-wrong-expectation", Inputs: map[string]any{"state": "ready", "archived": false}, Status: "ok", Value: no}}
 	got := b.Check(context.Background(), cases)
-	if got.Status != "failed" || len(got.Cases) != 2 || !got.Cases[0].Passed || got.Cases[1].Passed || got.Cases[1].Actual.Value == nil || !*got.Cases[1].Actual.Value {
+	if got.Status != "failed" || len(got.Cases) != 2 || !got.Cases[0].Passed || got.Cases[1].Passed || got.Cases[1].Actual.Value != true {
 		t.Fatalf("check hid failure: %+v", got)
 	}
 	got = b.Check(context.Background(), nil)
