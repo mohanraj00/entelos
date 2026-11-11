@@ -157,7 +157,7 @@
   "src/lifecycle-core/gitstore.go": "36f47c630604da58c249ccd3d4bb2fbb824e4d2bb3b3f11c2d83f280589ec139",
   "src/lifecycle-core/go.mod": "f7a80c6bb4a9c7048e8ba8c787b345ed0a92b845142f971986f0007ff05c8216",
   "src/lifecycle-core/host.go": "29e3b3f6f67562695904beae0c6ebc5afd32e6868e5cfc4b575c5a5e8c3409d2",
-  "src/lifecycle-core/host_test.go": "aa9a44b742cdf9706132bb81a5d80726cf088e754ae278c71a28f082756aa76e",
+  "src/lifecycle-core/host_test.go": "fa1b9ca9830adc674bed148456d74410f1bf7093b43c226325e7e47f13bf0021",
   "src/lifecycle-core/ingest_test.go": "4eb75160783cffe046635dabd20364c4b4890787116d59d478bdc2eac57ee38a",
   "src/lifecycle-core/memstore.go": "be345c7038c29552d885ca18add4bb8e58464007133a412fc2c76d4e622dcd78",
   "src/lifecycle-core/protocol/adapter.go": "eff4d3af5d9f842fcc8a8ae7b83f3f510071120935bd1a8dfda1f9cacdbd9ae4",
