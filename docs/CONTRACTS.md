@@ -13,6 +13,8 @@ This map points to executable reference contracts. It is not a separately versio
 | Local storage | [gitstore.go](../src/lifecycle-core/gitstore.go) | Immutable objects, captured historical roots, request-key recovery and single-root compare-and-swap. |
 | Application boundary | [adapter.py](../examples/ci-trigger/adapter.py) | Project a nested event, retain raw/projection audit links; no atomic webhook ingress or pipeline effect is implemented. |
 
+A typed profile, `cel-typed/v1`, is proposed in [typed-profile-spec.md](../src/cel-lifecycle/typed-profile-spec.md) (#126). It adds `int`, `date`, `list` and `record` types and a declared output type. No host code implements it yet.
+
 The JSON CLI schemas and typed faults are defined in source. Qualification success does not activate a proposal. Caller discovery must be checked again after source/profile/bundle changes. Invalid input and a successful false result remain different outcomes.
 
 ## Callable cases

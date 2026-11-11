@@ -1,0 +1,210 @@
+{
+ "format": "typed-profile-vector/v1",
+ "id": "case-checks",
+ "description": "Bundle.Check for a typed bundle. A case passes only if the canonical bytes of the expected value equal those of the actual value. An expected value that is not a valid value of the output type fails the case.",
+ "bundle": {
+  "function_id": "admission.review",
+  "profile": "cel-typed/v1",
+  "caller_variables": [
+   "score",
+   "observed_on",
+   "sources"
+  ],
+  "limits": {
+   "max_request_bytes": 4096,
+   "max_string_utf8_bytes": 256,
+   "max_source_utf8_bytes": 4096,
+   "parser_recursion_limit": 64,
+   "evaluation_cost_limit": 1000,
+   "max_list_items": 4
+  },
+  "environment": {
+   "name": "admission-review",
+   "variables": [
+    {
+     "name": "score",
+     "type": "int",
+     "description": "The review score from 0 to 1000."
+    },
+    {
+     "name": "observed_on",
+     "type": "date",
+     "description": "The date of the observation."
+    },
+    {
+     "name": "sources",
+     "type": "list",
+     "items": "string",
+     "description": "The names of the sources."
+    },
+    {
+     "name": "min_score",
+     "type": "int",
+     "description": "The fixed lowest score."
+    },
+    {
+     "name": "cutoff",
+     "type": "date",
+     "description": "The fixed earliest observation date."
+    }
+   ],
+   "output": {
+    "type": "record",
+    "fields": [
+     {
+      "name": "admit",
+      "type": "bool",
+      "description": "True if the entry is admitted."
+     },
+     {
+      "name": "reason",
+      "type": "string",
+      "description": "The reason code."
+     }
+    ]
+   }
+  },
+  "source": "score >= min_score && observed_on >= cutoff && size(sources) >= 2\n  ? {'admit': true, 'reason': 'eligible'}\n  : {'admit': false, 'reason': score < min_score ? 'low_score'\n      : (observed_on < cutoff ? 'stale_observation' : 'few_sources')}\n",
+  "fixed": {
+   "min_score": 700,
+   "cutoff": "2026-01-01"
+  }
+ },
+ "steps": [
+  {
+   "name": "typed-cases-pass",
+   "op": "check",
+   "cases": [
+    {
+     "case": "eligible",
+     "inputs": {
+      "score": 812,
+      "observed_on": "2026-03-14",
+      "sources": [
+       "registry",
+       "survey"
+      ]
+     },
+     "status": "ok",
+     "value": {
+      "reason": "eligible",
+      "admit": true
+     }
+    },
+    {
+     "case": "low",
+     "inputs": {
+      "score": 640,
+      "observed_on": "2026-03-14",
+      "sources": [
+       "registry",
+       "survey"
+      ]
+     },
+     "status": "ok",
+     "value": {
+      "admit": false,
+      "reason": "low_score"
+     }
+    },
+    {
+     "case": "bad-date",
+     "inputs": {
+      "score": 812,
+      "observed_on": "2026-02-30",
+      "sources": []
+     },
+     "status": "invalid_input",
+     "field": "/observed_on"
+    }
+   ],
+   "expect": {
+    "status": "passed",
+    "cases": [
+     true,
+     true,
+     true
+    ]
+   }
+  },
+  {
+   "name": "typed-cases-fail",
+   "op": "check",
+   "cases": [
+    {
+     "case": "wrong-reason",
+     "inputs": {
+      "score": 812,
+      "observed_on": "2026-03-14",
+      "sources": [
+       "registry",
+       "survey"
+      ]
+     },
+     "status": "ok",
+     "value": {
+      "admit": true,
+      "reason": "other"
+     }
+    },
+    {
+     "case": "expected-value-missing-field",
+     "inputs": {
+      "score": 812,
+      "observed_on": "2026-03-14",
+      "sources": [
+       "registry",
+       "survey"
+      ]
+     },
+     "status": "ok",
+     "value": {
+      "admit": true
+     }
+    },
+    {
+     "case": "expected-value-unknown-field",
+     "inputs": {
+      "score": 812,
+      "observed_on": "2026-03-14",
+      "sources": [
+       "registry",
+       "survey"
+      ]
+     },
+     "status": "ok",
+     "value": {
+      "admit": true,
+      "reason": "eligible",
+      "note": "x"
+     }
+    },
+    {
+     "case": "eligible",
+     "inputs": {
+      "score": 812,
+      "observed_on": "2026-03-14",
+      "sources": [
+       "registry",
+       "survey"
+      ]
+     },
+     "status": "ok",
+     "value": {
+      "admit": true,
+      "reason": "eligible"
+     }
+    }
+   ],
+   "expect": {
+    "status": "failed",
+    "cases": [
+     false,
+     false,
+     false,
+     true
+    ]
+   }
+  }
+ ]
+}

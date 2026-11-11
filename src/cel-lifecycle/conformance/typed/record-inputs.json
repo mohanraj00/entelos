@@ -1,0 +1,180 @@
+{
+ "format": "typed-profile-vector/v1",
+ "id": "record-inputs",
+ "description": "A record input with date and list fields. Each declared field is required, a field that is not declared is refused, and the unknown fields are checked before the declared fields. A missing field is invalid_input, not needs_input.",
+ "bundle": {
+  "function_id": "booking.fits",
+  "profile": "cel-typed/v1",
+  "caller_variables": [
+   "day",
+   "window"
+  ],
+  "limits": {
+   "max_request_bytes": 4096,
+   "max_string_utf8_bytes": 256,
+   "max_source_utf8_bytes": 4096,
+   "parser_recursion_limit": 64,
+   "evaluation_cost_limit": 1000,
+   "max_list_items": 4
+  },
+  "environment": {
+   "name": "booking-window",
+   "variables": [
+    {
+     "name": "day",
+     "type": "date"
+    },
+    {
+     "name": "window",
+     "type": "record",
+     "fields": [
+      {
+       "name": "start",
+       "type": "date"
+      },
+      {
+       "name": "end",
+       "type": "date"
+      },
+      {
+       "name": "tags",
+       "type": "list",
+       "items": "string"
+      }
+     ]
+    }
+   ],
+   "output": {
+    "type": "bool"
+   }
+  },
+  "source": "day >= window.start && day < window.end && !('hold' in window.tags)\n",
+  "fixed": {}
+ },
+ "steps": [
+  {
+   "name": "load",
+   "op": "load",
+   "expect": {
+    "ok": true
+   }
+  },
+  {
+   "name": "inside",
+   "op": "run",
+   "inputs_text": "{\"day\": \"2026-05-10\", \"window\": {\"start\": \"2026-05-01\", \"end\": \"2026-06-01\", \"tags\": []}}",
+   "expect": {
+    "status": "ok",
+    "value": true
+   }
+  },
+  {
+   "name": "field-order",
+   "op": "run",
+   "inputs_text": "{\"day\": \"2026-05-10\", \"window\": {\"tags\": [], \"end\": \"2026-06-01\", \"start\": \"2026-05-01\"}}",
+   "expect": {
+    "status": "ok",
+    "value": true
+   }
+  },
+  {
+   "name": "start-included",
+   "op": "run",
+   "inputs_text": "{\"day\": \"2026-05-01\", \"window\": {\"start\": \"2026-05-01\", \"end\": \"2026-06-01\", \"tags\": []}}",
+   "expect": {
+    "status": "ok",
+    "value": true
+   }
+  },
+  {
+   "name": "end-excluded",
+   "op": "run",
+   "inputs_text": "{\"day\": \"2026-06-01\", \"window\": {\"start\": \"2026-05-01\", \"end\": \"2026-06-01\", \"tags\": []}}",
+   "expect": {
+    "status": "ok",
+    "value": false
+   }
+  },
+  {
+   "name": "held",
+   "op": "run",
+   "inputs_text": "{\"day\": \"2026-05-10\", \"window\": {\"start\": \"2026-05-01\", \"end\": \"2026-06-01\", \"tags\": [\"hold\"]}}",
+   "expect": {
+    "status": "ok",
+    "value": false
+   }
+  },
+  {
+   "name": "missing-field",
+   "op": "run",
+   "inputs_text": "{\"day\": \"2026-05-10\", \"window\": {\"start\": \"2026-05-01\", \"tags\": []}}",
+   "expect": {
+    "status": "invalid_input",
+    "field": "/window/end"
+   }
+  },
+  {
+   "name": "unknown-field",
+   "op": "run",
+   "inputs_text": "{\"day\": \"2026-05-10\", \"window\": {\"start\": \"2026-05-01\", \"end\": \"2026-06-01\", \"tags\": [], \"note\": \"x\"}}",
+   "expect": {
+    "status": "invalid_input",
+    "field": "/window/note"
+   }
+  },
+  {
+   "name": "unknown-before-missing",
+   "op": "run",
+   "inputs_text": "{\"day\": \"2026-05-10\", \"window\": {\"start\": \"2026-05-01\", \"tags\": [], \"note\": \"x\"}}",
+   "expect": {
+    "status": "invalid_input",
+    "field": "/window/note"
+   }
+  },
+  {
+   "name": "field-date",
+   "op": "run",
+   "inputs_text": "{\"day\": \"2026-05-10\", \"window\": {\"start\": \"2026-05-1\", \"end\": \"2026-06-01\", \"tags\": []}}",
+   "expect": {
+    "status": "invalid_input",
+    "field": "/window/start"
+   }
+  },
+  {
+   "name": "field-list-item",
+   "op": "run",
+   "inputs_text": "{\"day\": \"2026-05-10\", \"window\": {\"start\": \"2026-05-01\", \"end\": \"2026-06-01\", \"tags\": [1]}}",
+   "expect": {
+    "status": "invalid_input",
+    "field": "/window/tags/0"
+   }
+  },
+  {
+   "name": "record-null",
+   "op": "run",
+   "inputs_text": "{\"day\": \"2026-05-10\", \"window\": null}",
+   "expect": {
+    "status": "invalid_input",
+    "field": "/window"
+   }
+  },
+  {
+   "name": "record-as-list",
+   "op": "run",
+   "inputs_text": "{\"day\": \"2026-05-10\", \"window\": []}",
+   "expect": {
+    "status": "invalid_input",
+    "field": "/window"
+   }
+  },
+  {
+   "name": "missing-record",
+   "op": "run",
+   "inputs_text": "{\"day\": \"2026-05-10\"}",
+   "expect": {
+    "status": "needs_input",
+    "field": "/window"
+   }
+  }
+ ]
+}

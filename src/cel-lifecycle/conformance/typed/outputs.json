@@ -1,0 +1,507 @@
+{
+ "format": "typed-profile-vector/v1",
+ "id": "outputs",
+ "description": "Date, int, list, record and string outputs. The engine checks the output value after the evaluation; a value that does not have the declared type is output_type at the output stage, with a field from /value. A CEL output type that cannot be assigned to the declared type is output_type at the compile stage.",
+ "bundle": {
+  "function_id": "renewal.date",
+  "profile": "cel-typed/v1",
+  "caller_variables": [
+   "start",
+   "term_days"
+  ],
+  "limits": {
+   "max_request_bytes": 4096,
+   "max_string_utf8_bytes": 256,
+   "max_source_utf8_bytes": 4096,
+   "parser_recursion_limit": 64,
+   "evaluation_cost_limit": 1000,
+   "max_list_items": 4
+  },
+  "environment": {
+   "name": "renewal",
+   "variables": [
+    {
+     "name": "start",
+     "type": "date"
+    },
+    {
+     "name": "term_days",
+     "type": "int"
+    }
+   ],
+   "output": {
+    "type": "date"
+   }
+  },
+  "source": "start + duration(string(term_days * 24) + 'h')\n",
+  "fixed": {}
+ },
+ "steps": [
+  {
+   "name": "date-output",
+   "op": "run",
+   "inputs_text": "{\"start\": \"2026-01-31\", \"term_days\": 30}",
+   "expect": {
+    "status": "ok",
+    "value": "2026-03-02"
+   }
+  },
+  {
+   "name": "date-output-leap",
+   "op": "run",
+   "inputs_text": "{\"start\": \"2024-02-28\", \"term_days\": 1}",
+   "expect": {
+    "status": "ok",
+    "value": "2024-02-29"
+   }
+  },
+  {
+   "name": "date-output-negative",
+   "op": "run",
+   "inputs_text": "{\"start\": \"2026-01-31\", \"term_days\": -31}",
+   "expect": {
+    "status": "ok",
+    "value": "2025-12-31"
+   }
+  },
+  {
+   "name": "date-output-not-midnight",
+   "op": "run",
+   "inputs_text": "{\"start\": \"2026-01-31\", \"term_days\": 30}",
+   "expect": {
+    "status": "output_type",
+    "field": "/value"
+   },
+   "replace": {
+    "source": "start + duration('1h')\n"
+   }
+  },
+  {
+   "name": "int-output",
+   "op": "run",
+   "inputs_text": "{\"start\": \"2026-01-31\", \"term_days\": 30}",
+   "expect": {
+    "status": "ok",
+    "value": 60
+   },
+   "replace": {
+    "environment": {
+     "name": "renewal",
+     "variables": [
+      {
+       "name": "start",
+       "type": "date"
+      },
+      {
+       "name": "term_days",
+       "type": "int"
+      }
+     ],
+     "output": {
+      "type": "int"
+     }
+    },
+    "source": "term_days * 2\n"
+   }
+  },
+  {
+   "name": "int-output-above-range",
+   "op": "run",
+   "inputs_text": "{\"start\": \"2026-01-31\", \"term_days\": 9008}",
+   "expect": {
+    "status": "output_type",
+    "field": "/value"
+   },
+   "replace": {
+    "environment": {
+     "name": "renewal",
+     "variables": [
+      {
+       "name": "start",
+       "type": "date"
+      },
+      {
+       "name": "term_days",
+       "type": "int"
+      }
+     ],
+     "output": {
+      "type": "int"
+     }
+    },
+    "source": "term_days * 1000000000000\n"
+   }
+  },
+  {
+   "name": "int-output-highest",
+   "op": "run",
+   "inputs_text": "{\"start\": \"2026-01-31\", \"term_days\": 9007199254740991}",
+   "expect": {
+    "status": "ok",
+    "value": 9007199254740991
+   },
+   "replace": {
+    "environment": {
+     "name": "renewal",
+     "variables": [
+      {
+       "name": "start",
+       "type": "date"
+      },
+      {
+       "name": "term_days",
+       "type": "int"
+      }
+     ],
+     "output": {
+      "type": "int"
+     }
+    },
+    "source": "term_days\n"
+   }
+  },
+  {
+   "name": "list-output",
+   "op": "run",
+   "inputs_text": "{\"start\": \"2026-01-31\", \"term_days\": 30}",
+   "expect": {
+    "status": "ok",
+    "value": [
+     "30",
+     "2026"
+    ]
+   },
+   "replace": {
+    "environment": {
+     "name": "renewal",
+     "variables": [
+      {
+       "name": "start",
+       "type": "date"
+      },
+      {
+       "name": "term_days",
+       "type": "int"
+      }
+     ],
+     "output": {
+      "type": "list",
+      "items": "string"
+     }
+    },
+    "source": "[string(term_days), string(start.getFullYear('UTC'))]\n"
+   }
+  },
+  {
+   "name": "list-output-too-long",
+   "op": "run",
+   "inputs_text": "{\"start\": \"2026-01-31\", \"term_days\": 30}",
+   "expect": {
+    "status": "output_type",
+    "field": "/value"
+   },
+   "replace": {
+    "environment": {
+     "name": "renewal",
+     "variables": [
+      {
+       "name": "start",
+       "type": "date"
+      },
+      {
+       "name": "term_days",
+       "type": "int"
+      }
+     ],
+     "output": {
+      "type": "list",
+      "items": "string"
+     }
+    },
+    "source": "['a', 'b', 'c', 'd', 'e']\n"
+   }
+  },
+  {
+   "name": "list-output-empty",
+   "op": "run",
+   "inputs_text": "{\"start\": \"2026-01-31\", \"term_days\": 30}",
+   "expect": {
+    "status": "ok",
+    "value": []
+   },
+   "replace": {
+    "environment": {
+     "name": "renewal",
+     "variables": [
+      {
+       "name": "start",
+       "type": "date"
+      },
+      {
+       "name": "term_days",
+       "type": "int"
+      }
+     ],
+     "output": {
+      "type": "list",
+      "items": "string"
+     }
+    },
+    "source": "term_days > 100 ? ['long'] : []\n"
+   }
+  },
+  {
+   "name": "record-output",
+   "op": "run",
+   "inputs_text": "{\"start\": \"2026-01-31\", \"term_days\": 30}",
+   "expect": {
+    "status": "ok",
+    "value": {
+     "admit": true,
+     "reason": "term"
+    }
+   },
+   "replace": {
+    "environment": {
+     "name": "renewal",
+     "variables": [
+      {
+       "name": "start",
+       "type": "date"
+      },
+      {
+       "name": "term_days",
+       "type": "int"
+      }
+     ],
+     "output": {
+      "type": "record",
+      "fields": [
+       {
+        "name": "admit",
+        "type": "bool"
+       },
+       {
+        "name": "reason",
+        "type": "string"
+       }
+      ]
+     }
+    },
+    "source": "{'admit': term_days > 0, 'reason': 'term'}\n"
+   }
+  },
+  {
+   "name": "record-output-missing-field",
+   "op": "run",
+   "inputs_text": "{\"start\": \"2026-01-31\", \"term_days\": 30}",
+   "expect": {
+    "status": "output_type",
+    "field": "/value/reason"
+   },
+   "replace": {
+    "environment": {
+     "name": "renewal",
+     "variables": [
+      {
+       "name": "start",
+       "type": "date"
+      },
+      {
+       "name": "term_days",
+       "type": "int"
+      }
+     ],
+     "output": {
+      "type": "record",
+      "fields": [
+       {
+        "name": "admit",
+        "type": "bool"
+       },
+       {
+        "name": "reason",
+        "type": "string"
+       }
+      ]
+     }
+    },
+    "source": "{'admit': term_days > 0}\n"
+   }
+  },
+  {
+   "name": "record-output-unknown-field",
+   "op": "run",
+   "inputs_text": "{\"start\": \"2026-01-31\", \"term_days\": 30}",
+   "expect": {
+    "status": "output_type",
+    "field": "/value/note"
+   },
+   "replace": {
+    "environment": {
+     "name": "renewal",
+     "variables": [
+      {
+       "name": "start",
+       "type": "date"
+      },
+      {
+       "name": "term_days",
+       "type": "int"
+      }
+     ],
+     "output": {
+      "type": "record",
+      "fields": [
+       {
+        "name": "admit",
+        "type": "bool"
+       },
+       {
+        "name": "reason",
+        "type": "string"
+       }
+      ]
+     }
+    },
+    "source": "{'admit': true, 'reason': 'term', 'note': 'x'}\n"
+   }
+  },
+  {
+   "name": "record-output-field-type",
+   "op": "run",
+   "inputs_text": "{\"start\": \"2026-01-31\", \"term_days\": 30}",
+   "expect": {
+    "status": "output_type",
+    "field": "/value/admit"
+   },
+   "replace": {
+    "environment": {
+     "name": "renewal",
+     "variables": [
+      {
+       "name": "start",
+       "type": "date"
+      },
+      {
+       "name": "term_days",
+       "type": "int"
+      }
+     ],
+     "output": {
+      "type": "record",
+      "fields": [
+       {
+        "name": "admit",
+        "type": "bool"
+       },
+       {
+        "name": "reason",
+        "type": "string"
+       }
+      ]
+     }
+    },
+    "source": "{'admit': 'yes', 'reason': 'term'}\n"
+   }
+  },
+  {
+   "name": "string-output-too-long",
+   "op": "run",
+   "inputs_text": "{\"start\": \"2026-01-31\", \"term_days\": 30}",
+   "expect": {
+    "status": "output_type",
+    "field": "/value"
+   },
+   "replace": {
+    "environment": {
+     "name": "renewal",
+     "variables": [
+      {
+       "name": "start",
+       "type": "date"
+      },
+      {
+       "name": "term_days",
+       "type": "int"
+      }
+     ],
+     "output": {
+      "type": "string"
+     }
+    },
+    "source": "'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'\n"
+   }
+  },
+  {
+   "name": "compile-output-mismatch",
+   "op": "load",
+   "replace": {
+    "environment": {
+     "name": "renewal",
+     "variables": [
+      {
+       "name": "start",
+       "type": "date"
+      },
+      {
+       "name": "term_days",
+       "type": "int"
+      }
+     ],
+     "output": {
+      "type": "int"
+     }
+    },
+    "source": "start\n"
+   },
+   "expect": {
+    "diagnostic": {
+     "code": "output_type",
+     "stage": "compile",
+     "field": "/source"
+    }
+   }
+  },
+  {
+   "name": "compile-record-key-type",
+   "op": "load",
+   "replace": {
+    "environment": {
+     "name": "renewal",
+     "variables": [
+      {
+       "name": "start",
+       "type": "date"
+      },
+      {
+       "name": "term_days",
+       "type": "int"
+      }
+     ],
+     "output": {
+      "type": "record",
+      "fields": [
+       {
+        "name": "admit",
+        "type": "bool"
+       },
+       {
+        "name": "reason",
+        "type": "string"
+       }
+      ]
+     }
+    },
+    "source": "{1: true}\n"
+   },
+   "expect": {
+    "diagnostic": {
+     "code": "output_type",
+     "stage": "compile",
+     "field": "/source"
+    }
+   }
+  }
+ ]
+}
