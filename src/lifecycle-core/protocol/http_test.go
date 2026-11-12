@@ -217,6 +217,11 @@ func TestHTTPRefusesBadClaims(t *testing.T) {
 			b["exp"] = num(testNow.Unix() + 300)
 		})), "future"},
 		{"lifetime too long", mint(f.key, with(func(b lifecycle.Object) { b["exp"] = num(testNow.Unix() + 3601) })), "lifetime"},
+		{"lifetime overflow", mint(f.key, with(func(b lifecycle.Object) {
+			b["iat"] = lifecycle.Int{Text: "-9223372036854775808"}
+			b["exp"] = lifecycle.Int{Text: "9223372036854775807"}
+		})), "iat is negative"},
+		{"negative iat", mint(f.key, with(func(b lifecycle.Object) { b["iat"] = num(-1) })), "iat is negative"},
 		{"nbf in the future", mint(f.key, with(func(b lifecycle.Object) { b["nbf"] = num(testNow.Unix() + 61) })), "not valid yet"},
 		{"wrong audience", mint(f.key, with(func(b lifecycle.Object) { b["aud"] = lifecycle.Array{"other"} })), "audience"},
 		{"wrong tenant", mint(f.key, with(func(b lifecycle.Object) { b["tenant"] = "other" })), "tenant"},

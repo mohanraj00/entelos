@@ -99,7 +99,7 @@ The sidecar accepts a claim only if all of these are true:
 3. The Ed25519 signature verifies with that key. The sidecar reads the payload only after this check.
 4. The header and the payload are strict JSON objects, with no duplicate key.
 5. `iss` equals `issuer`. `aud` is `audience`, or a list that contains it.
-6. `exp` and `iat` are integers. The time is the UTC system clock, in whole seconds. The time is less than `exp`. `iat` is at most 60 seconds after the time. `exp` is more than `iat`, and `exp` minus `iat` is at most `max_lifetime_seconds`. If `nbf` is present, it is an integer at most 60 seconds after the time.
+6. `exp` and `iat` are integers. The time is the UTC system clock, in whole seconds. The time is less than `exp`. `iat` is not negative, and it is at most 60 seconds after the time. `exp` is more than `iat`, and `exp` minus `iat` is at most `max_lifetime_seconds`. If `nbf` is present, it is an integer at most 60 seconds after the time.
 7. `tenant` equals the `scope` of the Host context.
 8. `sub` is the `subject` of one principal of the file.
 

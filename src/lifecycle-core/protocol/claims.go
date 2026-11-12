@@ -220,7 +220,11 @@ func (is *issuer) verifyClaim(token string, now time.Time, tenant string) (*Prin
 		return nil, errors.New("claim expired")
 	case iat > t+clockSkew:
 		return nil, errors.New("claim iat is in the future")
-	case exp <= iat || exp-iat > is.lifetime:
+	case iat < 0:
+		return nil, errors.New("claim iat is negative")
+	// iat is from 0 to t+clockSkew here, so iat+is.lifetime cannot overflow
+	// and exp-iat is not calculated.
+	case exp <= iat || exp > iat+is.lifetime:
 		return nil, errors.New("claim lifetime is longer than max_lifetime_seconds or not positive")
 	}
 	if raw, has := body["nbf"]; has {
