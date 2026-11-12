@@ -11,6 +11,7 @@ This map points to executable reference contracts. It is not a separately versio
 | Wire protocol 1.0 | [PROTOCOL.md](../src/protocol/PROTOCOL.md) | Versioned, length-prefixed JSON frames; one schema for each operation; golden vectors that the Go sidecar passes. Unstable. |
 | Local sidecar | [entelos-sidecar](../src/lifecycle-core/README.md#sidecar) | Wire protocol 1.0 on a Unix domain socket with mode 0600. Each request requires a token before the Host can receive it. |
 | Approval API 1.1 | [APPROVAL.md](../src/protocol/approval/APPROVAL.md) | Implemented in the Go Host and the sidecar: list the open proposals, read their evidence and record an accept or reject verdict as an authenticated reviewer. `TestApprovalVectors` runs the hand-written vectors. |
+| Content proposal `entelos.content/1` | [CONTENT.md](../src/protocol/content/CONTENT.md) | Proposed for [#153](https://github.com/mohanraj00/entelos/issues/153): a candidate `kind` (`cel-bundle` or `content`), a content manifest that lists items by digest, 14 refusal rules and a generic candidate reference `{kind, ref}`. `check_spec.py` checks the hand-written vectors. No Host reads it. |
 | Local storage | [gitstore.go](../src/lifecycle-core/gitstore.go) | Immutable objects, captured historical roots, request-key recovery and single-root compare-and-swap. |
 | Application boundary | [adapter.py](../examples/ci-trigger/adapter.py) | Project a nested event, retain raw/projection audit links; no atomic webhook ingress or pipeline effect is implemented. |
 
