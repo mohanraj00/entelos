@@ -85,6 +85,7 @@ func run() int {
 	if err != nil {
 		return stop(err)
 	}
+	done := make(chan error, 2)
 	var httpServer *protocol.HTTPServer
 	ready := lifecycle.Object{"status": "listening", "socket": *socket}
 	if *httpListen != "" {
@@ -106,9 +107,11 @@ func run() int {
 		ready["http"] = l.Addr().String()
 		// The deferred Shutdown runs on each return after this point.
 		defer httpServer.Shutdown()
+		// If the HTTP server stops with an error, the sidecar stops, so a
+		// supervisor sees the failure.
 		go func() {
 			if err := httpServer.Serve(l); err != nil {
-				fmt.Fprintln(os.Stderr, "entelos-sidecar: http:", err)
+				done <- fmt.Errorf("http: %w", err)
 			}
 		}()
 	}
@@ -118,7 +121,6 @@ func run() int {
 	}
 	signals := make(chan os.Signal, 1)
 	signal.Notify(signals, syscall.SIGINT, syscall.SIGTERM)
-	done := make(chan error, 1)
 	go func() { done <- server.Serve(listener) }()
 	os.Stdout.Write(lifecycle.Encode(ready))
 	select {

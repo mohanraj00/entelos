@@ -229,7 +229,10 @@ func (is *issuer) verifyClaim(token string, now time.Time, tenant string) (*Prin
 	}
 	if raw, has := body["nbf"]; has {
 		nbf, ok := intValue(raw)
-		if !ok || nbf > t+clockSkew {
+		switch {
+		case !ok:
+			return nil, errors.New("claim nbf must be an integer")
+		case nbf > t+clockSkew:
 			return nil, errors.New("claim is not valid yet")
 		}
 	}

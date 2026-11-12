@@ -223,6 +223,7 @@ func TestHTTPRefusesBadClaims(t *testing.T) {
 		})), "iat is negative"},
 		{"negative iat", mint(f.key, with(func(b lifecycle.Object) { b["iat"] = num(-1) })), "iat is negative"},
 		{"nbf in the future", mint(f.key, with(func(b lifecycle.Object) { b["nbf"] = num(testNow.Unix() + 61) })), "not valid yet"},
+		{"nbf as a string", mint(f.key, with(func(b lifecycle.Object) { b["nbf"] = "2026-11-12T00:00:00Z" })), "nbf must be an integer"},
 		{"wrong audience", mint(f.key, with(func(b lifecycle.Object) { b["aud"] = lifecycle.Array{"other"} })), "audience"},
 		{"wrong tenant", mint(f.key, with(func(b lifecycle.Object) { b["tenant"] = "other" })), "tenant"},
 		{"no tenant", mint(f.key, with(func(b lifecycle.Object) { delete(b, "tenant") })), "tenant"},
@@ -425,5 +426,19 @@ func TestParseIssuerRefusesBadFiles(t *testing.T) {
 		if _, err := parseIssuer(lifecycle.Encode(d)); err == nil {
 			t.Errorf("%s: parseIssuer accepted the file", name)
 		}
+	}
+}
+
+func TestHTTPRefusalHasTheContractHeaders(t *testing.T) {
+	f := claimFixture(t)
+	resp, err := http.Post(f.url, "application/json", strings.NewReader(string(proposalsRequest)))
+	if err != nil {
+		t.Fatal(err)
+	}
+	resp.Body.Close()
+	h := resp.Header
+	if resp.StatusCode != 401 || h.Get("WWW-Authenticate") != "Bearer" || h.Get("Cache-Control") != "no-store" ||
+		h.Get("X-Content-Type-Options") != "nosniff" || h.Get("Content-Type") != "application/json" {
+		t.Fatalf("got %d %v", resp.StatusCode, h)
 	}
 }

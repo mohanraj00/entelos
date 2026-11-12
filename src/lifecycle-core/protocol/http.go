@@ -23,6 +23,7 @@ const HTTPPath = "/v1/request"
 const (
 	maxHeaderBytes   = 16384
 	readHeaderWait   = 10 * time.Second
+	httpReadWait     = 30 * time.Second
 	httpWriteWait    = 5 * time.Minute
 	httpIdleWait     = 60 * time.Second
 	httpShutdownWait = 10 * time.Second
@@ -171,7 +172,7 @@ func (h *HTTPHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	p, err := h.principal(r)
 	if err != nil {
 		h.config.Log("unauthenticated HTTP request: " + err.Error())
-		w.Header().Set("WWW-Authenticate", `Bearer realm="entelos"`)
+		w.Header().Set("WWW-Authenticate", "Bearer")
 		message := errToken.Error()
 		if !h.config.LocalTokens {
 			message = errClaim.Error()
@@ -265,7 +266,7 @@ func NewHTTPServer(handler http.Handler) *HTTPServer {
 	return &HTTPServer{server: &http.Server{
 		Handler:           handler,
 		ReadHeaderTimeout: readHeaderWait,
-		ReadTimeout:       authWait,
+		ReadTimeout:       httpReadWait,
 		WriteTimeout:      httpWriteWait,
 		IdleTimeout:       httpIdleWait,
 		MaxHeaderBytes:    maxHeaderBytes,
