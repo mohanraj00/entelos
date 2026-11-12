@@ -1,4 +1,4 @@
-module example.org/cel-handoff
+module github.com/mohanraj00/entelos/src/cel-handoff
 
 go 1.27.2
 

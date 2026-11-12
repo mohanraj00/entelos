@@ -16,7 +16,7 @@ import (
 	"strings"
 	"testing"
 
-	lifecycle "example.org/lifecycle-core"
+	lifecycle "github.com/mohanraj00/entelos/src/lifecycle-core"
 )
 
 // protocolDir is absolute, because the socket tests change the working directory.

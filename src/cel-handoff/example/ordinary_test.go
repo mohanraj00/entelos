@@ -2,8 +2,8 @@ package example_test
 
 import (
 	"encoding/json"
-	"example.org/cel-handoff/example"
 	"fmt"
+	"github.com/mohanraj00/entelos/src/cel-handoff/example"
 	"os"
 	"testing"
 )

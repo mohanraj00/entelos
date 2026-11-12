@@ -8,7 +8,7 @@ import (
 	"reflect"
 	"testing"
 
-	h "example.org/cel-handoff"
+	h "github.com/mohanraj00/entelos/src/cel-handoff"
 )
 
 // The executor vectors are language neutral. This test runs them on the

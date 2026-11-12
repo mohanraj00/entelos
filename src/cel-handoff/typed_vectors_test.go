@@ -10,7 +10,7 @@ import (
 	"strings"
 	"testing"
 
-	h "example.org/cel-handoff"
+	h "github.com/mohanraj00/entelos/src/cel-handoff"
 )
 
 const typedVectorDir = "../cel-lifecycle/conformance/typed"

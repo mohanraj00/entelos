@@ -13,7 +13,7 @@ import (
 	"unicode/utf16"
 	"unicode/utf8"
 
-	lifecycle "example.org/lifecycle-core"
+	lifecycle "github.com/mohanraj00/entelos/src/lifecycle-core"
 )
 
 // safeInt is 2^53 - 1, the I-JSON safe integer bound.
