@@ -9,7 +9,7 @@
 
 A service often asks a rule for an answer, and people change that rule over time. Later, someone asks why the service gave a specific answer on a specific date. Often nobody can show the exact rule, inputs and approval behind that answer. If a correction changes the old rule in place, the earlier answer has no explanation. I want each answer tied to its exact rule version, inputs and approval, and each correction recorded as a new, separate answer.
 
-> **Limits:** This is local reference code with unstable APIs and records. It is not a hosted service, an authentication boundary or a production database. Rules accept only string and bool inputs and give a bool result. See [Limits](#limits) and [SUPPORT.md](docs/SUPPORT.md).
+> **Limits:** This is local reference code. [STABILITY.md](docs/STABILITY.md) names the stable APIs and records. It is not a hosted service, an authentication boundary or a production database. Rules accept only string and bool inputs and give a bool result. See [Limits](#limits) and [SUPPORT.md](docs/SUPPORT.md).
 
 ## Run the demo
 
@@ -121,6 +121,7 @@ The answer is in `data.result.actual.value` only if both fields are `ok`. The st
 - [Contract map](docs/CONTRACTS.md): the executable interfaces for authors and callers.
 - [Diagram notes](docs/diagrams/README.md): what each part of the diagram shows and does not show.
 - [Limits](#limits) and [SUPPORT.md](docs/SUPPORT.md): what the reference does not do.
+- [STABILITY.md](docs/STABILITY.md): the stable surfaces, the experimental surfaces and the deprecation path.
 
 ## What the examples show
 
@@ -152,7 +153,7 @@ Three smaller examples show other uses:
 
 The callable profile `cel-string-bool/v1` accepts named string/bool variables and a boolean result. The engine also implements `cel-typed/v1` with integers, dates, lists and records ([typed-profile-spec.md](src/cel-lifecycle/typed-profile-spec.md)). The executor and the WASM bridge refuse a typed bundle. Floating-point numbers and custom extensions are unsupported. Internal expressions use the pinned CEL standard language. Resource ceilings are configured example bounds, not measured production-safe defaults.
 
-This is local reference code with unstable APIs and records. Host context and repository writers are trusted. It is not a network authentication boundary, distributed database, resident-worker coordinator or hosted service. Preparation acknowledgement records a successful ephemeral preparation; each call prepares and checks its exact closure again.
+This is local reference code. [STABILITY.md](docs/STABILITY.md) names the stable surfaces and the experimental surfaces. Host context and repository writers are trusted. It is not a network authentication boundary, distributed database, resident-worker coordinator or hosted service. Preparation acknowledgement records a successful ephemeral preparation; each call prepares and checks its exact closure again.
 
 CI ingress verification is simulated. No webhook is authenticated and no pipeline is launched. Its raw-event audit sidecar is not atomic with the Git receipt. The application supplies source truth, independent expectations, admission/learning policy, authentication, retention and side effects. See [INTEGRATION.md](docs/INTEGRATION.md), [SUPPORT.md](docs/SUPPORT.md) and [SECURITY.md](SECURITY.md).
 

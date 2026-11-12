@@ -1,6 +1,6 @@
 # Support scope
 
-I maintain this as a source reference, not a stable SDK, hosted product or package-registry release. There is no support SLA or promised upgrade schedule.
+I maintain this as a source reference and a Go dependency, not a hosted product or package-registry release. [STABILITY.md](STABILITY.md) names the stable surfaces. There is no support SLA or promised upgrade schedule.
 
 The supported work is reproducing the supplied examples, fixing defects in documented contract/lifecycle behavior and reviewing dependency-pin updates with the same checks. Report a small neutral reproducer, source revision, tool versions and expected/actual behavior. Real customer data, credentials and confidential source material do not belong in reports.
 
@@ -10,7 +10,7 @@ The reviewed local run uses Go 1.27.2, Python 3.14.6 and Git 2.54.0 on macOS arm
 
 CEL Go is pinned to v0.32.0 and the author CLI source to commit 5eac36c53cd8971fa1e5548374238183e0d8b302. The module lockfiles select the dependency closure. A pin or runtime-source change requires new build identity, fresh qualification and the relevant checks. Keep the old build/inputs/artifacts for exact replay. The Git store does not archive executable toolchains for you.
 
-APIs, JSON records and the local storage format may change before a release contract is chosen. Content hashes are not signatures or source authority.
+[STABILITY.md](STABILITY.md) is the compatibility statement for the Go packages, the wire protocol and the record format. It names the stable surfaces and the experimental surfaces, the promise for 0.x releases and the deprecation path. A surface that the stability pin does not check can change in any release. Content hashes are not signatures or source authority.
 
 Each stored record has a `format` field. The current value is `entelos.record/1`. The number after the slash is the major version. A reader reads only the major version that it knows. If a record has no `format` field or an unknown major version, the read fails closed with the diagnostic `unsupported_record_format`. If the `format` value has a different shape, the read fails with `invalid_record`. The storage port spec and the `record-format` storage vector define this rule.
 

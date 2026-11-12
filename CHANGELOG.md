@@ -1,6 +1,13 @@
 # Changelog
 
-This file lists the changes for each snapshot tag. A tag is a stable snapshot to cite and copy. It is not a package release, and it does not promise a stable API or record format.
+This file lists the changes for each snapshot tag. A tag is a stable snapshot to cite and copy. It is not a package release. Up to v0.3.0, a tag does not promise a stable API or record format.
+
+## Unreleased
+
+- [STABILITY.md](docs/STABILITY.md) names the stable surfaces (#147): the
+  exported Go API, the wire protocol 1.0 and 1.1 and the record format
+  `entelos.record/1`. It gives the promise for 0.x releases and the
+  deprecation path. `make check` runs the pin in `tools/stability/`.
 
 ## v0.3.0 (2026-11-11)
 

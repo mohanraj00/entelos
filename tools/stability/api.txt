@@ -1,0 +1,125 @@
+# The exported Go API of the packages in pins.json, one declaration on each line.
+# The first word is the class: stable, experimental or deprecated. See docs/STABILITY.md.
+# Regenerate with: python3 -B tools/stability/check_stability.py --write
+stable github.com/mohanraj00/entelos/src/cel-handoff func (*Bundle) Check(ctx context.Context, cases []Case) Report
+stable github.com/mohanraj00/entelos/src/cel-handoff func (*Bundle) Describe() Descriptor
+stable github.com/mohanraj00/entelos/src/cel-handoff func (*Bundle) Run(ctx context.Context, raw []byte) Response
+stable github.com/mohanraj00/entelos/src/cel-handoff func (*Diagnostic) Error() string
+stable github.com/mohanraj00/entelos/src/cel-handoff func (*Executor) Describe() Descriptor
+stable github.com/mohanraj00/entelos/src/cel-handoff func (*Executor) Invoke(ctx context.Context, cursor int64, date string, inputs []byte) (*Entry, *Diagnostic)
+stable github.com/mohanraj00/entelos/src/cel-handoff func BuildID() string
+stable github.com/mohanraj00/entelos/src/cel-handoff func Digest(media string, body []byte) string
+stable github.com/mohanraj00/entelos/src/cel-handoff func Load(f Files) (*Bundle, *Diagnostic)
+stable github.com/mohanraj00/entelos/src/cel-handoff func MarshalEntry(entry *Entry) ([]byte, error)
+stable github.com/mohanraj00/entelos/src/cel-handoff func NewExecutor(pinJSON []byte, f Files) (*Executor, *Diagnostic)
+stable github.com/mohanraj00/entelos/src/cel-handoff type Bundle struct { }
+stable github.com/mohanraj00/entelos/src/cel-handoff type Case struct { Name string `json:"case"` Inputs map[string]any `json:"inputs"` Status string `json:"status"` Value any `json:"value,omitempty"` Field string `json:"field,omitempty"` }
+stable github.com/mohanraj00/entelos/src/cel-handoff type CaseResult struct { Name string `json:"case"` Passed bool `json:"passed"` Actual Response `json:"actual"` }
+stable github.com/mohanraj00/entelos/src/cel-handoff type Descriptor struct { FunctionID string `json:"function_id"` BundleRef string `json:"bundle_ref"` ImplementationRef string `json:"implementation_ref"` Profile string `json:"profile"` Inputs map[string]any `json:"inputs"` Output map[string]any `json:"output"` Limits Limits `json:"limits"` }
+stable github.com/mohanraj00/entelos/src/cel-handoff type Diagnostic struct { Locations []Location `json:"locations,omitempty"` Code string `json:"code"` Stage string `json:"stage"` Field string `json:"field,omitempty"` Message string `json:"message"` }
+stable github.com/mohanraj00/entelos/src/cel-handoff type Entry struct { Cursor int64 `json:"cursor"` SnapshotRef string `json:"snapshot_ref"` Date string `json:"date"` InputsRef string `json:"inputs_ref"` Response Response `json:"response"` StaleReason string `json:"stale_reason"` }
+stable github.com/mohanraj00/entelos/src/cel-handoff type Environment struct { Name string `json:"name"` Description string `json:"description,omitempty"` Variables []Variable `json:"variables"` Output *Variable `json:"output,omitempty"` }
+stable github.com/mohanraj00/entelos/src/cel-handoff type Executor struct { }
+stable github.com/mohanraj00/entelos/src/cel-handoff type Files struct { Manifest, Environment, Source, Fixed []byte }
+stable github.com/mohanraj00/entelos/src/cel-handoff type Limits struct { MaxRequestBytes int `json:"max_request_bytes"` MaxStringBytes int `json:"max_string_utf8_bytes"` MaxSourceBytes int `json:"max_source_utf8_bytes"` ParserRecursion int `json:"parser_recursion_limit"` EvaluationCost uint64 `json:"evaluation_cost_limit"` MaxListItems int `json:"max_list_items,omitempty"` }
+stable github.com/mohanraj00/entelos/src/cel-handoff type Location struct { Line int `json:"line"` Column int `json:"column"` Message string `json:"message"` }
+stable github.com/mohanraj00/entelos/src/cel-handoff type Manifest struct { FunctionID string `json:"function_id"` Profile string `json:"profile"` CallerVariables []string `json:"caller_variables"` ImplementationRef string `json:"implementation_ref"` EnvironmentRef string `json:"environment_ref"` SourceRef string `json:"source_ref"` FixedRef string `json:"fixed_ref"` Limits Limits `json:"limits"` }
+stable github.com/mohanraj00/entelos/src/cel-handoff type Pin struct { Function string `json:"function"` Scope string `json:"scope"` SnapshotRef string `json:"snapshot_ref"` BundleRef string `json:"bundle_ref"` EngineBuild string `json:"engine_build"` From string `json:"from"` Until string `json:"until"` StaleMode string `json:"stale_mode"` Revoked *bool `json:"revoked"` }
+stable github.com/mohanraj00/entelos/src/cel-handoff type Report struct { Status string `json:"status"` BundleRef string `json:"bundle_ref"` ImplementationRef string `json:"implementation_ref"` Cases []CaseResult `json:"cases"` }
+stable github.com/mohanraj00/entelos/src/cel-handoff type Response struct { Status string `json:"status"` Value any `json:"value,omitempty"` BundleRef string `json:"bundle_ref,omitempty"` ImplementationRef string `json:"implementation_ref,omitempty"` Diagnostic *Diagnostic `json:"diagnostic,omitempty"` Cost *uint64 `json:"cost,omitempty"` }
+experimental github.com/mohanraj00/entelos/src/cel-handoff type Variable struct { Name string `json:"name,omitempty"` Type string `json:"type"` Description string `json:"description,omitempty"` Items *string `json:"items,omitempty"` Fields *[]Variable `json:"fields,omitempty"` }
+stable github.com/mohanraj00/entelos/src/lifecycle-core const RecordFormat = "entelos.record/1"
+stable github.com/mohanraj00/entelos/src/lifecycle-core const RootRef = "refs/lifecycle/state"
+stable github.com/mohanraj00/entelos/src/lifecycle-core const TimeLayout = "2006-01-02T15:04:05Z"
+stable github.com/mohanraj00/entelos/src/lifecycle-core func (*CELRunner) Expected(c Candidate) string
+stable github.com/mohanraj00/entelos/src/lifecycle-core func (*CELRunner) Identity() (string, error)
+stable github.com/mohanraj00/entelos/src/lifecycle-core func (*CELRunner) Qualify(in QualificationInput) (Verdict, error)
+stable github.com/mohanraj00/entelos/src/lifecycle-core func (*CELRuntime) Build() (string, error)
+stable github.com/mohanraj00/entelos/src/lifecycle-core func (*CELRuntime) Execute(files map[string][]byte, command string, inputs []byte, cases any) (any, error)
+stable github.com/mohanraj00/entelos/src/lifecycle-core func (*Fault) Error() string
+stable github.com/mohanraj00/entelos/src/lifecycle-core func (*Fault) Record() Object
+experimental github.com/mohanraj00/entelos/src/lifecycle-core func (*GitStore) Git(data []byte, args ...string) ([]byte, error)
+stable github.com/mohanraj00/entelos/src/lifecycle-core func (*GitStore) History(cursor string) ([]string, error)
+stable github.com/mohanraj00/entelos/src/lifecycle-core func (*GitStore) Read(cursor any) (*View, error)
+stable github.com/mohanraj00/entelos/src/lifecycle-core func (*GitStore) Root() (string, error)
+experimental github.com/mohanraj00/entelos/src/lifecycle-core func (*GitStore) RunGit(args []string, data []byte) (GitResult, error)
+stable github.com/mohanraj00/entelos/src/lifecycle-core func (*GitStore) Transact(expected, key, payload any, apply func(*View) (any, error)) (Object, error)
+stable github.com/mohanraj00/entelos/src/lifecycle-core func (*Host) As(actor string, roles []string) *Host
+stable github.com/mohanraj00/entelos/src/lifecycle-core func (*Host) Handle(request any) (result any, err error)
+stable github.com/mohanraj00/entelos/src/lifecycle-core func (*Host) HandleAs(actor string, roles []string, request any) (any, error)
+stable github.com/mohanraj00/entelos/src/lifecycle-core func (*MemoryStore) History(cursor string) ([]string, error)
+stable github.com/mohanraj00/entelos/src/lifecycle-core func (*MemoryStore) Read(cursor any) (*View, error)
+stable github.com/mohanraj00/entelos/src/lifecycle-core func (*MemoryStore) Transact(expected, key, payload any, apply func(*View) (any, error)) (Object, error)
+stable github.com/mohanraj00/entelos/src/lifecycle-core func (*View) Get(ref any, kind string) (Object, error)
+stable github.com/mohanraj00/entelos/src/lifecycle-core func (*View) GetRaw(ref any, mime string) ([]byte, error)
+stable github.com/mohanraj00/entelos/src/lifecycle-core func (*View) Put(kind string, value any) string
+stable github.com/mohanraj00/entelos/src/lifecycle-core func (*View) PutRaw(mime string, raw []byte) string
+experimental github.com/mohanraj00/entelos/src/lifecycle-core func (FileClock) Now() (string, error)
+stable github.com/mohanraj00/entelos/src/lifecycle-core func (SystemClock) Now() (string, error)
+stable github.com/mohanraj00/entelos/src/lifecycle-core func CheckTime(value string) error
+stable github.com/mohanraj00/entelos/src/lifecycle-core func ContentRef(envelope []byte) string
+stable github.com/mohanraj00/entelos/src/lifecycle-core func Decode(raw []byte) (any, error)
+stable github.com/mohanraj00/entelos/src/lifecycle-core func EmptyState() Object
+stable github.com/mohanraj00/entelos/src/lifecycle-core func Encode(value any) []byte
+stable github.com/mohanraj00/entelos/src/lifecycle-core func Envelope(mime string, raw []byte) []byte
+stable github.com/mohanraj00/entelos/src/lifecycle-core func Implementation() (string, error)
+stable github.com/mohanraj00/entelos/src/lifecycle-core func InputDigest(inputs any) string
+stable github.com/mohanraj00/entelos/src/lifecycle-core func Media(kind string) string
+stable github.com/mohanraj00/entelos/src/lifecycle-core func NewCELRuntime(binary, work string) (*CELRuntime, error)
+stable github.com/mohanraj00/entelos/src/lifecycle-core func NewFault(code, message, stage string) *Fault
+stable github.com/mohanraj00/entelos/src/lifecycle-core func NewHost(store Store, rt Runtime, context any) (*Host, error)
+stable github.com/mohanraj00/entelos/src/lifecycle-core func NewHostWithRunner(store Store, rt Runtime, runner Runner, context any) (*Host, error)
+stable github.com/mohanraj00/entelos/src/lifecycle-core func NewMemoryStore() *MemoryStore
+stable github.com/mohanraj00/entelos/src/lifecycle-core func OpenGitStore(path string) (*GitStore, error)
+stable github.com/mohanraj00/entelos/src/lifecycle-core func RoleNames() []string
+stable github.com/mohanraj00/entelos/src/lifecycle-core type Array = []any
+stable github.com/mohanraj00/entelos/src/lifecycle-core type CELRunner struct { Runtime Runtime }
+stable github.com/mohanraj00/entelos/src/lifecycle-core type CELRuntime struct { Binary, Work string }
+stable github.com/mohanraj00/entelos/src/lifecycle-core type Candidate struct { SnapshotRef string BundleRef string EngineBuild string }
+stable github.com/mohanraj00/entelos/src/lifecycle-core type Clock interface { Now() (string, error) }
+stable github.com/mohanraj00/entelos/src/lifecycle-core type Fault struct { Code, Message, Stage string }
+experimental github.com/mohanraj00/entelos/src/lifecycle-core type FileClock struct { Path string }
+experimental github.com/mohanraj00/entelos/src/lifecycle-core type GitResult struct { Code int Stdout, Stderr []byte }
+stable github.com/mohanraj00/entelos/src/lifecycle-core type GitStore struct { Path string Hook func(store *GitStore, args []string, data []byte) (GitResult, error) }
+stable github.com/mohanraj00/entelos/src/lifecycle-core type Host struct { Store Store Runtime Runtime Runner Runner Context Object BuildRef string Clock Clock }
+stable github.com/mohanraj00/entelos/src/lifecycle-core type Int struct { Text string }
+stable github.com/mohanraj00/entelos/src/lifecycle-core type MemoryStore struct { BeforePublish func() error }
+stable github.com/mohanraj00/entelos/src/lifecycle-core type Object = map[string]any
+stable github.com/mohanraj00/entelos/src/lifecycle-core type QualificationInput struct { Candidate Candidate Files map[string][]byte Cases any }
+stable github.com/mohanraj00/entelos/src/lifecycle-core type Runner interface { Identity() (string, error) Expected(c Candidate) string Qualify(in QualificationInput) (Verdict, error) }
+stable github.com/mohanraj00/entelos/src/lifecycle-core type Runtime interface { Build() (string, error) Execute(files map[string][]byte, command string, inputs []byte, cases any) (any, error) }
+stable github.com/mohanraj00/entelos/src/lifecycle-core type Store interface { Read(cursor any) (*View, error) Transact(expected, key, payload any, apply func(*View) (any, error)) (Object, error) History(cursor string) ([]string, error) }
+stable github.com/mohanraj00/entelos/src/lifecycle-core type SystemClock struct { }
+stable github.com/mohanraj00/entelos/src/lifecycle-core type Verdict struct { Outcome any }
+stable github.com/mohanraj00/entelos/src/lifecycle-core type View struct { Cursor string State Object Entries map[string]string }
+experimental github.com/mohanraj00/entelos/src/lifecycle-core var FileNames
+experimental github.com/mohanraj00/entelos/src/lifecycle-core var Mimes
+experimental github.com/mohanraj00/entelos/src/lifecycle-core var Reads
+stable github.com/mohanraj00/entelos/src/lifecycle-core/protocol const CredentialsFormat = "entelos.credentials/1"
+stable github.com/mohanraj00/entelos/src/lifecycle-core/protocol const LockWait = 10 * time.Second
+stable github.com/mohanraj00/entelos/src/lifecycle-core/protocol const MaxFrame = 1048576
+stable github.com/mohanraj00/entelos/src/lifecycle-core/protocol const MaxSocketPath = 103
+stable github.com/mohanraj00/entelos/src/lifecycle-core/protocol const Version = "1.0"
+stable github.com/mohanraj00/entelos/src/lifecycle-core/protocol func (*Adapter) Frame(payload []byte) (lifecycle.Object, bool)
+stable github.com/mohanraj00/entelos/src/lifecycle-core/protocol func (*Adapter) FrameAs(p *Principal, payload []byte) (lifecycle.Object, bool)
+stable github.com/mohanraj00/entelos/src/lifecycle-core/protocol func (*Adapter) Message(request lifecycle.Object) lifecycle.Object
+stable github.com/mohanraj00/entelos/src/lifecycle-core/protocol func (*Adapter) MessageAs(p *Principal, request lifecycle.Object) lifecycle.Object
+stable github.com/mohanraj00/entelos/src/lifecycle-core/protocol func (*Adapter) Serve(r io.Reader, w io.Writer) error
+stable github.com/mohanraj00/entelos/src/lifecycle-core/protocol func (*Schemas) LoadApproval(dir string) error
+stable github.com/mohanraj00/entelos/src/lifecycle-core/protocol func (*Schemas) Operation(name string, minor int) (lifecycle.Object, bool)
+stable github.com/mohanraj00/entelos/src/lifecycle-core/protocol func (*Schemas) Validate(schema lifecycle.Object, value any, where string, root lifecycle.Object) error
+stable github.com/mohanraj00/entelos/src/lifecycle-core/protocol func (*Server) Serve(listener net.Listener) error
+stable github.com/mohanraj00/entelos/src/lifecycle-core/protocol func (*Server) Shutdown(listener *net.UnixListener) error
+stable github.com/mohanraj00/entelos/src/lifecycle-core/protocol func ApprovalDir(schemaDir string) string
+stable github.com/mohanraj00/entelos/src/lifecycle-core/protocol func Canonical(value any) ([]byte, error)
+stable github.com/mohanraj00/entelos/src/lifecycle-core/protocol func Listen(path string) (*net.UnixListener, error)
+stable github.com/mohanraj00/entelos/src/lifecycle-core/protocol func LoadSchemas(dir string) (*Schemas, error)
+stable github.com/mohanraj00/entelos/src/lifecycle-core/protocol func NewAdapter(host Handler, schemas *Schemas) *Adapter
+stable github.com/mohanraj00/entelos/src/lifecycle-core/protocol func NewCredentialServer(adapter *Adapter, credentialsFile string) (*Server, error)
+stable github.com/mohanraj00/entelos/src/lifecycle-core/protocol func NewServer(adapter *Adapter, tokenFile string) (*Server, error)
+stable github.com/mohanraj00/entelos/src/lifecycle-core/protocol type Adapter struct { Host Handler Schemas *Schemas }
+stable github.com/mohanraj00/entelos/src/lifecycle-core/protocol type Handler interface { Handle(request any) (any, error) }
+stable github.com/mohanraj00/entelos/src/lifecycle-core/protocol type Principal struct { Actor string Roles []string }
+stable github.com/mohanraj00/entelos/src/lifecycle-core/protocol type PrincipalHandler interface { HandleAs(actor string, roles []string, request any) (any, error) }
+stable github.com/mohanraj00/entelos/src/lifecycle-core/protocol type Schemas struct { Envelope lifecycle.Object Operations map[string]lifecycle.Object Approval map[string]lifecycle.Object }
+stable github.com/mohanraj00/entelos/src/lifecycle-core/protocol type Server struct { }

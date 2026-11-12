@@ -2,7 +2,7 @@
 
 This file defines the versioned wire protocol between an application module and the lifecycle. Issue [#83](https://github.com/mohanraj00/entelos/issues/83) owns it. The [technology decision](../../docs/decisions/0001-technology.md) selected JSON with a JSON Schema, length-prefixed frames on a Unix socket, and RFC 8785 for canonical bytes.
 
-The protocol is unstable. A later milestone states its compatibility.
+[STABILITY.md](../../docs/STABILITY.md) states the compatibility of the protocol. The schemas and the vectors of 1.0 and 1.1 are stable surfaces.
 
 Version 1.1 is defined in [approval/APPROVAL.md](approval/APPROVAL.md) for issue [#130](https://github.com/mohanraj00/entelos/issues/130). This file defines only 1.0. The Go Host and the sidecar implement 1.0 and 1.1.
 
