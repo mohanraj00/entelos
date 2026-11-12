@@ -196,7 +196,7 @@
   "src/protocol/content/schema/candidate.schema.json": "07637fbfa06c68ebaa47e5843b4b02a61c6ce6c64d9ac949527b0d22855f7651",
   "src/protocol/content/schema/manifest.schema.json": "ea6d2d211d8faed8918ed74b181e1260cd2aa295b48abfb29cc88c36058ac3e3",
   "src/protocol/content/vectors/content-cases.json": "c74646c5fcf044aee380aa068cfb35580d7608fb3e725706d4f46fe04a3d72b1",
-  "src/protocol/evidence/EVIDENCE.md": "75b5376af4ea5d030653b47235695ed5d5fd8c6b51a50f19ca8c2666bcbdc829",
+  "src/protocol/evidence/EVIDENCE.md": "82883077e40b6448f968413d0577cd6c0ab477aef83bede3864d24cdb4cc18d2",
   "src/protocol/evidence/check_spec.py": "3ec1c5a9b63de05d099758f9e97ab3a97d23a11969f46ddb6209f85923c3fddf",
   "src/protocol/evidence/schema/evidence.schema.json": "bbef0622bebc75da03ed0eb834d99355c6103a35a80534d44114f0079c0ca7d8",
   "src/protocol/evidence/vectors/evidence-cases.json": "03a9e4ffc4a19e37c24bab83df410017eac5f4b773e29565d13c6cae1087b310",
