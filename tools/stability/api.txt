@@ -96,7 +96,10 @@ experimental github.com/mohanraj00/entelos/src/lifecycle-core var FileNames
 experimental github.com/mohanraj00/entelos/src/lifecycle-core var Mimes
 experimental github.com/mohanraj00/entelos/src/lifecycle-core var Reads
 stable github.com/mohanraj00/entelos/src/lifecycle-core/protocol const CredentialsFormat = "entelos.credentials/1"
+experimental github.com/mohanraj00/entelos/src/lifecycle-core/protocol const HTTPPath = "/v1/request"
+experimental github.com/mohanraj00/entelos/src/lifecycle-core/protocol const IssuerFormat = "entelos.issuer/1"
 stable github.com/mohanraj00/entelos/src/lifecycle-core/protocol const LockWait = 10 * time.Second
+experimental github.com/mohanraj00/entelos/src/lifecycle-core/protocol const MaxClaim = 8192
 stable github.com/mohanraj00/entelos/src/lifecycle-core/protocol const MaxFrame = 1048576
 stable github.com/mohanraj00/entelos/src/lifecycle-core/protocol const MaxSocketPath = 103
 stable github.com/mohanraj00/entelos/src/lifecycle-core/protocol const Version = "1.0"
@@ -105,6 +108,9 @@ stable github.com/mohanraj00/entelos/src/lifecycle-core/protocol func (*Adapter)
 stable github.com/mohanraj00/entelos/src/lifecycle-core/protocol func (*Adapter) Message(request lifecycle.Object) lifecycle.Object
 stable github.com/mohanraj00/entelos/src/lifecycle-core/protocol func (*Adapter) MessageAs(p *Principal, request lifecycle.Object) lifecycle.Object
 stable github.com/mohanraj00/entelos/src/lifecycle-core/protocol func (*Adapter) Serve(r io.Reader, w io.Writer) error
+experimental github.com/mohanraj00/entelos/src/lifecycle-core/protocol func (*HTTPHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
+experimental github.com/mohanraj00/entelos/src/lifecycle-core/protocol func (*HTTPServer) Serve(l net.Listener) error
+experimental github.com/mohanraj00/entelos/src/lifecycle-core/protocol func (*HTTPServer) Shutdown() error
 stable github.com/mohanraj00/entelos/src/lifecycle-core/protocol func (*Schemas) LoadApproval(dir string) error
 stable github.com/mohanraj00/entelos/src/lifecycle-core/protocol func (*Schemas) Operation(name string, minor int) (lifecycle.Object, bool)
 stable github.com/mohanraj00/entelos/src/lifecycle-core/protocol func (*Schemas) Validate(schema lifecycle.Object, value any, where string, root lifecycle.Object) error
@@ -113,11 +119,17 @@ stable github.com/mohanraj00/entelos/src/lifecycle-core/protocol func (*Server) 
 stable github.com/mohanraj00/entelos/src/lifecycle-core/protocol func ApprovalDir(schemaDir string) string
 stable github.com/mohanraj00/entelos/src/lifecycle-core/protocol func Canonical(value any) ([]byte, error)
 stable github.com/mohanraj00/entelos/src/lifecycle-core/protocol func Listen(path string) (*net.UnixListener, error)
+experimental github.com/mohanraj00/entelos/src/lifecycle-core/protocol func ListenHTTP(addr string, allowRemote bool) (net.Listener, bool, error)
 stable github.com/mohanraj00/entelos/src/lifecycle-core/protocol func LoadSchemas(dir string) (*Schemas, error)
 stable github.com/mohanraj00/entelos/src/lifecycle-core/protocol func NewAdapter(host Handler, schemas *Schemas) *Adapter
 stable github.com/mohanraj00/entelos/src/lifecycle-core/protocol func NewCredentialServer(adapter *Adapter, credentialsFile string) (*Server, error)
+experimental github.com/mohanraj00/entelos/src/lifecycle-core/protocol func NewHTTPHandler(adapter *Adapter, config HTTPConfig) (*HTTPHandler, error)
+experimental github.com/mohanraj00/entelos/src/lifecycle-core/protocol func NewHTTPServer(handler http.Handler) *HTTPServer
 stable github.com/mohanraj00/entelos/src/lifecycle-core/protocol func NewServer(adapter *Adapter, tokenFile string) (*Server, error)
 stable github.com/mohanraj00/entelos/src/lifecycle-core/protocol type Adapter struct { Host Handler Schemas *Schemas }
+experimental github.com/mohanraj00/entelos/src/lifecycle-core/protocol type HTTPConfig struct { IssuerFile string CredentialsFile string LocalTokens bool Loopback bool Tenant string Now func() time.Time Log func(string) }
+experimental github.com/mohanraj00/entelos/src/lifecycle-core/protocol type HTTPHandler struct { }
+experimental github.com/mohanraj00/entelos/src/lifecycle-core/protocol type HTTPServer struct { }
 stable github.com/mohanraj00/entelos/src/lifecycle-core/protocol type Handler interface { Handle(request any) (any, error) }
 stable github.com/mohanraj00/entelos/src/lifecycle-core/protocol type Principal struct { Actor string Roles []string }
 stable github.com/mohanraj00/entelos/src/lifecycle-core/protocol type PrincipalHandler interface { HandleAs(actor string, roles []string, request any) (any, error) }

@@ -107,11 +107,18 @@ func authenticatePrincipal(conn net.Conn, path string) (*Principal, error) {
 	if err != nil {
 		return nil, err
 	}
+	return principalFor(presented[:], path)
+}
+
+// principalFor reads the credentials file and gives the principal of one
+// token. It compares the token digest with each entry in constant time, and
+// it compares all entries.
+func principalFor(token []byte, path string) (*Principal, error) {
 	entries, err := readCredentials(path)
 	if err != nil {
 		return nil, errToken
 	}
-	digest := sha256.Sum256(presented[:])
+	digest := sha256.Sum256(token)
 	found := 0
 	index := 0
 	for i, e := range entries {

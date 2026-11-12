@@ -44,7 +44,7 @@ Stored records have the format `entelos.record/1`. The pin checks that the Go co
 
 These surfaces are experimental:
 
-- Each line of `api.txt` that starts with `experimental`. Today these are the test hooks `FileClock`, `GitStore.Git`, `GitStore.RunGit` and `GitResult`, the package variables `FileNames`, `Mimes` and `Reads`, and `handoff.Variable`, which has the typed profile fields.
+- Each line of `api.txt` that starts with `experimental`. Today these are the test hooks `FileClock`, `GitStore.Git`, `GitStore.RunGit` and `GitResult`, the package variables `FileNames`, `Mimes` and `Reads`, `handoff.Variable`, which has the typed profile fields, and the HTTP binding declarations.
 - Each new exported declaration. It starts as experimental. A later change can promote it to stable.
 - The typed profile `cel-typed/v1` and its vectors in `src/cel-lifecycle/conformance/typed/`.
 - The executor vectors in `src/cel-lifecycle/conformance/executor/`, the browser executor module and the WASM bridge.
@@ -52,7 +52,8 @@ These surfaces are experimental:
 - The Python callers in `src/lifecycle-core/client/`, the tools, `verify.py` and the examples.
 - The text of diagnostic messages, and each diagnostic code that no pinned vector contains.
 - The content proposal `entelos.content/1` ([CONTENT.md](../src/protocol/content/CONTENT.md), [#153](https://github.com/mohanraj00/entelos/issues/153)) with its schemas and vectors in `src/protocol/content/`. It is a proposed spec, and no Host code implements it.
-- The HTTP binding of the approval API ([#156](https://github.com/mohanraj00/entelos/issues/156)) and the evidence format `entelos.evidence/1` ([#148](https://github.com/mohanraj00/entelos/issues/148)). When this statement was written, these were open PRs, not merged code.
+- The HTTP binding of the approval API ([APPROVAL.md](../src/protocol/approval/APPROVAL.md#http-binding), [#156](https://github.com/mohanraj00/entelos/issues/156)): the `HTTP*` declarations, `ListenHTTP`, `HTTPPath`, `IssuerFormat` and `MaxClaim` in `protocol`, the path `/v1/request` and the issuer file format `entelos.issuer/1`.
+- The evidence format `entelos.evidence/1` ([#148](https://github.com/mohanraj00/entelos/issues/148)). When this statement was written, it was an open PR, not merged code.
 
 The pin does not read the prose of PROTOCOL.md, APPROVAL.md, the storage port spec or the other docs.
 

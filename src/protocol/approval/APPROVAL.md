@@ -2,7 +2,7 @@
 
 This file specifies the approval API of issue [#130](https://github.com/mohanraj00/entelos/issues/130). A reviewer client uses it to list the open proposals, read the evidence of one proposal and record a verdict. The reviewer does not need Git. Entelos does not supply a user interface.
 
-Status: **implemented**. The Go Host and the sidecar in [`src/lifecycle-core`](../../lifecycle-core) implement this file. The schemas and vectors in this directory are the contract. The vectors have expected values that a person wrote from this text. No candidate output made them. [`check_spec.py`](check_spec.py) checks their structure and their arithmetic. It does not run a Host. The Go test `TestApprovalVectors` in [`approval_vectors_test.go`](../../lifecycle-core/protocol/approval_vectors_test.go) runs each step against the sidecar socket and compares the response with the vector.
+Status: **implemented**. The Go Host and the sidecar in [`src/lifecycle-core`](../../lifecycle-core) implement this file. The schemas and vectors in this directory are the contract. The vectors have expected values that a person wrote from this text. No candidate output made them. [`check_spec.py`](check_spec.py) checks their structure and their arithmetic. It does not run a Host. The Go test `TestApprovalVectors` in [`approval_vectors_test.go`](../../lifecycle-core/protocol/approval_vectors_test.go) runs each step on three transports: the sidecar socket, the [HTTP binding](#http-binding) with signed claims, and the HTTP binding with local static tokens. It compares each response with the vector, and it compares the record references of the three runs.
 
 The API extends [wire protocol 1.0](../PROTOCOL.md) to version 1.1. A 1.0 client sees no change.
 
@@ -53,6 +53,73 @@ These rules apply:
 - The Host context for the frame is the context file plus the `actor` and `roles` of the principal. The client cannot change them.
 
 The digest is a verifier for a secret token. It is not a signature and it gives no authority by itself. The application authenticates the person to its own interface. Entelos authenticates the credential and selects the actor and the roles. A panel that holds the credentials of many reviewers can act as each of them. The operator must issue one credential to each reviewer and give it only to the panel session of that reviewer.
+
+## HTTP binding
+
+Issue [#156](https://github.com/mohanraj00/entelos/issues/156) adds HTTP as a second transport of the sidecar. The socket stays. An HTTP request carries the same request object as a socket frame, and it gets the same response object. The Host, its role checks and its records do not change. Thus a verdict from HTTP is the same record as a verdict from the socket.
+
+### Request and response
+
+- The only method is `POST`. The only path is `/v1/request`, without a query.
+- The body is one request object, as in a frame payload. `Content-Type` must be `application/json`. The only permitted parameter is `charset=utf-8`.
+- The body has the frame bound of 1048576 bytes. A larger body gets HTTP 413 and `invalid_frame`. The sidecar reads at most one byte more than the bound.
+- The response body is the canonical JSON of the response object. The headers are `Content-Type: application/json`, `Cache-Control: no-store` and `X-Content-Type-Options: nosniff`.
+- The response object is the record. The HTTP status is only a hint for clients and proxies:
+
+| Response status | HTTP status |
+|---|---|
+| `ok` | 200 |
+| `unauthenticated` | 401, with `WWW-Authenticate: Bearer` |
+| `forbidden` | 403 |
+| `invalid_request`, `invalid_frame`, `unsupported_version` | 400; 413 for a body over the bound; 415 for another media type |
+| `internal_error`, `response_too_large` | 500 |
+| Each other refusal | 409 |
+
+A wrong path gets 404, and a wrong method gets 405, with `invalid_request` at stage `protocol`. On a loopback address, a `Host` header that does not name a loopback host gets 421 and `invalid_request`. This check refuses a request that DNS rebinding sends to the loopback listener.
+
+The sidecar checks the credential before it reads the body, as the socket checks the prelude before it reads the frame length. An `unauthenticated` response has version `"1.0"` and an empty `request_id`, as on the socket.
+
+### Credentials
+
+Each request has exactly one `Authorization: Bearer <credential>` header. The client never states its own identity: the body cannot select an actor, roles or a scope. The sidecar takes one of two credential modes.
+
+**Signed claims** (`--issuer-file`). The credential is a compact JWS signed with Ed25519 (`alg` `EdDSA`). The issuer file has this form:
+
+```json
+{"format":"entelos.issuer/1","issuer":"https://issuer.example","audience":"entelos-approval",
+ "max_lifetime_seconds":3600,
+ "keys":[{"kty":"OKP","crv":"Ed25519","kid":"k1","x":"<32 bytes in base64url>"}],
+ "principals":[{"subject":"reviewer-a","roles":["reviewer"]}]}
+```
+
+The sidecar accepts a claim only if all of these are true:
+
+1. The claim has at most 8192 bytes and three base64url segments without padding.
+2. The header has only `alg`, `kid` and `typ`. `alg` is `EdDSA`. `typ`, if present, is `JWT`. `kid` names a key of the file. The sidecar accepts no other algorithm, and it ignores no header field.
+3. The Ed25519 signature verifies with that key. The sidecar reads the payload only after this check.
+4. The header and the payload are strict JSON objects, with no duplicate key.
+5. `iss` equals `issuer`. `aud` is `audience`, or a list that contains it.
+6. `exp` and `iat` are integers. The time is the UTC system clock, in whole seconds. The time is less than `exp`. `iat` is not negative, and it is at most 60 seconds after the time. `exp` is more than `iat`, and `exp` minus `iat` is at most `max_lifetime_seconds`. If `nbf` is present, it is an integer at most 60 seconds after the time.
+7. `tenant` equals the `scope` of the Host context.
+8. `sub` is the `subject` of one principal of the file.
+
+The actor is the `sub` value. The roles come from the issuer file, not from the claim. Thus Entelos decides the access. Separation of duties uses this actor, as for a socket principal. The issuer file has the same file checks as the credentials file: a regular file, mode 0600 and the owner of the sidecar. `max_lifetime_seconds` is from 1 to 86400. Each `kid` and each `subject` must be unique, and each role must be a Host role name that is in the list one time. The sidecar reads the file again for each request. Thus a removed key or principal gets `unauthenticated` on its next request. To rotate a key, add the new key to the file. Then let the issuer sign with the new key. Then remove the old key.
+
+The sidecar also reads `--credentials-file` for the socket. If an actor is in both files with different roles, the sidecar does not start. The sidecar does this check only at start. The operator must keep the two files in agreement after a change.
+
+`--clock-file` changes only the Host clock of the records. It does not change the clock of the claim checks.
+
+**Local static tokens** (`--http-local-tokens`). The credential is a token of `--credentials-file`, as on the socket. The sidecar refuses this mode on an address that is not loopback. This mode is for a local run only.
+
+Each refused credential gets `unauthenticated` at stage `authentication`. The message does not give the reason. The sidecar writes the reason to its standard error, and it never writes a credential there.
+
+### Address and TLS
+
+`--http-listen` takes an IP literal and a port, for example `127.0.0.1:8740`. The address must be loopback. `--http-allow-remote` permits another address. The sidecar has no TLS. An address that is not loopback must be behind a front proxy that terminates TLS. The sidecar sends no CORS headers, so a browser page on another origin cannot read a response.
+
+The server bounds are: 16384 bytes of request headers, 10 seconds for the headers, 30 seconds for the complete request, 5 minutes for the response and 60 seconds for an idle connection.
+
+This binding is not a public internet boundary. The sidecar has no rate limit, no replay record of claims and no revocation list other than the issuer file. A claim stays valid until `exp` if its principal stays in the file. An operator that puts the binding on a network must supply these controls in the front proxy.
 
 ## Clock
 
@@ -187,7 +254,7 @@ The codes in **bold** are new in 1.1. The other codes have the meaning of 1.0.
 
 | Code | Stage | Operations | Condition |
 |---|---|---|---|
-| `unauthenticated` | `authentication` | all | No principal agrees with the prelude token. |
+| `unauthenticated` | `authentication` | all | No principal agrees with the prelude token, or the HTTP credential is missing or not valid. |
 | `forbidden` | `authority` | all | The principal does not have the role of the operation. |
 | `invalid_request` | `protocol` or Host | all | The body does not agree with its schema, the 1.0 request names a 1.1 operation or field, or `reason` is empty. |
 | `unsupported_version` | `protocol` | all | The major version is not 1, or the minor version is more than 1. |
@@ -254,6 +321,7 @@ The implementation PR also corrected one vector in this directory. In `approval-
 - `untrusted_runner`, `implementation_unavailable`, `stale_qualification`, `stale_revision`, `idempotency_conflict` and `response_too_large` keep their 1.0 tests. The approval vectors do not repeat them.
 - The vectors do not test the file mode and owner checks of the credentials file. The implementation PR adds Go tests for them.
 - The vectors do not prove constant-time comparison. A code review must check it.
+- The vectors do not contain HTTP refusals. The Go tests in [`http_test.go`](../../lifecycle-core/protocol/http_test.go) cover a missing claim, a bad signature, a wrong issuer, an expired claim, the other claim checks, a static token in local mode and the request bounds.
 - The vectors install one function, so a list never has two open proposals. The implementation PR adds a Go test for the order of the list.
 
 ## Limits
