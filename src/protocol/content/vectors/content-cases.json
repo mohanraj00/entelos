@@ -1,0 +1,766 @@
+{
+ "format_version": 1,
+ "spec": "CONTENT.md",
+ "note": "Hand-written cases. Each ref is shasum -a 256 of the exact manifest bytes.",
+ "cases": [
+  {
+   "name": "valid-three-items",
+   "candidate": {
+    "kind": "content",
+    "manifest": "{\"format\":\"entelos.content/1\",\"collection\":\"loan-rules\",\"partition\":\"region-a\",\"base\":\"\",\"items\":[{\"item_id\":\"doc-1\",\"digest\":\"sha256:1111111111111111111111111111111111111111111111111111111111111111\",\"size\":1200,\"media_type\":\"text/markdown\"},{\"item_id\":\"doc-2\",\"digest\":\"sha256:2222222222222222222222222222222222222222222222222222222222222222\",\"size\":800,\"media_type\":\"text/markdown\"},{\"item_id\":\"doc-3\",\"digest\":\"sha256:3333333333333333333333333333333333333333333333333333333333333333\",\"size\":64}],\"metadata\":{\"title\":\"Loan rules update\"},\"evidence\":{\"format\":\"entelos.evidence/1\",\"digest\":\"sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee\"}}"
+   },
+   "expect": {
+    "valid": true,
+    "kind": "content",
+    "ref": "sha256:7c8e3f6859f6dd26fe9cd4cbaa79f72139e61a8672389279ff5dc057e6c97405",
+    "head": {
+     "kind": "content",
+     "collection": "loan-rules",
+     "partition": "region-a"
+    }
+   }
+  },
+  {
+   "name": "valid-one-space-more",
+   "candidate": {
+    "kind": "content",
+    "manifest": "{\"format\":\"entelos.content/1\",\"collection\": \"loan-rules\",\"partition\":\"region-a\",\"base\":\"\",\"items\":[{\"item_id\":\"doc-1\",\"digest\":\"sha256:1111111111111111111111111111111111111111111111111111111111111111\",\"size\":1200,\"media_type\":\"text/markdown\"},{\"item_id\":\"doc-2\",\"digest\":\"sha256:2222222222222222222222222222222222222222222222222222222222222222\",\"size\":800,\"media_type\":\"text/markdown\"},{\"item_id\":\"doc-3\",\"digest\":\"sha256:3333333333333333333333333333333333333333333333333333333333333333\",\"size\":64}],\"metadata\":{\"title\":\"Loan rules update\"},\"evidence\":{\"format\":\"entelos.evidence/1\",\"digest\":\"sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee\"}}"
+   },
+   "expect": {
+    "valid": true,
+    "kind": "content",
+    "ref": "sha256:7a2bd9a377c49da3a3d403077e5cb12661a1e125f2a2dbce551e3a274e62cb6e",
+    "head": {
+     "kind": "content",
+     "collection": "loan-rules",
+     "partition": "region-a"
+    }
+   }
+  },
+  {
+   "name": "valid-with-base",
+   "candidate": {
+    "kind": "content",
+    "manifest": "{\"format\":\"entelos.content/1\",\"collection\":\"loan-rules\",\"partition\":\"region-a\",\"base\":\"sha256:7c8e3f6859f6dd26fe9cd4cbaa79f72139e61a8672389279ff5dc057e6c97405\",\"items\":[{\"item_id\":\"doc-3\",\"digest\":\"sha256:3333333333333333333333333333333333333333333333333333333333333333\",\"size\":64}]}"
+   },
+   "expect": {
+    "valid": true,
+    "kind": "content",
+    "ref": "sha256:5f1a9f64b8147c95f0fbde7a79a1dac17fb64dce8fb96c936f980b060c9015c3",
+    "head": {
+     "kind": "content",
+     "collection": "loan-rules",
+     "partition": "region-a"
+    }
+   }
+  },
+  {
+   "name": "valid-max-size",
+   "candidate": {
+    "kind": "content",
+    "manifest": {
+     "$pad": {
+      "text": "{\"format\":\"entelos.content/1\",\"collection\":\"loan-rules\",\"partition\":\"region-a\",\"base\":\"\",\"items\":[{\"item_id\":\"doc-3\",\"digest\":\"sha256:3333333333333333333333333333333333333333333333333333333333333333\",\"size\":64}]}",
+      "count": 261932
+     }
+    }
+   },
+   "expect": {
+    "valid": true,
+    "kind": "content",
+    "ref": "sha256:0e684b04f2c9d6b270ccb58d4e668bd38e4ff5f7c1f3995faacc606de44990a3",
+    "head": {
+     "kind": "content",
+     "collection": "loan-rules",
+     "partition": "region-a"
+    }
+   }
+  },
+  {
+   "name": "valid-1024-items",
+   "candidate": {
+    "kind": "content",
+    "manifest": {
+     "$items": {
+      "text": "{\"format\":\"entelos.content/1\",\"collection\":\"loan-rules\",\"partition\":\"region-a\",\"base\":\"\",\"items\":[$ITEMS]}",
+      "item": "{\"item_id\":\"d-{i}\",\"digest\":\"sha256:4444444444444444444444444444444444444444444444444444444444444444\",\"size\":1}",
+      "count": 1024
+     }
+    }
+   },
+   "expect": {
+    "valid": true,
+    "kind": "content",
+    "ref": "sha256:e1922d8f7a1c3823df70a16f338b43c057b690854ab9192c5a4e4fe48d347ad0",
+    "head": {
+     "kind": "content",
+     "collection": "loan-rules",
+     "partition": "region-a"
+    }
+   }
+  },
+  {
+   "name": "valid-64-metadata",
+   "candidate": {
+    "kind": "content",
+    "manifest": "{\"format\":\"entelos.content/1\",\"collection\":\"loan-rules\",\"partition\":\"region-a\",\"base\":\"\",\"items\":[{\"item_id\":\"doc-3\",\"digest\":\"sha256:3333333333333333333333333333333333333333333333333333333333333333\",\"size\":64}],\"metadata\":{\"k-00\":\"v\",\"k-01\":\"v\",\"k-02\":\"v\",\"k-03\":\"v\",\"k-04\":\"v\",\"k-05\":\"v\",\"k-06\":\"v\",\"k-07\":\"v\",\"k-08\":\"v\",\"k-09\":\"v\",\"k-10\":\"v\",\"k-11\":\"v\",\"k-12\":\"v\",\"k-13\":\"v\",\"k-14\":\"v\",\"k-15\":\"v\",\"k-16\":\"v\",\"k-17\":\"v\",\"k-18\":\"v\",\"k-19\":\"v\",\"k-20\":\"v\",\"k-21\":\"v\",\"k-22\":\"v\",\"k-23\":\"v\",\"k-24\":\"v\",\"k-25\":\"v\",\"k-26\":\"v\",\"k-27\":\"v\",\"k-28\":\"v\",\"k-29\":\"v\",\"k-30\":\"v\",\"k-31\":\"v\",\"k-32\":\"v\",\"k-33\":\"v\",\"k-34\":\"v\",\"k-35\":\"v\",\"k-36\":\"v\",\"k-37\":\"v\",\"k-38\":\"v\",\"k-39\":\"v\",\"k-40\":\"v\",\"k-41\":\"v\",\"k-42\":\"v\",\"k-43\":\"v\",\"k-44\":\"v\",\"k-45\":\"v\",\"k-46\":\"v\",\"k-47\":\"v\",\"k-48\":\"v\",\"k-49\":\"v\",\"k-50\":\"v\",\"k-51\":\"v\",\"k-52\":\"v\",\"k-53\":\"v\",\"k-54\":\"v\",\"k-55\":\"v\",\"k-56\":\"v\",\"k-57\":\"v\",\"k-58\":\"v\",\"k-59\":\"v\",\"k-60\":\"v\",\"k-61\":\"v\",\"k-62\":\"v\",\"k-63\":\"v\"}}"
+   },
+   "expect": {
+    "valid": true,
+    "kind": "content",
+    "ref": "sha256:6d0d26defa60ad6875f817387cdc3119a1434b7ba902405f9add16ea57a5bfdb",
+    "head": {
+     "kind": "content",
+     "collection": "loan-rules",
+     "partition": "region-a"
+    }
+   }
+  },
+  {
+   "name": "valid-cel-bundle",
+   "candidate": {
+    "kind": "cel-bundle",
+    "bundle": {
+     "manifest": "{}",
+     "environment": "{}",
+     "source": "true",
+     "fixed": "{}"
+    }
+   },
+   "expect": {
+    "valid": true,
+    "kind": "cel-bundle"
+   }
+  },
+  {
+   "name": "not-an-object",
+   "candidate": [],
+   "expect": {
+    "valid": false,
+    "code": "invalid_candidate",
+    "rule": "kind"
+   }
+  },
+  {
+   "name": "kind-missing",
+   "candidate": {
+    "manifest": "{\"format\":\"entelos.content/1\",\"collection\":\"loan-rules\",\"partition\":\"region-a\",\"base\":\"\",\"items\":[{\"item_id\":\"doc-3\",\"digest\":\"sha256:3333333333333333333333333333333333333333333333333333333333333333\",\"size\":64}]}"
+   },
+   "expect": {
+    "valid": false,
+    "code": "invalid_candidate",
+    "rule": "kind"
+   }
+  },
+  {
+   "name": "kind-not-a-string",
+   "candidate": {
+    "kind": 1,
+    "manifest": "{\"format\":\"entelos.content/1\",\"collection\":\"loan-rules\",\"partition\":\"region-a\",\"base\":\"\",\"items\":[{\"item_id\":\"doc-3\",\"digest\":\"sha256:3333333333333333333333333333333333333333333333333333333333333333\",\"size\":64}]}"
+   },
+   "expect": {
+    "valid": false,
+    "code": "invalid_candidate",
+    "rule": "kind"
+   }
+  },
+  {
+   "name": "kind-unknown",
+   "candidate": {
+    "kind": "wasm-module",
+    "manifest": "{\"format\":\"entelos.content/1\",\"collection\":\"loan-rules\",\"partition\":\"region-a\",\"base\":\"\",\"items\":[{\"item_id\":\"doc-3\",\"digest\":\"sha256:3333333333333333333333333333333333333333333333333333333333333333\",\"size\":64}]}"
+   },
+   "expect": {
+    "valid": false,
+    "code": "unsupported_candidate_kind"
+   }
+  },
+  {
+   "name": "kind-wrong-case",
+   "candidate": {
+    "kind": "Content",
+    "manifest": "{\"format\":\"entelos.content/1\",\"collection\":\"loan-rules\",\"partition\":\"region-a\",\"base\":\"\",\"items\":[{\"item_id\":\"doc-3\",\"digest\":\"sha256:3333333333333333333333333333333333333333333333333333333333333333\",\"size\":64}]}"
+   },
+   "expect": {
+    "valid": false,
+    "code": "unsupported_candidate_kind"
+   }
+  },
+  {
+   "name": "content-with-bundle",
+   "candidate": {
+    "kind": "content",
+    "manifest": "{\"format\":\"entelos.content/1\",\"collection\":\"loan-rules\",\"partition\":\"region-a\",\"base\":\"\",\"items\":[{\"item_id\":\"doc-3\",\"digest\":\"sha256:3333333333333333333333333333333333333333333333333333333333333333\",\"size\":64}]}",
+    "bundle": {
+     "manifest": "{}",
+     "environment": "{}",
+     "source": "true",
+     "fixed": "{}"
+    }
+   },
+   "expect": {
+    "valid": false,
+    "code": "invalid_candidate",
+    "rule": "candidate_schema"
+   }
+  },
+  {
+   "name": "content-manifest-object",
+   "candidate": {
+    "kind": "content",
+    "manifest": {
+     "format": "entelos.content/1",
+     "collection": "loan-rules",
+     "partition": "region-a",
+     "base": "",
+     "items": [
+      {
+       "item_id": "doc-3",
+       "digest": "sha256:3333333333333333333333333333333333333333333333333333333333333333",
+       "size": 64
+      }
+     ]
+    }
+   },
+   "expect": {
+    "valid": false,
+    "code": "invalid_candidate",
+    "rule": "candidate_schema"
+   }
+  },
+  {
+   "name": "cel-bundle-missing-fixed",
+   "candidate": {
+    "kind": "cel-bundle",
+    "bundle": {
+     "manifest": "{}",
+     "environment": "{}",
+     "source": "true"
+    }
+   },
+   "expect": {
+    "valid": false,
+    "code": "invalid_candidate",
+    "rule": "candidate_schema"
+   }
+  },
+  {
+   "name": "cel-bundle-with-manifest",
+   "candidate": {
+    "kind": "cel-bundle",
+    "bundle": {
+     "manifest": "{}",
+     "environment": "{}",
+     "source": "true",
+     "fixed": "{}"
+    },
+    "manifest": "{\"format\":\"entelos.content/1\",\"collection\":\"loan-rules\",\"partition\":\"region-a\",\"base\":\"\",\"items\":[{\"item_id\":\"doc-3\",\"digest\":\"sha256:3333333333333333333333333333333333333333333333333333333333333333\",\"size\":64}]}"
+   },
+   "expect": {
+    "valid": false,
+    "code": "invalid_candidate",
+    "rule": "candidate_schema"
+   }
+  },
+  {
+   "name": "too-large",
+   "candidate": {
+    "kind": "content",
+    "manifest": {
+     "$pad": {
+      "text": "{\"format\":\"entelos.content/1\",\"collection\":\"loan-rules\",\"partition\":\"region-a\",\"base\":\"\",\"items\":[{\"item_id\":\"doc-3\",\"digest\":\"sha256:3333333333333333333333333333333333333333333333333333333333333333\",\"size\":64}]}",
+      "count": 261933
+     }
+    }
+   },
+   "expect": {
+    "valid": false,
+    "code": "invalid_content",
+    "rule": "too_large"
+   }
+  },
+  {
+   "name": "json-empty",
+   "candidate": {
+    "kind": "content",
+    "manifest": ""
+   },
+   "expect": {
+    "valid": false,
+    "code": "invalid_content",
+    "rule": "json"
+   }
+  },
+  {
+   "name": "json-array",
+   "candidate": {
+    "kind": "content",
+    "manifest": "[{\"format\":\"entelos.content/1\",\"collection\":\"loan-rules\",\"partition\":\"region-a\",\"base\":\"\",\"items\":[{\"item_id\":\"doc-3\",\"digest\":\"sha256:3333333333333333333333333333333333333333333333333333333333333333\",\"size\":64}]}]"
+   },
+   "expect": {
+    "valid": false,
+    "code": "invalid_content",
+    "rule": "json"
+   }
+  },
+  {
+   "name": "json-two-values",
+   "candidate": {
+    "kind": "content",
+    "manifest": "{\"format\":\"entelos.content/1\",\"collection\":\"loan-rules\",\"partition\":\"region-a\",\"base\":\"\",\"items\":[{\"item_id\":\"doc-3\",\"digest\":\"sha256:3333333333333333333333333333333333333333333333333333333333333333\",\"size\":64}]} {\"format\":\"entelos.content/1\",\"collection\":\"loan-rules\",\"partition\":\"region-a\",\"base\":\"\",\"items\":[{\"item_id\":\"doc-3\",\"digest\":\"sha256:3333333333333333333333333333333333333333333333333333333333333333\",\"size\":64}]}"
+   },
+   "expect": {
+    "valid": false,
+    "code": "invalid_content",
+    "rule": "json"
+   }
+  },
+  {
+   "name": "json-trailing-comma",
+   "candidate": {
+    "kind": "content",
+    "manifest": "{\"format\":\"entelos.content/1\",\"collection\":\"loan-rules\",\"partition\":\"region-a\",\"base\":\"\",\"items\":[{\"item_id\":\"doc-3\",\"digest\":\"sha256:3333333333333333333333333333333333333333333333333333333333333333\",\"size\":64}],}"
+   },
+   "expect": {
+    "valid": false,
+    "code": "invalid_content",
+    "rule": "json"
+   }
+  },
+  {
+   "name": "json-nan",
+   "candidate": {
+    "kind": "content",
+    "manifest": "{\"format\":\"entelos.content/1\",\"collection\":\"loan-rules\",\"partition\":\"region-a\",\"base\":\"\",\"items\":[{\"item_id\":\"doc-3\",\"digest\":\"sha256:3333333333333333333333333333333333333333333333333333333333333333\",\"size\":NaN}]}"
+   },
+   "expect": {
+    "valid": false,
+    "code": "invalid_content",
+    "rule": "json"
+   }
+  },
+  {
+   "name": "json-duplicate-top",
+   "candidate": {
+    "kind": "content",
+    "manifest": "{\"format\":\"entelos.content/1\",\"collection\":\"loan-rules\",\"partition\":\"region-a\",\"base\":\"\",\"items\":[{\"item_id\":\"doc-3\",\"digest\":\"sha256:3333333333333333333333333333333333333333333333333333333333333333\",\"size\":64}],\"base\":\"\"}"
+   },
+   "expect": {
+    "valid": false,
+    "code": "invalid_content",
+    "rule": "json"
+   }
+  },
+  {
+   "name": "json-duplicate-nested",
+   "candidate": {
+    "kind": "content",
+    "manifest": "{\"format\":\"entelos.content/1\",\"collection\":\"loan-rules\",\"partition\":\"region-a\",\"base\":\"\",\"items\":[{\"item_id\":\"doc-3\",\"item_id\":\"doc-4\",\"digest\":\"sha256:3333333333333333333333333333333333333333333333333333333333333333\",\"size\":64}]}"
+   },
+   "expect": {
+    "valid": false,
+    "code": "invalid_content",
+    "rule": "json"
+   }
+  },
+  {
+   "name": "format-missing",
+   "candidate": {
+    "kind": "content",
+    "manifest": "{\"collection\":\"loan-rules\"}"
+   },
+   "expect": {
+    "valid": false,
+    "code": "invalid_content",
+    "rule": "format"
+   }
+  },
+  {
+   "name": "format-not-a-string",
+   "candidate": {
+    "kind": "content",
+    "manifest": "{\"format\":1}"
+   },
+   "expect": {
+    "valid": false,
+    "code": "invalid_content",
+    "rule": "format"
+   }
+  },
+  {
+   "name": "format-leading-zero",
+   "candidate": {
+    "kind": "content",
+    "manifest": "{\"format\":\"entelos.content/01\",\"collection\":\"loan-rules\",\"partition\":\"region-a\",\"base\":\"\",\"items\":[{\"item_id\":\"doc-3\",\"digest\":\"sha256:3333333333333333333333333333333333333333333333333333333333333333\",\"size\":64}]}"
+   },
+   "expect": {
+    "valid": false,
+    "code": "invalid_content",
+    "rule": "format"
+   }
+  },
+  {
+   "name": "format-other-name",
+   "candidate": {
+    "kind": "content",
+    "manifest": "{\"format\":\"entelos.evidence/1\",\"collection\":\"loan-rules\",\"partition\":\"region-a\",\"base\":\"\",\"items\":[{\"item_id\":\"doc-3\",\"digest\":\"sha256:3333333333333333333333333333333333333333333333333333333333333333\",\"size\":64}]}"
+   },
+   "expect": {
+    "valid": false,
+    "code": "invalid_content",
+    "rule": "format"
+   }
+  },
+  {
+   "name": "format-major-2",
+   "candidate": {
+    "kind": "content",
+    "manifest": "{\"format\":\"entelos.content/2\",\"collection\":\"loan-rules\",\"partition\":\"region-a\",\"base\":\"\",\"items\":[{\"item_id\":\"doc-3\",\"digest\":\"sha256:3333333333333333333333333333333333333333333333333333333333333333\",\"size\":64}]}"
+   },
+   "expect": {
+    "valid": false,
+    "code": "unsupported_content_format"
+   }
+  },
+  {
+   "name": "format-major-0",
+   "candidate": {
+    "kind": "content",
+    "manifest": "{\"format\":\"entelos.content/0\",\"collection\":\"loan-rules\",\"partition\":\"region-a\",\"base\":\"\",\"items\":[{\"item_id\":\"doc-3\",\"digest\":\"sha256:3333333333333333333333333333333333333333333333333333333333333333\",\"size\":64}]}"
+   },
+   "expect": {
+    "valid": false,
+    "code": "unsupported_content_format"
+   }
+  },
+  {
+   "name": "unknown-top-field",
+   "candidate": {
+    "kind": "content",
+    "manifest": "{\"format\":\"entelos.content/1\",\"collection\":\"loan-rules\",\"partition\":\"region-a\",\"base\":\"\",\"items\":[{\"item_id\":\"doc-3\",\"digest\":\"sha256:3333333333333333333333333333333333333333333333333333333333333333\",\"size\":64}],\"owner\":\"team-a\"}"
+   },
+   "expect": {
+    "valid": false,
+    "code": "invalid_content",
+    "rule": "unknown_field",
+    "field": "owner"
+   }
+  },
+  {
+   "name": "unknown-item-field",
+   "candidate": {
+    "kind": "content",
+    "manifest": "{\"format\":\"entelos.content/1\",\"collection\":\"loan-rules\",\"partition\":\"region-a\",\"base\":\"\",\"items\":[{\"item_id\":\"doc-3\",\"digest\":\"sha256:3333333333333333333333333333333333333333333333333333333333333333\",\"size\":64},{\"item_id\":\"doc-4\",\"digest\":\"sha256:4444444444444444444444444444444444444444444444444444444444444444\",\"size\":1,\"colour\":\"red\"}]}"
+   },
+   "expect": {
+    "valid": false,
+    "code": "invalid_content",
+    "rule": "unknown_field",
+    "field": "items[1].colour"
+   }
+  },
+  {
+   "name": "unknown-evidence-field",
+   "candidate": {
+    "kind": "content",
+    "manifest": "{\"format\":\"entelos.content/1\",\"collection\":\"loan-rules\",\"partition\":\"region-a\",\"base\":\"\",\"items\":[{\"item_id\":\"doc-3\",\"digest\":\"sha256:3333333333333333333333333333333333333333333333333333333333333333\",\"size\":64}],\"evidence\":{\"format\":\"entelos.evidence/1\",\"digest\":\"sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee\",\"url\":\"x\"}}"
+   },
+   "expect": {
+    "valid": false,
+    "code": "invalid_content",
+    "rule": "unknown_field",
+    "field": "evidence.url"
+   }
+  },
+  {
+   "name": "unknown-field-before-type-error",
+   "candidate": {
+    "kind": "content",
+    "manifest": "{\"format\":\"entelos.content/1\",\"collection\":7,\"zone\":\"a\",\"partition\":\"region-a\",\"base\":\"\",\"items\":[{\"item_id\":\"doc-3\",\"digest\":\"sha256:3333333333333333333333333333333333333333333333333333333333333333\",\"size\":64}]}"
+   },
+   "expect": {
+    "valid": false,
+    "code": "invalid_content",
+    "rule": "unknown_field",
+    "field": "zone"
+   }
+  },
+  {
+   "name": "metadata-name-is-not-a-field",
+   "candidate": {
+    "kind": "content",
+    "manifest": "{\"format\":\"entelos.content/1\",\"collection\":\"loan-rules\",\"partition\":\"region-a\",\"base\":\"\",\"items\":[{\"item_id\":\"doc-3\",\"digest\":\"sha256:3333333333333333333333333333333333333333333333333333333333333333\",\"size\":64}],\"metadata\":{\"owner\":\"team-a\"}}"
+   },
+   "expect": {
+    "valid": true,
+    "kind": "content",
+    "ref": "sha256:5a011d0435dbdea1ddc721aa7cf5cbcd0c8568daac9467d5f70204daf0c66a16",
+    "head": {
+     "kind": "content",
+     "collection": "loan-rules",
+     "partition": "region-a"
+    }
+   }
+  },
+  {
+   "name": "schema-missing-items",
+   "candidate": {
+    "kind": "content",
+    "manifest": "{\"format\":\"entelos.content/1\",\"collection\":\"loan-rules\",\"partition\":\"region-a\",\"base\":\"\"}"
+   },
+   "expect": {
+    "valid": false,
+    "code": "invalid_content",
+    "rule": "schema"
+   }
+  },
+  {
+   "name": "schema-empty-items",
+   "candidate": {
+    "kind": "content",
+    "manifest": "{\"format\":\"entelos.content/1\",\"collection\":\"loan-rules\",\"partition\":\"region-a\",\"base\":\"\",\"items\":[]}"
+   },
+   "expect": {
+    "valid": false,
+    "code": "invalid_content",
+    "rule": "schema"
+   }
+  },
+  {
+   "name": "schema-bad-digest",
+   "candidate": {
+    "kind": "content",
+    "manifest": "{\"format\":\"entelos.content/1\",\"collection\":\"loan-rules\",\"partition\":\"region-a\",\"base\":\"\",\"items\":[{\"item_id\":\"doc-3\",\"digest\":\"sha256:ABC\",\"size\":64}]}"
+   },
+   "expect": {
+    "valid": false,
+    "code": "invalid_content",
+    "rule": "schema"
+   }
+  },
+  {
+   "name": "schema-bad-base",
+   "candidate": {
+    "kind": "content",
+    "manifest": "{\"format\":\"entelos.content/1\",\"collection\":\"loan-rules\",\"partition\":\"region-a\",\"base\":\"doc-1\",\"items\":[{\"item_id\":\"doc-3\",\"digest\":\"sha256:3333333333333333333333333333333333333333333333333333333333333333\",\"size\":64}]}"
+   },
+   "expect": {
+    "valid": false,
+    "code": "invalid_content",
+    "rule": "schema"
+   }
+  },
+  {
+   "name": "schema-negative-size",
+   "candidate": {
+    "kind": "content",
+    "manifest": "{\"format\":\"entelos.content/1\",\"collection\":\"loan-rules\",\"partition\":\"region-a\",\"base\":\"\",\"items\":[{\"item_id\":\"doc-3\",\"digest\":\"sha256:3333333333333333333333333333333333333333333333333333333333333333\",\"size\":-1}]}"
+   },
+   "expect": {
+    "valid": false,
+    "code": "invalid_content",
+    "rule": "schema"
+   }
+  },
+  {
+   "name": "schema-float-size",
+   "candidate": {
+    "kind": "content",
+    "manifest": "{\"format\":\"entelos.content/1\",\"collection\":\"loan-rules\",\"partition\":\"region-a\",\"base\":\"\",\"items\":[{\"item_id\":\"doc-3\",\"digest\":\"sha256:3333333333333333333333333333333333333333333333333333333333333333\",\"size\":1.5}]}"
+   },
+   "expect": {
+    "valid": false,
+    "code": "invalid_content",
+    "rule": "schema"
+   }
+  },
+  {
+   "name": "schema-bad-collection",
+   "candidate": {
+    "kind": "content",
+    "manifest": "{\"format\":\"entelos.content/1\",\"collection\":\"loan rules\",\"partition\":\"region-a\",\"base\":\"\",\"items\":[{\"item_id\":\"doc-3\",\"digest\":\"sha256:3333333333333333333333333333333333333333333333333333333333333333\",\"size\":64}]}"
+   },
+   "expect": {
+    "valid": false,
+    "code": "invalid_content",
+    "rule": "schema"
+   }
+  },
+  {
+   "name": "schema-upper-media-type",
+   "candidate": {
+    "kind": "content",
+    "manifest": "{\"format\":\"entelos.content/1\",\"collection\":\"loan-rules\",\"partition\":\"region-a\",\"base\":\"\",\"items\":[{\"item_id\":\"doc-3\",\"digest\":\"sha256:3333333333333333333333333333333333333333333333333333333333333333\",\"size\":64,\"media_type\":\"Text/Markdown\"}]}"
+   },
+   "expect": {
+    "valid": false,
+    "code": "invalid_content",
+    "rule": "schema"
+   }
+  },
+  {
+   "name": "schema-metadata-number",
+   "candidate": {
+    "kind": "content",
+    "manifest": "{\"format\":\"entelos.content/1\",\"collection\":\"loan-rules\",\"partition\":\"region-a\",\"base\":\"\",\"items\":[{\"item_id\":\"doc-3\",\"digest\":\"sha256:3333333333333333333333333333333333333333333333333333333333333333\",\"size\":64}],\"metadata\":{\"pages\":3}}"
+   },
+   "expect": {
+    "valid": false,
+    "code": "invalid_content",
+    "rule": "schema"
+   }
+  },
+  {
+   "name": "schema-evidence-format-2",
+   "candidate": {
+    "kind": "content",
+    "manifest": "{\"format\":\"entelos.content/1\",\"collection\":\"loan-rules\",\"partition\":\"region-a\",\"base\":\"\",\"items\":[{\"item_id\":\"doc-3\",\"digest\":\"sha256:3333333333333333333333333333333333333333333333333333333333333333\",\"size\":64}],\"evidence\":{\"format\":\"entelos.evidence/2\",\"digest\":\"sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee\"}}"
+   },
+   "expect": {
+    "valid": false,
+    "code": "invalid_content",
+    "rule": "schema"
+   }
+  },
+  {
+   "name": "too-many-items",
+   "candidate": {
+    "kind": "content",
+    "manifest": {
+     "$items": {
+      "text": "{\"format\":\"entelos.content/1\",\"collection\":\"loan-rules\",\"partition\":\"region-a\",\"base\":\"\",\"items\":[$ITEMS]}",
+      "item": "{\"item_id\":\"d-{i}\",\"digest\":\"sha256:4444444444444444444444444444444444444444444444444444444444444444\",\"size\":1}",
+      "count": 1025
+     }
+    }
+   },
+   "expect": {
+    "valid": false,
+    "code": "invalid_content",
+    "rule": "too_many_items"
+   }
+  },
+  {
+   "name": "duplicate-item",
+   "candidate": {
+    "kind": "content",
+    "manifest": "{\"format\":\"entelos.content/1\",\"collection\":\"loan-rules\",\"partition\":\"region-a\",\"base\":\"\",\"items\":[{\"item_id\":\"doc-3\",\"digest\":\"sha256:3333333333333333333333333333333333333333333333333333333333333333\",\"size\":64},{\"item_id\":\"doc-3\",\"digest\":\"sha256:3333333333333333333333333333333333333333333333333333333333333333\",\"size\":64}]}"
+   },
+   "expect": {
+    "valid": false,
+    "code": "invalid_content",
+    "rule": "duplicate_item"
+   }
+  },
+  {
+   "name": "duplicate-before-order",
+   "candidate": {
+    "kind": "content",
+    "manifest": "{\"format\":\"entelos.content/1\",\"collection\":\"loan-rules\",\"partition\":\"region-a\",\"base\":\"\",\"items\":[{\"item_id\":\"doc-3\",\"digest\":\"sha256:3333333333333333333333333333333333333333333333333333333333333333\",\"size\":64},{\"item_id\":\"doc-1\",\"digest\":\"sha256:1111111111111111111111111111111111111111111111111111111111111111\",\"size\":1200,\"media_type\":\"text/markdown\"},{\"item_id\":\"doc-3\",\"digest\":\"sha256:3333333333333333333333333333333333333333333333333333333333333333\",\"size\":64}]}"
+   },
+   "expect": {
+    "valid": false,
+    "code": "invalid_content",
+    "rule": "duplicate_item"
+   }
+  },
+  {
+   "name": "item-order",
+   "candidate": {
+    "kind": "content",
+    "manifest": "{\"format\":\"entelos.content/1\",\"collection\":\"loan-rules\",\"partition\":\"region-a\",\"base\":\"\",\"items\":[{\"item_id\":\"doc-2\",\"digest\":\"sha256:2222222222222222222222222222222222222222222222222222222222222222\",\"size\":800,\"media_type\":\"text/markdown\"},{\"item_id\":\"doc-1\",\"digest\":\"sha256:1111111111111111111111111111111111111111111111111111111111111111\",\"size\":1200,\"media_type\":\"text/markdown\"}]}"
+   },
+   "expect": {
+    "valid": false,
+    "code": "invalid_content",
+    "rule": "item_order"
+   }
+  },
+  {
+   "name": "item-order-case",
+   "candidate": {
+    "kind": "content",
+    "manifest": "{\"format\":\"entelos.content/1\",\"collection\":\"loan-rules\",\"partition\":\"region-a\",\"base\":\"\",\"items\":[{\"item_id\":\"b\",\"digest\":\"sha256:4444444444444444444444444444444444444444444444444444444444444444\",\"size\":1},{\"item_id\":\"B\",\"digest\":\"sha256:4444444444444444444444444444444444444444444444444444444444444444\",\"size\":1}]}"
+   },
+   "expect": {
+    "valid": false,
+    "code": "invalid_content",
+    "rule": "item_order"
+   }
+  },
+  {
+   "name": "too-many-metadata",
+   "candidate": {
+    "kind": "content",
+    "manifest": "{\"format\":\"entelos.content/1\",\"collection\":\"loan-rules\",\"partition\":\"region-a\",\"base\":\"\",\"items\":[{\"item_id\":\"doc-3\",\"digest\":\"sha256:3333333333333333333333333333333333333333333333333333333333333333\",\"size\":64}],\"metadata\":{\"k-00\":\"v\",\"k-01\":\"v\",\"k-02\":\"v\",\"k-03\":\"v\",\"k-04\":\"v\",\"k-05\":\"v\",\"k-06\":\"v\",\"k-07\":\"v\",\"k-08\":\"v\",\"k-09\":\"v\",\"k-10\":\"v\",\"k-11\":\"v\",\"k-12\":\"v\",\"k-13\":\"v\",\"k-14\":\"v\",\"k-15\":\"v\",\"k-16\":\"v\",\"k-17\":\"v\",\"k-18\":\"v\",\"k-19\":\"v\",\"k-20\":\"v\",\"k-21\":\"v\",\"k-22\":\"v\",\"k-23\":\"v\",\"k-24\":\"v\",\"k-25\":\"v\",\"k-26\":\"v\",\"k-27\":\"v\",\"k-28\":\"v\",\"k-29\":\"v\",\"k-30\":\"v\",\"k-31\":\"v\",\"k-32\":\"v\",\"k-33\":\"v\",\"k-34\":\"v\",\"k-35\":\"v\",\"k-36\":\"v\",\"k-37\":\"v\",\"k-38\":\"v\",\"k-39\":\"v\",\"k-40\":\"v\",\"k-41\":\"v\",\"k-42\":\"v\",\"k-43\":\"v\",\"k-44\":\"v\",\"k-45\":\"v\",\"k-46\":\"v\",\"k-47\":\"v\",\"k-48\":\"v\",\"k-49\":\"v\",\"k-50\":\"v\",\"k-51\":\"v\",\"k-52\":\"v\",\"k-53\":\"v\",\"k-54\":\"v\",\"k-55\":\"v\",\"k-56\":\"v\",\"k-57\":\"v\",\"k-58\":\"v\",\"k-59\":\"v\",\"k-60\":\"v\",\"k-61\":\"v\",\"k-62\":\"v\",\"k-63\":\"v\",\"k-64\":\"v\"}}"
+   },
+   "expect": {
+    "valid": false,
+    "code": "invalid_content",
+    "rule": "too_many_metadata"
+   }
+  },
+  {
+   "name": "metadata-name",
+   "candidate": {
+    "kind": "content",
+    "manifest": "{\"format\":\"entelos.content/1\",\"collection\":\"loan-rules\",\"partition\":\"region-a\",\"base\":\"\",\"items\":[{\"item_id\":\"doc-3\",\"digest\":\"sha256:3333333333333333333333333333333333333333333333333333333333333333\",\"size\":64}],\"metadata\":{\"page count\":\"3\"}}"
+   },
+   "expect": {
+    "valid": false,
+    "code": "invalid_content",
+    "rule": "metadata_name"
+   }
+  },
+  {
+   "name": "metadata-name-empty",
+   "candidate": {
+    "kind": "content",
+    "manifest": "{\"format\":\"entelos.content/1\",\"collection\":\"loan-rules\",\"partition\":\"region-a\",\"base\":\"\",\"items\":[{\"item_id\":\"doc-3\",\"digest\":\"sha256:3333333333333333333333333333333333333333333333333333333333333333\",\"size\":64}],\"metadata\":{\"\":\"3\"}}"
+   },
+   "expect": {
+    "valid": false,
+    "code": "invalid_content",
+    "rule": "metadata_name"
+   }
+  }
+ ],
+ "bindings": [
+  {
+   "name": "same-manifest",
+   "report": {
+    "kind": "content",
+    "ref": "sha256:7c8e3f6859f6dd26fe9cd4cbaa79f72139e61a8672389279ff5dc057e6c97405"
+   },
+   "snapshot": {
+    "kind": "content",
+    "ref": "sha256:7c8e3f6859f6dd26fe9cd4cbaa79f72139e61a8672389279ff5dc057e6c97405"
+   },
+   "expect": "bound"
+  },
+  {
+   "name": "changed-manifest",
+   "report": {
+    "kind": "content",
+    "ref": "sha256:7c8e3f6859f6dd26fe9cd4cbaa79f72139e61a8672389279ff5dc057e6c97405"
+   },
+   "snapshot": {
+    "kind": "content",
+    "ref": "sha256:7a2bd9a377c49da3a3d403077e5cb12661a1e125f2a2dbce551e3a274e62cb6e"
+   },
+   "expect": "stale_qualification"
+  },
+  {
+   "name": "same-ref-other-kind",
+   "report": {
+    "kind": "cel-bundle",
+    "ref": "sha256:7c8e3f6859f6dd26fe9cd4cbaa79f72139e61a8672389279ff5dc057e6c97405"
+   },
+   "snapshot": {
+    "kind": "content",
+    "ref": "sha256:7c8e3f6859f6dd26fe9cd4cbaa79f72139e61a8672389279ff5dc057e6c97405"
+   },
+   "expect": "stale_qualification"
+  }
+ ]
+}

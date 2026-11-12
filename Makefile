@@ -5,6 +5,7 @@ check:
 	python3 -B tools/check_project.py
 	python3 -B -m unittest tests/test_claude_review.py
 	python3 -B src/protocol/approval/check_spec.py
+	python3 -B src/protocol/content/check_spec.py
 
 # The full runner. TASK_WORK is a new directory outside the checkout.
 verify:
