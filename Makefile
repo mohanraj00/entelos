@@ -7,6 +7,7 @@ check:
 	python3 -B src/protocol/approval/check_spec.py
 	python3 -B src/protocol/content/check_spec.py
 	python3 -B src/protocol/evidence/check_spec.py
+	python3 -B src/protocol/policy/check_spec.py
 
 # The full runner. TASK_WORK is a new directory outside the checkout.
 verify:

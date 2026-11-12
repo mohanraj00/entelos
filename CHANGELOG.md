@@ -9,6 +9,12 @@ This file lists the changes for each snapshot tag. A tag is a stable snapshot to
   `entelos.record/1`. It gives the promise for 0.x releases and the
   deprecation path. `make check` runs the pin in `tools/stability/`.
 
+- [POLICY.md](src/protocol/policy/POLICY.md) proposes the policy verdict
+  `entelos.policy/1` (#154): accept, refuse or route to a person, with
+  fail-closed routes, a `suspend` stop control, an audit draw and a
+  replayable receipt. A policy verdict never satisfies a human verdict
+  requirement. `make check` runs its spec checker. No Host writes it yet.
+
 ## v0.3.0 (2026-11-11)
 
 - The Host rejects wrong field types, and both stores refuse state that is too deep to read (#136).

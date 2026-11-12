@@ -1,0 +1,194 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "entelos.policy/1",
+  "title": "Policy verdict on one proposal",
+  "type": "object",
+  "required": [
+    "format",
+    "kind",
+    "outcome",
+    "reason",
+    "date",
+    "item",
+    "receipt",
+    "audit"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "format": {
+      "type": "string",
+      "const": "entelos.policy/1"
+    },
+    "kind": {
+      "type": "string",
+      "const": "policy"
+    },
+    "outcome": {
+      "type": "string",
+      "enum": [
+        "accept",
+        "refuse",
+        "route"
+      ]
+    },
+    "reason": {
+      "type": "string",
+      "enum": [
+        "policy_output",
+        "policy_change",
+        "human_required",
+        "no_policy",
+        "policy_suspended",
+        "invalid_policy",
+        "unknown_field",
+        "missing_input",
+        "policy_error",
+        "invalid_output"
+      ]
+    },
+    "date": {
+      "type": "string",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+    },
+    "item": {
+      "$ref": "#/$defs/item"
+    },
+    "receipt": {
+      "$ref": "#/$defs/receipt"
+    },
+    "audit": {
+      "$ref": "#/$defs/audit"
+    }
+  },
+  "$defs": {
+    "digest": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "name": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9._-]{1,128}$"
+    },
+    "candidate_reference": {
+      "type": "object",
+      "required": [
+        "kind",
+        "ref"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": [
+            "cel-bundle",
+            "content"
+          ]
+        },
+        "ref": {
+          "$ref": "#/$defs/digest"
+        }
+      }
+    },
+    "item": {
+      "type": "object",
+      "required": [
+        "snapshot_ref",
+        "report_ref",
+        "candidate"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "snapshot_ref": {
+          "$ref": "#/$defs/digest"
+        },
+        "report_ref": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^sha256:[0-9a-f]{64}$"
+        },
+        "candidate": {
+          "$ref": "#/$defs/candidate_reference"
+        }
+      }
+    },
+    "receipt": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "required": [
+        "policy_function",
+        "activation_ref",
+        "policy_snapshot_ref",
+        "bundle_ref",
+        "engine_build",
+        "inputs_ref",
+        "output",
+        "error"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "policy_function": {
+          "$ref": "#/$defs/name"
+        },
+        "activation_ref": {
+          "$ref": "#/$defs/digest"
+        },
+        "policy_snapshot_ref": {
+          "$ref": "#/$defs/digest"
+        },
+        "bundle_ref": {
+          "$ref": "#/$defs/digest"
+        },
+        "engine_build": {
+          "$ref": "#/$defs/digest"
+        },
+        "inputs_ref": {
+          "$ref": "#/$defs/digest"
+        },
+        "output": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 128
+        },
+        "error": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^[a-z][a-z0-9_]{0,63}$"
+        }
+      }
+    },
+    "audit": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "required": [
+        "rate_ppm",
+        "nonce",
+        "selected"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "rate_ppm": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000000
+        },
+        "nonce": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "selected": {
+          "type": "boolean"
+        }
+      }
+    }
+  }
+}

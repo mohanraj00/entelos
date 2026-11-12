@@ -1,0 +1,1121 @@
+{
+ "format_version": 1,
+ "spec": "POLICY.md",
+ "note": "Hand-written cases. A person stated each call value from the synthetic policy text below. Each inputs_ref is shasum -a 256 of the media type, a NUL byte and the canonical input bytes.",
+ "defaults": {
+  "date": "2026-11-20",
+  "policy_functions": [
+   "approval-policy"
+  ],
+  "requirements": [
+   {
+    "head": {
+     "kind": "cel-bundle",
+     "function": "record-filter",
+     "scope": "team-a"
+    },
+    "requirement": "policy"
+   },
+   {
+    "head": {
+     "kind": "cel-bundle",
+     "function": "approval-policy",
+     "scope": "team-a"
+    },
+    "requirement": "policy"
+   },
+   {
+    "head": {
+     "kind": "content",
+     "collection": "loan-rules",
+     "partition": "region-a"
+    },
+    "requirement": "policy"
+   }
+  ],
+  "policy": {
+   "function": "approval-policy",
+   "activation_ref": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+   "snapshot_ref": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+   "bundle_ref": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+   "engine_build": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+   "suspended": false,
+   "inputs": [
+    "change_class",
+    "report_passed"
+   ],
+   "audit_rate_ppm": 100000
+  },
+  "item": {
+   "snapshot_ref": "sha256:5555555555555555555555555555555555555555555555555555555555555555",
+   "report_ref": "sha256:6666666666666666666666666666666666666666666666666666666666666666",
+   "candidate": {
+    "kind": "cel-bundle",
+    "ref": "sha256:7777777777777777777777777777777777777777777777777777777777777777"
+   },
+   "head": {
+    "kind": "cel-bundle",
+    "function": "record-filter",
+    "scope": "team-a"
+   }
+  },
+  "sources": {
+   "evidence": null,
+   "report": {
+    "passed": true,
+    "change_class": "typo"
+   }
+  },
+  "nonce": "1999999a00000000000000000000000000000000000000000000000000000000"
+ },
+ "synthetic_policy": "report_passed && change_class == \"typo\" ? \"accept\" : (!report_passed ? \"refuse\" : \"route\")",
+ "cases": [
+  {
+   "name": "accept-typo-passed",
+   "note": "The synthetic policy accepts a typo change with a passed report. Draw 429496730 is not below the threshold of 100000 ppm.",
+   "call": {
+    "output": "accept"
+   },
+   "expect": {
+    "format": "entelos.policy/1",
+    "kind": "policy",
+    "outcome": "accept",
+    "reason": "policy_output",
+    "date": "2026-11-20",
+    "item": {
+     "snapshot_ref": "sha256:5555555555555555555555555555555555555555555555555555555555555555",
+     "report_ref": "sha256:6666666666666666666666666666666666666666666666666666666666666666",
+     "candidate": {
+      "kind": "cel-bundle",
+      "ref": "sha256:7777777777777777777777777777777777777777777777777777777777777777"
+     }
+    },
+    "receipt": {
+     "policy_function": "approval-policy",
+     "activation_ref": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+     "policy_snapshot_ref": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+     "bundle_ref": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+     "engine_build": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+     "inputs_ref": "sha256:d6b76200bb6f5dcabc7806569191166acf42e349ebfb12bc4b79120dcb030333",
+     "output": "accept",
+     "error": null
+    },
+    "audit": {
+     "rate_ppm": 100000,
+     "nonce": "1999999a00000000000000000000000000000000000000000000000000000000",
+     "selected": false
+    }
+   }
+  },
+  {
+   "name": "accept-audit-selected",
+   "note": "Draw 429496729 is below 100000 * 2^32 / 10^6, so a person audits this accept.",
+   "nonce": "19999999ffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+   "call": {
+    "output": "accept"
+   },
+   "expect": {
+    "format": "entelos.policy/1",
+    "kind": "policy",
+    "outcome": "accept",
+    "reason": "policy_output",
+    "date": "2026-11-20",
+    "item": {
+     "snapshot_ref": "sha256:5555555555555555555555555555555555555555555555555555555555555555",
+     "report_ref": "sha256:6666666666666666666666666666666666666666666666666666666666666666",
+     "candidate": {
+      "kind": "cel-bundle",
+      "ref": "sha256:7777777777777777777777777777777777777777777777777777777777777777"
+     }
+    },
+    "receipt": {
+     "policy_function": "approval-policy",
+     "activation_ref": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+     "policy_snapshot_ref": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+     "bundle_ref": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+     "engine_build": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+     "inputs_ref": "sha256:d6b76200bb6f5dcabc7806569191166acf42e349ebfb12bc4b79120dcb030333",
+     "output": "accept",
+     "error": null
+    },
+    "audit": {
+     "rate_ppm": 100000,
+     "nonce": "19999999ffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+     "selected": true
+    }
+   }
+  },
+  {
+   "name": "accept-rate-zero",
+   "note": "A rate of 0 selects no accept, also for draw 0.",
+   "policy": {
+    "function": "approval-policy",
+    "activation_ref": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "snapshot_ref": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "bundle_ref": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+    "engine_build": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+    "suspended": false,
+    "inputs": [
+     "change_class",
+     "report_passed"
+    ],
+    "audit_rate_ppm": 0
+   },
+   "nonce": "0000000000000000000000000000000000000000000000000000000000000000",
+   "call": {
+    "output": "accept"
+   },
+   "expect": {
+    "format": "entelos.policy/1",
+    "kind": "policy",
+    "outcome": "accept",
+    "reason": "policy_output",
+    "date": "2026-11-20",
+    "item": {
+     "snapshot_ref": "sha256:5555555555555555555555555555555555555555555555555555555555555555",
+     "report_ref": "sha256:6666666666666666666666666666666666666666666666666666666666666666",
+     "candidate": {
+      "kind": "cel-bundle",
+      "ref": "sha256:7777777777777777777777777777777777777777777777777777777777777777"
+     }
+    },
+    "receipt": {
+     "policy_function": "approval-policy",
+     "activation_ref": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+     "policy_snapshot_ref": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+     "bundle_ref": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+     "engine_build": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+     "inputs_ref": "sha256:d6b76200bb6f5dcabc7806569191166acf42e349ebfb12bc4b79120dcb030333",
+     "output": "accept",
+     "error": null
+    },
+    "audit": {
+     "rate_ppm": 0,
+     "nonce": "0000000000000000000000000000000000000000000000000000000000000000",
+     "selected": false
+    }
+   }
+  },
+  {
+   "name": "accept-rate-full",
+   "note": "A rate of 1000000 selects each accept, also for the highest draw.",
+   "policy": {
+    "function": "approval-policy",
+    "activation_ref": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "snapshot_ref": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "bundle_ref": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+    "engine_build": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+    "suspended": false,
+    "inputs": [
+     "change_class",
+     "report_passed"
+    ],
+    "audit_rate_ppm": 1000000
+   },
+   "nonce": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+   "call": {
+    "output": "accept"
+   },
+   "expect": {
+    "format": "entelos.policy/1",
+    "kind": "policy",
+    "outcome": "accept",
+    "reason": "policy_output",
+    "date": "2026-11-20",
+    "item": {
+     "snapshot_ref": "sha256:5555555555555555555555555555555555555555555555555555555555555555",
+     "report_ref": "sha256:6666666666666666666666666666666666666666666666666666666666666666",
+     "candidate": {
+      "kind": "cel-bundle",
+      "ref": "sha256:7777777777777777777777777777777777777777777777777777777777777777"
+     }
+    },
+    "receipt": {
+     "policy_function": "approval-policy",
+     "activation_ref": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+     "policy_snapshot_ref": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+     "bundle_ref": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+     "engine_build": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+     "inputs_ref": "sha256:d6b76200bb6f5dcabc7806569191166acf42e349ebfb12bc4b79120dcb030333",
+     "output": "accept",
+     "error": null
+    },
+    "audit": {
+     "rate_ppm": 1000000,
+     "nonce": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+     "selected": true
+    }
+   }
+  },
+  {
+   "name": "refuse-rule-failed",
+   "note": "The synthetic policy refuses a rule change with a failed report. A refuse has no audit.",
+   "sources": {
+    "evidence": null,
+    "report": {
+     "passed": false,
+     "change_class": "rule"
+    }
+   },
+   "call": {
+    "output": "refuse"
+   },
+   "expect": {
+    "format": "entelos.policy/1",
+    "kind": "policy",
+    "outcome": "refuse",
+    "reason": "policy_output",
+    "date": "2026-11-20",
+    "item": {
+     "snapshot_ref": "sha256:5555555555555555555555555555555555555555555555555555555555555555",
+     "report_ref": "sha256:6666666666666666666666666666666666666666666666666666666666666666",
+     "candidate": {
+      "kind": "cel-bundle",
+      "ref": "sha256:7777777777777777777777777777777777777777777777777777777777777777"
+     }
+    },
+    "receipt": {
+     "policy_function": "approval-policy",
+     "activation_ref": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+     "policy_snapshot_ref": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+     "bundle_ref": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+     "engine_build": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+     "inputs_ref": "sha256:d1559fa2247650117a1c3bf601b722539680c0e84b17fc21e0d09df3b930b449",
+     "output": "refuse",
+     "error": null
+    },
+    "audit": null
+   }
+  },
+  {
+   "name": "route-rule-passed",
+   "note": "The synthetic policy routes a rule change with a passed report to a person.",
+   "sources": {
+    "evidence": null,
+    "report": {
+     "passed": true,
+     "change_class": "rule"
+    }
+   },
+   "call": {
+    "output": "route"
+   },
+   "expect": {
+    "format": "entelos.policy/1",
+    "kind": "policy",
+    "outcome": "route",
+    "reason": "policy_output",
+    "date": "2026-11-20",
+    "item": {
+     "snapshot_ref": "sha256:5555555555555555555555555555555555555555555555555555555555555555",
+     "report_ref": "sha256:6666666666666666666666666666666666666666666666666666666666666666",
+     "candidate": {
+      "kind": "cel-bundle",
+      "ref": "sha256:7777777777777777777777777777777777777777777777777777777777777777"
+     }
+    },
+    "receipt": {
+     "policy_function": "approval-policy",
+     "activation_ref": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+     "policy_snapshot_ref": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+     "bundle_ref": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+     "engine_build": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+     "inputs_ref": "sha256:fca887f4a38986da79c2aeb02864844389612258f4492f68b35cdb0fb9a8e684",
+     "output": "route",
+     "error": null
+    },
+    "audit": null
+   }
+  },
+  {
+   "name": "accept-content-item",
+   "note": "A content proposal uses the same rules.",
+   "item": {
+    "snapshot_ref": "sha256:5555555555555555555555555555555555555555555555555555555555555555",
+    "report_ref": "sha256:6666666666666666666666666666666666666666666666666666666666666666",
+    "candidate": {
+     "kind": "content",
+     "ref": "sha256:8888888888888888888888888888888888888888888888888888888888888888"
+    },
+    "head": {
+     "kind": "content",
+     "collection": "loan-rules",
+     "partition": "region-a"
+    }
+   },
+   "call": {
+    "output": "accept"
+   },
+   "expect": {
+    "format": "entelos.policy/1",
+    "kind": "policy",
+    "outcome": "accept",
+    "reason": "policy_output",
+    "date": "2026-11-20",
+    "item": {
+     "snapshot_ref": "sha256:5555555555555555555555555555555555555555555555555555555555555555",
+     "report_ref": "sha256:6666666666666666666666666666666666666666666666666666666666666666",
+     "candidate": {
+      "kind": "content",
+      "ref": "sha256:8888888888888888888888888888888888888888888888888888888888888888"
+     }
+    },
+    "receipt": {
+     "policy_function": "approval-policy",
+     "activation_ref": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+     "policy_snapshot_ref": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+     "bundle_ref": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+     "engine_build": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+     "inputs_ref": "sha256:d6b76200bb6f5dcabc7806569191166acf42e349ebfb12bc4b79120dcb030333",
+     "output": "accept",
+     "error": null
+    },
+    "audit": {
+     "rate_ppm": 100000,
+     "nonce": "1999999a00000000000000000000000000000000000000000000000000000000",
+     "selected": false
+    }
+   }
+  },
+  {
+   "name": "accept-with-evidence",
+   "note": "Only the declared evidence input goes into the call and the digest.",
+   "policy": {
+    "function": "approval-policy",
+    "activation_ref": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "snapshot_ref": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "bundle_ref": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+    "engine_build": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+    "suspended": false,
+    "inputs": [
+     "change_class",
+     "evidence_corrected",
+     "report_passed"
+    ],
+    "audit_rate_ppm": 100000
+   },
+   "sources": {
+    "evidence": {
+     "evidence_human_reviewed": false,
+     "evidence_model_reviewed": false,
+     "evidence_all_automatic": true,
+     "evidence_corrected": false
+    },
+    "report": {
+     "passed": true,
+     "change_class": "typo"
+    }
+   },
+   "call": {
+    "output": "accept"
+   },
+   "expect": {
+    "format": "entelos.policy/1",
+    "kind": "policy",
+    "outcome": "accept",
+    "reason": "policy_output",
+    "date": "2026-11-20",
+    "item": {
+     "snapshot_ref": "sha256:5555555555555555555555555555555555555555555555555555555555555555",
+     "report_ref": "sha256:6666666666666666666666666666666666666666666666666666666666666666",
+     "candidate": {
+      "kind": "cel-bundle",
+      "ref": "sha256:7777777777777777777777777777777777777777777777777777777777777777"
+     }
+    },
+    "receipt": {
+     "policy_function": "approval-policy",
+     "activation_ref": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+     "policy_snapshot_ref": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+     "bundle_ref": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+     "engine_build": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+     "inputs_ref": "sha256:2226a26ca76598c234c7075d766c5b2207845fee8ddd7b2b0061bc3224e99fde",
+     "output": "accept",
+     "error": null
+    },
+    "audit": {
+     "rate_ppm": 100000,
+     "nonce": "1999999a00000000000000000000000000000000000000000000000000000000",
+     "selected": false
+    }
+   }
+  },
+  {
+   "name": "policy-error",
+   "note": "An engine error routes the item to a person.",
+   "call": {
+    "error": "evaluation_error"
+   },
+   "expect": {
+    "format": "entelos.policy/1",
+    "kind": "policy",
+    "outcome": "route",
+    "reason": "policy_error",
+    "date": "2026-11-20",
+    "item": {
+     "snapshot_ref": "sha256:5555555555555555555555555555555555555555555555555555555555555555",
+     "report_ref": "sha256:6666666666666666666666666666666666666666666666666666666666666666",
+     "candidate": {
+      "kind": "cel-bundle",
+      "ref": "sha256:7777777777777777777777777777777777777777777777777777777777777777"
+     }
+    },
+    "receipt": {
+     "policy_function": "approval-policy",
+     "activation_ref": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+     "policy_snapshot_ref": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+     "bundle_ref": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+     "engine_build": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+     "inputs_ref": "sha256:d6b76200bb6f5dcabc7806569191166acf42e349ebfb12bc4b79120dcb030333",
+     "output": null,
+     "error": "evaluation_error"
+    },
+    "audit": null
+   }
+  },
+  {
+   "name": "invalid-output",
+   "note": "A value that is not one of the three outcomes routes the item.",
+   "call": {
+    "output": "approve"
+   },
+   "expect": {
+    "format": "entelos.policy/1",
+    "kind": "policy",
+    "outcome": "route",
+    "reason": "invalid_output",
+    "date": "2026-11-20",
+    "item": {
+     "snapshot_ref": "sha256:5555555555555555555555555555555555555555555555555555555555555555",
+     "report_ref": "sha256:6666666666666666666666666666666666666666666666666666666666666666",
+     "candidate": {
+      "kind": "cel-bundle",
+      "ref": "sha256:7777777777777777777777777777777777777777777777777777777777777777"
+     }
+    },
+    "receipt": {
+     "policy_function": "approval-policy",
+     "activation_ref": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+     "policy_snapshot_ref": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+     "bundle_ref": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+     "engine_build": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+     "inputs_ref": "sha256:d6b76200bb6f5dcabc7806569191166acf42e349ebfb12bc4b79120dcb030333",
+     "output": "approve",
+     "error": null
+    },
+    "audit": null
+   }
+  },
+  {
+   "name": "missing-report",
+   "note": "No report gives no report_passed.",
+   "item": {
+    "snapshot_ref": "sha256:5555555555555555555555555555555555555555555555555555555555555555",
+    "report_ref": null,
+    "candidate": {
+     "kind": "cel-bundle",
+     "ref": "sha256:7777777777777777777777777777777777777777777777777777777777777777"
+    },
+    "head": {
+     "kind": "cel-bundle",
+     "function": "record-filter",
+     "scope": "team-a"
+    }
+   },
+   "sources": {
+    "evidence": null,
+    "report": null
+   },
+   "expect": {
+    "format": "entelos.policy/1",
+    "kind": "policy",
+    "outcome": "route",
+    "reason": "missing_input",
+    "date": "2026-11-20",
+    "item": {
+     "snapshot_ref": "sha256:5555555555555555555555555555555555555555555555555555555555555555",
+     "report_ref": null,
+     "candidate": {
+      "kind": "cel-bundle",
+      "ref": "sha256:7777777777777777777777777777777777777777777777777777777777777777"
+     }
+    },
+    "receipt": null,
+    "audit": null
+   }
+  },
+  {
+   "name": "missing-change-class",
+   "note": "The report has no change class.",
+   "sources": {
+    "evidence": null,
+    "report": {
+     "passed": true,
+     "change_class": null
+    }
+   },
+   "expect": {
+    "format": "entelos.policy/1",
+    "kind": "policy",
+    "outcome": "route",
+    "reason": "missing_input",
+    "date": "2026-11-20",
+    "item": {
+     "snapshot_ref": "sha256:5555555555555555555555555555555555555555555555555555555555555555",
+     "report_ref": "sha256:6666666666666666666666666666666666666666666666666666666666666666",
+     "candidate": {
+      "kind": "cel-bundle",
+      "ref": "sha256:7777777777777777777777777777777777777777777777777777777777777777"
+     }
+    },
+    "receipt": null,
+    "audit": null
+   }
+  },
+  {
+   "name": "missing-evidence",
+   "note": "The policy declares an evidence input, and the snapshot cites no valid evidence.",
+   "policy": {
+    "function": "approval-policy",
+    "activation_ref": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "snapshot_ref": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "bundle_ref": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+    "engine_build": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+    "suspended": false,
+    "inputs": [
+     "change_class",
+     "evidence_corrected",
+     "report_passed"
+    ],
+    "audit_rate_ppm": 100000
+   },
+   "expect": {
+    "format": "entelos.policy/1",
+    "kind": "policy",
+    "outcome": "route",
+    "reason": "missing_input",
+    "date": "2026-11-20",
+    "item": {
+     "snapshot_ref": "sha256:5555555555555555555555555555555555555555555555555555555555555555",
+     "report_ref": "sha256:6666666666666666666666666666666666666666666666666666666666666666",
+     "candidate": {
+      "kind": "cel-bundle",
+      "ref": "sha256:7777777777777777777777777777777777777777777777777777777777777777"
+     }
+    },
+    "receipt": null,
+    "audit": null
+   }
+  },
+  {
+   "name": "unknown-field",
+   "note": "The policy declares an input that the Host does not build. The producer cannot supply it.",
+   "policy": {
+    "function": "approval-policy",
+    "activation_ref": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "snapshot_ref": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "bundle_ref": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+    "engine_build": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+    "suspended": false,
+    "inputs": [
+     "change_class",
+     "producer_approved",
+     "report_passed"
+    ],
+    "audit_rate_ppm": 100000
+   },
+   "expect": {
+    "format": "entelos.policy/1",
+    "kind": "policy",
+    "outcome": "route",
+    "reason": "unknown_field",
+    "date": "2026-11-20",
+    "item": {
+     "snapshot_ref": "sha256:5555555555555555555555555555555555555555555555555555555555555555",
+     "report_ref": "sha256:6666666666666666666666666666666666666666666666666666666666666666",
+     "candidate": {
+      "kind": "cel-bundle",
+      "ref": "sha256:7777777777777777777777777777777777777777777777777777777777777777"
+     }
+    },
+    "receipt": null,
+    "audit": null
+   }
+  },
+  {
+   "name": "invalid-policy",
+   "note": "The sample rate is above 1000000.",
+   "policy": {
+    "function": "approval-policy",
+    "activation_ref": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "snapshot_ref": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "bundle_ref": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+    "engine_build": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+    "suspended": false,
+    "inputs": [
+     "change_class",
+     "report_passed"
+    ],
+    "audit_rate_ppm": 1000001
+   },
+   "expect": {
+    "format": "entelos.policy/1",
+    "kind": "policy",
+    "outcome": "route",
+    "reason": "invalid_policy",
+    "date": "2026-11-20",
+    "item": {
+     "snapshot_ref": "sha256:5555555555555555555555555555555555555555555555555555555555555555",
+     "report_ref": "sha256:6666666666666666666666666666666666666666666666666666666666666666",
+     "candidate": {
+      "kind": "cel-bundle",
+      "ref": "sha256:7777777777777777777777777777777777777777777777777777777777777777"
+     }
+    },
+    "receipt": null,
+    "audit": null
+   }
+  },
+  {
+   "name": "policy-suspended",
+   "note": "A suspend covers the date. The next typo change routes to a person.",
+   "policy": {
+    "function": "approval-policy",
+    "activation_ref": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "snapshot_ref": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "bundle_ref": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+    "engine_build": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+    "suspended": true,
+    "inputs": [
+     "change_class",
+     "report_passed"
+    ],
+    "audit_rate_ppm": 100000
+   },
+   "expect": {
+    "format": "entelos.policy/1",
+    "kind": "policy",
+    "outcome": "route",
+    "reason": "policy_suspended",
+    "date": "2026-11-20",
+    "item": {
+     "snapshot_ref": "sha256:5555555555555555555555555555555555555555555555555555555555555555",
+     "report_ref": "sha256:6666666666666666666666666666666666666666666666666666666666666666",
+     "candidate": {
+      "kind": "cel-bundle",
+      "ref": "sha256:7777777777777777777777777777777777777777777777777777777777777777"
+     }
+    },
+    "receipt": null,
+    "audit": null
+   }
+  },
+  {
+   "name": "no-policy",
+   "note": "No policy activation selects the date.",
+   "policy": null,
+   "expect": {
+    "format": "entelos.policy/1",
+    "kind": "policy",
+    "outcome": "route",
+    "reason": "no_policy",
+    "date": "2026-11-20",
+    "item": {
+     "snapshot_ref": "sha256:5555555555555555555555555555555555555555555555555555555555555555",
+     "report_ref": "sha256:6666666666666666666666666666666666666666666666666666666666666666",
+     "candidate": {
+      "kind": "cel-bundle",
+      "ref": "sha256:7777777777777777777777777777777777777777777777777777777777777777"
+     }
+    },
+    "receipt": null,
+    "audit": null
+   }
+  },
+  {
+   "name": "policy-change",
+   "note": "The item changes the policy function. The requirement entry for this head says policy, but rule 1 comes first.",
+   "item": {
+    "snapshot_ref": "sha256:5555555555555555555555555555555555555555555555555555555555555555",
+    "report_ref": "sha256:6666666666666666666666666666666666666666666666666666666666666666",
+    "candidate": {
+     "kind": "cel-bundle",
+     "ref": "sha256:7777777777777777777777777777777777777777777777777777777777777777"
+    },
+    "head": {
+     "kind": "cel-bundle",
+     "function": "approval-policy",
+     "scope": "team-a"
+    }
+   },
+   "expect": {
+    "format": "entelos.policy/1",
+    "kind": "policy",
+    "outcome": "route",
+    "reason": "policy_change",
+    "date": "2026-11-20",
+    "item": {
+     "snapshot_ref": "sha256:5555555555555555555555555555555555555555555555555555555555555555",
+     "report_ref": "sha256:6666666666666666666666666666666666666666666666666666666666666666",
+     "candidate": {
+      "kind": "cel-bundle",
+      "ref": "sha256:7777777777777777777777777777777777777777777777777777777777777777"
+     }
+    },
+    "receipt": null,
+    "audit": null
+   }
+  },
+  {
+   "name": "human-required",
+   "note": "A head with no requirement entry needs a human verdict.",
+   "item": {
+    "snapshot_ref": "sha256:5555555555555555555555555555555555555555555555555555555555555555",
+    "report_ref": "sha256:6666666666666666666666666666666666666666666666666666666666666666",
+    "candidate": {
+     "kind": "cel-bundle",
+     "ref": "sha256:7777777777777777777777777777777777777777777777777777777777777777"
+    },
+    "head": {
+     "kind": "cel-bundle",
+     "function": "record-filter",
+     "scope": "team-b"
+    }
+   },
+   "expect": {
+    "format": "entelos.policy/1",
+    "kind": "policy",
+    "outcome": "route",
+    "reason": "human_required",
+    "date": "2026-11-20",
+    "item": {
+     "snapshot_ref": "sha256:5555555555555555555555555555555555555555555555555555555555555555",
+     "report_ref": "sha256:6666666666666666666666666666666666666666666666666666666666666666",
+     "candidate": {
+      "kind": "cel-bundle",
+      "ref": "sha256:7777777777777777777777777777777777777777777777777777777777777777"
+     }
+    },
+    "receipt": null,
+    "audit": null
+   }
+  }
+ ],
+ "replays": [
+  {
+   "name": "replay-same-accept",
+   "of": "accept-typo-passed",
+   "inputs": {
+    "change_class": "typo",
+    "report_passed": true
+   },
+   "store_policy": {
+    "snapshot_ref": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "bundle_ref": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+   },
+   "build": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+   "call": {
+    "output": "accept"
+   },
+   "expect": {
+    "replay": "same"
+   }
+  },
+  {
+   "name": "replay-same-audit",
+   "note": "The stored nonce gives the same audit selection.",
+   "of": "accept-audit-selected",
+   "inputs": {
+    "change_class": "typo",
+    "report_passed": true
+   },
+   "store_policy": {
+    "snapshot_ref": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "bundle_ref": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+   },
+   "build": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+   "call": {
+    "output": "accept"
+   },
+   "expect": {
+    "replay": "same"
+   }
+  },
+  {
+   "name": "replay-same-refuse",
+   "of": "refuse-rule-failed",
+   "inputs": {
+    "change_class": "rule",
+    "report_passed": false
+   },
+   "store_policy": {
+    "snapshot_ref": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "bundle_ref": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+   },
+   "build": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+   "call": {
+    "output": "refuse"
+   },
+   "expect": {
+    "replay": "same"
+   }
+  },
+  {
+   "name": "replay-same-error",
+   "of": "policy-error",
+   "inputs": {
+    "change_class": "typo",
+    "report_passed": true
+   },
+   "store_policy": {
+    "snapshot_ref": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "bundle_ref": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+   },
+   "build": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+   "call": {
+    "error": "evaluation_error"
+   },
+   "expect": {
+    "replay": "same"
+   }
+  },
+  {
+   "name": "replay-differs",
+   "note": "The replay call gives another value. The stored verdict does not change.",
+   "of": "accept-typo-passed",
+   "inputs": {
+    "change_class": "typo",
+    "report_passed": true
+   },
+   "store_policy": {
+    "snapshot_ref": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "bundle_ref": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+   },
+   "build": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+   "call": {
+    "output": "route"
+   },
+   "expect": {
+    "replay": "differs",
+    "outcome": "route"
+   }
+  },
+  {
+   "name": "replay-input-mismatch",
+   "of": "accept-typo-passed",
+   "inputs": {
+    "change_class": "rule",
+    "report_passed": true
+   },
+   "store_policy": {
+    "snapshot_ref": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "bundle_ref": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+   },
+   "build": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+   "expect": {
+    "replay": "refused",
+    "code": "input_mismatch"
+   }
+  },
+  {
+   "name": "replay-policy-unavailable",
+   "of": "accept-typo-passed",
+   "inputs": {
+    "change_class": "typo",
+    "report_passed": true
+   },
+   "store_policy": null,
+   "build": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+   "expect": {
+    "replay": "refused",
+    "code": "artifact_unavailable"
+   }
+  },
+  {
+   "name": "replay-other-bundle",
+   "of": "accept-typo-passed",
+   "inputs": {
+    "change_class": "typo",
+    "report_passed": true
+   },
+   "store_policy": {
+    "snapshot_ref": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "bundle_ref": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+   },
+   "build": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+   "expect": {
+    "replay": "refused",
+    "code": "artifact_unavailable"
+   }
+  },
+  {
+   "name": "replay-other-build",
+   "of": "accept-typo-passed",
+   "inputs": {
+    "change_class": "typo",
+    "report_passed": true
+   },
+   "store_policy": {
+    "snapshot_ref": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "bundle_ref": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+   },
+   "build": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+   "expect": {
+    "replay": "refused",
+    "code": "implementation_unavailable"
+   }
+  },
+  {
+   "name": "replay-no-receipt",
+   "note": "No call happened, so no receipt names a call.",
+   "of": "policy-suspended",
+   "inputs": {
+    "change_class": "typo",
+    "report_passed": true
+   },
+   "store_policy": {
+    "snapshot_ref": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "bundle_ref": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+   },
+   "build": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+   "expect": {
+    "replay": "refused",
+    "code": "no_receipt"
+   }
+  }
+ ],
+ "requirements": [
+  {
+   "name": "policy-accept-on-human-head",
+   "note": "A policy verdict does not satisfy a human verdict requirement.",
+   "requirement": "human",
+   "changes_policy": false,
+   "verdicts": [
+    {
+     "kind": "policy",
+     "outcome": "accept"
+    }
+   ],
+   "expect": "awaiting_human"
+  },
+  {
+   "name": "policy-accept-on-policy-head",
+   "requirement": "policy",
+   "changes_policy": false,
+   "verdicts": [
+    {
+     "kind": "policy",
+     "outcome": "accept"
+    }
+   ],
+   "expect": "satisfied"
+  },
+  {
+   "name": "policy-accept-on-policy-change",
+   "note": "A change to a policy needs a human verdict, also if the head entry says policy.",
+   "requirement": "policy",
+   "changes_policy": true,
+   "verdicts": [
+    {
+     "kind": "policy",
+     "outcome": "accept"
+    }
+   ],
+   "expect": "awaiting_human"
+  },
+  {
+   "name": "human-accept-on-policy-change",
+   "requirement": "policy",
+   "changes_policy": true,
+   "verdicts": [
+    {
+     "kind": "human",
+     "disposition": "accept"
+    }
+   ],
+   "expect": "satisfied"
+  },
+  {
+   "name": "human-accept-on-human-head",
+   "requirement": "human",
+   "changes_policy": false,
+   "verdicts": [
+    {
+     "kind": "human",
+     "disposition": "accept"
+    }
+   ],
+   "expect": "satisfied"
+  },
+  {
+   "name": "policy-route",
+   "requirement": "policy",
+   "changes_policy": false,
+   "verdicts": [
+    {
+     "kind": "policy",
+     "outcome": "route"
+    }
+   ],
+   "expect": "awaiting_human"
+  },
+  {
+   "name": "policy-refuse",
+   "note": "A policy refuse is final for the snapshot, as a human reject is.",
+   "requirement": "policy",
+   "changes_policy": false,
+   "verdicts": [
+    {
+     "kind": "policy",
+     "outcome": "refuse"
+    },
+    {
+     "kind": "human",
+     "disposition": "accept"
+    }
+   ],
+   "expect": "rejected"
+  },
+  {
+   "name": "audit-reject-after-accept",
+   "note": "A person audits an automatic accept and rejects it.",
+   "requirement": "policy",
+   "changes_policy": false,
+   "verdicts": [
+    {
+     "kind": "policy",
+     "outcome": "accept"
+    },
+    {
+     "kind": "human",
+     "disposition": "reject"
+    }
+   ],
+   "expect": "rejected"
+  },
+  {
+   "name": "policy-refuse-on-human-head",
+   "note": "On a human head, the Host ignores each policy verdict.",
+   "requirement": "human",
+   "changes_policy": false,
+   "verdicts": [
+    {
+     "kind": "policy",
+     "outcome": "refuse"
+    },
+    {
+     "kind": "human",
+     "disposition": "accept"
+    }
+   ],
+   "expect": "satisfied"
+  },
+  {
+   "name": "no-verdict",
+   "requirement": "policy",
+   "changes_policy": false,
+   "verdicts": [],
+   "expect": "awaiting_human"
+  }
+ ]
+}
