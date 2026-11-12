@@ -4,6 +4,6 @@
   "security_sources": ["src/*.go", "src/*.py", "examples/*.py"],
   "not_security": ["*_test.go", "*/test_*.py", "tests/*"],
   "boundaries": ["tools/*", "verify.py", "Makefile"],
-  "level1": ["tools/claude_review.py", "tools/cross_review.py", "tools/classify_change.py", "docs/contracts/*", "docs/CONTRACTS.md", "src/cel-lifecycle/storage-port.md", "src/cel-lifecycle/storage-port-spec.md", "src/cel-lifecycle/conformance/*"],
+  "level1": ["tools/claude_review.py", "tools/cross_review.py", "tools/classify_change.py", "docs/contracts/*", "docs/CONTRACTS.md", "src/cel-lifecycle/storage-port.md", "src/cel-lifecycle/storage-port-spec.md", "src/cel-lifecycle/conformance/*", "docs/STABILITY.md", "tools/stability/*"],
   "generated": ["checksums.json"]
 }

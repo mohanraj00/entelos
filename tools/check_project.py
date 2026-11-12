@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Offline shared-harness layout, local-link and regular-source inventory check."""
+"""Offline shared-harness layout, local-link, stability pin and regular-source inventory check."""
 import argparse
 import hashlib
 import json
@@ -72,6 +72,10 @@ except (OSError,ValueError) as error:errors.append('.github/gates.json: %s'%erro
 # Each gate action must use one full SHA of mohanraj00/.github, not a tag or a branch.
 pins={m for f in sorted((ROOT/'.github/workflows').glob('*.yml')) for m in re.findall(r'uses: mohanraj00/\.github/gates@(\S+)',f.read_text())}
 if len(pins)!=1 or not re.fullmatch(r'[0-9a-f]{40}',next(iter(pins),'')):errors.append('the gates action must use one full SHA in all workflows: %s'%sorted(pins))
+# The stability pins of docs/STABILITY.md. A planned change updates them with --write.
+sys.path.insert(0,str(ROOT/'tools/stability'))
+from check_stability import errors as stability_errors
+errors+=['stability: '+x for x in stability_errors()]
 checksum=ROOT/'checksums.json'
 if a.write_checksums:
     if errors:raise SystemExit(json.dumps({'passed':False,'errors':errors}))
