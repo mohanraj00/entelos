@@ -12,14 +12,48 @@
   },
   "$defs": {
     "name": {"type": "string", "pattern": "^[A-Za-z0-9._-]{1,128}$"},
+    "scheme": {"type": "string", "pattern": "^[A-Za-z0-9._:/@-]{1,128}$"},
+    "code": {"type": "string", "pattern": "^[A-Z][A-Z0-9_]{0,63}$"},
+    "word": {"type": "string", "pattern": "^[a-z][a-z0-9_]{0,63}$"},
+    "text": {"type": "string", "maxLength": 256, "pattern": "^[^\\u0000-\\u001f\\u007f]*[^\\s\\u0000-\\u001f\\u007f][^\\u0000-\\u001f\\u007f]*$"},
+    "text_or_null": {"type": ["string", "null"], "maxLength": 256, "pattern": "^[^\\u0000-\\u001f\\u007f]*[^\\s\\u0000-\\u001f\\u007f][^\\u0000-\\u001f\\u007f]*$"},
+    "long_text": {"type": "string", "maxLength": 4096, "pattern": "^[^\\u0000-\\u001f\\u007f]*[^\\s\\u0000-\\u001f\\u007f][^\\u0000-\\u001f\\u007f]*$"},
+    "long_text_or_null": {"type": ["string", "null"], "maxLength": 4096, "pattern": "^[^\\u0000-\\u001f\\u007f]*[^\\s\\u0000-\\u001f\\u007f][^\\u0000-\\u001f\\u007f]*$"},
+    "value": {"type": ["string", "null"], "maxLength": 4096},
     "digest": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "digest_or_null": {"type": ["string", "null"], "pattern": "^sha256:[0-9a-f]{64}$"},
+    "time": {"type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]{1,9})?Z$"},
+    "attached": {
+      "type": "object",
+      "required": ["digest", "value"],
+      "additionalProperties": false,
+      "properties": {
+        "digest": {"$ref": "#/$defs/digest"},
+        "value": {"type": "object"}
+      }
+    },
     "producer": {
       "type": "object",
-      "required": ["id", "version"],
+      "required": ["id", "version", "digest_scheme"],
       "additionalProperties": false,
       "properties": {
         "id": {"$ref": "#/$defs/name"},
-        "version": {"$ref": "#/$defs/name"}
+        "version": {"$ref": "#/$defs/name"},
+        "digest_scheme": {"$ref": "#/$defs/scheme"},
+        "profile_digest": {"$ref": "#/$defs/digest_or_null"},
+        "completeness": {"$ref": "#/$defs/attached"},
+        "producer_data": {"$ref": "#/$defs/attached"}
+      }
+    },
+    "box": {
+      "type": "object",
+      "required": ["x0", "y0", "x1", "y1"],
+      "additionalProperties": false,
+      "properties": {
+        "x0": {"type": "number"},
+        "y0": {"type": "number"},
+        "x1": {"type": "number"},
+        "y1": {"type": "number"}
       }
     },
     "span": {
@@ -28,30 +62,105 @@
       "additionalProperties": false,
       "properties": {
         "start": {"type": "integer", "minimum": 0},
-        "end": {"type": "integer", "minimum": 1}
+        "end": {"type": "integer", "minimum": 1},
+        "page": {"type": "integer", "minimum": 1},
+        "box": {"$ref": "#/$defs/box"}
+      }
+    },
+    "part": {
+      "type": "object",
+      "required": ["role", "start", "end", "passed"],
+      "additionalProperties": false,
+      "properties": {
+        "role": {"$ref": "#/$defs/word"},
+        "start": {"type": ["integer", "null"], "minimum": 0},
+        "end": {"type": ["integer", "null"], "minimum": 1},
+        "passed": {"type": "boolean"}
+      }
+    },
+    "judgment": {
+      "type": "object",
+      "required": ["question", "p"],
+      "additionalProperties": false,
+      "properties": {
+        "question": {"$ref": "#/$defs/word"},
+        "answer": {"$ref": "#/$defs/text_or_null"},
+        "p": {"type": "number", "minimum": 0, "maximum": 1}
+      }
+    },
+    "data": {
+      "type": "object",
+      "required": ["field", "value"],
+      "additionalProperties": false,
+      "properties": {
+        "field": {"$ref": "#/$defs/text"},
+        "key": {"$ref": "#/$defs/text_or_null"},
+        "value": {"$ref": "#/$defs/value"},
+        "unit": {"$ref": "#/$defs/text_or_null"},
+        "parts": {"type": "array", "maxItems": 64, "items": {"$ref": "#/$defs/part"}},
+        "schema_digest": {"$ref": "#/$defs/digest"},
+        "policy_digest": {"$ref": "#/$defs/digest"},
+        "packs": {"type": "array", "maxItems": 64, "items": {"$ref": "#/$defs/text"}},
+        "judgments": {"type": "array", "maxItems": 64, "items": {"$ref": "#/$defs/judgment"}}
+      }
+    },
+    "pin": {
+      "type": "object",
+      "required": ["url", "digest", "retrieved", "edition"],
+      "additionalProperties": false,
+      "properties": {
+        "url": {"$ref": "#/$defs/long_text"},
+        "digest": {"$ref": "#/$defs/digest_or_null"},
+        "retrieved": {"$ref": "#/$defs/text_or_null"},
+        "edition": {"$ref": "#/$defs/text_or_null"}
+      }
+    },
+    "answer": {
+      "type": "object",
+      "required": ["reviewer", "reviewer_kind", "verdict", "time", "ms"],
+      "additionalProperties": false,
+      "properties": {
+        "reviewer": {"$ref": "#/$defs/text"},
+        "reviewer_kind": {"type": "string", "enum": ["human", "model"]},
+        "verdict": {"$ref": "#/$defs/word"},
+        "time": {"$ref": "#/$defs/time"},
+        "ms": {"type": "integer", "minimum": 0},
+        "entry_digest": {"$ref": "#/$defs/digest"}
       }
     },
     "review": {
       "type": "object",
-      "required": ["outcome", "reviewer", "reviewer_kind"],
+      "required": ["status", "answers"],
       "additionalProperties": false,
       "properties": {
-        "outcome": {"type": "string", "enum": ["confirmed", "rejected"]},
-        "reviewer": {"$ref": "#/$defs/name"},
-        "reviewer_kind": {"type": "string", "enum": ["human", "model"]}
+        "status": {"type": "string", "enum": ["admitted", "confirmed", "chosen", "corrected", "rejected", "not_in_document", "open", "disputed"]},
+        "answers": {"type": "array", "minItems": 1, "maxItems": 16, "items": {"$ref": "#/$defs/answer"}},
+        "task_digest": {"$ref": "#/$defs/digest_or_null"},
+        "resolution_digest": {"$ref": "#/$defs/digest"},
+        "correction_receipt_digest": {"$ref": "#/$defs/digest"}
       }
     },
     "fact": {
       "type": "object",
-      "required": ["fact_id", "receipt_digest", "source_digest", "span", "admission"],
+      "required": ["fact_id", "receipt_digest", "decision_digest", "source_kind", "source_digest", "text_digest", "spans", "outcome", "codes", "data"],
       "additionalProperties": false,
       "properties": {
-        "fact_id": {"$ref": "#/$defs/name"},
+        "fact_id": {"$ref": "#/$defs/text"},
         "receipt_digest": {"$ref": "#/$defs/digest"},
-        "source_digest": {"$ref": "#/$defs/digest"},
-        "span": {"$ref": "#/$defs/span"},
-        "admission": {"type": "string", "enum": ["automatic", "reviewed"]},
-        "review": {"$ref": "#/$defs/review"}
+        "decision_digest": {"$ref": "#/$defs/digest"},
+        "packet_digest": {"$ref": "#/$defs/digest_or_null"},
+        "source_kind": {"$ref": "#/$defs/word"},
+        "source_digest": {"$ref": "#/$defs/digest_or_null"},
+        "text_digest": {"$ref": "#/$defs/digest_or_null"},
+        "url": {"$ref": "#/$defs/long_text_or_null"},
+        "ref": {"$ref": "#/$defs/text_or_null"},
+        "spans": {"type": "array", "maxItems": 64, "items": {"$ref": "#/$defs/span"}},
+        "pins": {"type": "array", "maxItems": 16, "items": {"$ref": "#/$defs/pin"}},
+        "outcome": {"type": "string", "enum": ["admitted", "needs_verification", "rejected"]},
+        "codes": {"type": "array", "maxItems": 64, "items": {"$ref": "#/$defs/code"}},
+        "data": {"$ref": "#/$defs/data"},
+        "review": {"$ref": "#/$defs/review"},
+        "producer_data": {"$ref": "#/$defs/attached"}
       }
     }
   }

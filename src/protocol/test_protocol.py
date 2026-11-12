@@ -60,8 +60,11 @@ def validate(schema,value,where,root):
         return validate(root[schema['$ref'][len('#/$defs/'):]],value,where,root)
     kind=schema.get('type')
     checks={'object':lambda v:isinstance(v,dict),'array':lambda v:isinstance(v,list),'string':lambda v:isinstance(v,str),
-            'boolean':lambda v:isinstance(v,bool),'integer':lambda v:isinstance(v,int) and not isinstance(v,bool)}
-    if kind and not checks[kind](value):raise SchemaError(where+' must be of type '+kind)
+            'boolean':lambda v:isinstance(v,bool),'integer':lambda v:isinstance(v,int) and not isinstance(v,bool),
+            'number':lambda v:isinstance(v,(int,float)) and not isinstance(v,bool),'null':lambda v:v is None}
+    # A type list permits each type in the list, for example ["string", "null"].
+    kinds=kind if isinstance(kind,list) else [kind] if kind else []
+    if kinds and not any(checks[k](value) for k in kinds):raise SchemaError(where+' must be of type '+' or '.join(kinds))
     if 'const' in schema and value!=schema['const']:raise SchemaError(where+' must be '+json.dumps(schema['const']))
     if 'enum' in schema and value not in schema['enum']:raise SchemaError(where+' is not an allowed value')
     if isinstance(value,str):
@@ -70,7 +73,7 @@ def validate(schema,value,where,root):
         # Each schema pattern is anchored with ^ and $. In Python, $ also matches before a final newline,
         # so the check uses fullmatch, as $ does in ECMA-262.
         if 'pattern' in schema and not re.fullmatch(schema['pattern'],value):raise SchemaError(where+' does not match its pattern')
-    if isinstance(value,int) and not isinstance(value,bool):
+    if isinstance(value,(int,float)) and not isinstance(value,bool):
         for key in ('minimum','maximum'):
             if key not in schema:continue
             bound=schema[key]
@@ -80,6 +83,7 @@ def validate(schema,value,where,root):
             if value<bound if key=='minimum' else value>bound:raise SchemaError(where+' is out of range')
     if isinstance(value,list):
         if len(value)<schema.get('minItems',0):raise SchemaError(where+' has too few items')
+        if 'maxItems' in schema and len(value)>schema['maxItems']:raise SchemaError(where+' has too many items')
         for i,item in enumerate(value):
             if 'items' in schema:validate(schema['items'],item,where+'['+str(i)+']',root)
     if isinstance(value,dict):

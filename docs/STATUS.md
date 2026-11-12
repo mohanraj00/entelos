@@ -38,7 +38,7 @@ On 2026-11-11, a spec for [#130](https://github.com/mohanraj00/entelos/issues/13
 
 ### v0.4 evidence format
 
-On 2026-11-12, the evidence format `entelos.evidence/1` for [#148](https://github.com/mohanraj00/entelos/issues/148) was proposed in [EVIDENCE.md](../src/protocol/evidence/EVIDENCE.md). It is the first part of #104. It gives the digests, spans and reviews of the facts that a proposal cites, nine refusal rules in a fixed order and three bool policy inputs. The 31 vectors are hand-written. `check_spec.py` applies the rules to them. No Host reads the format.
+On 2026-11-12, the evidence format `entelos.evidence/1` for [#148](https://github.com/mohanraj00/entelos/issues/148) was proposed in [EVIDENCE.md](../src/protocol/evidence/EVIDENCE.md). It is the first part of #104. It gives the identity, source, spans, producer outcome, data and reviews of the facts that a proposal cites, 14 refusal rules in a fixed order and four bool policy inputs. Attached objects with a digest are the extension point for new producer fields. On 2026-11-12, a check against groundgate 0.14.0 found fields that the first draft lost, and the revision adds them. The 83 vectors are hand-written. `check_spec.py` applies the rules to them. No Host reads the format.
 
 ### M1 First contact
 
