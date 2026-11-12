@@ -414,7 +414,10 @@ func TestParseIssuerRefusesBadFiles(t *testing.T) {
 		},
 		"duplicate kid":     func(d lifecycle.Object) { d["keys"] = lifecycle.Array{key, key} },
 		"lifetime too long": func(d lifecycle.Object) { d["max_lifetime_seconds"] = num(maxLifetime + 1) },
-		"empty issuer":      func(d lifecycle.Object) { d["issuer"] = "" },
+		"duplicate role": func(d lifecycle.Object) {
+			d["principals"] = lifecycle.Array{lifecycle.Object{"subject": "reviewer-a", "roles": lifecycle.Array{"reviewer", "reviewer"}}}
+		},
+		"empty issuer": func(d lifecycle.Object) { d["issuer"] = "" },
 		"unknown role": func(d lifecycle.Object) {
 			d["principals"] = lifecycle.Array{lifecycle.Object{"subject": "a", "roles": lifecycle.Array{"admin"}}}
 		},

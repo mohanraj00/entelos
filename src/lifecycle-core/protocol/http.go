@@ -199,7 +199,10 @@ func (h *HTTPHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		h.reply(w, http.StatusRequestEntityTooLarge, failure("", "invalid_frame", "protocol", "frame exceeds the byte bound"))
 		return
 	}
+	// The status comes from the bounded response, so a response_too_large
+	// body gets 500.
 	response, _ := h.adapter.FrameAs(p, body)
+	response = limit(response)
 	code, _ := response["status"].(string)
 	h.reply(w, httpStatus(code), response)
 }

@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"io"
 	"regexp"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -140,6 +141,9 @@ func parseIssuer(raw []byte) (*issuer, error) {
 			name, isName := r.(string)
 			if !isName || !known[name] {
 				return nil, fmt.Errorf("principal %d: unknown role", i)
+			}
+			if slices.Contains(names, name) {
+				return nil, fmt.Errorf("principal %d: role %q is in the list two times", i, name)
 			}
 			names = append(names, name)
 		}
