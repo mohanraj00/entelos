@@ -26,7 +26,7 @@ An evidence document is one JSON object. [`schema/evidence.schema.json`](schema/
 Each table uses these value shapes:
 
 - A **name** has 1 to 128 characters from `A-Z`, `a-z`, `0-9`, `.`, `_` and `-`.
-- A **text** has 1 to 256 characters, with one or more characters that are not white space, and no control characters (U+0000 to U+001F and U+007F). Spaces and `:` are permitted. A **long text** has the same rule, with 4096 characters maximum.
+- A **text** has 1 to 256 characters, with one or more characters that are not white space, and no control characters (U+0000 to U+001F and U+007F). Spaces and `:` are permitted. A **long text** has the same rule, with 4096 characters maximum. So `data.field`, `data.key`, `data.unit`, `fact_id`, `ref` and each reviewer name have 256 characters maximum, and a control character in them gives `schema`. `data.value` is not a text.
 - A **word** matches `^[a-z][a-z0-9_]{0,63}$`. A **code** matches `^[A-Z][A-Z0-9_]{0,63}$`.
 - A **digest** is `sha256:` and 64 lowercase hex digits.
 - An **attached object** is `{"digest": <digest>, "value": <object>}`. Entelos keeps the object as it is and does not read it.
@@ -40,8 +40,6 @@ Each table uses these value shapes:
 | `producer.id` | name | The name of the producer. |
 | `producer.version` | name | The version of the producer. |
 | `producer.digest_scheme` | string | The name of the producer rule that makes each digest in the document. 1 to 128 characters from the name characters and `:`, `/` and `@`. |
-| `producer.profile_digest` | digest or null | Optional. The digest of the producer profile for the run. |
-| `producer.completeness` | attached object | Optional. The completeness report of the producer. |
 | `producer.producer_data` | attached object | Optional. Other data of the producer for the document. |
 | `facts` | array | 1 to 256 facts. |
 
@@ -53,6 +51,8 @@ Each table uses these value shapes:
 | `facts[].receipt_digest` | digest | The receipt of the run. Two facts from one run have the same receipt digest. |
 | `facts[].decision_digest` | digest | The decision in the receipt. This digest identifies one fact. |
 | `facts[].packet_digest` | digest or null | Optional. The input packet of the run. |
+| `facts[].profile_digest` | digest or null | Optional. The producer profile of the run. |
+| `facts[].completeness` | attached object | Optional. The completeness report of the run. |
 | `facts[].source_kind` | word | The kind of the source, for example `document`, `reference`, `external` or `knowledge`. |
 | `facts[].source_digest` | digest or null | The original source bytes, for example a PDF file. `null` if the producer has no original bytes. |
 | `facts[].text_digest` | digest or null | The NFC text that the spans are in. `null` if the fact has no text, for example a fact from a policy source. |
@@ -69,6 +69,8 @@ Each table uses these value shapes:
 | `facts[].pins[].retrieved` | text or null | The date when the producer got the source, as the producer wrote it. |
 | `facts[].pins[].edition` | text or null | The edition or the version of the source. |
 
+A document can hold facts from two or more runs. Each run can have a different profile and a different completeness report. The facts of one run give the same `profile_digest` and the same `completeness`. The rules do not check this.
+
 Span offsets are UTF-8 byte offsets into the NFC text that `text_digest` identifies. They are zero-based and half-open. Two or more spans can give one record or one passage in parts.
 
 ### Fact outcome and data
@@ -79,7 +81,7 @@ Span offsets are UTF-8 byte offsets into the NFC text that `text_digest` identif
 | `facts[].codes` | array | 0 to 64 codes of the producer, in the order of the producer. For example `ADMITTED_BY_POLICY`, `MODEL_CLEARED` or `EVIDENCE_REANCHORED`. |
 | `facts[].data.field` | text | The field of the fact. |
 | `facts[].data.key` | text or null | Optional. The key of the field. |
-| `facts[].data.value` | string or null | The value of the fact as a string, 4096 characters maximum. If a review corrected the value, this is the corrected value. |
+| `facts[].data.value` | string or null | The value of the fact as a string, 65536 characters maximum. Control characters are permitted, so a value can be a passage with line breaks. If a review corrected the value, this is the corrected value. |
 | `facts[].data.unit` | text or null | Optional. The unit of the value. |
 | `facts[].data.parts` | array | Optional. 0 to 64 parts: `role` (word), `start` and `end` (integer or null), `passed` (bool). |
 | `facts[].data.schema_digest` | digest | Optional. The schema of the producer. |
@@ -101,11 +103,14 @@ Span offsets are UTF-8 byte offsets into the NFC text that `text_digest` identif
 | `facts[].review.answers[].time` | string | The UTC time of the answer, `YYYY-MM-DDThh:mm:ss` with optional fractions and `Z`. |
 | `facts[].review.answers[].ms` | integer | The duration of the review in milliseconds, 0 or more. |
 | `facts[].review.answers[].entry_digest` | digest | Optional. The answer record of the producer. |
+| `facts[].review.answers[].producer_data` | attached object | Optional. Other data of the producer for the answer. |
 | `facts[].review.task_digest` | digest or null | Optional. The review task. |
 | `facts[].review.resolution_digest` | digest | Optional. The resolution record of the producer. |
 | `facts[].review.correction_receipt_digest` | digest | The receipt of the correction. Required if `status` is `corrected`. Not permitted for another status. |
 
 The review status `admitted` is an audit: one or more reviewers saw a fact that the producer admitted, and the fact stays admitted. The statuses `confirmed`, `chosen` and `corrected` give the value of a reviewer. The other statuses give no value.
+
+A corrected fact has two receipts. The original receipt gives `receipt_digest`, `decision_digest`, `packet_digest`, `profile_digest`, `completeness`, `outcome` and `codes`. These fields show the decision of the producer before the review. The correction receipt, that `correction_receipt_digest` identifies, gives `spans` and `data`. These fields show the value that the reviewer gave. `source_kind`, `source_digest`, `text_digest`, `url`, `ref` and `pins` are the same in the two receipts. The rules do not check this.
 
 ### Digests
 
@@ -165,6 +170,7 @@ This table shows how a mapping can give one fact from groundgate 0.14.0 (spec v0
 | `receipt_digest` | `receipt_sha256`. |
 | `decision_digest` | `candidate_sha256` of the decision. |
 | `packet_digest` | `packet_sha256` of the export. |
+| `profile_digest`, `completeness` | The profile digest and the completeness report of the run of the fact. |
 | `source_kind`, `url`, `ref` | `citation.source`, `citation.url`, `citation.ref`. |
 | `source_digest`, `text_digest` | `citation.source_sha256`, `citation.text_sha256`. Both are null for `external` and `knowledge`. |
 | `spans` | `[citation.span]`, or `[]` if the span is null. |
@@ -177,8 +183,8 @@ This table shows how a mapping can give one fact from groundgate 0.14.0 (spec v0
 | `pins` | For an external item: `url` and `retrieved`, with `digest` and `edition` null. |
 | `producer_data` | Other decision members, for example `proposer`, `missing` and `evidence_units`. |
 | `review.status` | The slot `status` of `resolution@1`. |
-| `review.answers` | Each `answer@2` record of the slot: `reviewer`, `verdict`, `time` and `ms`. `reviewer_kind` is a statement of the mapping, because `answer@2` has no kind. |
-| `review.task_digest`, `review.correction_receipt_digest` | The slot `task`, and the slot `receipt` if the status is `corrected`. |
+| `review.answers` | Each `answer@2` record of the slot: `reviewer`, `verdict`, `time` and `ms`. `reviewer_kind` is a statement of the mapping, because `answer@2` has no kind. The other answer members, for example `decision`, `candidate`, `codes_kept`, `reason_seen`, `keys` and `field_keys`, go in `answers[].producer_data`. |
+| `review.task_digest`, `review.correction_receipt_digest` | The slot `task`, and the slot `receipt` if the status is `corrected`. If the status is `corrected`, `spans` and `data` come from the decision in that receipt. |
 
 ## Citation in a proposal
 
@@ -193,7 +199,7 @@ This section is a proposal for #104. No code implements it.
 
 The major version is the number after the slash in `format`. A reader reads only the major version that it knows. An unknown major version gives `unsupported_evidence_format`. A reader of version 1 refuses a field that it does not know, so a new entelos field or a new enum value needs a new major version.
 
-The attached objects are the extension point. A producer can put a new field in `producer.producer_data`, `producer.completeness` or `facts[].producer_data` without a new major version. Words, codes, `source_kind` and `verdict` are not enums, so a new producer value also needs no new major version.
+The attached objects are the extension point. A producer can put a new field in `producer.producer_data`, `facts[].completeness`, `facts[].producer_data` or `facts[].review.answers[].producer_data` without a new major version. Words, codes, `source_kind` and `verdict` are not enums, so a new producer value also needs no new major version.
 
 ## Vectors
 
@@ -201,7 +207,7 @@ The attached objects are the extension point. A producer can put a new field in 
 
 - `name`: a unique name;
 - `evidence`: the document, or a value that is not a document;
-- in `evidence`, `{"$repeat": {"count": N, "fact": {…}}}` in place of a list is a list of N copies of the fact. The runner replaces `{i}` in `fact_id` with the index, from 0. `{"$repeat": {"count": N, "item": {…}}}` is a list of N copies of the item;
+- in `evidence`, `{"$repeat": {"count": N, "fact": {…}}}` in place of a list is a list of N copies of the fact. The runner replaces `{i}` in `fact_id` with the index, from 0. `{"$repeat": {"count": N, "item": {…}}}` is a list of N copies of the item. `{"$text": {"count": N, "char": "x"}}` is a string of N copies of the character;
 - `expect`: one of these:
   - `{"valid": true, "inputs": {…}}`, with the four policy inputs;
   - `{"valid": false, "code": "invalid_evidence", "rule": "<rule>"}`;
@@ -223,4 +229,5 @@ The checker applies the same rules that a Host will apply. Agreement of the chec
 - The format has no signature and no producer authentication. The caller of `propose` is responsible for the source of the document.
 - The rules do not check that a span is in its text, that a span starts on a character boundary, or that a page exists.
 - The rules do not check that a review time is a real calendar time or that the answers agree with the status.
-- The map from groundgate is a table only. No mapping code or groundgate receipt was run.
+- The map from groundgate is a table only. This repository has no mapping code and no groundgate receipt. A check outside this repository mapped one groundgate receipt with 48 decisions to the schema of commit c4997ef, with 0 schema errors.
+- A value longer than 65536 characters does not fit in `data.value`.

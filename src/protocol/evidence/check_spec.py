@@ -33,8 +33,10 @@ def table_terms(text):
 
 def expand(value):
     """Replace each {"$repeat": {"count", "fact"}} with count copies. {i} in fact_id is the index.
-    {"$repeat": {"count", "item"}} gives count plain copies of the item."""
+    {"$repeat": {"count", "item"}} gives count plain copies of the item.
+    {"$text": {"count", "char"}} gives a string of count copies of char."""
     if isinstance(value,dict):
+        if set(value)=={'$text'}:return value['$text']['char']*value['$text']['count']
         if set(value)=={'$repeat'}:
             r=value['$repeat']
             if 'item' in r:return [expand(r['item']) for _ in range(r['count'])]
@@ -108,10 +110,11 @@ def self_test(doc):
     def major_as_format(d):case(d,'format-major-2')['expect']={'valid':False,'code':'invalid_evidence','rule':'format'}
     def drop_correction_receipt(d):del case(d,'valid-corrected')['evidence']['facts'][0]['review']['correction_receipt_digest']
     def add_unknown_field(d):case(d,'valid-full-data')['evidence']['facts'][0]['data']['proposer']='model-a'
+    def long_value(d):case(d,'valid-value-max')['evidence']['facts'][0]['data']['value']['$text']['count']=65537
     def swap_order(d):case(d,'rejected-before-open')['expect']['rule']='open_review'
     missed=[]
     for f in (flip_input,flip_corrected,change_rule,accept_rejected,drop_rule_case,grow_list,major_as_format,
-              drop_correction_receipt,add_unknown_field,swap_order):
+              drop_correction_receipt,add_unknown_field,long_value,swap_order):
         d=copy.deepcopy(doc);f(d)
         if not run(d):missed.append(f.__name__)
     return ['self-test: no error for '+m for m in missed]
