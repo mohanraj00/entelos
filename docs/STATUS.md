@@ -42,7 +42,7 @@ On 2026-11-12, the evidence format `entelos.evidence/1` for [#148](https://githu
 
 ### v0.4 policy verdict
 
-On 2026-11-12, the policy verdict `entelos.policy/1` for [#154](https://github.com/mohanraj00/entelos/issues/154) was proposed in [POLICY.md](../src/protocol/policy/POLICY.md). An approved policy gives accept, refuse or route to a person. Nine rules in a fixed order route an item to a person: a policy change, a human head, no policy, a suspend, a policy that is not valid, an unknown input, a missing input, an engine error and an invalid value. The verdict has a receipt with the policy version, the input digest and the build, and an audit draw from a Host nonce. A policy verdict never satisfies a human verdict requirement. The 39 vectors are hand-written. `check_spec.py` applies the rules to them. No Host writes the record, and no CEL engine ran the synthetic policy.
+On 2026-11-12, the policy verdict `entelos.policy/1` for [#154](https://github.com/mohanraj00/entelos/issues/154) was proposed in [POLICY.md](../src/protocol/policy/POLICY.md). An approved policy gives accept, refuse or route to a person. Nine rules in a fixed order route an item to a person: a policy change, a human head, no policy, a suspend, a policy that is not valid, an unknown input, a missing input, an engine error and an invalid value. The verdict has a receipt with the policy version, the input digest and the build, and an audit draw from a Host nonce. A policy verdict never satisfies a human verdict requirement. The 40 vectors are hand-written. `check_spec.py` applies the rules to them. No Host writes the record, and no CEL engine ran the synthetic policy.
 
 ### M1 First contact
 

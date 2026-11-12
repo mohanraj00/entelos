@@ -152,8 +152,7 @@
           "type": [
             "string",
             "null"
-          ],
-          "maxLength": 128
+          ]
         },
         "error": {
           "type": [

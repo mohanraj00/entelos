@@ -507,6 +507,39 @@
    }
   },
   {
+   "name": "invalid-output-long",
+   "note": "A long value that is not an outcome is kept in the receipt. The string limit of the policy bundle bounds its length.",
+   "call": {
+    "output": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+   },
+   "expect": {
+    "format": "entelos.policy/1",
+    "kind": "policy",
+    "outcome": "route",
+    "reason": "invalid_output",
+    "date": "2026-11-20",
+    "item": {
+     "snapshot_ref": "sha256:5555555555555555555555555555555555555555555555555555555555555555",
+     "report_ref": "sha256:6666666666666666666666666666666666666666666666666666666666666666",
+     "candidate": {
+      "kind": "cel-bundle",
+      "ref": "sha256:7777777777777777777777777777777777777777777777777777777777777777"
+     }
+    },
+    "receipt": {
+     "policy_function": "approval-policy",
+     "activation_ref": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+     "policy_snapshot_ref": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+     "bundle_ref": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+     "engine_build": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+     "inputs_ref": "sha256:d6b76200bb6f5dcabc7806569191166acf42e349ebfb12bc4b79120dcb030333",
+     "output": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+     "error": null
+    },
+    "audit": null
+   }
+  },
+  {
    "name": "missing-report",
    "note": "No report gives no report_passed.",
    "item": {
