@@ -18,6 +18,8 @@ This source-only reference does not vendor dependencies or distribute compiled b
 
 The author CLI is fetched separately from its pinned public repository, which retains its Apache-2.0 license and dependency notices. Its source and binaries are not in this tree.
 
+The optional approval dashboard uses the mugham UI kit, tag `v0.1.0` (commit `7943c22674d6175bd6ef7f853e464c705ae3ec38`), licence Apache-2.0. The kit has no runtime dependency. `examples/approval-dashboard/run.py` fetches it from its public repository into the work directory and copies its `LICENSE` with it into the served site. Its source is not in this tree.
+
 ## CI tools
 
 The [Claude review](../.github/workflows/claude-review.yml) and [CI](../.github/workflows/ci.yml) workflows each download one tool on the GitHub runner. The tools are not in this tree, and this project does not distribute them.

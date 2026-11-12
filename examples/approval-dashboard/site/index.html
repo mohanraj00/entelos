@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+  <meta name="referrer" content="no-referrer">
+  <title>Entelos approval dashboard</title>
+  <link rel="stylesheet" href="mugham/src/tokens/tokens.css">
+  <link rel="stylesheet" href="page.css">
+  <script type="module" src="app.js"></script>
+</head>
+<body>
+  <header>
+    <h1>Approval dashboard</h1>
+    <p>An optional client of the Entelos approval API. The API is the contract.</p>
+  </header>
+  <form id="sign-in" autocomplete="off">
+    <label for="token">Reviewer token</label>
+    <input id="token" type="password" autocomplete="off" spellcheck="false" required>
+    <button type="submit">Open</button>
+    <div id="sign-in-error" role="alert"></div>
+  </form>
+  <main id="main" hidden>
+    <section id="list-view" aria-labelledby="list-title" hidden>
+      <h2 id="list-title">Open proposals</h2>
+      <div id="as-of"></div>
+      <div id="list-error" role="alert"></div>
+      <mu-card-grid id="list"></mu-card-grid>
+      <div id="open-buttons" class="buttons"></div>
+    </section>
+    <section id="detail-view" aria-labelledby="detail-title" hidden>
+      <h2 id="detail-title">Evidence</h2>
+      <mu-button id="back"></mu-button>
+      <mu-card id="evidence"></mu-card>
+      <mu-card id="source"></mu-card>
+      <h3>Bundle</h3>
+      <div id="bundle" class="texts"></div>
+      <h3>Qualification reports</h3>
+      <div id="reports" class="cards"></div>
+      <h3>Verdicts</h3>
+      <mu-card-grid id="verdicts"></mu-card-grid>
+      <h3>Record a verdict</h3>
+      <mu-editable-form id="reason"></mu-editable-form>
+      <div class="buttons">
+        <mu-action-button id="accept"></mu-action-button>
+        <mu-action-button id="reject"></mu-action-button>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

@@ -15,6 +15,15 @@ This file lists the changes for each snapshot tag. A tag is a stable snapshot to
   replayable receipt. A policy verdict never satisfies a human verdict
   requirement. `make check` runs its spec checker. No Host writes it yet.
 
+- [examples/approval-dashboard](examples/approval-dashboard/README.md) adds an
+  optional approval dashboard (#157) on the HTTP approval API with a local
+  static token. It uses the mugham UI kit at the tag `v0.1.0`, pinned in
+  `mugham.json`. The new sidecar flag `--http-static` serves its public files
+  from the origin of the API. `make verify` runs its browser test: the list,
+  the evidence view, one verdict and one API refusal.
+  The Go package `protocol` adds the experimental `StaticHandler` and
+  `NewStaticHandler`.
+
 ## v0.3.0 (2026-11-11)
 
 - The Host rejects wrong field types, and both stores refuse state that is too deep to read (#136).

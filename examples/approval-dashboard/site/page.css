@@ -1,0 +1,8 @@
+body { margin: 0 auto; max-width: 72rem; padding: var(--mu-space-4); background: var(--mu-color-surface); color: var(--mu-color-text); font: var(--mu-type-body); }
+h1, h2, h3 { margin: var(--mu-space-4) 0 var(--mu-space-2); }
+section > * + * { margin-top: var(--mu-space-3); }
+#sign-in { display: flex; flex-wrap: wrap; gap: var(--mu-space-2); align-items: center; }
+.buttons, .cards, .texts { display: flex; flex-wrap: wrap; gap: var(--mu-space-2); }
+.texts { flex-direction: column; }
+.texts mu-text { white-space: pre-wrap; overflow-wrap: anywhere; }
+@media (forced-colors: active) { body { background: Canvas; color: CanvasText; } }

@@ -194,6 +194,15 @@ try:
  check('browser-executor-ingest','Does the browser executor answer from a pin of WASM-qualified Host records, keep its log in IndexedDB, and does the Host ingest that log once?',
        example.returncode==0 and example_results['status']=='passed',{k:example_results.get(k) for k in ['status','error','timing','user_agent']}
        |{'checks':[x['name'] for x in example_results.get('checks',[]) if x.get('passed')],'failed':[x for x in example_results.get('checks',[]) if not x.get('passed')]})
+ # The approval dashboard on the HTTP approval API, with the mugham kit at the pin of mugham.json, in a headless browser.
+ dashboard=run('approval-dashboard',[sys.executable,'-B',ROOT/'examples/approval-dashboard/run.py','--work',w/'approval-dashboard','--sidecar',w/'bin/entelos-sidecar',
+               '--cel-binary',w/'bin/cel-handoff','--record-bundle',w/'record-bundle'])
+ dashboard_path=w/'approval-dashboard/results.json'
+ dashboard_results=json.loads(dashboard_path.read_text()) if dashboard_path.exists() else {'status':'failed','error':'run.py wrote no results.json','stderr':dashboard.stderr}
+ check('approval-dashboard','Does the dashboard with the pinned mugham kit list the proposals, show the evidence, record one verdict and show one API refusal through the HTTP API?',
+       dashboard.returncode==0 and dashboard_results['status']=='passed',{k:dashboard_results.get(k) for k in ['status','error']}
+       |{'mugham':dashboard_results.get('record',{}).get('mugham'),'browser':dashboard_results.get('record',{}).get('browser'),
+         'checks':[x['name'] for x in dashboard_results.get('checks',[]) if x.get('passed')],'failed':[x for x in dashboard_results.get('checks',[]) if not x.get('passed')]})
  demo=run('consumer-reuse',[sys.executable,'-B',ROOT/'examples/ci-trigger/run.py','--work',w/'reuse','--cel-binary',w/'bin/cel-handoff','--author-binary',w/'bin/cel-expr','--record-bundle',w/'record-bundle','--host',w/'bin/lifecycle-core'])
  reuse=json.loads((w/'reuse/results.json').read_text())
  check('two-consumers-and-baseline','Do both consumer loops and the ordinary-code comparison pass?',demo.returncode==0 and reuse['status']=='passed',{'status':reuse['status'],'checks':reuse['checks'],'measurements':reuse['measurements'],'errors':reuse['errors']})
