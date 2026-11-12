@@ -14,7 +14,7 @@ GitHub issues own live status. This map identifies bounded work for this source 
 | [Answer the first three questions](https://github.com/mohanraj00/entelos/issues/38) | Done: [COMPARISON.md](COMPARISON.md), merged in #48. |
 | [Review the Go approval and record path](https://github.com/mohanraj00/entelos/issues/136) | Done: the review found SEC-01 (P2), fixed in #137. |
 | [An approval API for proposals, evidence and verdicts](https://github.com/mohanraj00/entelos/issues/130) | Implemented: spec in #142, Go Host and sidecar in #149. `TestApprovalVectors` runs the vectors. Open until a release contains the API. Milestone v0.4. |
-| [Typed rule inputs and outputs](https://github.com/mohanraj00/entelos/issues/126) | Open: spec merged in #141, engine implementation merged in #144. Next: a lifecycle Host test of a typed bundle, with receipts and replay. |
+| [Typed rule inputs and outputs](https://github.com/mohanraj00/entelos/issues/126) | Open: spec merged in #141, engine implementation merged in #144. A lifecycle Host test of a typed bundle, with receipts and replay, is in review. |
 | [A content proposal type](https://github.com/mohanraj00/entelos/issues/153) | Proposed: [CONTENT.md](../src/protocol/content/CONTENT.md), two schemas and hand-written vectors. No Host reads it. The Host code is in v0.5. Milestone v0.4. |
 | [Evidence format of an external producer](https://github.com/mohanraj00/entelos/issues/148) | Proposed: [EVIDENCE.md](../src/protocol/evidence/EVIDENCE.md), a schema and hand-written vectors. No Host reads it. The code that reads the evidence is in #104 (v0.5). Milestone v0.4. |
 
