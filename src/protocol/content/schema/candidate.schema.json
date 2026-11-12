@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "entelos.candidate",
+  "title": "Candidate of a proposal, by kind",
+  "$defs": {
+    "cel-bundle": {
+      "type": "object",
+      "required": ["kind", "bundle"],
+      "additionalProperties": false,
+      "properties": {
+        "kind": {"type": "string", "const": "cel-bundle"},
+        "bundle": {
+          "type": "object",
+          "required": ["manifest", "environment", "source", "fixed"],
+          "additionalProperties": false,
+          "properties": {
+            "manifest": {"type": "string"},
+            "environment": {"type": "string"},
+            "source": {"type": "string"},
+            "fixed": {"type": "string"}
+          }
+        }
+      }
+    },
+    "content": {
+      "type": "object",
+      "required": ["kind", "manifest"],
+      "additionalProperties": false,
+      "properties": {
+        "kind": {"type": "string", "const": "content"},
+        "manifest": {"type": "string"}
+      }
+    },
+    "candidate_reference": {
+      "type": "object",
+      "required": ["kind", "ref"],
+      "additionalProperties": false,
+      "properties": {
+        "kind": {"type": "string", "enum": ["cel-bundle", "content"]},
+        "ref": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"}
+      }
+    }
+  }
+}
