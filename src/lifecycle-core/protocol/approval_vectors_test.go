@@ -7,8 +7,9 @@ package protocol
 // $type object and $wait. The expected values come from the vector files,
 // not from this Host.
 //
-// The steps go through the Unix socket of a Server, so each step runs as the
-// principal of its own token. The parity steps also go to the Host directly,
+// The steps go through the Unix socket of a Server and through the HTTP
+// binding, with signed claims and with local static tokens, so each step
+// runs as the principal of its own credential. The parity steps also go to the Host directly,
 // as the JSONL host sends them. qualify needs the CEL executable, so the test
 // needs LIFECYCLE_CEL_BINARY and LIFECYCLE_CEL_BUNDLE, as the lifecycle
 // scenario does. With LIFECYCLE_REQUIRE_SCENARIO, a missing value is a failure.
@@ -304,6 +305,80 @@ func readApprovalVector(t *testing.T, path string) lifecycle.Object {
 	return doc
 }
 
+// transports are the three paths of each approval step: the socket, HTTP
+// with signed claims and HTTP with the static tokens of local mode.
+var transports = []string{"socket", "http-claim", "http-token"}
+
+// startTransport serves a new Host on one transport. It gives a function
+// that sends one step as one principal name.
+func startTransport(t *testing.T, name string, doc lifecycle.Object, s *Schemas, dir string) func(principal string, payload []byte) lifecycle.Object {
+	t.Helper()
+	host := approvalHost(t, filepath.Join(dir, name+".git"), doc["context"], filepath.Join(dir, name+".clock"))
+	principals := doc["principals"].(lifecycle.Object)
+	credentials := filepath.Join(dir, name+"-credentials.json")
+	tokens := writeCredentials(t, credentials, principals)
+	adapter := NewAdapter(host, s)
+	if name == "socket" {
+		server, err := NewCredentialServer(adapter, credentials)
+		if err != nil {
+			t.Fatal(err)
+		}
+		l, err := Listen(sock)
+		if err != nil {
+			t.Fatal(err)
+		}
+		go server.Serve(l)
+		t.Cleanup(func() { server.Shutdown(l) })
+		return func(principal string, payload []byte) lifecycle.Object {
+			token := tokens[principal]
+			if principal == "$unknown" {
+				token = randomToken(t)
+			}
+			return socketRequest(t, token, payload)
+		}
+	}
+	if name == "http-token" {
+		url := startHTTP(t, HTTPConfig{CredentialsFile: credentials, LocalTokens: true}, adapter)
+		return func(principal string, payload []byte) lifecycle.Object {
+			token := tokens[principal]
+			if principal == "$unknown" {
+				token = randomToken(t)
+			}
+			return httpStep(t, url, token, payload)
+		}
+	}
+	key := newKey(t, "vector-key")
+	list := lifecycle.Array{}
+	for _, n := range sortedNames(principals) {
+		p := principals[n].(lifecycle.Object)
+		list = append(list, lifecycle.Object{"subject": p["actor"], "roles": p["roles"]})
+	}
+	issuerFile := filepath.Join(dir, "issuer.json")
+	writeIssuer(t, issuerFile, []testKey{key}, list)
+	scope := doc["context"].(lifecycle.Object)["scope"].(string)
+	url := startHTTP(t, HTTPConfig{IssuerFile: issuerFile, CredentialsFile: credentials, Tenant: scope}, adapter)
+	return func(principal string, payload []byte) lifecycle.Object {
+		subject := "$unknown"
+		if principal != "$unknown" {
+			subject = principals[principal].(lifecycle.Object)["actor"].(string)
+		}
+		body := claimBody(subject, time.Now())
+		body["tenant"] = scope
+		return httpStep(t, url, mint(key, body), payload)
+	}
+}
+
+// httpStep posts one step and checks that the HTTP status agrees with the
+// response status.
+func httpStep(t *testing.T, url, bearer string, payload []byte) lifecycle.Object {
+	t.Helper()
+	status, got := post(t, url, bearer, payload, nil)
+	if code, _ := got["status"].(string); status != httpStatus(code) {
+		t.Errorf("HTTP status %d for response status %s", status, code)
+	}
+	return got
+}
+
 func TestApprovalVectors(t *testing.T) {
 	_, bundleDir := celRuntime(t)
 	bundleDir, _ = filepath.Abs(bundleDir)
@@ -312,57 +387,59 @@ func TestApprovalVectors(t *testing.T) {
 	if len(paths) != 3 {
 		t.Fatalf("found %d approval vector files, want 3", len(paths))
 	}
-	total := 0
+	total := map[string]int{}
 	for _, path := range paths {
 		doc := readApprovalVector(t, path)
 		t.Run(filepath.Base(path), func(t *testing.T) {
 			inTempDir(t)
 			dir, _ := os.Getwd()
-			host := approvalHost(t, filepath.Join(dir, "socket.git"), doc["context"], filepath.Join(dir, "socket.clock"))
-			tokens := writeCredentials(t, "credentials.json", doc["principals"].(lifecycle.Object))
-			server, err := NewCredentialServer(NewAdapter(host, s), "credentials.json")
-			if err != nil {
-				t.Fatal(err)
-			}
-			l, err := Listen(sock)
-			if err != nil {
-				t.Fatal(err)
-			}
-			go server.Serve(l)
-			defer server.Shutdown(l)
 			clocks := stepClocks(doc)
-			bound := map[string]string{}
-			for i, raw := range doc["steps"].(lifecycle.Array) {
-				step := raw.(lifecycle.Object)
-				total++
-				writePrivate(t, filepath.Join(dir, "socket.clock"), []byte(clocks[i]+"\n"))
-				token := tokens[step["principal"].(string)]
-				if step["principal"] == "$unknown" {
-					token = randomToken(t)
-				} else if token == "" {
-					t.Fatalf("%s: unknown principal %v", step["name"], step["principal"])
+			captured := map[string]map[string]string{}
+			for _, name := range transports {
+				send := startTransport(t, name, doc, s, dir)
+				bound := map[string]string{}
+				for i, raw := range doc["steps"].(lifecycle.Array) {
+					step := raw.(lifecycle.Object)
+					total[name]++
+					writePrivate(t, filepath.Join(dir, name+".clock"), []byte(clocks[i]+"\n"))
+					principal := step["principal"].(string)
+					if _, known := doc["principals"].(lifecycle.Object)[principal]; !known && principal != "$unknown" {
+						t.Fatalf("%s: unknown principal %v", step["name"], principal)
+					}
+					request := approvalSubstitute(t, step["request"], bound, bundleDir).(lifecycle.Object)
+					payload, err := Canonical(request)
+					if err != nil {
+						t.Fatal(err)
+					}
+					actual := normal(t, send(principal, payload))
+					expected := step["expect"].(lifecycle.Object)["response"]
+					for _, e := range approvalMatch(expected, actual, bound, "response") {
+						t.Errorf("%s %s: %s", name, step["name"], e)
+					}
+					for _, e := range shape(s, actual, request["operation"]) {
+						t.Errorf("%s %s: %s", name, step["name"], e)
+					}
 				}
-				request := approvalSubstitute(t, step["request"], bound, bundleDir).(lifecycle.Object)
-				payload, err := Canonical(request)
-				if err != nil {
-					t.Fatal(err)
-				}
-				actual := normal(t, socketRequest(t, token, payload))
-				expected := step["expect"].(lifecycle.Object)["response"]
-				for _, e := range approvalMatch(expected, actual, bound, "response") {
-					t.Errorf("%s: %s", step["name"], e)
-				}
-				for _, e := range shape(s, actual, request["operation"]) {
-					t.Errorf("%s: %s", step["name"], e)
+				captured[name] = bound
+			}
+			// Each transport writes to its own store with the same clocks, so
+			// each record reference must be equal on all three.
+			for _, name := range transports[1:] {
+				for capture, ref := range captured["socket"] {
+					if strings.HasPrefix(ref, "sha256:") && captured[name][capture] != ref {
+						t.Errorf("%s: %s differs: socket %s, %s %s", name, capture, ref, name, captured[name][capture])
+					}
 				}
 			}
 			if parity, ok := doc["parity"].(lifecycle.Array); ok {
-				checkParity(t, doc, parity, bound, bundleDir, clocks, filepath.Join(dir, "jsonl.git"), filepath.Join(dir, "jsonl.clock"))
+				checkParity(t, doc, parity, captured["socket"], bundleDir, clocks, filepath.Join(dir, "jsonl.git"), filepath.Join(dir, "jsonl.clock"))
 			}
 		})
 	}
-	if total != 46 {
-		t.Fatalf("ran %d approval steps; the vector files have 46", total)
+	for _, name := range transports {
+		if total[name] != 46 {
+			t.Fatalf("%s: ran %d approval steps; the vector files have 46", name, total[name])
+		}
 	}
 }
 

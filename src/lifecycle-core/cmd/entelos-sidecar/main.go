@@ -8,8 +8,16 @@
 // --clock-file is for conformance tests only. The Host then reads its time
 // from that file for each request, not from the system clock.
 //
+// --http-listen adds the HTTP binding of APPROVAL.md as a second transport.
+// It needs --credentials-file for the socket and one HTTP credential mode:
+// --issuer-file for signed claims, or --http-local-tokens for the static
+// tokens of the credentials file on a loopback address. The address must be
+// loopback unless --http-allow-remote is given. The sidecar has no TLS; a
+// remote address needs a TLS front proxy.
+//
 // When the socket listens, the command writes one JSON line to stdout:
-// {"socket":"<path>","status":"listening"}. On SIGINT or SIGTERM, it closes
+// {"socket":"<path>","status":"listening"}. With --http-listen, the line
+// also has "http":"<address>". On SIGINT or SIGTERM, it closes
 // the socket, removes the socket file and exits with status 0.
 package main
 
@@ -37,6 +45,10 @@ func run() int {
 	tokenFile := flag.String("token-file", "", "private file containing the sidecar token")
 	credentialsFile := flag.String("credentials-file", "", "private file with one token digest, actor and roles for each principal")
 	clockFile := flag.String("clock-file", "", "for tests only: a file with the time of the next request")
+	httpListen := flag.String("http-listen", "", "IP literal and port of the HTTP binding, for example 127.0.0.1:8740")
+	issuerFile := flag.String("issuer-file", "", "private file with the issuer, the audience, the key set and the principals of signed claims")
+	localTokens := flag.Bool("http-local-tokens", false, "local mode: accept the static tokens of --credentials-file over HTTP on loopback")
+	allowRemote := flag.Bool("http-allow-remote", false, "permit an HTTP address that is not loopback; a TLS front proxy is necessary")
 	flag.Parse()
 	if *socket == "" || *repo == "" || *contextPath == "" || *runtime == "" || *work == "" || *schema == "" || (*tokenFile == "") == (*credentialsFile == "") {
 		fmt.Fprintln(os.Stderr, "entelos-sidecar: --socket, --repo, --context, --runtime, --work, --schema and one of --token-file or --credentials-file are required")
@@ -48,6 +60,13 @@ func run() int {
 	}
 	if err := schemas.LoadApproval(protocol.ApprovalDir(*schema)); err != nil {
 		return stop(err)
+	}
+	httpFlags := *issuerFile != "" || *localTokens || *allowRemote
+	if httpFlags && *httpListen == "" {
+		return stop(fmt.Errorf("--issuer-file, --http-local-tokens and --http-allow-remote need --http-listen"))
+	}
+	if *httpListen != "" && *credentialsFile == "" {
+		return stop(fmt.Errorf("--http-listen needs --credentials-file"))
 	}
 	host, err := open(*repo, *contextPath, *runtime, *work, *credentialsFile != "")
 	if err != nil {
@@ -66,15 +85,44 @@ func run() int {
 	if err != nil {
 		return stop(err)
 	}
+	done := make(chan error, 2)
+	var httpServer *protocol.HTTPServer
+	ready := lifecycle.Object{"status": "listening", "socket": *socket}
+	if *httpListen != "" {
+		l, loopback, err := protocol.ListenHTTP(*httpListen, *allowRemote)
+		if err != nil {
+			return stop(err)
+		}
+		scope, _ := host.Context["scope"].(string)
+		handler, err := protocol.NewHTTPHandler(adapter, protocol.HTTPConfig{
+			IssuerFile: *issuerFile, CredentialsFile: *credentialsFile, LocalTokens: *localTokens,
+			Loopback: loopback, Tenant: scope,
+			Log: func(s string) { fmt.Fprintln(os.Stderr, "entelos-sidecar:", s) },
+		})
+		if err != nil {
+			l.Close()
+			return stop(err)
+		}
+		httpServer = protocol.NewHTTPServer(handler)
+		ready["http"] = l.Addr().String()
+		// The deferred Shutdown runs on each return after this point.
+		defer httpServer.Shutdown()
+		// If the HTTP server stops with an error, the sidecar stops, so a
+		// supervisor sees the failure.
+		go func() {
+			if err := httpServer.Serve(l); err != nil {
+				done <- fmt.Errorf("http: %w", err)
+			}
+		}()
+	}
 	listener, err := protocol.Listen(*socket)
 	if err != nil {
 		return stop(err)
 	}
 	signals := make(chan os.Signal, 1)
 	signal.Notify(signals, syscall.SIGINT, syscall.SIGTERM)
-	done := make(chan error, 1)
 	go func() { done <- server.Serve(listener) }()
-	os.Stdout.Write(lifecycle.Encode(lifecycle.Object{"status": "listening", "socket": *socket}))
+	os.Stdout.Write(lifecycle.Encode(ready))
 	select {
 	case <-signals:
 	case err = <-done:
