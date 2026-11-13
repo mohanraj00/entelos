@@ -2,6 +2,7 @@
 
 - Status: accepted; item 3 amended by [0002](0002-browser-executor.md) (browser executor)
 - Date: 2026-11-05
+- Freeze: from 2026-11-13, no new work starts on the edge executor line until v1.0 ([#162](https://github.com/mohanraj00/entelos/issues/162)). The code and tests stay. A security fix is allowed.
 - Decided by: the maintainer
 - Issue: [#85](https://github.com/mohanraj00/entelos/issues/85), part of [M6](https://github.com/mohanraj00/entelos/issues/77)
 

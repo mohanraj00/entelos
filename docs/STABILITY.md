@@ -47,7 +47,7 @@ These surfaces are experimental:
 - Each line of `api.txt` that starts with `experimental`. Today these are the test hooks `FileClock`, `GitStore.Git`, `GitStore.RunGit` and `GitResult`, the package variables `FileNames`, `Mimes` and `Reads`, `handoff.Variable`, which has the typed profile fields, and the HTTP binding declarations.
 - Each new exported declaration. It starts as experimental. A later change can promote it to stable.
 - The typed profile `cel-typed/v1` and its vectors in `src/cel-lifecycle/conformance/typed/`.
-- The executor vectors in `src/cel-lifecycle/conformance/executor/`, the browser executor module and the WASM bridge.
+- The executor vectors in `src/cel-lifecycle/conformance/executor/`, the browser executor module and the WASM bridge. The edge executor line (the WASM build, the browser bridge, the IndexedDB log, `ingest` of executor logs and the planned gomobile package) is frozen until v1.0 ([#162](https://github.com/mohanraj00/entelos/issues/162)). It is not a stable surface. The names stay, and nothing is removed.
 - The commands and their flags: `cel-handoff`, the `lifecycle-core` JSONL host, `entelos-sidecar` and `entelos-migrate`.
 - The Python callers in `src/lifecycle-core/client/`, the tools, `verify.py` and the examples.
 - The text of diagnostic messages, and each diagnostic code that no pinned vector contains.

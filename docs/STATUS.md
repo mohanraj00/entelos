@@ -30,6 +30,8 @@ Use [BACKLOG.md](BACKLOG.md) and the linked GitHub issues. [M6 Store-neutral cor
 
 The Go review in [#136](https://github.com/mohanraj00/entelos/issues/136) found SEC-01 (P2): a malformed checkpoint could publish an unreadable root. PR #137 (merge `9db63e8`) fixed it. The Host checks the types of stored request fields, and both stores refuse state that the decoder cannot read. On 2026-11-11, the maintainer authorized the `v0.3.0` tag.
 
+On 2026-11-13, the maintainer froze the edge executor line until v1.0 ([#162](https://github.com/mohanraj00/entelos/issues/162)): the WASM build, the browser bridge, the IndexedDB log, `ingest` of executor logs and the planned gomobile package. The code and tests stay, and CI still runs them. No open issue belonged to this line. See [SUPPORT.md](SUPPORT.md#edge-executor-freeze).
+
 The v0.4 milestone starts with [#126](https://github.com/mohanraj00/entelos/issues/126), typed rule inputs and outputs. The spec [typed-profile-spec.md](../src/cel-lifecycle/typed-profile-spec.md) specifies the profile `cel-typed/v1`, with vectors in [conformance/typed/](../src/cel-lifecycle/conformance/typed/) (#141, `6d92fb2`). The engine implements the profile (#144, `c498611`), and `TestTypedProfileVectors` runs the typed vectors on the engine. The executor and the WASM bridge refuse a typed bundle. `TestTypedPolicyFromProposalToReplay` runs the vector `admission-record.json` (int, date and list inputs) through the lifecycle Host, from the proposal to a pinned replay of each receipt.
 
 ### v0.4 approval API
