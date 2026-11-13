@@ -4,6 +4,24 @@ This file lists the changes for each snapshot tag. A tag is a stable snapshot to
 
 ## Unreleased
 
+- The new command `entelos-migrate` builds the review index of approval API
+  1.1 for a store from v0.3.0 (#159). It adds one commit with
+  `state.reviews` and changes no record. `--dry-run` writes nothing, and a
+  second run writes nothing. It refuses an index that does not agree with
+  the history. The Go package `lifecycle` adds the experimental
+  `MigrateReviewIndex`.
+
+  Upgrade steps for a v0.3.0 store:
+
+  1. Stop each Host on the store.
+  2. Make a copy of the bare repository.
+  3. Run `entelos-migrate --repo <store.git> --dry-run` and examine the index.
+  4. Run `entelos-migrate --repo <store.git>`. The action must be `migrated`.
+  5. Start the Host. A v0.3.0 report names the v0.3.0 lifecycle build, so
+     qualify an open proposal again before an accept.
+
+  See [APPROVAL.md](src/protocol/approval/APPROVAL.md#migration-from-v030).
+
 - [STABILITY.md](docs/STABILITY.md) names the stable surfaces (#147): the
   exported Go API, the wire protocol 1.0 and 1.1 and the record format
   `entelos.record/1`. It gives the promise for 0.x releases and the

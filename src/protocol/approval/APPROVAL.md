@@ -159,7 +159,40 @@ A store from v0.3.0 has no `reviews`. Its decisions are not in an index, so the 
 - `proposals`, `proposal`, `qualify`, `decide` and `activate` refuse with `index_unavailable`. The Host writes no record and does not make a partial index.
 - The other operations do not use the index. For example, `resolve`, `invoke`, `replay` and `restate` work as in 1.0.
 
-Thus a v0.3.0 store cannot get a new report, verdict or activation. There is no migration in this version. A later migration must build the index from all the stored decisions before the Host accepts it.
+Thus a v0.3.0 store cannot get a new report, verdict or activation until the migration below builds its index.
+
+### Migration from v0.3.0
+
+The command `entelos-migrate` ([#159](https://github.com/mohanraj00/entelos/issues/159)) builds the review index from the accepted history of the store. The Go function is `lifecycle.MigrateReviewIndex`.
+
+```sh
+entelos-migrate --repo <store.git> --dry-run
+entelos-migrate --repo <store.git>
+```
+
+The command reads each accepted commit, the oldest first. Each commit adds one request key. If the result of that request is a `qualify` result (`report_ref` and `report`), the command appends the report to the entry of its snapshot. If the result is a `decide` result (`decision_ref`, with or without `decision`), the command appends the decision to the entry of the snapshot of its report. This is the index that a 1.1 Host writes for the same requests.
+
+- The command adds one commit. That commit adds `state.reviews` and the request entry `migrate-review-index`. It adds no record and changes no record or other state field.
+- `--dry-run` gives the index and the two writes. It writes nothing.
+- If the store has an index that agrees with the history, the action is `current` and the command writes nothing. Thus a second run writes nothing.
+- An empty store gives the action `empty`. The Host makes the index on the first write.
+- The command writes one JSON line: `{"status":"ok","data":{"action":…}}` or a fault record.
+
+The command refuses, and writes nothing, in these cases:
+
+| Code | Cause |
+|---|---|
+| `index_inconsistent` | The store has `state.reviews`, and it differs from the index that the history gives. Or the request key `migrate-review-index` is in the history, but `state.reviews` is missing. |
+| `index_incomplete` | A report or a decision is in the store, but no accepted `qualify` or `decide` request names it. |
+| `unexpected_history` | An accepted commit adds more or less than one request key, or removes a request key. |
+| `unsupported_record_format` | A named record has a format other than `entelos.record/1`. |
+| `invalid_record` | A named record is malformed, or a decision names a snapshot that differs from the snapshot of its report. |
+| `invalid_store` | The path is not a store, or the state schema is not `local-lifecycle/v1`. The command does not make a missing repository. |
+| `stale_revision` | The root moved during the migration. Run the command again. |
+
+A report from v0.3.0 names the v0.3.0 lifecycle build. Thus `decide` with `accept` refuses it with `implementation_unavailable`, and the list shows its proposal as `not_approvable`. A new `qualify` gives a report that a reviewer can accept. A `reject` does not check the build.
+
+The command reads each commit, with several Git processes for each commit. A long history takes a long time. It does not lock the store: stop each Host on the store before the run. The Go tests use a store that the v0.3.0 Host made ([testdata/migration](../../lifecycle-core/testdata/migration/README.md)).
 
 ## Proposal states
 
@@ -330,6 +363,7 @@ The implementation PR also corrected one vector in this directory. In `approval-
 ## Coverage limits
 
 - `index_unavailable` needs a store from v0.3.0. The implementation PR adds a Go test with such a store for each of the five operations. The test also checks that the root does not change. No vector covers it.
+- The vectors do not contain a migration. The Go tests in `migrate_test.go` start from a store that the v0.3.0 Host made. They cover each refusal code of the migration.
 - The vectors do not remove a principal while a connection is open. The implementation PR adds a Go test: a frame after the removal on the same connection gets `unauthenticated`.
 - `untrusted_runner`, `implementation_unavailable`, `stale_qualification`, `stale_revision`, `idempotency_conflict` and `response_too_large` keep their 1.0 tests. The approval vectors do not repeat them.
 - The vectors do not test the file mode and owner checks of the credentials file. The implementation PR adds Go tests for them.
