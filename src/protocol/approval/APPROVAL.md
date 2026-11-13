@@ -294,6 +294,28 @@ Two verdicts with `accept` from different actors are permitted. Both stay in the
 
 `activate` keeps its 1.0 body and checks. Before those checks, it refuses with `index_unavailable` if the store has no `state.reviews`. After those checks, it refuses with `proposal_rejected` if a verdict on the snapshot is a `reject`.
 
+### Scope of `record` and `inspect` (read)
+
+Issue [#160](https://github.com/mohanraj00/entelos/issues/160) adds a scope check to the two reads of 1.0. The rule applies to a 1.0 request and to a 1.1 request, on each binding: the JSONL Host, the socket sidecar and HTTP. Each binding gives the request to the same Host, and the Host does the check.
+
+The scope of a request is the `scope` of the Host context. A request body cannot name a scope: a body with a `scope` field is `invalid_request`. Thus a request at the Host always has a scope. On HTTP, a claim without a `tenant`, or with another `tenant`, is `unauthenticated` before the Host reads the body.
+
+`record` reads the record as before. An unknown reference is `artifact_unavailable`, and a record of another kind is `invalid_record`. Then, if the `scope` field of the record is not equal to the Host scope, the result is `scope_mismatch`. A record without a `scope` field also gets `scope_mismatch`, because the Host cannot show that the record is in its scope. The diagnostic message is fixed text. The refusal has no record content, no reference and no other field of the record.
+
+`inspect` gives the full state, and the state names the records of each scope in the store. Thus the Host gives the state only if each record object at that cursor has the Host scope. A record object is an object with a `application/vnd.cel-lifecycle.<kind>+json` media type. If one record has another scope, or no scope, the result is `scope_mismatch`. The Host does not give a filtered state, because the request results in `state.requests` do not name their scope. On a shared store, `inspect` is refused in each scope. Use one store for each scope if a reviewer needs `inspect`.
+
+The scope check of `inspect` reads each object at the cursor. The Git store reads the objects with one `git cat-file --batch` process and keeps one object body in memory at a time. An object larger than 16 MiB, or more than 256 MiB of objects in total, gives `store_error` with stage `store`, and `inspect` gives no state. Both stores have these limits. Use one store for each scope, and keep the store below these limits.
+
+On 2026-11-13, the owner accepted the scope check as a security fix for protocol 1.0 and 1.1, with no protocol 1.2 gate. A 1.0 or 1.1 client that read a record of another scope, or called `inspect` on a shared store, now gets `scope_mismatch`. A client that uses one store for each scope sees no change.
+
+The Host does not give the same answer for an unknown reference and for a record of another scope. The owner accepted this decision on 2026-11-13, for these reasons:
+
+- The 1.0 vector `unknown-record` pins `artifact_unavailable` for an unknown reference. A change to that answer changes a stable vector.
+- `receipt`, `proposal` and `decide` already give `artifact_unavailable` for an unknown reference and `out_of_scope` for a record of another scope. One equal answer in `record` only does not remove that signal.
+- A reference is a SHA-256 content reference. A caller cannot list the references of another scope. A caller can only ask about a reference that it has.
+
+Thus a caller that has a reference can learn that a record with that reference is in the store, but not its content. A caller that can guess all fields of a record can compute its reference and confirm the guess. Use one store for each scope if this signal is not permitted. A later minor version can give one answer for both cases in all reads.
+
 ## Refusal codes
 
 The codes in **bold** are new in 1.1. The other codes have the meaning of 1.0.
@@ -307,6 +329,7 @@ The codes in **bold** are new in 1.1. The other codes have the meaning of 1.0.
 | `artifact_unavailable` | `store` | `proposal`, `decide` | The reference is not in the store. |
 | `invalid_record` | `store` | `proposal`, `decide` | The reference is a record of another kind. |
 | `out_of_scope` | Host | `proposal`, `decide` | The record has another scope or a function that is not installed. |
+| **`scope_mismatch`** | `admission` | `record`, `inspect` | The record has another scope or no scope, or the store at the cursor holds such a record. |
 | **`index_unavailable`** | `store` | `proposals`, `proposal`, `qualify`, `decide`, `activate` | The store has no `state.reviews`. |
 | `qualification_failed` | `admission` | `decide` accept | The report did not pass, or its bindings differ. |
 | `untrusted_runner` | `admission` | `decide` accept | The report is not from the installed runner. |
@@ -350,6 +373,7 @@ The implementation PR also corrected one vector in this directory. In `approval-
 - `{"$type":"object"}` matches any object.
 - `{"$wait":{"since":"snap-1","seconds":172800}}` in an expected value matches the integer `seconds`. `since` names the `$capture` of a `propose` step. The checker uses it to compare the hand-written value with the step clocks.
 - `protocol_version` at the top level is `1.1`. It names the receiver version that the file needs. The 1.0 runner reads only `../vectors/session-*.json`, so it does not read these files.
+- `principal_scopes` at the top level maps a principal name to another scope. The runner serves a second Host with that scope in its context, on the same store as the first Host, on each transport. The steps of that principal go to the second Host. The other principals use the scope of `context`.
 - `parity` at the top level names the steps that the runner also sends to a second Host on a separate store, through `HandleAs` in the same process, with the same principal and clock. The record references (`sha256:` values) in the `$capture` values of those steps must be equal on both paths. A cursor is a Git commit of one store, so the cursor values can differ.
 
 `check_spec.py` checks these rules without a Host:
@@ -369,12 +393,13 @@ The implementation PR also corrected one vector in this directory. In `approval-
 - The vectors do not test the file mode and owner checks of the credentials file. The implementation PR adds Go tests for them.
 - The vectors do not prove constant-time comparison. A code review must check it.
 - The vectors do not contain HTTP refusals. The Go tests in [`http_test.go`](../../lifecycle-core/protocol/http_test.go) cover a missing claim, a bad signature, a wrong issuer, an expired claim, the other claim checks, a static token in local mode and the request bounds.
+- The Host never writes a record without a `scope` field, so no vector contains one. The Go test `TestRecordAndInspectRefuseAnotherScope` puts such a record in a store and checks that `record` and `inspect` give `scope_mismatch`.
 - The vectors install one function, so a list never has two open proposals. The implementation PR adds a Go test for the order of the list.
 
 ## Limits
 
 - The list has no pagination. A store with many open proposals can get `response_too_large`. A later version can add a page cursor.
 - `proposals` shows only the head snapshot of each function and scope. An older snapshot without a verdict is `superseded`. `decide` can still accept it, as in 1.0. `proposal` shows its state.
-- The existing `record` read does not check the scope of the record. This API does not use it. That gap is outside this spec.
+- `record` and `inspect` show if a reference is in the store, as the section on their scope says. `inspect` reads each record object of the store at the cursor, in one Git process.
 - Issue [#127](https://github.com/mohanraj00/entelos/issues/127) (a verdict stale after an edit) and issue [#128](https://github.com/mohanraj00/entelos/issues/128) (human and model verdicts) are in v0.5. This version adds no verdict kind and no digest rule. A later minor version can add fields to the decision record.
 - A verdict records who decided and when. It does not record what the reviewer looked at.

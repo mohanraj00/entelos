@@ -85,6 +85,10 @@ def check_file(name,doc,codes,new_seen):
     for pname,p in principals.items():
         try:validate(CREDENTIALS['$defs']['file']['properties']['principals']['items'],dict(p,token_sha256='0'*64),name+'.principals.'+pname,CREDENTIALS['$defs'])
         except SchemaError as e:errors.append(e.message)
+    scopes=doc.get('principal_scopes',{})
+    for pname,scope in scopes.items():
+        if pname not in principals:errors.append(name+': principal_scopes names an unknown principal: '+pname)
+        if not isinstance(scope,str) or not scope or scope==doc['context'].get('scope'):errors.append(name+': principal_scopes value must be another nonempty scope: '+pname)
     clock=datetime.strptime(doc['clock'],STAMP);proposed={};names=set();captures={}
     for step in doc['steps']:
         where=name+':'+step.get('name','?')
@@ -156,6 +160,8 @@ def self_test(docs):
         'clock-back':lambda d:step(d,'accept').update(clock='2026-11-01T00:00:00Z'),
         'version-not-echoed':lambda d:step(d,'accept')['expect']['response'].update(protocol='1.0'),
         'unauthenticated-echoed':lambda d:step(d,'unknown-token')['expect']['response'].update(protocol='1.1'),
+        'scope-unknown-principal':lambda d:d['approval-scope.json']['principal_scopes'].update(nobody='branch-c'),
+        'scope-same-as-context':lambda d:d['approval-scope.json']['principal_scopes'].update({'reviewer-b':'branch-a'}),
     }
     missed=[name for name,f in cases.items() if not run(mutate(f))]
     return ['self-test: no error for '+m for m in missed]

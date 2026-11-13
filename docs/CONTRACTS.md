@@ -81,6 +81,8 @@ The CLI reads one JSON object per line, in a loop, so one process can take many 
 
 `source.supersedes` and `plan.supersedes` default to an empty list. `activate.targets` defaults to an empty list. `propose.stale_mode` defaults to `fail_closed`. `checkpoint.correction_snapshot` defaults to an empty string. A log entry in `ingest.entries` has no default fields except `stale_reason`, which defaults to an empty string. `describe`, `resolve`, `inspect`, `record` and `receipt` are read operations; the other operations are writes.
 
+`record` gives `scope_mismatch` for a record of another scope or with no scope. `inspect` gives `scope_mismatch` if the store at the cursor holds such a record. An unknown reference stays `artifact_unavailable`. See [APPROVAL.md](../src/protocol/approval/APPROVAL.md#scope-of-record-and-inspect-read) for the rule and its limits.
+
 ## Proposal base rule
 
 `propose` targets one function, scope and date interval. `base_snapshot` must equal the current proposal head for that function and scope. The head advances on every stored proposal, including a proposal that did not pass qualification or was never activated, so a different value is `stale_proposal`. The first proposal for the key uses an empty `base_snapshot`.

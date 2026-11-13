@@ -367,11 +367,10 @@ func TestGitObjectIntegrityAndRestart(t *testing.T) {
 	}
 }
 
-// The same Host runs on the in-memory adapter: the baseline state and objects
-// are copied into a MemoryStore, and reads and a replay give the Git answers.
-func TestHostOnTheMemoryStoreGivesTheGitAnswers(t *testing.T) {
-	f := newFixture(t)
-	view, _ := f.store.Read(nil)
+// memoryCopy copies the state and objects of a Git view into a new
+// MemoryStore.
+func (f *fixture) memoryCopy(view *View) *MemoryStore {
+	f.t.Helper()
 	memory := NewMemoryStore()
 	if _, err := memory.Transact("", "import", Object{"op": "import"}, func(v *View) (any, error) {
 		for name, oid := range view.Entries {
@@ -390,8 +389,17 @@ func TestHostOnTheMemoryStoreGivesTheGitAnswers(t *testing.T) {
 		v.State = state.(Object)
 		return nil, nil
 	}); err != nil {
-		t.Fatal(err)
+		f.t.Fatal(err)
 	}
+	return memory
+}
+
+// The same Host runs on the in-memory adapter: the baseline state and objects
+// are copied into a MemoryStore, and reads and a replay give the Git answers.
+func TestHostOnTheMemoryStoreGivesTheGitAnswers(t *testing.T) {
+	f := newFixture(t)
+	view, _ := f.store.Read(nil)
+	memory := f.memoryCopy(view)
 	gitReader := f.host("reader", nil)
 	memoryReader, err := NewHost(memory, f.runtime(f.b.binary), f.context("reader"))
 	if err != nil {
@@ -734,4 +742,134 @@ func TestRetryRequiresCurrentFunctionAccess(t *testing.T) {
 			}
 		})
 	}
+}
+
+// record and inspect compare the scope of the record with the trusted scope
+// of the Host context. A refusal gives no record content. The not-found
+// answer stays artifact_unavailable.
+func TestRecordAndInspectRefuseAnotherScope(t *testing.T) {
+	f := newFixture(t)
+	ref := f.pin("old_receipt")
+	reviewer := f.host("reviewer", nil)
+	scope := f.context("reviewer")["scope"]
+	if got := f.ok(reviewer.Handle(Object{"op": "record", "ref": ref, "kind": "receipt"})); got["scope"] != scope {
+		t.Fatalf("matching scope: %v", got)
+	}
+	f.ok(reviewer.Handle(Object{"op": "inspect"}))
+	other := f.host("reviewer", func(c Object) { c["scope"] = "other" })
+	refused := func(h *Host, q Object) {
+		t.Helper()
+		result, err := h.Handle(q)
+		fault, ok := err.(*Fault)
+		if !ok || fault.Code != "scope_mismatch" || fault.Stage != "admission" || result != nil {
+			t.Fatalf("%v: got %v %v, want scope_mismatch", q, result, err)
+		}
+		if strings.Contains(fault.Message, "sha256:") || strings.Contains(fault.Message, "record.visible") {
+			t.Fatalf("%v: the refusal names record content: %s", q, fault.Message)
+		}
+	}
+	refused(other, Object{"op": "record", "ref": ref, "kind": "receipt"})
+	refused(other, Object{"op": "inspect"})
+	f.expect("artifact_unavailable")(other.Handle(Object{"op": "record", "ref": "sha256:" + strings.Repeat("0", 64), "kind": "receipt"}))
+
+	// A record without a scope field fails closed in record and inspect.
+	view, _ := f.store.Read(nil)
+	planted, err := view.Get(ref, "receipt")
+	if err != nil {
+		t.Fatal(err)
+	}
+	delete(planted, "scope")
+	var unscoped string
+	if _, err := f.store.Transact(f.root(), "plant-unscoped", Object{"op": "test-import"}, func(v *View) (any, error) {
+		unscoped = v.Put("receipt", planted)
+		return nil, nil
+	}); err != nil {
+		t.Fatal(err)
+	}
+	refused(reviewer, Object{"op": "record", "ref": unscoped, "kind": "receipt"})
+	refused(reviewer, Object{"op": "inspect"})
+
+	// The Git batch read and the MemoryStore read give the same scopes.
+	gitView, _ := f.store.Read(nil)
+	memoryView, _ := f.memoryCopy(gitView).Read(nil)
+	gitScopes, err := gitView.recordScopes()
+	if err != nil {
+		t.Fatal(err)
+	}
+	memoryScopes, err := memoryView.recordScopes()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !equal(Array(gitScopes), Array(memoryScopes)) || len(gitScopes) < 2 || gitScopes[0] == nil && gitScopes[1] == nil {
+		t.Fatalf("scopes: Git %v, memory %v", gitScopes, memoryScopes)
+	}
+}
+
+func TestScopeScanStreamsAndHasLimits(t *testing.T) {
+	f := newFixture(t)
+	f.pin("old_receipt")
+	reviewer := f.host("reviewer", nil)
+	gitView, _ := f.store.Read(nil)
+	memoryView, _ := f.memoryCopy(gitView).Read(nil)
+	wantFault := func(name string, err error, message string) {
+		t.Helper()
+		fault, ok := err.(*Fault)
+		if !ok || fault.Code != "store_error" || fault.Message != message {
+			t.Fatalf("%s: got %v, want store_error %q", name, err, message)
+		}
+	}
+	limit := func(object, total int) {
+		maxScanObject, maxScanTotal = object, total
+	}
+	t.Cleanup(func() { limit(16<<20, 256<<20) })
+
+	limit(8, 256<<20)
+	for name, view := range map[string]*View{"git": gitView, "memory": memoryView} {
+		_, err := view.recordScopes()
+		wantFault(name+" object limit", err, "an object is too large for the scope scan")
+	}
+	limit(16<<20, 1)
+	for name, view := range map[string]*View{"git": gitView, "memory": memoryView} {
+		_, err := view.recordScopes()
+		wantFault(name+" total limit", err, "the store is too large for the scope scan")
+	}
+	// The Host stops the git process and gives the fault. The state is not given.
+	result, err := reviewer.Handle(Object{"op": "inspect"})
+	if result != nil {
+		t.Fatalf("inspect over the limit gave %v", result)
+	}
+	wantFault("inspect total limit", err, "the store is too large for the scope scan")
+	limit(16<<20, 256<<20)
+	f.ok(reviewer.Handle(Object{"op": "inspect"}))
+
+	// The parse checks the size of an object before it reads the body.
+	handle := strings.Repeat("a", 40)
+	visit := func([]byte) error { return nil }
+	cases := map[string]struct{ out, message string }{
+		"size over limit": {handle + " blob 99999999999\n", "an object is too large for the scope scan"},
+		"missing object":  {handle + " missing\n", "unexpected object batch header"},
+		"other handle":    {strings.Repeat("b", 40) + " blob 1\nx\n", "unexpected object batch header"},
+		"short body":      {handle + " blob 5\nab", "unexpected object batch size"},
+		"no newline":      {handle + " blob 1\nxy", "unexpected object batch size"},
+		"trailing output": {handle + " blob 1\nx\nz", "unexpected object batch output"},
+	}
+	for name, c := range cases {
+		wantFault(name, readBatch(strings.NewReader(c.out), []string{handle}, visit), c.message)
+	}
+	if err := readBatch(strings.NewReader(handle+" blob 1\nx\n"), []string{handle}, visit); err != nil {
+		t.Fatalf("good batch: %v", err)
+	}
+
+	// A Hook gets the same parse on its buffered output.
+	f.store.Hook = func(s *GitStore, args []string, data []byte) (GitResult, error) {
+		r, err := s.RunGit(args, data)
+		if len(args) > 1 && args[0] == "cat-file" && args[1] == "--batch" {
+			r.Stdout = append(r.Stdout, 'z')
+		}
+		return r, err
+	}
+	t.Cleanup(func() { f.store.Hook = nil })
+	hooked, _ := f.store.Read(nil)
+	_, err = hooked.recordScopes()
+	wantFault("hook trailing output", err, "unexpected object batch output")
 }

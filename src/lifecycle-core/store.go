@@ -6,6 +6,8 @@ package lifecycle
 import (
 	"bytes"
 	"regexp"
+	"sort"
+	"strings"
 	"unicode/utf8"
 )
 
@@ -26,6 +28,29 @@ type Store interface {
 // objectSource reads committed object bodies by their store handle.
 type objectSource interface {
 	object(handle string) ([]byte, error)
+}
+
+// batchSource reads many committed object bodies in one call. It gives
+// each body to visit, in handle order, and keeps no body after the call. A
+// store that does not implement it gives one object call for each handle.
+type batchSource interface {
+	eachObject(handles []string, visit func(body []byte) error) error
+}
+
+// The limits of one scope scan (recordScopes). A scan keeps one object body
+// in memory at a time. A larger object, or more bytes in total, gives
+// store_error. Tests make them smaller.
+var (
+	maxScanObject = 16 << 20
+	maxScanTotal  = 256 << 20
+)
+
+func scanObjectTooLarge() error {
+	return NewFault("store_error", "an object is too large for the scope scan", "store")
+}
+
+func scanTotalTooLarge() error {
+	return NewFault("store_error", "the store is too large for the scope scan", "store")
 }
 
 // View is a captured state at one cursor, plus the objects that the current
@@ -120,6 +145,73 @@ func (v *View) Get(ref any, kind string) (Object, error) {
 		return nil, err
 	}
 	return m, nil
+}
+
+// recordScopes gives the scope field of each committed record object of the
+// view, in object name order. A record object is an object with a lifecycle
+// record media type. A record without a scope field gives nil. The body of
+// each object must match its name.
+func (v *View) recordScopes() ([]any, error) {
+	names, handles := []string{}, []string{}
+	for name := range v.Entries {
+		if strings.HasPrefix(name, "o-") {
+			names = append(names, name)
+		}
+	}
+	sort.Strings(names)
+	for _, name := range names {
+		handles = append(handles, v.Entries[name])
+	}
+	prefix, suffix := Media(""), "+json"
+	prefix = strings.TrimSuffix(prefix, suffix)
+	scopes := []any{}
+	count, total := 0, 0
+	visit := func(body []byte) error {
+		if count >= len(names) {
+			return NewFault("store_error", "object batch has the wrong count", "store")
+		}
+		name := names[count]
+		count++
+		if len(body) > maxScanObject {
+			return scanObjectTooLarge()
+		}
+		if total += len(body); total > maxScanTotal {
+			return scanTotalTooLarge()
+		}
+		if ContentRef(body) != "sha256:"+name[2:] || !bytes.Contains(body, []byte{0}) {
+			return NewFault("artifact_mismatch", "content bytes differ from reference", "store")
+		}
+		mime, raw, _ := bytes.Cut(body, []byte{0})
+		if !strings.HasPrefix(string(mime), prefix) || !strings.HasSuffix(string(mime), suffix) {
+			return nil
+		}
+		value, err := Decode(raw)
+		if err != nil {
+			return err
+		}
+		record, _ := value.(Object)
+		scopes = append(scopes, record["scope"])
+		return nil
+	}
+	if batch, ok := v.source.(batchSource); ok {
+		if err := batch.eachObject(handles, visit); err != nil {
+			return nil, err
+		}
+	} else {
+		for _, handle := range handles {
+			body, err := v.source.object(handle)
+			if err != nil {
+				return nil, err
+			}
+			if err := visit(body); err != nil {
+				return nil, err
+			}
+		}
+	}
+	if count != len(names) {
+		return nil, NewFault("store_error", "object batch has the wrong count", "store")
+	}
+	return scopes, nil
 }
 
 // checkFormat stops a read of a record that this core cannot read. A record
