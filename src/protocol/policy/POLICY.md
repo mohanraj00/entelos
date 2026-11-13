@@ -108,7 +108,7 @@ A name that rule 6 refuses is not a field that a producer can add. The Host buil
 | `receipt` | object or null | The receipt of the call. `null` if no call occurred. |
 | `receipt.policy_function`, `receipt.activation_ref`, `receipt.policy_snapshot_ref`, `receipt.bundle_ref`, `receipt.engine_build` | | The policy fields of the call. Together they are the policy version and the build. |
 | `receipt.inputs_ref` | digest | The input digest of the call. |
-| `receipt.output` | string or null | The value of the call. `null` if the call gave an error. |
+| `receipt.output` | string or null | The value of the call. `null` if the call gave an error. The schema has no length limit for it. The `max_string_utf8_bytes` limit of the policy bundle bounds it. |
 | `receipt.error` | string or null | The error code of the engine. `null` if the call gave a value. |
 | `audit` | object or null | The audit draw. Not `null` only if `outcome` is `accept`. |
 | `audit.rate_ppm` | integer | The `audit_rate_ppm` of the policy. |
