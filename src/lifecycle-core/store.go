@@ -30,10 +30,27 @@ type objectSource interface {
 	object(handle string) ([]byte, error)
 }
 
-// batchSource reads many committed object bodies in one call. A store
-// that does not implement it gives one object call for each handle.
+// batchSource reads many committed object bodies in one call. It gives
+// each body to visit, in handle order, and keeps no body after the call. A
+// store that does not implement it gives one object call for each handle.
 type batchSource interface {
-	objects(handles []string) ([][]byte, error)
+	eachObject(handles []string, visit func(body []byte) error) error
+}
+
+// The limits of one scope scan (recordScopes). A scan keeps one object body
+// in memory at a time. A larger object, or more bytes in total, gives
+// store_error. Tests make them smaller.
+var (
+	maxScanObject = 16 << 20
+	maxScanTotal  = 256 << 20
+)
+
+func scanObjectTooLarge() error {
+	return NewFault("store_error", "an object is too large for the scope scan", "store")
+}
+
+func scanTotalTooLarge() error {
+	return NewFault("store_error", "the store is too large for the scope scan", "store")
 }
 
 // View is a captured state at one cursor, plus the objects that the current
@@ -145,10 +162,39 @@ func (v *View) recordScopes() ([]any, error) {
 	for _, name := range names {
 		handles = append(handles, v.Entries[name])
 	}
-	var bodies [][]byte
+	prefix, suffix := Media(""), "+json"
+	prefix = strings.TrimSuffix(prefix, suffix)
+	scopes := []any{}
+	count, total := 0, 0
+	visit := func(body []byte) error {
+		if count >= len(names) {
+			return NewFault("store_error", "object batch has the wrong count", "store")
+		}
+		name := names[count]
+		count++
+		if len(body) > maxScanObject {
+			return scanObjectTooLarge()
+		}
+		if total += len(body); total > maxScanTotal {
+			return scanTotalTooLarge()
+		}
+		if ContentRef(body) != "sha256:"+name[2:] || !bytes.Contains(body, []byte{0}) {
+			return NewFault("artifact_mismatch", "content bytes differ from reference", "store")
+		}
+		mime, raw, _ := bytes.Cut(body, []byte{0})
+		if !strings.HasPrefix(string(mime), prefix) || !strings.HasSuffix(string(mime), suffix) {
+			return nil
+		}
+		value, err := Decode(raw)
+		if err != nil {
+			return err
+		}
+		record, _ := value.(Object)
+		scopes = append(scopes, record["scope"])
+		return nil
+	}
 	if batch, ok := v.source.(batchSource); ok {
-		var err error
-		if bodies, err = batch.objects(handles); err != nil {
+		if err := batch.eachObject(handles, visit); err != nil {
 			return nil, err
 		}
 	} else {
@@ -157,29 +203,13 @@ func (v *View) recordScopes() ([]any, error) {
 			if err != nil {
 				return nil, err
 			}
-			bodies = append(bodies, body)
+			if err := visit(body); err != nil {
+				return nil, err
+			}
 		}
 	}
-	if len(bodies) != len(names) {
+	if count != len(names) {
 		return nil, NewFault("store_error", "object batch has the wrong count", "store")
-	}
-	prefix, suffix := Media(""), "+json"
-	prefix = strings.TrimSuffix(prefix, suffix)
-	scopes := []any{}
-	for i, body := range bodies {
-		if ContentRef(body) != "sha256:"+names[i][2:] || !bytes.Contains(body, []byte{0}) {
-			return nil, NewFault("artifact_mismatch", "content bytes differ from reference", "store")
-		}
-		mime, raw, _ := bytes.Cut(body, []byte{0})
-		if !strings.HasPrefix(string(mime), prefix) || !strings.HasSuffix(string(mime), suffix) {
-			continue
-		}
-		value, err := Decode(raw)
-		if err != nil {
-			return nil, err
-		}
-		record, _ := value.(Object)
-		scopes = append(scopes, record["scope"])
 	}
 	return scopes, nil
 }

@@ -4,8 +4,10 @@ package lifecycle
 // published only through a compare-and-swap of one root ref.
 
 import (
+	"bufio"
 	"bytes"
 	"errors"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -148,33 +150,82 @@ func lines(out []byte) []string {
 	return result
 }
 
-// objects reads blobs with one git cat-file --batch process.
-func (s *GitStore) objects(handles []string) ([][]byte, error) {
+// eachObject reads the bodies of the handles with one git cat-file --batch
+// process. It reads the output as a stream and keeps one body at a time.
+// A Hook gets the same parse on its buffered output.
+func (s *GitStore) eachObject(handles []string, visit func(body []byte) error) error {
 	if len(handles) == 0 {
-		return nil, nil
+		return nil
 	}
-	out, err := s.Git([]byte(strings.Join(handles, "\n")+"\n"), "cat-file", "--batch")
+	input := []byte(strings.Join(handles, "\n") + "\n")
+	args := []string{"cat-file", "--batch"}
+	if s.Hook != nil {
+		r, err := s.Hook(s, args, input)
+		if err != nil {
+			return err
+		}
+		if r.Code != 0 {
+			return NewFault("store_error", string(r.Stderr), "store")
+		}
+		return readBatch(bytes.NewReader(r.Stdout), handles, visit)
+	}
+	full := append([]string{"--git-dir=" + s.Path, "-c", "core.hooksPath=" + os.DevNull, "-c", "core.fsmonitor=false"}, args...)
+	cmd := exec.Command("git", full...)
+	cmd.Env = s.env
+	cmd.Stdin = bytes.NewReader(input)
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
+	stdout, err := cmd.StdoutPipe()
 	if err != nil {
-		return nil, err
+		return NewFault("store_error", err.Error(), "store")
 	}
-	bodies := make([][]byte, 0, len(handles))
+	if err := cmd.Start(); err != nil {
+		return NewFault("store_error", err.Error(), "store")
+	}
+	readErr := readBatch(stdout, handles, visit)
+	if readErr != nil {
+		_ = cmd.Process.Kill()
+	}
+	waitErr := cmd.Wait()
+	if readErr != nil {
+		return readErr
+	}
+	if waitErr != nil {
+		return NewFault("store_error", strings.TrimSpace(stderr.String()+" "+waitErr.Error()), "store")
+	}
+	return nil
+}
+
+// readBatch parses git cat-file --batch output: for each handle, the line
+// "<handle> blob <size>", the body and one newline. It checks the size
+// limit of one object before it reads the body.
+func readBatch(out io.Reader, handles []string, visit func(body []byte) error) error {
+	r := bufio.NewReader(out)
 	for _, handle := range handles {
-		header, rest, ok := bytes.Cut(out, []byte{'\n'})
+		header, err := r.ReadSlice('\n')
 		fields := strings.Fields(string(header))
-		if !ok || len(fields) != 3 || fields[0] != handle || fields[1] != "blob" {
-			return nil, NewFault("store_error", "unexpected object batch header", "store")
+		if err != nil || len(fields) != 3 || fields[0] != handle || fields[1] != "blob" {
+			return NewFault("store_error", "unexpected object batch header", "store")
 		}
 		size, err := strconv.Atoi(fields[2])
-		if err != nil || size < 0 || len(rest) < size+1 || rest[size] != '\n' {
-			return nil, NewFault("store_error", "unexpected object batch size", "store")
+		if err != nil || size < 0 {
+			return NewFault("store_error", "unexpected object batch size", "store")
 		}
-		bodies = append(bodies, rest[:size:size])
-		out = rest[size+1:]
+		if size > maxScanObject {
+			return scanObjectTooLarge()
+		}
+		body := make([]byte, size+1)
+		if _, err := io.ReadFull(r, body); err != nil || body[size] != '\n' {
+			return NewFault("store_error", "unexpected object batch size", "store")
+		}
+		if err := visit(body[:size:size]); err != nil {
+			return err
+		}
 	}
-	if len(out) != 0 {
-		return nil, NewFault("store_error", "unexpected object batch output", "store")
+	if _, err := r.ReadByte(); err != io.EOF {
+		return NewFault("store_error", "unexpected object batch output", "store")
 	}
-	return bodies, nil
+	return nil
 }
 
 func (s *GitStore) object(handle string) ([]byte, error) {

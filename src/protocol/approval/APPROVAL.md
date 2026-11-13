@@ -304,7 +304,11 @@ The scope of a request is the `scope` of the Host context. A request body cannot
 
 `inspect` gives the full state, and the state names the records of each scope in the store. Thus the Host gives the state only if each record object at that cursor has the Host scope. A record object is an object with a `application/vnd.cel-lifecycle.<kind>+json` media type. If one record has another scope, or no scope, the result is `scope_mismatch`. The Host does not give a filtered state, because the request results in `state.requests` do not name their scope. On a shared store, `inspect` is refused in each scope. Use one store for each scope if a reviewer needs `inspect`.
 
-The Host does not give the same answer for an unknown reference and for a record of another scope. This is a decision, with these reasons:
+The scope check of `inspect` reads each object at the cursor. The Git store reads the objects with one `git cat-file --batch` process and keeps one object body in memory at a time. An object larger than 16 MiB, or more than 256 MiB of objects in total, gives `store_error` with stage `store`, and `inspect` gives no state. Both stores have these limits. Use one store for each scope, and keep the store below these limits.
+
+On 2026-11-13, the owner accepted the scope check as a security fix for protocol 1.0 and 1.1, with no protocol 1.2 gate. A 1.0 or 1.1 client that read a record of another scope, or called `inspect` on a shared store, now gets `scope_mismatch`. A client that uses one store for each scope sees no change.
+
+The Host does not give the same answer for an unknown reference and for a record of another scope. The owner accepted this decision on 2026-11-13, for these reasons:
 
 - The 1.0 vector `unknown-record` pins `artifact_unavailable` for an unknown reference. A change to that answer changes a stable vector.
 - `receipt`, `proposal` and `decide` already give `artifact_unavailable` for an unknown reference and `out_of_scope` for a record of another scope. One equal answer in `record` only does not remove that signal.

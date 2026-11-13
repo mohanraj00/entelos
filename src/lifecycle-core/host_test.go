@@ -804,3 +804,72 @@ func TestRecordAndInspectRefuseAnotherScope(t *testing.T) {
 		t.Fatalf("scopes: Git %v, memory %v", gitScopes, memoryScopes)
 	}
 }
+
+func TestScopeScanStreamsAndHasLimits(t *testing.T) {
+	f := newFixture(t)
+	f.pin("old_receipt")
+	reviewer := f.host("reviewer", nil)
+	gitView, _ := f.store.Read(nil)
+	memoryView, _ := f.memoryCopy(gitView).Read(nil)
+	wantFault := func(name string, err error, message string) {
+		t.Helper()
+		fault, ok := err.(*Fault)
+		if !ok || fault.Code != "store_error" || fault.Message != message {
+			t.Fatalf("%s: got %v, want store_error %q", name, err, message)
+		}
+	}
+	limit := func(object, total int) {
+		maxScanObject, maxScanTotal = object, total
+	}
+	t.Cleanup(func() { limit(16<<20, 256<<20) })
+
+	limit(8, 256<<20)
+	for name, view := range map[string]*View{"git": gitView, "memory": memoryView} {
+		_, err := view.recordScopes()
+		wantFault(name+" object limit", err, "an object is too large for the scope scan")
+	}
+	limit(16<<20, 1)
+	for name, view := range map[string]*View{"git": gitView, "memory": memoryView} {
+		_, err := view.recordScopes()
+		wantFault(name+" total limit", err, "the store is too large for the scope scan")
+	}
+	// The Host stops the git process and gives the fault. The state is not given.
+	result, err := reviewer.Handle(Object{"op": "inspect"})
+	if result != nil {
+		t.Fatalf("inspect over the limit gave %v", result)
+	}
+	wantFault("inspect total limit", err, "the store is too large for the scope scan")
+	limit(16<<20, 256<<20)
+	f.ok(reviewer.Handle(Object{"op": "inspect"}))
+
+	// The parse checks the size of an object before it reads the body.
+	handle := strings.Repeat("a", 40)
+	visit := func([]byte) error { return nil }
+	cases := map[string]struct{ out, message string }{
+		"size over limit": {handle + " blob 99999999999\n", "an object is too large for the scope scan"},
+		"missing object":  {handle + " missing\n", "unexpected object batch header"},
+		"other handle":    {strings.Repeat("b", 40) + " blob 1\nx\n", "unexpected object batch header"},
+		"short body":      {handle + " blob 5\nab", "unexpected object batch size"},
+		"no newline":      {handle + " blob 1\nxy", "unexpected object batch size"},
+		"trailing output": {handle + " blob 1\nx\nz", "unexpected object batch output"},
+	}
+	for name, c := range cases {
+		wantFault(name, readBatch(strings.NewReader(c.out), []string{handle}, visit), c.message)
+	}
+	if err := readBatch(strings.NewReader(handle+" blob 1\nx\n"), []string{handle}, visit); err != nil {
+		t.Fatalf("good batch: %v", err)
+	}
+
+	// A Hook gets the same parse on its buffered output.
+	f.store.Hook = func(s *GitStore, args []string, data []byte) (GitResult, error) {
+		r, err := s.RunGit(args, data)
+		if len(args) > 1 && args[0] == "cat-file" && args[1] == "--batch" {
+			r.Stdout = append(r.Stdout, 'z')
+		}
+		return r, err
+	}
+	t.Cleanup(func() { f.store.Hook = nil })
+	hooked, _ := f.store.Read(nil)
+	_, err = hooked.recordScopes()
+	wantFault("hook trailing output", err, "unexpected object batch output")
+}
