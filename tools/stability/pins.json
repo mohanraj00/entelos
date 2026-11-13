@@ -57,6 +57,7 @@
     "src/protocol/approval/schema/proposal.schema.json": "5fa9b9eaf57ab396d7cbf30a7fb180dbedf5eb281251532768a793edfc0477a8",
     "src/protocol/approval/schema/proposals.schema.json": "85caf80b488a4931acc6240f4973a319b58b7345ab8ff5cd276960abd2069cd0",
     "src/protocol/approval/vectors/approval-reject.json": "9215168d5c9c694b717a92a69bd9d8cc125bc53200c26e04a467a69d8ea70aaf",
+    "src/protocol/approval/vectors/approval-scope.json": "59379ab38594bb05bfe3c71584f2741d4f8f5a29f6b6b21d9a9520a7feca27c8",
     "src/protocol/approval/vectors/approval-verdicts.json": "881c27ead1ea9dac1a5c8a4f3c746c90b956eebf1301d5d1ffc88b310c84f35c",
     "src/protocol/approval/vectors/approval-version.json": "77f7ad84f542517d951314366820396bbdfca0fa0758ac289b20d328121d235a",
     "src/cel-lifecycle/conformance/storage/content-identity.json": "21557800b9bbc032f98350529fb48b2163fe52b001eb6b029d03d3243b0e8ffd",

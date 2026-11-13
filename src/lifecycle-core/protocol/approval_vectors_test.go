@@ -244,9 +244,9 @@ func writeCredentials(t *testing.T, path string, principals lifecycle.Object) ma
 	return tokens
 }
 
-func socketRequest(t *testing.T, token string, payload []byte) lifecycle.Object {
+func socketRequest(t *testing.T, path, token string, payload []byte) lifecycle.Object {
 	t.Helper()
-	conn, err := net.Dial("unix", sock)
+	conn, err := net.Dial("unix", path)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -309,13 +309,62 @@ func readApprovalVector(t *testing.T, path string) lifecycle.Object {
 // with signed claims and HTTP with the static tokens of local mode.
 var transports = []string{"socket", "http-claim", "http-token"}
 
-// startTransport serves a new Host on one transport. It gives a function
-// that sends one step as one principal name.
+// principalScope gives the scope of the Host context of a principal. The
+// principal_scopes field of a vector file names each principal of another
+// scope. The other principals, and $unknown, use the scope of the context.
+func principalScope(doc lifecycle.Object, principal string) string {
+	if scopes, ok := doc["principal_scopes"].(lifecycle.Object); ok {
+		if scope, ok := scopes[principal].(string); ok {
+			return scope
+		}
+	}
+	return doc["context"].(lifecycle.Object)["scope"].(string)
+}
+
+// startTransport serves a new Host on one transport for each scope of the
+// vector file. The Hosts of one transport share one store. It gives a
+// function that sends one step as one principal name.
 func startTransport(t *testing.T, name string, doc lifecycle.Object, s *Schemas, dir string) func(principal string, payload []byte) lifecycle.Object {
 	t.Helper()
-	host := approvalHost(t, filepath.Join(dir, name+".git"), doc["context"], filepath.Join(dir, name+".clock"))
 	principals := doc["principals"].(lifecycle.Object)
-	credentials := filepath.Join(dir, name+"-credentials.json")
+	main := principalScope(doc, "$unknown")
+	groups := map[string]lifecycle.Object{main: {}}
+	for _, n := range sortedNames(principals) {
+		scope := principalScope(doc, n)
+		if groups[scope] == nil {
+			groups[scope] = lifecycle.Object{}
+		}
+		groups[scope][n] = principals[n]
+	}
+	sends := map[string]func(string, []byte) lifecycle.Object{}
+	scopes := []string{}
+	for scope := range groups {
+		scopes = append(scopes, scope)
+	}
+	sort.Strings(scopes)
+	for i, scope := range scopes {
+		context := lifecycle.Object{}
+		for k, v := range doc["context"].(lifecycle.Object) {
+			context[k] = v
+		}
+		context["scope"] = scope
+		host := approvalHost(t, filepath.Join(dir, name+".git"), context, filepath.Join(dir, name+".clock"))
+		path := sock
+		if scope != main {
+			path = fmt.Sprintf("test-%d.sock", i)
+		}
+		sends[scope] = serveTransport(t, name, host, s, groups[scope], scope, path, filepath.Join(dir, fmt.Sprintf("%s-%d", name, i)))
+	}
+	return func(principal string, payload []byte) lifecycle.Object {
+		return sends[principalScope(doc, principal)](principal, payload)
+	}
+}
+
+// serveTransport serves one Host on one transport for the principals of
+// its scope. The files of the transport start with prefix.
+func serveTransport(t *testing.T, name string, host *lifecycle.Host, s *Schemas, principals lifecycle.Object, scope, path, prefix string) func(principal string, payload []byte) lifecycle.Object {
+	t.Helper()
+	credentials := prefix + "-credentials.json"
 	tokens := writeCredentials(t, credentials, principals)
 	adapter := NewAdapter(host, s)
 	if name == "socket" {
@@ -323,7 +372,7 @@ func startTransport(t *testing.T, name string, doc lifecycle.Object, s *Schemas,
 		if err != nil {
 			t.Fatal(err)
 		}
-		l, err := Listen(sock)
+		l, err := Listen(path)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -334,7 +383,7 @@ func startTransport(t *testing.T, name string, doc lifecycle.Object, s *Schemas,
 			if principal == "$unknown" {
 				token = randomToken(t)
 			}
-			return socketRequest(t, token, payload)
+			return socketRequest(t, path, token, payload)
 		}
 	}
 	if name == "http-token" {
@@ -353,9 +402,8 @@ func startTransport(t *testing.T, name string, doc lifecycle.Object, s *Schemas,
 		p := principals[n].(lifecycle.Object)
 		list = append(list, lifecycle.Object{"subject": p["actor"], "roles": p["roles"]})
 	}
-	issuerFile := filepath.Join(dir, "issuer.json")
+	issuerFile := prefix + "-issuer.json"
 	writeIssuer(t, issuerFile, []testKey{key}, list)
-	scope := doc["context"].(lifecycle.Object)["scope"].(string)
 	url := startHTTP(t, HTTPConfig{IssuerFile: issuerFile, CredentialsFile: credentials, Tenant: scope}, adapter)
 	return func(principal string, payload []byte) lifecycle.Object {
 		subject := "$unknown"
@@ -384,8 +432,8 @@ func TestApprovalVectors(t *testing.T) {
 	bundleDir, _ = filepath.Abs(bundleDir)
 	s := loadTestSchemas(t)
 	paths, _ := filepath.Glob(filepath.Join(protocolDir, "approval", "vectors", "approval-*.json"))
-	if len(paths) != 3 {
-		t.Fatalf("found %d approval vector files, want 3", len(paths))
+	if len(paths) != 4 {
+		t.Fatalf("found %d approval vector files, want 4", len(paths))
 	}
 	total := map[string]int{}
 	for _, path := range paths {
@@ -437,8 +485,8 @@ func TestApprovalVectors(t *testing.T) {
 		})
 	}
 	for _, name := range transports {
-		if total[name] != 46 {
-			t.Fatalf("%s: ran %d approval steps; the vector files have 46", name, total[name])
+		if total[name] != 57 {
+			t.Fatalf("%s: ran %d approval steps; the vector files have 57", name, total[name])
 		}
 	}
 }

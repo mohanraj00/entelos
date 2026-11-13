@@ -1,0 +1,387 @@
+{
+ "description": "Scope checks of record and inspect: a matching scope, a different scope, a missing record and a body that names a scope. Two Host contexts share one store. Expected values are hand-written from APPROVAL.md.",
+ "protocol_version": "1.1",
+ "context": {
+  "scope": "branch-a",
+  "runner_actor": "fixture-runner",
+  "worker": "local-worker",
+  "functions": [
+   "record.visible"
+  ]
+ },
+ "principals": {
+  "reviewer-a": {
+   "actor": "reviewer-a",
+   "roles": [
+    "reviewer"
+   ]
+  },
+  "reviewer-b": {
+   "actor": "reviewer-b",
+   "roles": [
+    "reviewer"
+   ]
+  }
+ },
+ "principal_scopes": {
+  "reviewer-b": "branch-b"
+ },
+ "clock": "2026-11-20T09:00:00Z",
+ "steps": [
+  {
+   "name": "source-branch-a",
+   "principal": "reviewer-a",
+   "request": {
+    "protocol": "1.1",
+    "request_id": "s-1",
+    "operation": "source",
+    "body": {
+     "function": "record.visible",
+     "from": "2026-10-01",
+     "until": "2026-12-01",
+     "supersedes": [],
+     "reason": "initial requirement",
+     "text": "Invented source table for branch-a: visible state ready.",
+     "expected_revision": "",
+     "request_key": "s-k-source-a"
+    }
+   },
+   "expect": {
+    "response": {
+     "protocol": "1.1",
+     "request_id": "s-1",
+     "status": "ok",
+     "result": {
+      "cursor": {
+       "$capture": "s-c1"
+      },
+      "result": {
+       "source_ref": {
+        "$capture": "source-a"
+       }
+      },
+      "reused": false
+     }
+    }
+   }
+  },
+  {
+   "name": "record-matching-scope",
+   "principal": "reviewer-a",
+   "request": {
+    "protocol": "1.1",
+    "request_id": "s-2",
+    "operation": "record",
+    "body": {
+     "ref": {
+      "$use": "source-a"
+     },
+     "kind": "source"
+    }
+   },
+   "expect": {
+    "response": {
+     "protocol": "1.1",
+     "request_id": "s-2",
+     "status": "ok",
+     "result": {
+      "attester": "reviewer-a",
+      "format": "entelos.record/1",
+      "from": "2026-10-01",
+      "function": "record.visible",
+      "reason": "initial requirement",
+      "scope": "branch-a",
+      "supersedes": [],
+      "text": "Invented source table for branch-a: visible state ready.",
+      "until": "2026-12-01"
+     }
+    }
+   }
+  },
+  {
+   "name": "inspect-one-scope",
+   "principal": "reviewer-a",
+   "request": {
+    "protocol": "1.1",
+    "request_id": "s-3",
+    "operation": "inspect",
+    "body": {}
+   },
+   "expect": {
+    "response": {
+     "protocol": "1.1",
+     "request_id": "s-3",
+     "status": "ok",
+     "result": {
+      "cursor": {
+       "$use": "s-c1"
+      },
+      "state": {
+       "schema": "local-lifecycle/v1",
+       "heads": {},
+       "sources": [
+        {
+         "$use": "source-a"
+        }
+       ],
+       "plans": [],
+       "events": [],
+       "requests": {
+        "s-k-source-a": {
+         "payload_ref": {
+          "$type": "string"
+         },
+         "result": {
+          "source_ref": {
+           "$use": "source-a"
+          }
+         }
+        }
+       },
+       "workers": {},
+       "receipts": [],
+       "tasks": {},
+       "outbox": {},
+       "reviews": {}
+      }
+     }
+    }
+   }
+  },
+  {
+   "name": "record-different-scope",
+   "principal": "reviewer-b",
+   "request": {
+    "protocol": "1.1",
+    "request_id": "s-4",
+    "operation": "record",
+    "body": {
+     "ref": {
+      "$use": "source-a"
+     },
+     "kind": "source"
+    }
+   },
+   "expect": {
+    "response": {
+     "protocol": "1.1",
+     "request_id": "s-4",
+     "status": "scope_mismatch",
+     "diagnostic": {
+      "code": "scope_mismatch",
+      "stage": "admission",
+      "message": {
+       "$type": "string"
+      }
+     }
+    }
+   }
+  },
+  {
+   "name": "inspect-different-scope",
+   "principal": "reviewer-b",
+   "request": {
+    "protocol": "1.1",
+    "request_id": "s-5",
+    "operation": "inspect",
+    "body": {}
+   },
+   "expect": {
+    "response": {
+     "protocol": "1.1",
+     "request_id": "s-5",
+     "status": "scope_mismatch",
+     "diagnostic": {
+      "code": "scope_mismatch",
+      "stage": "admission",
+      "message": {
+       "$type": "string"
+      }
+     }
+    }
+   }
+  },
+  {
+   "name": "record-missing",
+   "principal": "reviewer-b",
+   "request": {
+    "protocol": "1.1",
+    "request_id": "s-6",
+    "operation": "record",
+    "body": {
+     "ref": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+     "kind": "source"
+    }
+   },
+   "expect": {
+    "response": {
+     "protocol": "1.1",
+     "request_id": "s-6",
+     "status": "artifact_unavailable",
+     "diagnostic": {
+      "code": "artifact_unavailable",
+      "stage": "store",
+      "message": {
+       "$type": "string"
+      }
+     }
+    }
+   }
+  },
+  {
+   "name": "record-body-names-scope",
+   "principal": "reviewer-b",
+   "request": {
+    "protocol": "1.1",
+    "request_id": "s-7",
+    "operation": "record",
+    "body": {
+     "ref": {
+      "$use": "source-a"
+     },
+     "kind": "source",
+     "scope": "branch-a"
+    }
+   },
+   "expect": {
+    "response": {
+     "protocol": "1.1",
+     "request_id": "s-7",
+     "status": "invalid_request",
+     "diagnostic": {
+      "code": "invalid_request",
+      "stage": "protocol",
+      "message": {
+       "$type": "string"
+      }
+     }
+    }
+   }
+  },
+  {
+   "name": "source-branch-b",
+   "principal": "reviewer-b",
+   "request": {
+    "protocol": "1.1",
+    "request_id": "s-8",
+    "operation": "source",
+    "body": {
+     "function": "record.visible",
+     "from": "2026-10-01",
+     "until": "2026-12-01",
+     "supersedes": [],
+     "reason": "initial requirement",
+     "text": "Invented source table for branch-b: visible state open.",
+     "expected_revision": {
+      "$use": "s-c1"
+     },
+     "request_key": "s-k-source-b"
+    }
+   },
+   "expect": {
+    "response": {
+     "protocol": "1.1",
+     "request_id": "s-8",
+     "status": "ok",
+     "result": {
+      "cursor": {
+       "$capture": "s-c2"
+      },
+      "result": {
+       "source_ref": {
+        "$capture": "source-b"
+       }
+      },
+      "reused": false
+     }
+    }
+   }
+  },
+  {
+   "name": "record-own-scope-b",
+   "principal": "reviewer-b",
+   "request": {
+    "protocol": "1.1",
+    "request_id": "s-9",
+    "operation": "record",
+    "body": {
+     "ref": {
+      "$use": "source-b"
+     },
+     "kind": "source"
+    }
+   },
+   "expect": {
+    "response": {
+     "protocol": "1.1",
+     "request_id": "s-9",
+     "status": "ok",
+     "result": {
+      "attester": "reviewer-b",
+      "format": "entelos.record/1",
+      "from": "2026-10-01",
+      "function": "record.visible",
+      "reason": "initial requirement",
+      "scope": "branch-b",
+      "supersedes": [],
+      "text": "Invented source table for branch-b: visible state open.",
+      "until": "2026-12-01"
+     }
+    }
+   }
+  },
+  {
+   "name": "record-different-scope-a",
+   "principal": "reviewer-a",
+   "request": {
+    "protocol": "1.1",
+    "request_id": "s-10",
+    "operation": "record",
+    "body": {
+     "ref": {
+      "$use": "source-b"
+     },
+     "kind": "source"
+    }
+   },
+   "expect": {
+    "response": {
+     "protocol": "1.1",
+     "request_id": "s-10",
+     "status": "scope_mismatch",
+     "diagnostic": {
+      "code": "scope_mismatch",
+      "stage": "admission",
+      "message": {
+       "$type": "string"
+      }
+     }
+    }
+   }
+  },
+  {
+   "name": "inspect-shared-store",
+   "principal": "reviewer-a",
+   "request": {
+    "protocol": "1.1",
+    "request_id": "s-11",
+    "operation": "inspect",
+    "body": {}
+   },
+   "expect": {
+    "response": {
+     "protocol": "1.1",
+     "request_id": "s-11",
+     "status": "scope_mismatch",
+     "diagnostic": {
+      "code": "scope_mismatch",
+      "stage": "admission",
+      "message": {
+       "$type": "string"
+      }
+     }
+    }
+   }
+  }
+ ]
+}

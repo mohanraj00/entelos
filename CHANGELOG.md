@@ -4,6 +4,14 @@ This file lists the changes for each snapshot tag. A tag is a stable snapshot to
 
 ## Unreleased
 
+- The `record` and `inspect` reads check the scope (#160). `record` refuses
+  a record of another scope, or a record without a scope, with the new code
+  `scope_mismatch`. `inspect` refuses with `scope_mismatch` if the store at
+  the cursor holds such a record. The refusal has no record content. An
+  unknown reference stays `artifact_unavailable`, so a caller that has a
+  reference can still learn that it is in the store. The rule applies on
+  each binding. The new vector file `approval-scope.json` has 11 steps.
+
 - The new command `entelos-migrate` builds the review index of approval API
   1.1 for a store from v0.3.0 (#159). It adds one commit with
   `state.reviews` and changes no record. `--dry-run` writes nothing, and a

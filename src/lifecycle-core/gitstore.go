@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 )
 
@@ -145,6 +146,35 @@ func lines(out []byte) []string {
 		}
 	}
 	return result
+}
+
+// objects reads blobs with one git cat-file --batch process.
+func (s *GitStore) objects(handles []string) ([][]byte, error) {
+	if len(handles) == 0 {
+		return nil, nil
+	}
+	out, err := s.Git([]byte(strings.Join(handles, "\n")+"\n"), "cat-file", "--batch")
+	if err != nil {
+		return nil, err
+	}
+	bodies := make([][]byte, 0, len(handles))
+	for _, handle := range handles {
+		header, rest, ok := bytes.Cut(out, []byte{'\n'})
+		fields := strings.Fields(string(header))
+		if !ok || len(fields) != 3 || fields[0] != handle || fields[1] != "blob" {
+			return nil, NewFault("store_error", "unexpected object batch header", "store")
+		}
+		size, err := strconv.Atoi(fields[2])
+		if err != nil || size < 0 || len(rest) < size+1 || rest[size] != '\n' {
+			return nil, NewFault("store_error", "unexpected object batch size", "store")
+		}
+		bodies = append(bodies, rest[:size:size])
+		out = rest[size+1:]
+	}
+	if len(out) != 0 {
+		return nil, NewFault("store_error", "unexpected object batch output", "store")
+	}
+	return bodies, nil
 }
 
 func (s *GitStore) object(handle string) ([]byte, error) {

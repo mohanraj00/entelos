@@ -606,6 +606,13 @@ func (h *Host) readOperation(op string, q Object) any {
 	v := must(h.Store.Read(lookup(q, "cursor", nil)))
 	switch op {
 	case "inspect":
+		// The state indexes each record of the store. The Host gives it
+		// only if each record has the trusted scope.
+		for _, scope := range must(v.recordScopes()) {
+			if !equal(scope, h.ctx("scope")) {
+				fail("scope_mismatch", "the store holds a record that is not in the host scope", "admission")
+			}
+		}
 		prepareIndex(v)
 		return Object{"cursor": v.Cursor, "state": v.State}
 	case "proposals":
@@ -613,7 +620,11 @@ func (h *Host) readOperation(op string, q Object) any {
 	case "proposal":
 		return h.proposal(v, q)
 	case "record":
-		return get(v, item(q, "ref"), text(item(q, "kind")))
+		record := get(v, item(q, "ref"), text(item(q, "kind")))
+		if !equal(item(record, "scope"), h.ctx("scope")) {
+			fail("scope_mismatch", "the record is not in the host scope", "admission")
+		}
+		return record
 	case "receipt":
 		return h.scoped(v, item(q, "receipt_ref"), "receipt")
 	}
