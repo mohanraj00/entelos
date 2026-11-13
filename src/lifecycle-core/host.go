@@ -621,7 +621,9 @@ func (h *Host) readOperation(op string, q Object) any {
 		return h.proposal(v, q)
 	case "record":
 		record := get(v, item(q, "ref"), text(item(q, "kind")))
-		if !equal(item(record, "scope"), h.ctx("scope")) {
+		// lookup, not item: a record without a scope is a refusal, not
+		// invalid_request.
+		if !equal(lookup(record, "scope", nil), h.ctx("scope")) {
 			fail("scope_mismatch", "the record is not in the host scope", "admission")
 		}
 		return record

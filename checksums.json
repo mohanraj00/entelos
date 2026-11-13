@@ -169,7 +169,7 @@
   "src/lifecycle-core/depth_test.go": "81ab07282292a960f0e8114e831a2cb1d226c28b84ffc6cad8918c201134ce24",
   "src/lifecycle-core/gitstore.go": "b2c9fbc1f7e12e264bfdc8ba3276d559cd7049c963c25f20c4f2396ef96417da",
   "src/lifecycle-core/go.mod": "0634ead88a4f4ed7912f23887338027cad776be78f3294ee603bcbeb24264bb5",
-  "src/lifecycle-core/host.go": "f0fe23bb6f7fec7bbd22390a25e837664d35aae648aa4a5cbda2021bd603f3d5",
+  "src/lifecycle-core/host.go": "d1d5d3ac909e5d66450a0a2fbcad11a2933aa7e79f297c3381a669476837dad1",
   "src/lifecycle-core/host_test.go": "a8c17a3142d7c292a74d8521bb19f7d4e4fb816a97a4e8ecef3a5c4791d40b81",
   "src/lifecycle-core/ingest_test.go": "4eb75160783cffe046635dabd20364c4b4890787116d59d478bdc2eac57ee38a",
   "src/lifecycle-core/memstore.go": "be345c7038c29552d885ca18add4bb8e58464007133a412fc2c76d4e622dcd78",
