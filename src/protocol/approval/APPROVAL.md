@@ -124,7 +124,8 @@ Each refused credential gets `unauthenticated` at stage `authentication`. The me
 - A `GET` or `HEAD` request to another path reads one file of the directory. The path `/` is `index.html`. A file needs no credential, and a file gives no access to the API.
 - The permitted extensions are `.html`, `.js`, `.mjs`, `.css`, `.json` and `.svg`. A path with a query, an empty segment, a `..` segment, a segment that starts with `.` or a backslash gets 404. A directory, a file over 4 MiB and a file of another type get 404. The sidecar opens the directory with `os.Root`, so a symbolic link cannot point out of it.
 - On a loopback address, a `Host` header that does not name a loopback host gets 421, as for the API.
-- A static 404 or 421 has a plain text body. It is not a response object.
+- A `HEAD` request reads only the file metadata. A `GET` request streams the file. At most 16 static requests read a file at the same time. A request over this bound gets 503.
+- A static 404, 421 or 503 has a plain text body. It is not a response object.
 - Each file has the headers `Cache-Control: no-store`, `X-Content-Type-Options: nosniff`, `Referrer-Policy: no-referrer` and a `Content-Security-Policy` that permits scripts, styles, images and connections only from the same origin, with `frame-ancestors 'self'`.
 
 Put only public files in the directory. The sidecar does not check what a file contains.

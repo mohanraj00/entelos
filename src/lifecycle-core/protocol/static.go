@@ -12,11 +12,17 @@ import (
 	"net/http"
 	"os"
 	"path"
+	"strconv"
 	"strings"
 )
 
 // maxStaticFile is the byte bound of one static file.
 const maxStaticFile = 4 << 20
+
+// maxStaticOpen is the bound of the static requests that read a file at the
+// same time. A request over the bound gets 503, so many parallel requests
+// cannot use all the file handles and disk reads of the sidecar.
+const maxStaticOpen = 16
 
 // staticTypes is the list of the permitted file extensions and their media
 // types. A file with another extension gets 404.
@@ -42,6 +48,7 @@ type StaticHandler struct {
 	root     *os.Root
 	api      http.Handler
 	loopback bool
+	open     chan struct{}
 }
 
 // NewStaticHandler opens dir. loopback must be the value that ListenHTTP
@@ -58,7 +65,7 @@ func NewStaticHandler(dir string, api http.Handler, loopback bool) (*StaticHandl
 	if err != nil {
 		return nil, err
 	}
-	return &StaticHandler{root: root, api: api, loopback: loopback}, nil
+	return &StaticHandler{root: root, api: api, loopback: loopback, open: make(chan struct{}, maxStaticOpen)}, nil
 }
 
 // Close closes the directory.
@@ -100,6 +107,13 @@ func (s *StaticHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 		return
 	}
+	select {
+	case s.open <- struct{}{}:
+		defer func() { <-s.open }()
+	default:
+		http.Error(w, "too many static requests", http.StatusServiceUnavailable)
+		return
+	}
 	f, err := s.root.Open(name)
 	if err != nil {
 		http.NotFound(w, r)
@@ -111,19 +125,17 @@ func (s *StaticHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 		return
 	}
-	body, err := io.ReadAll(io.LimitReader(f, maxStaticFile+1))
-	if err != nil || len(body) > maxStaticFile {
-		http.NotFound(w, r)
-		return
-	}
 	header := w.Header()
 	header.Set("Content-Type", staticTypes[path.Ext(name)])
+	header.Set("Content-Length", strconv.FormatInt(info.Size(), 10))
 	header.Set("Cache-Control", "no-store")
 	header.Set("X-Content-Type-Options", "nosniff")
 	header.Set("Content-Security-Policy", staticPolicy)
 	header.Set("Referrer-Policy", "no-referrer")
 	w.WriteHeader(http.StatusOK)
+	// HEAD uses only the metadata. GET streams the file and stops at the
+	// size of the Stat result, so a file that grows later sends no more bytes.
 	if r.Method == http.MethodGet {
-		w.Write(body)
+		io.Copy(w, io.LimitReader(f, info.Size()))
 	}
 }

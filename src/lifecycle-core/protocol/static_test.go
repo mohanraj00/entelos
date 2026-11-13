@@ -5,6 +5,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
 )
@@ -103,6 +104,24 @@ func TestStaticHandler(t *testing.T) {
 				t.Fatalf("body %q, want %q", w.Body.String(), c.body)
 			}
 		})
+	}
+
+	// HEAD gives the length from the metadata. A request over the open bound gets 503.
+	head := httptest.NewRecorder()
+	h.ServeHTTP(head, httptest.NewRequest("HEAD", "http://127.0.0.1:1/style.css", nil))
+	if info, _ := os.Stat(filepath.Join(dir, "style.css")); head.Header().Get("Content-Length") != strconv.FormatInt(info.Size(), 10) {
+		t.Fatalf("HEAD Content-Length %q", head.Header().Get("Content-Length"))
+	}
+	for range maxStaticOpen {
+		h.open <- struct{}{}
+	}
+	busy := httptest.NewRecorder()
+	h.ServeHTTP(busy, httptest.NewRequest("GET", "http://127.0.0.1:1/style.css", nil))
+	if busy.Code != http.StatusServiceUnavailable {
+		t.Fatalf("a request over the bound got %d", busy.Code)
+	}
+	for range maxStaticOpen {
+		<-h.open
 	}
 
 	remote, err := NewStaticHandler(dir, api, false)
