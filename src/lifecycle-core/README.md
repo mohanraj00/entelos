@@ -14,6 +14,7 @@ This module is the lifecycle core. It is the only lifecycle Host. The specs, the
 - `cmd/lifecycle-core`: the JSONL host. It reads one request record on each stdin line and writes one response record on each stdout line. The arguments are `--repo`, `--context`, `--runtime` and `--work`.
 - `protocol/`: the wire protocol 1.0 of [PROTOCOL.md](../protocol/PROTOCOL.md) in front of the Host: frames, the RFC 8785 encoder, the schema validator and the Unix socket listener.
 - `cmd/entelos-sidecar`: the local sidecar ([#84](https://github.com/mohanraj00/entelos/issues/84)). It serves the protocol on a Unix domain socket.
+- `migrate.go` and `cmd/entelos-migrate`: the migration of a v0.3.0 store to the review index of approval API 1.1 ([#159](https://github.com/mohanraj00/entelos/issues/159)). The arguments are `--repo` and the optional `--dry-run`. See [APPROVAL.md](../protocol/approval/APPROVAL.md#migration-from-v030).
 - `client/`: Python callers of the JSONL host. They contain no Host and no store. `lifecycle_client.py` encodes the requests and starts the host for each request. `scenario.py` runs the neutral lifecycle scenario. `caller.py` discovers a callable, then invokes it. The examples use these files.
 
 ## Dependencies

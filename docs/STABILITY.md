@@ -48,7 +48,7 @@ These surfaces are experimental:
 - Each new exported declaration. It starts as experimental. A later change can promote it to stable.
 - The typed profile `cel-typed/v1` and its vectors in `src/cel-lifecycle/conformance/typed/`.
 - The executor vectors in `src/cel-lifecycle/conformance/executor/`, the browser executor module and the WASM bridge.
-- The commands and their flags: `cel-handoff`, the `lifecycle-core` JSONL host and `entelos-sidecar`.
+- The commands and their flags: `cel-handoff`, the `lifecycle-core` JSONL host, `entelos-sidecar` and `entelos-migrate`.
 - The Python callers in `src/lifecycle-core/client/`, the tools, `verify.py` and the examples.
 - The text of diagnostic messages, and each diagnostic code that no pinned vector contains.
 - The content proposal `entelos.content/1` ([CONTENT.md](../src/protocol/content/CONTENT.md), [#153](https://github.com/mohanraj00/entelos/issues/153)) with its schemas and vectors in `src/protocol/content/`. It is a proposed spec, and no Host code implements it.

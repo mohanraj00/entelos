@@ -65,6 +65,7 @@ stable github.com/mohanraj00/entelos/src/lifecycle-core func Envelope(mime strin
 stable github.com/mohanraj00/entelos/src/lifecycle-core func Implementation() (string, error)
 stable github.com/mohanraj00/entelos/src/lifecycle-core func InputDigest(inputs any) string
 stable github.com/mohanraj00/entelos/src/lifecycle-core func Media(kind string) string
+experimental github.com/mohanraj00/entelos/src/lifecycle-core func MigrateReviewIndex(store Store, dryRun bool) (result Object, err error)
 stable github.com/mohanraj00/entelos/src/lifecycle-core func NewCELRuntime(binary, work string) (*CELRuntime, error)
 stable github.com/mohanraj00/entelos/src/lifecycle-core func NewFault(code, message, stage string) *Fault
 stable github.com/mohanraj00/entelos/src/lifecycle-core func NewHost(store Store, rt Runtime, context any) (*Host, error)
