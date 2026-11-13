@@ -13,7 +13,9 @@
 // --issuer-file for signed claims, or --http-local-tokens for the static
 // tokens of the credentials file on a loopback address. The address must be
 // loopback unless --http-allow-remote is given. The sidecar has no TLS; a
-// remote address needs a TLS front proxy.
+// remote address needs a TLS front proxy. --http-static adds a directory of
+// public files that a GET request reads, so a browser client loads its page
+// from the same origin as the API.
 //
 // When the socket listens, the command writes one JSON line to stdout:
 // {"socket":"<path>","status":"listening"}. With --http-listen, the line
@@ -24,6 +26,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"net/http"
 	"os"
 	"os/signal"
 	"path/filepath"
@@ -49,6 +52,7 @@ func run() int {
 	issuerFile := flag.String("issuer-file", "", "private file with the issuer, the audience, the key set and the principals of signed claims")
 	localTokens := flag.Bool("http-local-tokens", false, "local mode: accept the static tokens of --credentials-file over HTTP on loopback")
 	allowRemote := flag.Bool("http-allow-remote", false, "permit an HTTP address that is not loopback; a TLS front proxy is necessary")
+	httpStatic := flag.String("http-static", "", "directory of public static files to serve with GET on the HTTP binding, for example the approval dashboard")
 	flag.Parse()
 	if *socket == "" || *repo == "" || *contextPath == "" || *runtime == "" || *work == "" || *schema == "" || (*tokenFile == "") == (*credentialsFile == "") {
 		fmt.Fprintln(os.Stderr, "entelos-sidecar: --socket, --repo, --context, --runtime, --work, --schema and one of --token-file or --credentials-file are required")
@@ -61,9 +65,9 @@ func run() int {
 	if err := schemas.LoadApproval(protocol.ApprovalDir(*schema)); err != nil {
 		return stop(err)
 	}
-	httpFlags := *issuerFile != "" || *localTokens || *allowRemote
+	httpFlags := *issuerFile != "" || *localTokens || *allowRemote || *httpStatic != ""
 	if httpFlags && *httpListen == "" {
-		return stop(fmt.Errorf("--issuer-file, --http-local-tokens and --http-allow-remote need --http-listen"))
+		return stop(fmt.Errorf("--issuer-file, --http-local-tokens, --http-allow-remote and --http-static need --http-listen"))
 	}
 	if *httpListen != "" && *credentialsFile == "" {
 		return stop(fmt.Errorf("--http-listen needs --credentials-file"))
@@ -103,7 +107,17 @@ func run() int {
 			l.Close()
 			return stop(err)
 		}
-		httpServer = protocol.NewHTTPServer(handler)
+		var served http.Handler = handler
+		if *httpStatic != "" {
+			static, err := protocol.NewStaticHandler(*httpStatic, handler, loopback)
+			if err != nil {
+				l.Close()
+				return stop(err)
+			}
+			defer static.Close()
+			served = static
+		}
+		httpServer = protocol.NewHTTPServer(served)
 		ready["http"] = l.Addr().String()
 		// The deferred Shutdown runs on each return after this point.
 		defer httpServer.Shutdown()

@@ -116,6 +116,8 @@ stable github.com/mohanraj00/entelos/src/lifecycle-core/protocol func (*Schemas)
 stable github.com/mohanraj00/entelos/src/lifecycle-core/protocol func (*Schemas) Validate(schema lifecycle.Object, value any, where string, root lifecycle.Object) error
 stable github.com/mohanraj00/entelos/src/lifecycle-core/protocol func (*Server) Serve(listener net.Listener) error
 stable github.com/mohanraj00/entelos/src/lifecycle-core/protocol func (*Server) Shutdown(listener *net.UnixListener) error
+experimental github.com/mohanraj00/entelos/src/lifecycle-core/protocol func (*StaticHandler) Close() error
+experimental github.com/mohanraj00/entelos/src/lifecycle-core/protocol func (*StaticHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 stable github.com/mohanraj00/entelos/src/lifecycle-core/protocol func ApprovalDir(schemaDir string) string
 stable github.com/mohanraj00/entelos/src/lifecycle-core/protocol func Canonical(value any) ([]byte, error)
 stable github.com/mohanraj00/entelos/src/lifecycle-core/protocol func Listen(path string) (*net.UnixListener, error)
@@ -126,6 +128,7 @@ stable github.com/mohanraj00/entelos/src/lifecycle-core/protocol func NewCredent
 experimental github.com/mohanraj00/entelos/src/lifecycle-core/protocol func NewHTTPHandler(adapter *Adapter, config HTTPConfig) (*HTTPHandler, error)
 experimental github.com/mohanraj00/entelos/src/lifecycle-core/protocol func NewHTTPServer(handler http.Handler) *HTTPServer
 stable github.com/mohanraj00/entelos/src/lifecycle-core/protocol func NewServer(adapter *Adapter, tokenFile string) (*Server, error)
+experimental github.com/mohanraj00/entelos/src/lifecycle-core/protocol func NewStaticHandler(dir string, api http.Handler, loopback bool) (*StaticHandler, error)
 stable github.com/mohanraj00/entelos/src/lifecycle-core/protocol type Adapter struct { Host Handler Schemas *Schemas }
 experimental github.com/mohanraj00/entelos/src/lifecycle-core/protocol type HTTPConfig struct { IssuerFile string CredentialsFile string LocalTokens bool Loopback bool Tenant string Now func() time.Time Log func(string) }
 experimental github.com/mohanraj00/entelos/src/lifecycle-core/protocol type HTTPHandler struct { }
@@ -135,3 +138,4 @@ stable github.com/mohanraj00/entelos/src/lifecycle-core/protocol type Principal 
 stable github.com/mohanraj00/entelos/src/lifecycle-core/protocol type PrincipalHandler interface { HandleAs(actor string, roles []string, request any) (any, error) }
 stable github.com/mohanraj00/entelos/src/lifecycle-core/protocol type Schemas struct { Envelope lifecycle.Object Operations map[string]lifecycle.Object Approval map[string]lifecycle.Object }
 stable github.com/mohanraj00/entelos/src/lifecycle-core/protocol type Server struct { }
+experimental github.com/mohanraj00/entelos/src/lifecycle-core/protocol type StaticHandler struct { }

@@ -117,6 +117,19 @@ Each refused credential gets `unauthenticated` at stage `authentication`. The me
 
 `--http-listen` takes an IP literal and a port, for example `127.0.0.1:8740`. The address must be loopback. `--http-allow-remote` permits another address. The sidecar has no TLS. An address that is not loopback must be behind a front proxy that terminates TLS. The sidecar sends no CORS headers, so a browser page on another origin cannot read a response.
 
+### Static files
+
+`--http-static <directory>` adds public static files to the binding (issue [#157](https://github.com/mohanraj00/entelos/issues/157)). A browser client, for example the [approval dashboard](../../../examples/approval-dashboard/README.md), can then load its page from the origin of the API. The API does not change: a `POST` and each request to `/v1/request` go to the API as above.
+
+- A `GET` or `HEAD` request to another path reads one file of the directory. The path `/` is `index.html`. A file needs no credential, and a file gives no access to the API.
+- The permitted extensions are `.html`, `.js`, `.mjs`, `.css`, `.json` and `.svg`. A path with a query, an empty segment, a `..` segment, a segment that starts with `.` or a backslash gets 404. A directory, a file over 4 MiB and a file of another type get 404. The sidecar opens the directory with `os.Root`, so a symbolic link cannot point out of it.
+- On a loopback address, a `Host` header that does not name a loopback host gets 421, as for the API.
+- A `HEAD` request reads only the file metadata. A `GET` request streams the file. At most 16 static requests read a file at the same time. A request over this bound gets 503.
+- A static 404, 421 or 503 has a plain text body. It is not a response object.
+- Each file has the headers `Cache-Control: no-store`, `X-Content-Type-Options: nosniff`, `Referrer-Policy: no-referrer` and a `Content-Security-Policy` that permits scripts, styles, images and connections only from the same origin, with `frame-ancestors 'self'`.
+
+Put only public files in the directory. The sidecar does not check what a file contains.
+
 The server bounds are: 16384 bytes of request headers, 10 seconds for the headers, 30 seconds for the complete request, 5 minutes for the response and 60 seconds for an idle connection.
 
 This binding is not a public internet boundary. The sidecar has no rate limit, no replay record of claims and no revocation list other than the issuer file. A claim stays valid until `exp` if its principal stays in the file. An operator that puts the binding on a network must supply these controls in the front proxy.

@@ -17,6 +17,7 @@ GitHub issues own live status. This map identifies bounded work for this source 
 | [Typed rule inputs and outputs](https://github.com/mohanraj00/entelos/issues/126) | Open: spec merged in #141, engine implementation merged in #144. A lifecycle Host test of a typed bundle, with receipts and replay, is in review. |
 | [A content proposal type](https://github.com/mohanraj00/entelos/issues/153) | Proposed: [CONTENT.md](../src/protocol/content/CONTENT.md), two schemas and hand-written vectors. No Host reads it. The Host code is in v0.5. Milestone v0.4. |
 | [A policy verdict type](https://github.com/mohanraj00/entelos/issues/154) | Proposed: [POLICY.md](../src/protocol/policy/POLICY.md), two schemas and hand-written vectors. No Host writes it. The Host code is in v0.5. Milestone v0.4. |
+| [A standalone approval dashboard built with the mugham kit](https://github.com/mohanraj00/entelos/issues/157) | In review: [examples/approval-dashboard](../examples/approval-dashboard/README.md), the sidecar flag `--http-static` and a browser test in `verify.py`. Milestone v0.4. |
 | [Evidence format of an external producer](https://github.com/mohanraj00/entelos/issues/148) | Proposed: [EVIDENCE.md](../src/protocol/evidence/EVIDENCE.md), a schema and hand-written vectors. No Host reads it. The code that reads the evidence is in #104 (v0.5). Milestone v0.4. |
 
 ## Milestones to a public announcement
