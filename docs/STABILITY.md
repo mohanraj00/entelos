@@ -52,6 +52,7 @@ These surfaces are experimental:
 - The Python callers in `src/lifecycle-core/client/`, the tools, `verify.py` and the examples.
 - The text of diagnostic messages, and each diagnostic code that no pinned vector contains.
 - The content proposal `entelos.content/1` ([CONTENT.md](../src/protocol/content/CONTENT.md), [#153](https://github.com/mohanraj00/entelos/issues/153)) with its schemas and vectors in `src/protocol/content/`. It is a proposed spec, and no Host code implements it.
+- The policy verdict `entelos.policy/1` ([POLICY.md](../src/protocol/policy/POLICY.md), [#154](https://github.com/mohanraj00/entelos/issues/154)) with its schemas and vectors in `src/protocol/policy/`. It is a proposed spec, and no Host code implements it.
 - The HTTP binding of the approval API ([APPROVAL.md](../src/protocol/approval/APPROVAL.md#http-binding), [#156](https://github.com/mohanraj00/entelos/issues/156)): the `HTTP*` declarations, `ListenHTTP`, `HTTPPath`, `IssuerFormat` and `MaxClaim` in `protocol`, the path `/v1/request` and the issuer file format `entelos.issuer/1`.
 - The evidence format `entelos.evidence/1` ([#148](https://github.com/mohanraj00/entelos/issues/148)). When this statement was written, it was an open PR, not merged code.
 

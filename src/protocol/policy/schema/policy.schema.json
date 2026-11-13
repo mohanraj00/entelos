@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "entelos.policy/1#policy",
+  "title": "Active approval policy that the Host selects for a date",
+  "type": "object",
+  "required": ["function", "activation_ref", "snapshot_ref", "bundle_ref", "engine_build", "suspended", "inputs", "audit_rate_ppm"],
+  "additionalProperties": false,
+  "properties": {
+    "function": {"$ref": "#/$defs/name"},
+    "activation_ref": {"$ref": "#/$defs/digest"},
+    "snapshot_ref": {"$ref": "#/$defs/digest"},
+    "bundle_ref": {"$ref": "#/$defs/digest"},
+    "engine_build": {"$ref": "#/$defs/digest"},
+    "suspended": {"type": "boolean"},
+    "inputs": {"type": "array", "minItems": 1, "maxItems": 64, "items": {"$ref": "#/$defs/input_name"}},
+    "audit_rate_ppm": {"type": "integer", "minimum": 0, "maximum": 1000000}
+  },
+  "$defs": {
+    "digest": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "name": {"type": "string", "pattern": "^[A-Za-z0-9._-]{1,128}$"},
+    "input_name": {"type": "string", "pattern": "^[a-z][a-z0-9_]{0,63}$"}
+  }
+}
