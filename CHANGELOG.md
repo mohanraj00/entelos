@@ -1,8 +1,20 @@
 # Changelog
 
-This file lists the changes for each snapshot tag. A tag is a stable snapshot to cite and copy. It is not a package release. Up to v0.3.0, a tag does not promise a stable API or record format.
+This file lists the changes for each snapshot tag. A tag is a stable snapshot to cite and copy. It is not a package release. Up to v0.3.0, a tag does not promise a stable API or record format. From v0.4.0, [STABILITY.md](docs/STABILITY.md) gives the promise for the surfaces that it names.
 
-## Unreleased
+## v0.4.0 (2026-11-14)
+
+This snapshot adds typed rule inputs, the approval API with two transports, a dashboard example, a store migration and a scope check. It also adds four proposed specs that no Host reads or writes yet.
+
+### Reference code
+
+- The engine implements the typed profile `cel-typed/v1` (#126). A rule declares a type for each input and for its output: `int`, `date`, `list` and `record`, and the two earlier types. The spec is [typed-profile-spec.md](src/cel-lifecycle/typed-profile-spec.md) (#141), the engine is in #144, and the vectors are in `src/cel-lifecycle/conformance/typed/`. `TestTypedPolicyFromProposalToReplay` runs one typed vector through the lifecycle Host, from the proposal to a replay of each receipt (#166). A refused input gives an answer and a receipt. The storage vector `typed-values.json` records the canonical bytes of each type. The executor and the WASM bridge refuse a typed bundle with `unsupported_profile`.
+- The approval API 1.1 (#130) adds the reads `proposals` and `proposal`, the `reject` disposition of `decide`, a credentials file for each reviewer, a Host clock and the review index `state.reviews`. The spec is [APPROVAL.md](src/protocol/approval/APPROVAL.md) (#142), and the Go Host and the sidecar implement it (#149). `TestApprovalVectors` runs the vectors.
+- The sidecar serves the approval API over HTTP (#156, #167). `POST /v1/request` accepts a signed claim (Ed25519) or, in local mode, a static token. The socket stays. A verdict from HTTP is the same record as a verdict from the socket. The binding has no TLS and no CORS headers.
+- The Go module paths are now `github.com/mohanraj00/entelos/src/lifecycle-core` and `github.com/mohanraj00/entelos/src/cel-handoff` (#147, #151). A caller that imported the `example.org` paths must change its imports.
+- A test checks the retry access for each write operation (#134, #143).
+
+### Contents
 
 - The approval dashboard (#157) moves to the mugham UI kit `v0.2.1`
   (commit `33678f8`), with contract format 2. Each card and the reason form
@@ -63,12 +75,41 @@ This file lists the changes for each snapshot tag. A tag is a stable snapshot to
 
 - [examples/approval-dashboard](examples/approval-dashboard/README.md) adds an
   optional approval dashboard (#157) on the HTTP approval API with a local
-  static token. It uses the mugham UI kit at the tag `v0.1.0`, pinned in
-  `mugham.json`. The new sidecar flag `--http-static` serves its public files
+  static token. It uses the mugham UI kit, pinned in `mugham.json`. The first entry
+  of this section gives the current pin `v0.2.1`. The new sidecar flag `--http-static` serves its public files
   from the origin of the API. `make verify` runs its browser test: the list,
   the evidence view, one verdict and one API refusal.
   The Go package `protocol` adds the experimental `StaticHandler` and
   `NewStaticHandler`.
+
+- [EVIDENCE.md](src/protocol/evidence/EVIDENCE.md) proposes the evidence format
+  `entelos.evidence/1` (#148). It has a schema, 97 hand-written vectors and 14
+  refusal rules. A check against groundgate 0.14.0 found fields that the first
+  draft lost, and the revision adds them. No Host reads the format.
+
+- [CONTENT.md](src/protocol/content/CONTENT.md) proposes the content proposal
+  `entelos.content/1` (#153). A candidate has a kind, and the kind `content`
+  is a manifest of digests with no CEL file. The spec has two schemas and
+  hand-written vectors. No Host reads it. The Host support is v0.5 work.
+
+### Upgrade steps
+
+1. Change a Go import of `example.org/lifecycle-core` or `example.org/cel-handoff` to the new module path.
+2. Migrate a store from v0.3.0 with `entelos-migrate`, as the steps above show. A v0.3.0 store without the review index gives `index_unavailable` for `proposals`, `proposal`, `qualify`, `decide` and `activate`.
+3. Handle `scope_mismatch` from `record` and `inspect` in each client.
+4. Run one store for each scope. The scope check refuses a mixed store, and it does not make a mixed store safe.
+
+### Compatibility and limits
+
+- From v0.4.0, [STABILITY.md](docs/STABILITY.md) promises these stable surfaces: the exported Go API that the pin lists, wire protocol 1.0 and 1.1, and the record format `entelos.record/1`. A 0.x release does not remove or change a stable declaration, and it does not change the schemas or vectors of an existing protocol version. It can add declarations and protocol minor versions. A deprecation has a notice period. The promise covers only what `tools/stability/check_stability.py` checks. A surface that the pin does not check is not stable. The APIs of the specs above and the edge executor line are not stable.
+- The scope refusal changes results of protocol 1.0 and 1.1. The owner accepted it as a security fix.
+- The specs for evidence, content and policy verdict are proposals. The vectors are hand-written, and a checker applies the rules to them. No Host reads or writes these formats.
+- The callable profile of the executor and the WASM bridge is still string and bool input and bool output. The typed profile runs in the engine and the Go Host only.
+- The edge executor line stays frozen until v1.0 (#162).
+- The approval dashboard has no policy verdict to show from a Host. Only unit cases cover the policy verdict card.
+- The sidecar HTTP binding is not a public internet boundary. Use a TLS front proxy.
+- The record format stays `entelos.record/1`. Keep the original lifecycle and engine builds with a store for exact replay. See [compatibility and retention](docs/SUPPORT.md#compatibility-and-retention).
+- No new full security review of the Go path covers v0.4.0. The v0.3.0 review of #136 covers v0.3.0 only. The owner accepted #160 as a security fix.
 
 ## v0.3.0 (2026-11-11)
 
