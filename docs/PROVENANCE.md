@@ -4,7 +4,7 @@ The contract/lifecycle adapters and neutral examples are original reference code
 
 - [CEL Go](https://github.com/cel-expr/cel-go), pinned by the module lockfiles, supplies parsing, checking and execution.
 - [CEL author tools](https://github.com/cel-expr/skills/tree/5eac36c53cd8971fa1e5548374238183e0d8b302) supply environment/prompt/compile/evaluation commands. The runner fetches their public source; that repository and its binaries are not bundled.
-- The [mugham UI kit](https://github.com/mohanraj00/mugham/tree/7943c22674d6175bd6ef7f853e464c705ae3ec38) at the tag `v0.1.0` supplies the components of the optional approval dashboard. [mugham.json](../examples/approval-dashboard/mugham.json) pins it. The dashboard runner fetches its public source; the kit is not bundled.
+- The [mugham UI kit](https://github.com/mohanraj00/mugham/tree/33678f8c80ad7d5e0237f6aee049b8cb13953966) at the tag `v0.2.1` supplies the components of the optional approval dashboard. [mugham.json](../examples/approval-dashboard/mugham.json) pins it. The dashboard runner fetches its public source; the kit is not bundled.
 - [Tekton's GitHub PR example](https://github.com/tektoncd/triggers/blob/d187d9b6398deef09c0ac9fa4d7c7d5a47202113/examples/v1beta1/github/github-eventlistener-interceptor.yaml) establishes the second workflow. Tekton already supplies production filtering and resource orchestration; no native Tekton runtime/cluster was executed in this reference.
 - [Octokit webhook schemas](https://github.com/octokit/webhooks/blob/aa80c24a3f55354465b8b1438d33dd5602956d0d/payload-schemas/api.github.com/pull_request/ready_for_review.schema.json) describe the real event/field shapes. Full provider schema validation is not implemented here.
 

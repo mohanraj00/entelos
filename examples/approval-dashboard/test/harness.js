@@ -3,7 +3,9 @@
 // and reads the text that the page shows. The expected values are hand-written from APPROVAL.md and
 // the seed steps of run.py. At the end, the harness sends its observations to run.py.
 import { define } from '/mugham/src/components/index.js';
-import { verdictKind, verdictStatus, verdictCard, listGrid, waitText } from '/view.js';
+import {
+  verdictKind, verdictStatus, verdictCard, listCard, listCards, waitText, put, fill, reviewerActor, producerActor,
+} from '/view.js';
 
 const out = { checks: [], errors: [] };
 const check = (name, passed, actual) => out.checks.push({ name, passed: Boolean(passed), actual });
@@ -20,9 +22,11 @@ async function until(name, fn, timeout = 20000) {
 }
 
 const shadow = (node) => (node?.shadowRoot ? node.shadowRoot.textContent : '');
-// The text of a card grid, with the text of each card in it.
-const gridCards = (grid) => [...(grid?.shadowRoot?.querySelectorAll('mu-card') ?? [])];
-const press = (node) => node.shadowRoot.querySelector('[part="button"]').click();
+// The card elements in a container of the page. Each card has its own bound author.
+const gridCards = (box) => [...(box?.querySelectorAll(':scope > mu-card') ?? [])];
+const press = (node, part = 'button') => node.shadowRoot.querySelector(`[part="${part}"]`).click();
+// Hand-written: the author line of the kit, `Author: <type> <id>`.
+const author = (type, id) => `Author: ${type} ${id}`;
 
 // Hand-written: the text of each list card. The wait comes from the seed clocks.
 const LIST = [
@@ -43,7 +47,7 @@ async function dashboard(job) {
   frame.src = '/';
   await loaded;
   const doc = frame.contentDocument;
-  await until('kit defined', () => frame.contentWindow.customElements.get('mu-card-grid'));
+  await until('kit defined', () => frame.contentWindow.customElements.get('mu-card'));
 
   // An unknown token: the API refuses with unauthenticated, and the page shows the refusal.
   await signIn(doc, job.unknown_token);
@@ -58,7 +62,8 @@ async function dashboard(job) {
   const texts = cards.map(shadow);
   check('list-order-and-facts', LIST.every((row, i) => texts[i].startsWith(row.title) && texts[i].includes('Wait' + row.wait)
     && texts[i].includes('Verdict' + row.verdict)), texts);
-  check('list-state', list.dataset.state === 'default', list.dataset.state);
+  check('list-state', cards.every((card) => card.dataset.state === 'default'), cards.map((card) => card.dataset.state));
+  check('list-author-producer', texts.every((t) => t.includes(author('agent', 'author'))), texts.map((t) => t.slice(-40)));
   check('stale-shown-as-stale', texts[1].includes('Stale:') && !texts[0].includes('Stale:'), texts.map((t) => t.slice(0, 80)));
 
   // The evidence view of the oldest proposal.
@@ -69,24 +74,39 @@ async function dashboard(job) {
   const evidence = doc.getElementById('evidence');
   check('evidence-reason-as-text', shadow(evidence).includes(job.markup_reason) && !evidence.shadowRoot.querySelector('b'),
     shadow(evidence));
+  check('evidence-author-producer', shadow(evidence).includes(author('agent', 'author')), shadow(evidence));
+  check('source-author-attester', shadow(doc.getElementById('source')).includes(author('human', 'curator')), shadow(doc.getElementById('source')));
   check('evidence-facts', ['Wait3 d 0 h', 'VerdictWaits for a human verdict', 'Producerauthor', 'Interval2026-10-01 to 2026-12-01', 'Scopedemo']
     .every((s) => shadow(evidence).includes(s)), shadow(evidence));
   const bundle = [...doc.querySelectorAll('#bundle mu-text')].map(shadow);
   check('evidence-bundle-text', bundle.includes('source') && bundle.some((t) => t.trim() === RULE), bundle.slice(0, 8));
   const reports = [...doc.querySelectorAll('#reports mu-card')].map(shadow);
   check('evidence-report', reports.length === 1 && reports[0].includes('Report 1: passed') && reports[0].includes('Cases passed2 of 2')
-    && reports[0].includes('Runnerfixture-runner') && reports[0].includes('Report refusalnone'), reports);
+    && reports[0].includes('Runnerfixture-runner') && reports[0].includes('Report refusalnone')
+    && reports[0].includes(author('system', 'fixture-runner')), reports);
   const verdicts = doc.getElementById('verdicts');
-  check('verdicts-empty', verdicts.dataset.state === 'empty', verdicts.dataset.state);
+  check('verdicts-empty', gridCards(verdicts).length === 0 && verdicts.textContent === '' && shadow(verdicts.querySelector('mu-text')).trim() === 'No verdict.',
+    shadow(verdicts.querySelector('mu-text')));
 
   // A verdict without a kept reason does not call the API.
   const accept = doc.getElementById('accept');
   const reject = doc.getElementById('reject');
   check('verdict-buttons-ready', accept.dataset.state === 'default' && reject.dataset.state === 'default',
     [accept.dataset.state, shadow(accept), reject.dataset.state]);
+  // The confirm step: Cancel sends no action.
   press(accept);
+  await until('accept confirm step', () => accept.dataset.state === 'confirm');
+  const step = accept.shadowRoot.querySelector('[part="confirm"]');
+  check('accept-confirm-step', step?.getAttribute('role') === 'group' && step.textContent.includes('with the kept reason?')
+    && step.textContent.includes('Confirm accept'), step?.textContent);
+  press(accept, 'cancel');
+  await until('confirm step closed', () => accept.dataset.state === 'default');
+  check('cancel-no-action', !accept.shadowRoot.querySelector('[part="confirm"]') && gridCards(verdicts).length === 0, accept.dataset.state);
+  press(accept);
+  await until('accept confirm step again', () => accept.dataset.state === 'confirm');
+  press(accept, 'accept');
   await until('accept error without reason', () => accept.dataset.state === 'error');
-  check('no-reason-no-call', shadow(accept).includes('Keep a reason first.') && verdicts.dataset.state === 'empty', shadow(accept));
+  check('no-reason-no-call', shadow(accept).includes('Keep a reason first.') && gridCards(verdicts).length === 0, shadow(accept));
 
   // Keep the reason with the editable form.
   const form = doc.getElementById('reason');
@@ -94,24 +114,30 @@ async function dashboard(job) {
   const input = field.shadowRoot.querySelector('input');
   input.value = job.verdict_reason;
   input.dispatchEvent(new Event('input', { bubbles: true, composed: true }));
+  check('form-author-page', shadow(form).includes(author('system', 'approval-dashboard')), shadow(form));
   press(form);
   await until('reason kept', () => form.dataset.state === 'done');
 
-  // One verdict: accept. The button is pending until the API receipt comes back.
+  // One verdict: accept, after the confirm step. The button is pending until the API receipt comes back.
   press(accept);
+  await until('accept confirm step for the verdict', () => accept.dataset.state === 'confirm');
+  press(accept, 'accept');
   check('accept-pending-before-receipt', accept.dataset.state === 'pending', accept.dataset.state);
   await until('accept done', () => accept.dataset.state === 'done' || accept.dataset.state === 'error');
   const status = shadow(accept);
-  const reference = (status.match(/recorded the verdict (sha256:[0-9a-f]{64})/) ?? [])[1] ?? null;
+  const shown = accept.shadowRoot.querySelector('[part="reference"]')?.textContent ?? '';
+  const reference = (shown.match(/^Reference: (sha256:[0-9a-f]{64})$/) ?? [])[1] ?? null;
   out.receipt = { reference };
   check('accept-done-with-reference', accept.dataset.state === 'done' && reference, status);
   const recorded = await until('verdict card', () => gridCards(verdicts).length === 1 && shadow(gridCards(verdicts)[0]));
   check('verdict-record-shown', recorded.startsWith('Human verdict: accept') && recorded.includes('Actor' + job.reviewer)
-    && recorded.includes('Kindhuman') && recorded.includes(job.verdict_reason), recorded);
+    && recorded.includes('Kindhuman') && recorded.includes(job.verdict_reason) && recorded.includes(author('human', job.reviewer)), recorded);
   check('evidence-state-accepted', shadow(evidence).includes('VerdictAccepted'), shadow(evidence));
 
   // One API refusal: the same actor twice on the same snapshot.
   press(reject);
+  await until('reject confirm step', () => reject.dataset.state === 'confirm');
+  press(reject, 'accept');
   await until('reject answered', () => reject.dataset.state === 'error' || reject.dataset.state === 'done');
   check('refusal-duplicate-verdict', reject.dataset.state === 'error' && shadow(reject).includes('duplicate_verdict'), shadow(reject));
   check('accept-stays-done', accept.dataset.state === 'done', accept.dataset.state);
@@ -134,18 +160,34 @@ function units() {
     [waitText(90), waitText(18060), waitText(-5)]);
   const box = document.getElementById('units');
   const card = document.createElement('mu-card');
-  card.fill = verdictCard(policy, 'sha256:' + '0'.repeat(64));
   box.append(card);
+  put(card, verdictCard(policy, 'sha256:' + '0'.repeat(64)));
   check('unit-policy-card', card.dataset.state === 'default' && shadow(card).startsWith('Policy verdict: route')
-    && shadow(card).includes('does not count as a human verdict'), shadow(card));
+    && shadow(card).includes('does not count as a human verdict') && shadow(card).includes(author('system', 'policy')), shadow(card));
   const humanCard = document.createElement('mu-card');
-  humanCard.fill = verdictCard(human, 'sha256:' + '1'.repeat(64));
   box.append(humanCard);
-  check('unit-human-card', shadow(humanCard).startsWith('Human verdict: reject') && !shadow(humanCard).includes('policy'), shadow(humanCard));
-  const empty = document.createElement('mu-card-grid');
-  empty.fill = listGrid([]);
-  box.append(empty);
-  check('unit-empty-list', empty.dataset.state === 'empty' && shadow(empty).includes('No cards.'), shadow(empty));
+  put(humanCard, verdictCard(human, 'sha256:' + '1'.repeat(64)));
+  check('unit-human-card', shadow(humanCard).startsWith('Human verdict: reject') && !shadow(humanCard).includes('policy')
+    && shadow(humanCard).includes(author('human', 'reviewer-a')), shadow(humanCard));
+  check('unit-empty-list', listCards([]).length === 0, listCards([]));
+
+  // The pinned kit refuses a fill of contract format 1, with an actions key.
+  const item = { function: 'record.visible', reason: 'r', producer: 'author', state: 'awaiting_verdict', snapshot_ref: 'sha256:' + '2'.repeat(64) };
+  const legacy = document.createElement('mu-card');
+  box.append(legacy);
+  put(legacy, { ...listCard(item), actions: [] });
+  check('unit-actions-key-refused', legacy.dataset.state === 'refused' && shadow(legacy).includes('actions: unknown key'), shadow(legacy));
+  // The kit refuses a fill with no authorship slot, and a fill whose author is not the bound actor.
+  const anonymous = document.createElement('mu-card');
+  box.append(anonymous);
+  anonymous.actor = producerActor('author');
+  anonymous.fill = fill('card', { title: 'record.visible' });
+  check('unit-no-author-refused', anonymous.dataset.state === 'refused' && shadow(anonymous).includes('slots.authorship'), shadow(anonymous));
+  const claimed = document.createElement('mu-card');
+  box.append(claimed);
+  claimed.actor = producerActor('author');
+  claimed.fill = fill('card', { title: 'record.visible' }, reviewerActor('author'));
+  check('unit-other-author-refused', claimed.dataset.state === 'refused' && shadow(claimed).includes('not the bound actor'), shadow(claimed));
 }
 
 let job = null;
