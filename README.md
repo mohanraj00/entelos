@@ -147,7 +147,7 @@ Three smaller examples show other uses:
 
 - [tier-eligibility](examples/tier-eligibility/README.md) is a third consumer of `src/`.
 - [sidecar-client](examples/sidecar-client/README.md) calls the lifecycle only through a local socket.
-- [browser-executor](examples/browser-executor/README.md) answers in a browser from a pinned activation. Then the Host ingests the receipt log.
+- [browser-executor](examples/browser-executor/README.md) answers in a browser from a pinned activation. Then the Host ingests the receipt log. The edge executor line is frozen until v1.0 (see [SUPPORT.md](docs/SUPPORT.md)). The code and tests stay.
 - [approval-dashboard](examples/approval-dashboard/README.md) is an optional reviewer page on the HTTP approval API, built with the mugham UI kit. The API is the contract.
 
 ## Limits

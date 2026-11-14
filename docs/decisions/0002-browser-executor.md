@@ -2,6 +2,7 @@
 
 - Status: accepted
 - Date: 2026-11-05
+- Freeze: from 2026-11-13, no new work starts on the edge executor line until v1.0 ([#162](https://github.com/mohanraj00/entelos/issues/162)). The code and tests stay. A security fix is allowed.
 - Decided by: the maintainer
 - Amends: [0001](0001-technology.md), item 3 (edge binding)
 - Amended: 2026-11-05, qualification for each build (see [Amendment](#amendment-qualification-for-each-build))

@@ -4,6 +4,12 @@ This file lists the changes for each snapshot tag. A tag is a stable snapshot to
 
 ## Unreleased
 
+- The edge executor line is frozen until v1.0 (#162). The line is the WASM build,
+  the browser bridge, the IndexedDB log, `ingest` of executor logs and the
+  planned gomobile package. The code and tests stay, and CI still runs them.
+  No new work starts on this line. A security fix is allowed. The change is in
+  docs only: BACKLOG, SUPPORT, STABILITY, README and decisions 0001 and 0002.
+
 - The `record` and `inspect` reads check the scope (#160). `record` refuses
   a record of another scope, or a record without a scope, with the new code
   `scope_mismatch`. `inspect` refuses with `scope_mismatch` if the store at

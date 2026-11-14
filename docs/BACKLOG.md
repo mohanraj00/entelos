@@ -22,6 +22,15 @@ GitHub issues own live status. This map identifies bounded work for this source 
 | [inspect and record: refuse a record of a different scope](https://github.com/mohanraj00/entelos/issues/160) | In review: `scope_mismatch` in the Host, the vector file `approval-scope.json` and a Go test for a record without a scope. Milestone v0.4. |
 | [Evidence format of an external producer](https://github.com/mohanraj00/entelos/issues/148) | Proposed: [EVIDENCE.md](../src/protocol/evidence/EVIDENCE.md), a schema and hand-written vectors. No Host reads it. The code that reads the evidence is in #104 (v0.5). Milestone v0.4. |
 
+## Edge executor freeze
+
+On 2026-11-13, the maintainer froze the edge executor line until v1.0 ([#162](https://github.com/mohanraj00/entelos/issues/162)). The line has these parts: the WASM build of the executor, the browser bridge (`web/entelos-executor.mjs`), the IndexedDB receipt log, `ingest` of executor logs, and the planned gomobile package. A workflow policy runs on a server and does not need a device.
+
+- The code and its tests stay, and CI still runs them.
+- No new work starts on this line until v1.0. This includes the gomobile package, which stays planned only.
+- A fix for a security defect in the frozen code is still allowed.
+- No open issue and no planned backlog item belonged to this line on 2026-11-13. The decisions [0001](decisions/0001-technology.md) and [0002](decisions/0002-browser-executor.md) carry the same note.
+
 ## Milestones to a public announcement
 
 On 2026-10-29, the maintainer chose to announce Entelos as a source reference to read and copy. It is not a library to depend on. A milestone is complete only when its exit test passes. The announcement itself needs specific maintainer authorization.

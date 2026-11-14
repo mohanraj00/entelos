@@ -4,6 +4,15 @@ I maintain this as a source reference and a Go dependency, not a hosted product 
 
 The supported work is reproducing the supplied examples, fixing defects in documented contract/lifecycle behavior and reviewing dependency-pin updates with the same checks. Report a small neutral reproducer, source revision, tool versions and expected/actual behavior. Real customer data, credentials and confidential source material do not belong in reports.
 
+## Edge executor freeze
+
+On 2026-11-13, the maintainer froze the edge executor line until v1.0 ([#162](https://github.com/mohanraj00/entelos/issues/162)). The line has these parts: the WASM build of the executor, the browser bridge, the IndexedDB receipt log, `ingest` of executor logs, and the planned gomobile package.
+
+- The code and its tests stay. I do not remove them.
+- No new work starts on this line until v1.0. I do not add a feature, an example or a platform.
+- I still fix a security defect in the frozen code. I also keep the tests in CI.
+- The frozen line gets no support beyond this. Report a security defect through [SECURITY.md](../SECURITY.md).
+
 ## Compatibility and retention
 
 The reviewed local run uses Go 1.27.2, Python 3.14.6 and Git 2.54.0 on macOS arm64. The `standalone` job of the `CI` GitHub Actions workflow runs the same verifier on the `ubuntu-24.04` runner (x86_64) with Go 1.27.2, Python 3.14.6 and the runner's Git (2.56.0 in the first run). The same job also runs `verify.py` on the `macos-15` runner (arm64) with the same Go and Python versions and the runner's Git. Other toolchain/OS combinations have not been tested. The concurrency test requires POSIX fork; Windows is outside this reference's tested scope. The browser checks need a Chromium browser. `ENTELOS_BROWSER` names it, and CI uses the Chrome of the runner image. The sidecar is POSIX only. These runners are not a cross-platform support claim.
