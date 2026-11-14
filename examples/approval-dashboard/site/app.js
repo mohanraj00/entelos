@@ -3,7 +3,7 @@
 import { define } from './mugham/src/components/index.js';
 import { call } from './api.js';
 import {
-  fill, clip, excerpt, listGrid, proposalCard, sourceCard, reportCard, verdictGrid, refusalText, shortRef,
+  fill, put, clip, excerpt, listCards, proposalCard, sourceCard, reportCard, verdictCards, refusalText, shortRef, PAGE_ACTOR,
 } from './view.js';
 
 define();
@@ -16,6 +16,10 @@ const make = (tag, value) => {
   return node;
 };
 const note = (text, variant = 'body') => make('mu-text', fill('text', { text: clip(text, MAX_TEXT), variant }));
+// One card element for each fill, each with its own bound author. With no fill, the target shows the empty text.
+const cards = (target, fills, empty) => target.replaceChildren(...(fills.length
+  ? fills.map((value) => put(document.createElement('mu-card'), value))
+  : [note(empty, 'caption')]));
 
 // The token stays in this variable only. The page does not store it.
 let token = '';
@@ -54,7 +58,7 @@ async function loadList() {
   cursor = response.result.cursor;
   const items = response.result.proposals;
   $('as-of').replaceChildren(note(`As of ${response.result.as_of}. ${items.length} open proposals, the oldest first.`, 'caption'));
-  $('list').fill = listGrid(items);
+  cards($('list'), listCards(items), 'No open proposal.');
   $('open-buttons').replaceChildren(...items.slice(0, 100).map((item) => {
     const button = make('mu-button', fill('button', { label: clip(`Open ${item.function}`, 40) }));
     button.dataset.snapshot = item.snapshot_ref;
@@ -71,17 +75,15 @@ async function readProposal(ref) {
 }
 
 function renderEvidence(result) {
-  $('evidence').fill = proposalCard(result.proposal, result.snapshot);
-  $('source').fill = sourceCard(result.source);
+  put($('evidence'), proposalCard(result.proposal, result.snapshot));
+  put($('source'), sourceCard(result.source));
   $('bundle').replaceChildren(...Object.keys(result.bundle ?? {}).sort().flatMap((name) => {
     const part = excerpt(result.bundle[name], MAX_TEXT);
     return [note(name, 'strong'), note(part.text), part.omitted ? note(`The page omits ${part.omitted} more characters.`, 'caption') : null]
       .filter(Boolean);
   }));
-  $('reports').replaceChildren(...(result.reports.length
-    ? result.reports.map((entry, index) => make('mu-card', reportCard(entry, index)))
-    : [note('No report. A verdict needs a qualification report.', 'caption')]));
-  $('verdicts').fill = verdictGrid(result.decisions);
+  cards($('reports'), result.reports.map(reportCard), 'No report. A verdict needs a qualification report.');
+  cards($('verdicts'), verdictCards(result.decisions), 'No verdict.');
 }
 
 async function openProposal(ref) {
@@ -102,9 +104,9 @@ function bindVerdict(result) {
   const report = reports.length ? reports[reports.length - 1].report_ref : null;
   const form = $('reason');
   form.action = { tool: 'dashboard.keep_reason', label: 'Keep reason', title: 'Verdict reason', editable: { reason: 'Reason' } };
-  form.fill = fill('editable-form', { title: 'Verdict reason', submit_label: 'Keep reason', fields: [
+  put(form, fill('editable-form', { title: 'Verdict reason', submit_label: 'Keep reason', fields: [
     fill('field', { name: 'reason', label: 'Reason', value: '', hint: 'The accept and reject buttons send the reason that you keep here.' }),
-  ] });
+  ] }, PAGE_ACTOR));
   for (const disposition of ['accept', 'reject']) {
     const button = $(disposition);
     const label = disposition === 'accept' ? 'Accept' : 'Reject';
@@ -114,9 +116,11 @@ function bindVerdict(result) {
       button.fill = fill('action-button', { label });
       continue;
     }
+    // The confirm step: the button sends decide only after the person confirms.
     button.action = {
       tool: 'entelos.decide', label, description,
       arguments: { disposition, report_ref: report },
+      confirm: { message: `${description} with the kept reason? The API keeps each verdict.`, label: `Confirm ${disposition}` },
     };
     button.fill = fill('action-button', { label, description });
   }
@@ -149,8 +153,8 @@ for (const disposition of ['accept', 'reject']) {
       return;
     }
     cursor = response.result.cursor;
-    // The kit v0.1.0 receipt has no reference field, so the message names the verdict record.
-    button.receipt({ id, ok: true, message: `The API recorded the verdict ${response.result.result.decision_ref}.` });
+    // The receipt reference is the verdict record.
+    button.receipt({ id, ok: true, message: 'The API recorded the verdict.', reference: response.result.result.decision_ref });
     // Show the new verdict record. The buttons keep their state.
     const again = await readProposal(current.proposal.snapshot_ref);
     if (again.status === 'ok') {

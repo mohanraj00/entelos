@@ -4,6 +4,16 @@ This file lists the changes for each snapshot tag. A tag is a stable snapshot to
 
 ## Unreleased
 
+- The approval dashboard (#157) moves to the mugham UI kit `v0.2.1`
+  (commit `33678f8`), with contract format 2. Each card and the reason form
+  show their author in the authorship slot, with a bound actor: the producer,
+  the source attester, the runner, the reviewer, the policy or the page. Each
+  proposal and each verdict is a separate card, because a card grid gives one
+  author to all of its cards. Accept and Reject show a confirm step, and the
+  receipt shows the verdict reference. The browser test checks the confirm
+  step and the authors. Unit cases show that the kit refuses a fill with an
+  `actions` key and a fill with a false author.
+
 - The edge executor line is frozen until v1.0 (#162). The line is the WASM build,
   the browser bridge, the IndexedDB log, `ingest` of executor logs and the
   planned gomobile package. The code and tests stay, and CI still runs them.

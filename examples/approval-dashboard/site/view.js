@@ -1,9 +1,33 @@
 // Pure functions that turn API results into mugham fills. They make no DOM node and no API call.
 // The kit shows each value as text, never as markup.
 
-export const KIT_VERSION = '0.1.0';
+// The version of each catalog contract that the page fills. The kit v0.2.1 keeps the contracts at 0.1.0.
+export const CONTRACT_VERSION = '0.1.0';
 
-export const fill = (component, data) => ({ component, version: KIT_VERSION, data });
+// A fill of contract format 2. Only an outer fill has slots. A fill has no actions key: the page binds
+// each action in code.
+export const fill = (component, data, author) => (author
+  ? { component, version: CONTRACT_VERSION, data, slots: { authorship: author } }
+  : { component, version: CONTRACT_VERSION, data });
+
+// The authors. The API gives the id of each writer, but no actor type. The page gives the type from the
+// role of the writer: a reviewer (a decide actor or a source attester) is a person, a producer is an
+// agent, and a qualification runner or a policy is the system. An id that the API does not give shows
+// as unknown.
+const actor = (type, id) => ({ type, id: typeof id === 'string' && id ? clip(id, 128) : 'unknown' });
+export const reviewerActor = (id) => actor('human', id);
+export const producerActor = (id) => actor('agent', id);
+export const systemActor = (id) => actor('system', id);
+// The page itself writes the form of the verdict reason.
+export const PAGE_ACTOR = Object.freeze(systemActor('approval-dashboard'));
+
+// put binds the actor of the fill to the element, then gives the fill. The page makes each fill from the
+// API result, so the authorship slot and the bound actor come from the same record.
+export function put(node, value) {
+  node.actor = value?.slots?.authorship ?? null;
+  node.fill = value;
+  return node;
+}
 export const fact = (label, value) => fill('fact', { label: clip(label, 40), value: clip(String(value), 200) });
 
 // clip keeps the first max code points. The contracts count code points.
@@ -77,12 +101,12 @@ export function listCard(item) {
       fact('Verdicts', String(item.decision_refs?.length ?? 0)),
       fact('Snapshot', shortRef(item.snapshot_ref)),
     ],
-  }, item.submitted_at, 'Submitted'));
+  }, item.submitted_at, 'Submitted'), producerActor(item.producer));
 }
 
-export function listGrid(items) {
-  return fill('card-grid', { label: 'Open proposals', cards: items.slice(0, 100).map(listCard) });
-}
+// The list shows at most 100 cards. Each card is a separate element, because a card grid gives one author
+// to all of its cards, and each proposal has its own producer.
+export const listCards = (items) => items.slice(0, 100).map(listCard);
 
 // The evidence card of one proposal.
 export function proposalCard(item, snapshot) {
@@ -97,15 +121,16 @@ export function proposalCard(item, snapshot) {
       fact('Scope', item.scope),
       fact('Snapshot', shortRef(item.snapshot_ref)),
     ],
-  }, item.submitted_at, 'Submitted'));
+  }, item.submitted_at, 'Submitted'), producerActor(item.producer ?? snapshot?.producer));
 }
 
+// The attester of a source is the reviewer that wrote it.
 export function sourceCard(source) {
   return fill('card', {
     title: 'Source',
     summary: clip(source?.text ?? '', 1000),
     facts: [fact('Reason', source?.reason ?? ''), fact('Interval', `${source?.from} to ${source?.until}`)],
-  });
+  }, reviewerActor(source?.attester));
 }
 
 export function reportCard(entry, index) {
@@ -120,29 +145,29 @@ export function reportCard(entry, index) {
       fact('Cases passed', `${cases.filter((c) => c.passed === true).length} of ${cases.length}`),
       fact('Report', shortRef(entry.report_ref)),
     ],
-  });
+  }, systemActor(report.runner));
 }
 
-// A human verdict and a policy verdict have different titles and facts. A policy verdict never counts as a human verdict.
+// A human verdict and a policy verdict have different titles, facts and authors. A policy verdict never
+// counts as a human verdict. Its author is the system, with the policy function of its receipt as the id.
 export function verdictCard(record, ref) {
   if (verdictKind(record) === 'policy') {
     return fill('card', dated({
       title: `Policy verdict: ${record.outcome}`,
       summary: 'A policy wrote this verdict. It does not count as a human verdict.',
       facts: [fact('Kind', 'policy'), fact('Outcome', record.outcome), fact('Reason code', record.reason), fact('Verdict', shortRef(ref))],
-    }, record.date, 'Date'));
+    }, record.date, 'Date'), systemActor(record.receipt?.policy_function || 'policy'));
   }
   return fill('card', dated({
     title: `Human verdict: ${record.disposition ?? 'accept'}`,
     summary: clip(record.reason ?? '', 1000),
     facts: [fact('Kind', 'human'), fact('Actor', record.actor), fact('Disposition', record.disposition ?? 'accept'),
       fact('Decided at', record.decided_at ?? 'unknown'), fact('Verdict', shortRef(ref))],
-  }, record.decided_at, 'Decided'));
+  }, record.decided_at, 'Decided'), reviewerActor(record.actor));
 }
 
-export function verdictGrid(entries) {
-  return fill('card-grid', { label: 'Verdicts', cards: entries.slice(0, 100).map((e) => verdictCard(e.decision, e.decision_ref)) });
-}
+// Each verdict is a separate card, because each verdict has its own author.
+export const verdictCards = (entries) => entries.slice(0, 100).map((e) => verdictCard(e.decision, e.decision_ref));
 
 // The text of an API refusal. The receipt message of the kit has at most 200 characters.
 export function refusalText(response) {
