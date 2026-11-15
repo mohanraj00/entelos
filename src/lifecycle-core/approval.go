@@ -1,9 +1,10 @@
 package lifecycle
 
-// The approval API 1.1 of src/protocol/approval/APPROVAL.md: the clock port,
+// The approval API 1.2 of src/protocol/approval/APPROVAL.md: the clock port,
 // the review index, the proposal states and the two approval reads.
 
 import (
+	"encoding/base64"
 	"errors"
 	"os"
 	"sort"
@@ -230,9 +231,88 @@ func proposalOrder(items []Object) {
 	})
 }
 
-func (h *Host) proposals(v *View) Object {
+// pageContext binds a continuation to the installed scope and functions.
+// It is a query identity, not a signature or a grant of authority.
+func (h *Host) pageContext() string {
+	functions := toStrings(h.ctxList("functions"))
+	sort.Strings(functions)
+	list := Array{}
+	for _, f := range functions {
+		list = append(list, f)
+	}
+	return ContentRef(Encode(Array{h.ctx("scope"), list}))
+}
+
+const pagePrefix = "approval-page/1."
+
+func (h *Host) proposals(q Object) Object {
+	limit, offset := 0, 0
+	cursor := lookup(q, "cursor", nil)
+	asOf := ""
+	if raw, paged := q["limit"]; paged {
+		switch n := raw.(type) {
+		case Int:
+			limit, _ = strconv.Atoi(n.Text)
+		case int:
+			limit = n
+		case int64:
+			if n >= 1 && n <= 1000 {
+				limit = int(n)
+			}
+		}
+		if limit < 1 || limit > 1000 {
+			fail("invalid_request", "limit must be an integer from 1 to 1000", "")
+		}
+		if cursor != nil && cursor != "" {
+			s, ok := cursor.(string)
+			bad := func() { fail("invalid_cursor", "invalid approval page cursor", "store") }
+			if !ok || len(s) > 8192 || !strings.HasPrefix(s, pagePrefix) {
+				bad()
+			}
+			raw, err := base64.RawURLEncoding.Strict().DecodeString(strings.TrimPrefix(s, pagePrefix))
+			if err != nil {
+				bad()
+			}
+			value, err := Decode(raw)
+			if err != nil {
+				bad()
+			}
+			page, ok := value.(Object)
+			if !ok || len(page) != 4 || page["context"] != h.pageContext() {
+				bad()
+			}
+			root, ok := page["root"].(string)
+			if !ok || root == "" {
+				bad()
+			}
+			asOf, ok = page["as_of"].(string)
+			if !ok || CheckTime(asOf) != nil {
+				bad()
+			}
+			n, ok := page["offset"].(Int)
+			if !ok {
+				bad()
+			}
+			offset, err = strconv.Atoi(n.Text)
+			if err != nil || offset <= 0 {
+				bad()
+			}
+			cursor = root
+		} else {
+			cursor = nil
+		}
+	} else if s, ok := cursor.(string); ok && strings.HasPrefix(s, pagePrefix) {
+		fail("invalid_request", "a page cursor requires limit", "")
+	}
+	view, err := h.Store.Read(cursor)
+	if fault, ok := err.(*Fault); ok && fault.Code == "unknown_cursor" && limit > 0 {
+		fail("invalid_cursor", "invalid approval page cursor", "store")
+	}
+	v := must(view, err)
 	index := reviews(v)
-	asOf := h.now()
+	if asOf == "" {
+		asOf = h.now()
+	}
 	items := []Object{}
 	for _, raw := range object(item(v.State, "heads")) {
 		ref, ok := raw.(string)
@@ -249,11 +329,29 @@ func (h *Host) proposals(v *View) Object {
 		}
 	}
 	proposalOrder(items)
+	next := ""
+	if limit > 0 {
+		if offset > len(items) {
+			fail("invalid_cursor", "invalid approval page cursor", "store")
+		}
+		end := offset + limit
+		if end < len(items) {
+			page := Object{"root": v.Cursor, "offset": Int{strconv.Itoa(end)}, "as_of": asOf, "context": h.pageContext()}
+			next = pagePrefix + base64.RawURLEncoding.EncodeToString(Encode(page))
+		} else {
+			end = len(items)
+		}
+		items = items[offset:end]
+	}
 	list := Array{}
 	for _, x := range items {
 		list = append(list, x)
 	}
-	return Object{"cursor": v.Cursor, "as_of": asOf, "proposals": list}
+	out := Object{"cursor": v.Cursor, "as_of": asOf, "proposals": list}
+	if limit > 0 {
+		out["next_cursor"] = next
+	}
+	return out
 }
 
 func (h *Host) proposal(v *View, q Object) Object {
@@ -278,9 +376,13 @@ func (h *Host) proposal(v *View, q Object) Object {
 	for i, decisionRef := range elements(entry["decisions"]) {
 		verdicts = append(verdicts, Object{"decision_ref": decisionRef, "decision": decisions[i]})
 	}
-	return Object{"cursor": v.Cursor, "as_of": asOf, "proposal": h.proposalItem(v, index, ref, snapshot, asOf),
+	out := Object{"cursor": v.Cursor, "as_of": asOf, "proposal": h.proposalItem(v, index, ref, snapshot, asOf),
 		"snapshot": snapshot, "source": get(v, item(snapshot, "source_ref"), "source"), "bundle": bundle,
 		"reports": reports, "decisions": verdicts}
+	if doc, present := snapshot["evidence"]; present {
+		out["evidence"] = doc
+	}
+	return out
 }
 
 // decide records an accept or a reject verdict in the order of checks of

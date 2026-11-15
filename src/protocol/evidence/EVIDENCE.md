@@ -2,7 +2,7 @@
 
 This file specifies the admission evidence that an external producer gives for a proposal. It is the first part of issue [#104](https://github.com/mohanraj00/entelos/issues/104), and issue [#148](https://github.com/mohanraj00/entelos/issues/148) tracks it.
 
-Status: **proposed**. No Host reads this format. The schema and the vectors in this directory are the contract for a later implementation in #104. The vectors have expected values that a person wrote from this text. No candidate output made them. [`check_spec.py`](check_spec.py) checks the vectors against the schema and the rules of this file. It does not run a Host.
+Status: **proposed admission rules**. Approval API 1.2 retains and returns the producer document; no Host applies these admission rules. The schema and the vectors in this directory are the contract for a later implementation in #104. The vectors have expected values that a person wrote from this text. No candidate output made them. [`check_spec.py`](check_spec.py) checks the vectors against the schema and the rules of this file. It does not run a Host.
 
 ## Terms
 
@@ -188,7 +188,7 @@ This table shows how a mapping can give one fact from groundgate 0.14.0 (spec v0
 
 ## Citation in a proposal
 
-This section is a proposal for #104. No code implements it.
+Approval API [1.2](../approval/APPROVAL.md#evidence-attachment-in-12) (#161) implements attachment and retrieval of the producer document. It checks the object and format and retains it in the snapshot. The admission rules and policy inputs below remain a proposal for #104.
 
 - The `propose` request gets an optional field `evidence`, with one evidence document.
 - The Host applies the rules of this file before it writes the snapshot. A refusal stops the write, and the root does not change.
@@ -223,7 +223,7 @@ The checker applies the same rules that a Host will apply. Agreement of the chec
 
 ## Limits
 
-- No Host reads this format yet. A passing check does not show that entelos accepts evidence.
+- The Host retains and returns an attachment through approval API 1.2. It does not yet apply the admission rules or derive policy inputs. A passing format check does not show Host admission of evidence.
 - Entelos cannot check a digest, a span, an outcome, a code or a review, because it does not read the receipts or the sources. The policy inputs are statements of the producer.
 - Entelos does not check that an attached object agrees with its digest.
 - The format has no signature and no producer authentication. The caller of `propose` is responsible for the source of the document.

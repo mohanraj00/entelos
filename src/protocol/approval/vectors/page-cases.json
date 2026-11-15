@@ -1,0 +1,16 @@
+{
+ "description": "Synthetic store: 250 open proposals, chronological function numbers, pages of 50. Expectations are stated from the fixture order, not Host output.",
+ "protocol_version": "1.2",
+ "fixture": {"count": 250, "scope": "demo", "submitted_start": "2026-11-20T00:00:00Z", "clock": "2026-11-21T00:00:00Z"},
+ "steps": [
+  {"name":"first-page", "limit":50, "cursor":"", "expect":{"first":0,"last":49,"count":50,"more":true}},
+  {"name":"changed-list", "change":{"close":50,"open":250}, "limit":50, "cursor":"previous", "expect":{"first":50,"last":99,"count":50,"more":true}},
+  {"name":"third-page", "limit":50, "cursor":"previous", "expect":{"first":100,"last":149,"count":50,"more":true}},
+  {"name":"fourth-page", "limit":50, "cursor":"previous", "expect":{"first":150,"last":199,"count":50,"more":true}},
+  {"name":"last-page", "limit":50, "cursor":"previous", "expect":{"first":200,"last":249,"count":50,"more":false}},
+  {"name":"bad-cursor", "limit":50, "cursor":"not-a-page", "expect":{"status":"invalid_cursor"}},
+  {"name":"fresh-list", "limit":1, "cursor":"", "expect":{"first":250,"last":250,"count":1,"more":true}},
+  {"name":"zero-limit", "limit":0, "cursor":"", "expect":{"status":"invalid_request"}},
+  {"name":"too-large-limit", "limit":1001, "cursor":"", "expect":{"status":"invalid_request"}}
+ ]
+}

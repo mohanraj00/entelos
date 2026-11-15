@@ -65,9 +65,11 @@ func requestID(request lifecycle.Object) string {
 	return ""
 }
 
-// maxMinor is the highest supported minor version: 1 with the approval
-// schemas, else 0.
+// maxMinor is the highest minor version with loaded schemas.
 func (a *Adapter) maxMinor() int {
+	if len(a.Schemas.approval12) == 3 {
+		return 2
+	}
 	if a.Schemas.Approval != nil {
 		return 1
 	}
@@ -154,6 +156,26 @@ func (a *Adapter) message(p *Principal, request lifecycle.Object) lifecycle.Obje
 		return failure(id, fault.Code, fault.Stage, fault.Message)
 	case err != nil:
 		return internal(id)
+	}
+	if op == "proposal" && y < 2 {
+		if out, ok := result.(lifecycle.Object); ok {
+			copied := lifecycle.Object{}
+			for k, v := range out {
+				if k != "evidence" {
+					copied[k] = v
+				}
+			}
+			if snapshot, ok := out["snapshot"].(lifecycle.Object); ok {
+				legacy := lifecycle.Object{}
+				for k, v := range snapshot {
+					if k != "evidence" {
+						legacy[k] = v
+					}
+				}
+				copied["snapshot"] = legacy
+			}
+			result = copied
+		}
 	}
 	if op == "decide" && y == 0 {
 		result = decideResult10(result)

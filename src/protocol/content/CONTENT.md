@@ -171,6 +171,7 @@ A content snapshot has these fields in addition to `function`, `scope`, `from`, 
 | `bundle_ref` | The candidate `ref`. Thus the qualification bindings of a CEL bundle apply: a passed verdict must name this `ref`. |
 | `evidence_reference` | The `evidence` object of the manifest, if the manifest has one. |
 | `applicability` | An object with the `applicability` of each item that has one, by `item_id`. A snapshot whose items have no values has no field. |
+| `evidence` | The evidence document of the `propose` request, if the request has one. The Host keeps it as for a CEL bundle, and `proposal` gives it. The Host does not compare it with `evidence_reference`. |
 
 A content snapshot has no `files`, no `engine_build` and no `base_snapshot`. A CEL snapshot has no `candidate` field and keeps the bytes of an earlier Host.
 
@@ -249,7 +250,7 @@ The Go test `TestContentLifecycleVectors` runs them on the Host with a fixture r
 
 - The wire protocol has no `candidate` field and no `activate` field `applicability` yet. Only a Host request (the Go API or the JSONL Host) can give a content candidate or confirm its values.
 - `proposals` gives no separate `candidate` or `evidence_reference` field in its list item. A reader gets them from `proposal`.
-- The Host does not get or check the evidence document that `evidence` names.
+- The Host does not get or check the evidence document that the manifest `evidence` names. A `propose` request can attach an evidence document, and the Host keeps it, but the Host does not compare it with the reference.
 - Entelos cannot check an item digest, an item size or a media type. The qualification runner of the application is responsible for them.
 - The manifest has no signature and no author authentication. The caller of `propose` is responsible for the source of the manifest. A signed activation record of the Host names the subject, not the manifest text.
 - The manifest does not record when an item was written or by whom.

@@ -24,8 +24,9 @@ type Schemas struct {
 	// Approval holds the $defs of the approval API 1.1 schemas. Protocol
 	// 1.1 uses each of them in place of the 1.0 schema of the same name.
 	// Without them, the adapter supports protocol 1.0 only.
-	Approval map[string]lifecycle.Object
-	patterns map[string]*regexp.Regexp
+	Approval   map[string]lifecycle.Object
+	approval12 map[string]lifecycle.Object
+	patterns   map[string]*regexp.Regexp
 }
 
 // ApprovalDir gives the approval schema directory next to the 1.0 schema
@@ -34,7 +35,7 @@ func ApprovalDir(schemaDir string) string {
 	return filepath.Join(schemaDir, "..", "approval", "schema")
 }
 
-// LoadApproval reads the approval API 1.1 operation schemas. The file
+// LoadApproval reads the approval API 1.1 schemas and any 1.2 overrides. The file
 // credentials.schema.json is the sidecar credentials file, not an operation.
 func (s *Schemas) LoadApproval(dir string) error {
 	paths, err := filepath.Glob(filepath.Join(dir, "*.schema.json"))
@@ -75,12 +76,54 @@ func (s *Schemas) LoadApproval(dir string) error {
 		return fmt.Errorf("%s: no approval operation schema", dir)
 	}
 	s.Approval = ops
+	// Version 1.2 overrides only its three changed operations. Keep the
+	// 1.1 definitions intact for old clients and schema users.
+	paths, err = filepath.Glob(filepath.Join(dir, "1.2", "*.schema.json"))
+	if err != nil {
+		return err
+	}
+	latest := map[string]lifecycle.Object{}
+	for _, path := range paths {
+		raw, err := os.ReadFile(path)
+		if err != nil {
+			return err
+		}
+		value, err := lifecycle.Decode(raw)
+		if err != nil {
+			return err
+		}
+		doc, ok := value.(lifecycle.Object)
+		defs, has := doc["$defs"].(lifecycle.Object)
+		if !ok || !has || doc["x-entelos-protocol"] != "1.2" {
+			return fmt.Errorf("%s: invalid approval 1.2 schema", path)
+		}
+		if err := s.compile(doc, path); err != nil {
+			return err
+		}
+		name := strings.TrimSuffix(filepath.Base(path), ".schema.json")
+		_, body := defs["request_body"].(lifecycle.Object)
+		_, result := defs["result"].(lifecycle.Object)
+		if !body || !result || (name != "proposals" && name != "proposal" && name != "propose") ||
+			(doc["x-entelos-access"] == "read") != lifecycle.Reads[name] {
+			return fmt.Errorf("%s: invalid approval 1.2 operation", path)
+		}
+		latest[name] = defs
+	}
+	if len(latest) != 0 && len(latest) != 3 {
+		return fmt.Errorf("%s: approval 1.2 needs three operation schemas", dir)
+	}
+	s.approval12 = latest
 	return nil
 }
 
 // Operation gives the schema $defs of an operation for a protocol minor
 // version.
 func (s *Schemas) Operation(name string, minor int) (lifecycle.Object, bool) {
+	if minor >= 2 {
+		if defs, ok := s.approval12[name]; ok {
+			return defs, true
+		}
+	}
 	if minor >= 1 {
 		if defs, ok := s.Approval[name]; ok {
 			return defs, true
