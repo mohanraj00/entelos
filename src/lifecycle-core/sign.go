@@ -32,8 +32,12 @@ const (
 	// fits in one protocol frame of 1 MiB, and the record operation can
 	// give it on each transport.
 	maxSignedRecord = 512 << 10
-	maxKeySetKeys   = 64
-	maxSignedText   = 256
+	// maxSignedDocument is the largest signed record that the Host
+	// stores. It leaves 48,576 bytes of a protocol frame for the envelope
+	// of a response. The copies of scope and function count here.
+	maxSignedDocument = 1000000
+	maxKeySetKeys     = 64
+	maxSignedText     = 256
 )
 
 // signedKinds are the record kinds that the Host signs: an approval record
@@ -110,6 +114,9 @@ func boundedText(value string) bool {
 type Signer struct {
 	id  string
 	key ed25519.PrivateKey
+	// own is a key set with only the key of this signer. The Host checks
+	// each new signed record against it.
+	own *KeySet
 }
 
 // NewSigningKey makes a private signing key document from 32 random bytes
@@ -148,7 +155,9 @@ func NewSigner(raw []byte) (*Signer, error) {
 	if doc["key_id"] != id {
 		return bad("key_id is not the identity of this key")
 	}
-	return &Signer{id: id, key: key}, nil
+	public := key.Public().(ed25519.PublicKey)
+	own := &KeySet{signer: "self", keys: map[string]publicKey{id: {key: public, status: "active"}}}
+	return &Signer{id: id, key: key, own: own}, nil
 }
 
 // KeyID gives the identifier that each signature of this signer names.
@@ -216,7 +225,16 @@ func (h *Host) signStaged(v *View) {
 				strconv.Itoa(maxSignedRecord)+" bytes maximum", "signature")
 		}
 		record := must(Decode(raw))
-		index[ref] = v.Put(signedKind, h.signer.sign(text(item(record, "scope")), text(item(record, "function")), kinds[ref], raw))
+		signed := h.signer.sign(text(item(record, "scope")), text(item(record, "function")), kinds[ref], raw)
+		signed["format"] = RecordFormat
+		if size := len(Encode(signed)); size > maxSignedDocument {
+			fail("record_too_large", "the signed record has "+strconv.Itoa(size)+" bytes; the maximum is "+strconv.Itoa(maxSignedDocument), "signature")
+		}
+		// The Host never stores a signed record that the verifier refuses.
+		if _, err := VerifySigned(Encode(signed), h.signer.own); err != nil {
+			fail("unsignable_record", "the verifier refuses the signed record of this record: "+err.Error(), "signature")
+		}
+		index[ref] = v.Put(signedKind, signed)
 	}
 }
 
@@ -321,10 +339,10 @@ func VerifySigned(raw []byte, keys *KeySet) (Object, error) {
 	scope, function, kind := doc["scope"].(string), doc["function"].(string), doc["record_kind"].(string)
 	ref, algorithm, id := doc["record_ref"].(string), doc["algorithm"].(string), doc["key_id"].(string)
 	encoded := doc["record"].(string)
-	if !boundedText(scope) || !boundedText(function) || !signedKinds[kind] || !refPattern.MatchString(ref) ||
+	if scope == "" || function == "" || !signedKinds[kind] || !refPattern.MatchString(ref) ||
 		!algorithmPattern.MatchString(algorithm) || !keyIDPattern.MatchString(id) ||
 		encoded == "" || len(encoded) > base64.StdEncoding.EncodedLen(maxSignedRecord) {
-		return bad("schema", "a field value is malformed or too long")
+		return bad("schema", "a field value is empty, malformed or too long")
 	}
 	if algorithm != signatureAlgorithm {
 		return nil, signFault("unsupported_algorithm", "", "unknown signature algorithm "+algorithm)

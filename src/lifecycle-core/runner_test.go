@@ -60,6 +60,8 @@ type world struct {
 	runner Runner
 	keys   int
 	signer *Signer
+	// scope is the Host scope. An empty value is "demo".
+	scope string
 }
 
 func newWorld(t *testing.T, runner Runner) *world {
@@ -68,7 +70,11 @@ func newWorld(t *testing.T, runner Runner) *world {
 
 func (w *world) host(actor, role string, runner Runner) *Host {
 	w.t.Helper()
-	context := Object{"actor": actor, "roles": Array{role}, "scope": "demo", "runner_actor": "fixture-runner",
+	scope := w.scope
+	if scope == "" {
+		scope = "demo"
+	}
+	context := Object{"actor": actor, "roles": Array{role}, "scope": scope, "runner_actor": "fixture-runner",
 		"worker": "worker-1", "functions": Array{"record.visible"}}
 	h, err := NewHostWithRunner(w.store, &fakeEngine{build: engineBuild}, runner, context)
 	if err != nil {

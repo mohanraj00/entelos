@@ -43,8 +43,8 @@ A signed record is one JSON object. [`schema/signed.schema.json`](schema/signed.
 | Field | Type | Rule |
 |---|---|---|
 | `format` | string | `entelos.record/1`. The record format rule applies. |
-| `scope` | string | The scope of the record. 1 to 256 characters. |
-| `function` | string | The function of the record. 1 to 256 characters. |
+| `scope` | string | The scope of the record. 1 character or more. |
+| `function` | string | The function of the record. 1 character or more. |
 | `record_kind` | string | `decision` or `event`. |
 | `record_ref` | string | The record reference of the record bytes. |
 | `record` | string | The record bytes in base64. The text has 699,052 characters maximum, which is the text of 512 KiB. |
@@ -52,7 +52,7 @@ A signed record is one JSON object. [`schema/signed.schema.json`](schema/signed.
 | `key_id` | string | The key identifier of the key that signed the record. |
 | `signature` | string | The 64 bytes of the signature in base64. |
 
-`scope` and `function` are copies of the fields of the record. The Host uses `scope` to give a signed record only in its own scope. The signature covers the fields in the record bytes, and the verifier compares the copies with them.
+`scope` and `function` are copies of the fields of the record, with no length limit of their own. The limit of `record` also limits them, because a valid signed record has the same values in its record bytes. The Host uses `scope` to give a signed record only in its own scope. The signature covers the fields in the record bytes, and the verifier compares the copies with them.
 
 ## Key set
 
@@ -148,7 +148,9 @@ The embedding host installs one signing key in the Host. A request cannot select
 
 With a signing key, each write that stores a `decision` record or an `event` record also stores one signed record of that record, in the same transaction. The state field `signatures` maps the record reference to the reference of the signed record. A record that has a signed record keeps it.
 
-A Host with a signing key refuses a write that makes a `decision` record or an `event` record of more than 512 KiB. The refusal is `record_too_large` with the stage `signature`, and the write stores nothing. Thus each signed record fits in one protocol frame of 1 MiB, and the `record` operation can give it on each transport. A Host without a signing key has no such limit.
+A Host with a signing key refuses a write that makes a `decision` record or an `event` record of more than 512 KiB. It also refuses the write if the signed record has more than 1,000,000 bytes in its stored form, which a very long scope or function can cause. The refusal is `record_too_large` with the stage `signature`, and the write stores nothing. Thus each signed record fits in one protocol frame of 1 MiB, and the `record` operation can give it on each transport. A Host without a signing key has no such limit.
+
+Before the Host stores a signed record, it does the checks of the Verification section on it, with its own public key. If a check fails, the result is `unsignable_record` with the stage `signature`, and the write stores nothing. Thus the Host never stores a signed record that the verifier refuses.
 
 To get a signed record, do these steps:
 

@@ -7,8 +7,8 @@
   "additionalProperties": false,
   "properties": {
     "format": {"type": "string"},
-    "scope": {"$ref": "#/$defs/text"},
-    "function": {"$ref": "#/$defs/text"},
+    "scope": {"type": "string", "minLength": 1},
+    "function": {"type": "string", "minLength": 1},
     "record_kind": {"type": "string", "enum": ["decision", "event"]},
     "record_ref": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
     "record": {"type": "string", "minLength": 1, "maxLength": 699052},
@@ -17,7 +17,6 @@
     "signature": {"type": "string"}
   },
   "$defs": {
-    "text": {"type": "string", "minLength": 1, "maxLength": 256},
     "algorithm": {"type": "string", "pattern": "^[a-z][a-z0-9-]{0,31}$"},
     "key_id": {"type": "string", "pattern": "^[a-z][a-z0-9-]{0,31}:[0-9a-f]{64}$"}
   }

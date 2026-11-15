@@ -85,6 +85,9 @@ def build():
     cases=[
         ('valid-approval','current',approval,ok(approval)),
         ('valid-activation','current',activation,ok(activation)),
+        ('valid-long-scope','current',signed('decision',canonical(dict(DECISION,scope='s'*300)),'a',scope='s'*300),
+         ok(signed('decision',canonical(dict(DECISION,scope='s'*300)),'a',scope='s'*300))),
+        ('empty-scope','current',edit(approval,scope=''),no('invalid_signed_record','schema')),
         ('valid-retired-key','current',signed('decision',canonical(DECISION),'b'),ok(signed('decision',canonical(DECISION),'b'),'retired')),
         # A changed record.
         ('changed-record','current',edit(activation,record=b64(later)),no('record_mismatch','ref')),

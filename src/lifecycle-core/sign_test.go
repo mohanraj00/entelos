@@ -311,6 +311,77 @@ func TestSignedRecordFitsInOneFrame(t *testing.T) {
 	}
 }
 
+// The Host accepts a scope of each length, so the verifier does too. A
+// Host with a long scope writes signed records that verify.
+func TestLongScopeGivesAVerifiableSignedRecord(t *testing.T) {
+	w := newWorld(t, &fixtureRunner{name: "fixture-a", verdicts: map[string]string{bundleRefOf("pass"): "passed"}})
+	w.scope = strings.Repeat("s", 257)
+	signer, keys := newTestSigner(t)
+	w.signer = signer
+	decision, event := w.approve("pass")
+	index := w.signatures()
+	for _, ref := range []string{decision, event} {
+		signed, err := w.read(Object{"op": "record", "kind": "signed", "ref": index[ref]})
+		if err != nil {
+			t.Fatal(err)
+		}
+		result, err := VerifySigned(Encode(signed), keys)
+		if err != nil || result["scope"] != w.scope {
+			t.Fatalf("got %v %v", result, err)
+		}
+	}
+}
+
+// A scope that makes the signed record larger than one frame stops the
+// write, also if the record is below its own limit.
+func TestVeryLongScopeIsRefusedBeforeTheWrite(t *testing.T) {
+	w := newWorld(t, &fixtureRunner{name: "fixture-a", verdicts: map[string]string{bundleRefOf("pass"): "passed"}})
+	w.scope = strings.Repeat("s", 450000)
+	w.signer, _ = newTestSigner(t)
+	snapshot, plan, _ := w.candidate("pass")
+	qualified := w.must("fixture-runner", "runner", "qualify", Object{"snapshot_ref": snapshot, "plan_ref": plan})
+	before, _ := w.store.Read(nil)
+	_, err := w.do("reviewer", "reviewer", w.runner, "decide", Object{"report_ref": qualified["report_ref"], "reason": "r"})
+	if fault, ok := err.(*Fault); !ok || fault.Code != "record_too_large" || !strings.Contains(fault.Message, "signed record") {
+		t.Fatalf("very long scope: %v", err)
+	}
+	if after, _ := w.store.Read(nil); after.Cursor != before.Cursor {
+		t.Fatal("the refused approval published state")
+	}
+}
+
+// The Host checks each signed record with the verifier before the write.
+// A record that the verifier refuses stops the write, and nothing is stored.
+func TestHostNeverStoresASignedRecordThatTheVerifierRefuses(t *testing.T) {
+	w := newWorld(t, &fixtureRunner{name: "fixture-a"})
+	signer, _ := newTestSigner(t)
+	w.signer = signer
+	h := w.host("reviewer", "reviewer", w.runner)
+	planted := map[string][]byte{
+		"unknown major version": Encode(Object{"format": "entelos.record/2", "scope": "demo", "function": "record.visible"}),
+		"empty function":        Encode(Object{"format": RecordFormat, "scope": "demo", "function": ""}),
+	}
+	for name, raw := range planted {
+		_, err := w.store.Transact("", "plant-"+name, Object{"op": "test"}, func(v *View) (value any, err error) {
+			defer func() {
+				if r := recover(); r != nil {
+					value, err = nil, recovered(r)
+				}
+			}()
+			// PutRaw keeps the exact bytes. Put would set the current format.
+			v.PutRaw(Media("decision"), raw)
+			h.signStaged(v)
+			return Object{}, nil
+		})
+		if fault, ok := err.(*Fault); !ok || fault.Code != "unsignable_record" || fault.Stage != "signature" {
+			t.Errorf("%s: %v", name, err)
+		}
+	}
+	if view, _ := w.store.Read(nil); view.Cursor != "" {
+		t.Fatal("a refused signed record published state")
+	}
+}
+
 func TestSigningKeyFileIsChecked(t *testing.T) {
 	raw, err := NewSigningKey(rand.Reader)
 	if err != nil {
