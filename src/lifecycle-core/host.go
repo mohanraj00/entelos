@@ -96,6 +96,9 @@ type Host struct {
 	BuildRef string
 	// Clock gives the recorded times. Nil is the system clock.
 	Clock Clock
+	// signer signs each decision and event record that the Host writes.
+	// Nil writes no signed record. SetSigner installs it.
+	signer *Signer
 }
 
 // NewHost checks the trusted host context. The CEL runner of rt qualifies
@@ -269,7 +272,9 @@ func (h *Host) Handle(request any) (result any, err error) {
 				value, err = nil, recovered(r)
 			}
 		}()
-		return h.apply(v, op, q), nil
+		value = h.apply(v, op, q)
+		h.signStaged(v)
+		return value, nil
 	})
 	if err != nil {
 		return nil, mapError(err)

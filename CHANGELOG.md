@@ -2,6 +2,14 @@
 
 This file lists the changes for each snapshot tag. A tag is a stable snapshot to cite and copy. It is not a package release. Up to v0.3.0, a tag does not promise a stable API or record format. From v0.4.0, [STABILITY.md](docs/STABILITY.md) gives the promise for the surfaces that it names.
 
+## Unreleased
+
+### Reference code
+
+- The Host can sign each approval record and each activation record (#155). The embedding host installs one Ed25519 signing key with `Host.SetSigner`, or gives `--signing-key` to `lifecycle-core` or `entelos-sidecar`. Each write of a `decision` record or an `event` record then also stores a signed record of the kind `signed`, and `state.signatures` maps the record to it. Without a key, the Host behavior does not change. With a key, the Host refuses a `decision` or `event` record of more than 512 KiB with `record_too_large`, so each signed record fits in one protocol frame. It checks each signed record with the verifier before the write. The spec is [SIGNED.md](src/protocol/signed/SIGNED.md). It defines the signed bytes, the key identifier, the public key set `entelos.keyset/1` with the statuses `active`, `retired` and `revoked`, and the order of the checks.
+- `lifecycle.VerifySigned` and the new command `entelos-verify` check a signed record file against a key set file with no call to entelos. A record of an unknown major version fails closed, also with a valid signature. The new command `entelos-keygen` makes a signing key file. The module still uses only the Go standard library.
+- The vectors in `src/protocol/signed/vectors/` cover a valid record, a changed record, an unknown key, a revoked key and a retired key. `check_spec.py` checks them with a separate Ed25519 implementation in Python, and `TestSignedVectors` runs them on the Go verifier. The new declarations are experimental.
+
 ## v0.4.0 (2026-11-14)
 
 This snapshot adds typed rule inputs, the approval API with two transports, a dashboard example, a store migration and a scope check. It also adds four proposed specs that no Host reads or writes yet.
