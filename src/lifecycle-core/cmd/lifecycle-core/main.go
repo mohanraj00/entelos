@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 
 	lifecycle "github.com/mohanraj00/entelos/src/lifecycle-core"
+	"github.com/mohanraj00/entelos/src/lifecycle-core/internal/private"
 )
 
 const maxRequest = 1048576
@@ -24,6 +25,7 @@ func run() int {
 	runtime := flag.String("runtime", "", "pinned CEL executable")
 	work := flag.String("work", "", "work directory")
 	clockFile := flag.String("clock-file", "", "for tests only: a file with the time of the next request")
+	signingKey := flag.String("signing-key", "", "private file with the signing key of approval and activation records")
 	flag.Parse()
 	if *repo == "" || *context == "" || *runtime == "" || *work == "" {
 		fmt.Fprintln(os.Stderr, "lifecycle-core: --repo, --context, --runtime and --work are required")
@@ -42,6 +44,14 @@ func run() int {
 	}
 	if *clockFile != "" {
 		host.Clock = lifecycle.FileClock{Path: *clockFile}
+	}
+	if *signingKey != "" {
+		signer, err := readSigner(*signingKey)
+		if err != nil {
+			write(configuration(err))
+			return 1
+		}
+		host.SetSigner(signer)
 	}
 	in := bufio.NewReaderSize(os.Stdin, maxRequest+1)
 	for {
@@ -106,6 +116,15 @@ func open(repo, contextPath, binary, work string) (*lifecycle.Host, error) {
 		return nil, err
 	}
 	return lifecycle.NewHost(store, rt, context)
+}
+
+// readSigner reads the private signing key file.
+func readSigner(path string) (*lifecycle.Signer, error) {
+	raw, err := private.Read(path, "signing key file", 4096)
+	if err != nil {
+		return nil, err
+	}
+	return lifecycle.NewSigner(raw)
 }
 
 func configuration(err error) lifecycle.Object {

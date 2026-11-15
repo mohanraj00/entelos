@@ -15,6 +15,9 @@ This module is the lifecycle core. It is the only lifecycle Host. The specs, the
 - `protocol/`: the wire protocol 1.0 of [PROTOCOL.md](../protocol/PROTOCOL.md) in front of the Host: frames, the RFC 8785 encoder, the schema validator and the Unix socket listener.
 - `cmd/entelos-sidecar`: the local sidecar ([#84](https://github.com/mohanraj00/entelos/issues/84)). It serves the protocol on a Unix domain socket.
 - `migrate.go` and `cmd/entelos-migrate`: the migration of a v0.3.0 store to the review index of approval API 1.1 ([#159](https://github.com/mohanraj00/entelos/issues/159)). The arguments are `--repo` and the optional `--dry-run`. See [APPROVAL.md](../protocol/approval/APPROVAL.md#migration-from-v030).
+- `sign.go`: signed approval and activation records ([#155](https://github.com/mohanraj00/entelos/issues/155)). After `Host.SetSigner`, the Host signs each `decision` and `event` record that it writes. `VerifySigned` checks a signed record against a public key set, with no service. [SIGNED.md](../protocol/signed/SIGNED.md) is the spec. `lifecycle-core` and `entelos-sidecar` take the key file with `--signing-key`.
+- `cmd/entelos-verify`: the offline check of a signed record file. The arguments are `--keys` and the file. `cmd/entelos-keygen` makes a new signing key file. Its argument is `--out`.
+- `internal/private`: the read of a secret file with mode `0600`.
 - `client/`: Python callers of the JSONL host. They contain no Host and no store. `lifecycle_client.py` encodes the requests and starts the host for each request. `scenario.py` runs the neutral lifecycle scenario. `caller.py` discovers a callable, then invokes it. The examples use these files.
 
 ## Dependencies

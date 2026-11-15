@@ -59,6 +59,7 @@ type world struct {
 	store  Store
 	runner Runner
 	keys   int
+	signer *Signer
 }
 
 func newWorld(t *testing.T, runner Runner) *world {
@@ -73,6 +74,7 @@ func (w *world) host(actor, role string, runner Runner) *Host {
 	if err != nil {
 		w.t.Fatal(err)
 	}
+	h.SetSigner(w.signer)
 	return h
 }
 

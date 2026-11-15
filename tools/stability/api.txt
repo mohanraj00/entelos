@@ -28,8 +28,11 @@ stable github.com/mohanraj00/entelos/src/cel-handoff type Pin struct { Function 
 stable github.com/mohanraj00/entelos/src/cel-handoff type Report struct { Status string `json:"status"` BundleRef string `json:"bundle_ref"` ImplementationRef string `json:"implementation_ref"` Cases []CaseResult `json:"cases"` }
 stable github.com/mohanraj00/entelos/src/cel-handoff type Response struct { Status string `json:"status"` Value any `json:"value,omitempty"` BundleRef string `json:"bundle_ref,omitempty"` ImplementationRef string `json:"implementation_ref,omitempty"` Diagnostic *Diagnostic `json:"diagnostic,omitempty"` Cost *uint64 `json:"cost,omitempty"` }
 experimental github.com/mohanraj00/entelos/src/cel-handoff type Variable struct { Name string `json:"name,omitempty"` Type string `json:"type"` Description string `json:"description,omitempty"` Items *string `json:"items,omitempty"` Fields *[]Variable `json:"fields,omitempty"` }
+experimental github.com/mohanraj00/entelos/src/lifecycle-core const KeySetFormat = "entelos.keyset/1"
 stable github.com/mohanraj00/entelos/src/lifecycle-core const RecordFormat = "entelos.record/1"
 stable github.com/mohanraj00/entelos/src/lifecycle-core const RootRef = "refs/lifecycle/state"
+experimental github.com/mohanraj00/entelos/src/lifecycle-core const SignatureDomain = "entelos.signature/1"
+experimental github.com/mohanraj00/entelos/src/lifecycle-core const SigningKeyFormat = "entelos.signing-key/1"
 stable github.com/mohanraj00/entelos/src/lifecycle-core const TimeLayout = "2006-01-02T15:04:05Z"
 stable github.com/mohanraj00/entelos/src/lifecycle-core func (*CELRunner) Expected(c Candidate) string
 stable github.com/mohanraj00/entelos/src/lifecycle-core func (*CELRunner) Identity() (string, error)
@@ -47,9 +50,13 @@ stable github.com/mohanraj00/entelos/src/lifecycle-core func (*GitStore) Transac
 stable github.com/mohanraj00/entelos/src/lifecycle-core func (*Host) As(actor string, roles []string) *Host
 stable github.com/mohanraj00/entelos/src/lifecycle-core func (*Host) Handle(request any) (result any, err error)
 stable github.com/mohanraj00/entelos/src/lifecycle-core func (*Host) HandleAs(actor string, roles []string, request any) (any, error)
+experimental github.com/mohanraj00/entelos/src/lifecycle-core func (*Host) SetSigner(s *Signer)
+experimental github.com/mohanraj00/entelos/src/lifecycle-core func (*KeySet) Signer() string
 stable github.com/mohanraj00/entelos/src/lifecycle-core func (*MemoryStore) History(cursor string) ([]string, error)
 stable github.com/mohanraj00/entelos/src/lifecycle-core func (*MemoryStore) Read(cursor any) (*View, error)
 stable github.com/mohanraj00/entelos/src/lifecycle-core func (*MemoryStore) Transact(expected, key, payload any, apply func(*View) (any, error)) (Object, error)
+experimental github.com/mohanraj00/entelos/src/lifecycle-core func (*Signer) KeyID() string
+experimental github.com/mohanraj00/entelos/src/lifecycle-core func (*Signer) PublicKey() Object
 stable github.com/mohanraj00/entelos/src/lifecycle-core func (*View) Get(ref any, kind string) (Object, error)
 stable github.com/mohanraj00/entelos/src/lifecycle-core func (*View) GetRaw(ref any, mime string) ([]byte, error)
 stable github.com/mohanraj00/entelos/src/lifecycle-core func (*View) Put(kind string, value any) string
@@ -71,8 +78,12 @@ stable github.com/mohanraj00/entelos/src/lifecycle-core func NewFault(code, mess
 stable github.com/mohanraj00/entelos/src/lifecycle-core func NewHost(store Store, rt Runtime, context any) (*Host, error)
 stable github.com/mohanraj00/entelos/src/lifecycle-core func NewHostWithRunner(store Store, rt Runtime, runner Runner, context any) (*Host, error)
 stable github.com/mohanraj00/entelos/src/lifecycle-core func NewMemoryStore() *MemoryStore
+experimental github.com/mohanraj00/entelos/src/lifecycle-core func NewSigner(raw []byte) (*Signer, error)
+experimental github.com/mohanraj00/entelos/src/lifecycle-core func NewSigningKey(random io.Reader) ([]byte, error)
 stable github.com/mohanraj00/entelos/src/lifecycle-core func OpenGitStore(path string) (*GitStore, error)
+experimental github.com/mohanraj00/entelos/src/lifecycle-core func ParseKeySet(raw []byte) (*KeySet, error)
 stable github.com/mohanraj00/entelos/src/lifecycle-core func RoleNames() []string
+experimental github.com/mohanraj00/entelos/src/lifecycle-core func VerifySigned(raw []byte, keys *KeySet) (Object, error)
 stable github.com/mohanraj00/entelos/src/lifecycle-core type Array = []any
 stable github.com/mohanraj00/entelos/src/lifecycle-core type CELRunner struct { Runtime Runtime }
 stable github.com/mohanraj00/entelos/src/lifecycle-core type CELRuntime struct { Binary, Work string }
@@ -84,11 +95,13 @@ experimental github.com/mohanraj00/entelos/src/lifecycle-core type GitResult str
 stable github.com/mohanraj00/entelos/src/lifecycle-core type GitStore struct { Path string Hook func(store *GitStore, args []string, data []byte) (GitResult, error) }
 stable github.com/mohanraj00/entelos/src/lifecycle-core type Host struct { Store Store Runtime Runtime Runner Runner Context Object BuildRef string Clock Clock }
 stable github.com/mohanraj00/entelos/src/lifecycle-core type Int struct { Text string }
+experimental github.com/mohanraj00/entelos/src/lifecycle-core type KeySet struct { }
 stable github.com/mohanraj00/entelos/src/lifecycle-core type MemoryStore struct { BeforePublish func() error }
 stable github.com/mohanraj00/entelos/src/lifecycle-core type Object = map[string]any
 stable github.com/mohanraj00/entelos/src/lifecycle-core type QualificationInput struct { Candidate Candidate Files map[string][]byte Cases any }
 stable github.com/mohanraj00/entelos/src/lifecycle-core type Runner interface { Identity() (string, error) Expected(c Candidate) string Qualify(in QualificationInput) (Verdict, error) }
 stable github.com/mohanraj00/entelos/src/lifecycle-core type Runtime interface { Build() (string, error) Execute(files map[string][]byte, command string, inputs []byte, cases any) (any, error) }
+experimental github.com/mohanraj00/entelos/src/lifecycle-core type Signer struct { }
 stable github.com/mohanraj00/entelos/src/lifecycle-core type Store interface { Read(cursor any) (*View, error) Transact(expected, key, payload any, apply func(*View) (any, error)) (Object, error) History(cursor string) ([]string, error) }
 stable github.com/mohanraj00/entelos/src/lifecycle-core type SystemClock struct { }
 stable github.com/mohanraj00/entelos/src/lifecycle-core type Verdict struct { Outcome any }

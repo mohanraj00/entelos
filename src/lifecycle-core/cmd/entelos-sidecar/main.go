@@ -33,6 +33,7 @@ import (
 	"syscall"
 
 	lifecycle "github.com/mohanraj00/entelos/src/lifecycle-core"
+	"github.com/mohanraj00/entelos/src/lifecycle-core/internal/private"
 	"github.com/mohanraj00/entelos/src/lifecycle-core/protocol"
 )
 
@@ -53,6 +54,7 @@ func run() int {
 	localTokens := flag.Bool("http-local-tokens", false, "local mode: accept the static tokens of --credentials-file over HTTP on loopback")
 	allowRemote := flag.Bool("http-allow-remote", false, "permit an HTTP address that is not loopback; a TLS front proxy is necessary")
 	httpStatic := flag.String("http-static", "", "directory of public static files to serve with GET on the HTTP binding, for example the approval dashboard")
+	signingKey := flag.String("signing-key", "", "private file with the signing key of approval and activation records")
 	flag.Parse()
 	if *socket == "" || *repo == "" || *contextPath == "" || *runtime == "" || *work == "" || *schema == "" || (*tokenFile == "") == (*credentialsFile == "") {
 		fmt.Fprintln(os.Stderr, "entelos-sidecar: --socket, --repo, --context, --runtime, --work, --schema and one of --token-file or --credentials-file are required")
@@ -78,6 +80,17 @@ func run() int {
 	}
 	if *clockFile != "" {
 		host.Clock = lifecycle.FileClock{Path: *clockFile}
+	}
+	if *signingKey != "" {
+		raw, err := private.Read(*signingKey, "signing key file", 4096)
+		if err != nil {
+			return stop(err)
+		}
+		signer, err := lifecycle.NewSigner(raw)
+		if err != nil {
+			return stop(err)
+		}
+		host.SetSigner(signer)
 	}
 	adapter := protocol.NewAdapter(host, schemas)
 	var server *protocol.Server
