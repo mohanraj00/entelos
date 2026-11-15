@@ -182,14 +182,14 @@ func judgeCandidate(value any) candidateResult {
 			return refused("invalid_content", "metadata_name")
 		}
 	}
+	// Rule 15 applies to each item before rule 16 applies to any item.
 	for _, x := range items {
-		values, has := x.(Object)["applicability"].(Object)
-		if !has {
-			continue
-		}
-		if len(values) == 0 || len(values) > maxApplicability {
+		if values, has := x.(Object)["applicability"].(Object); has && (len(values) == 0 || len(values) > maxApplicability) {
 			return refused("invalid_content", "applicability_count")
 		}
+	}
+	for _, x := range items {
+		values, _ := x.(Object)["applicability"].(Object)
 		for name := range values {
 			if !contentName.MatchString(name) {
 				return refused("invalid_content", "applicability_name")
