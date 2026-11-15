@@ -723,6 +723,218 @@
     "code": "invalid_content",
     "rule": "metadata_name"
    }
+  },
+  {
+   "name": "valid-applicability-levels",
+   "candidate": {
+    "kind": "content",
+    "manifest": "{\"format\":\"entelos.content/1\",\"collection\":\"loan-rules\",\"partition\":\"region-a\",\"base\":\"\",\"items\":[{\"item_id\":\"doc-3\",\"digest\":\"sha256:3333333333333333333333333333333333333333333333333333333333333333\",\"size\":64,\"applicability\":{\"region\":[\"eu\",\"de\",\"by\"],\"channel\":[\"branch\"]}}]}"
+   },
+   "expect": {
+    "valid": true,
+    "kind": "content",
+    "ref": "sha256:b72d19fa104c13bfcd7b6385f46de514f2143c22750195f86015832b07c2c0ac",
+    "head": {
+     "kind": "content",
+     "collection": "loan-rules",
+     "partition": "region-a"
+    }
+   }
+  },
+  {
+   "name": "valid-16-applicability-8-levels",
+   "candidate": {
+    "kind": "content",
+    "manifest": "{\"format\":\"entelos.content/1\",\"collection\":\"loan-rules\",\"partition\":\"region-a\",\"base\":\"\",\"items\":[{\"item_id\":\"doc-3\",\"digest\":\"sha256:3333333333333333333333333333333333333333333333333333333333333333\",\"size\":64,\"applicability\":{\"f-00\":[\"v\"],\"f-01\":[\"v\"],\"f-02\":[\"v\"],\"f-03\":[\"v\"],\"f-04\":[\"v\"],\"f-05\":[\"v\"],\"f-06\":[\"v\"],\"f-07\":[\"v\"],\"f-08\":[\"v\"],\"f-09\":[\"v\"],\"f-10\":[\"v\"],\"f-11\":[\"v\"],\"f-12\":[\"v\"],\"f-13\":[\"v\"],\"f-14\":[\"v\"],\"region\":[\"l0\",\"l1\",\"l2\",\"l3\",\"l4\",\"l5\",\"l6\",\"l7\"]}}]}"
+   },
+   "expect": {
+    "valid": true,
+    "kind": "content",
+    "ref": "sha256:fbb44c911e77fb116fa0d0a0be3433210e8fae8737938c0cfd600c2eeae9b579",
+    "head": {
+     "kind": "content",
+     "collection": "loan-rules",
+     "partition": "region-a"
+    }
+   }
+  },
+  {
+   "name": "applicability-name-is-not-a-field",
+   "candidate": {
+    "kind": "content",
+    "manifest": "{\"format\":\"entelos.content/1\",\"collection\":\"loan-rules\",\"partition\":\"region-a\",\"base\":\"\",\"items\":[{\"item_id\":\"doc-3\",\"digest\":\"sha256:3333333333333333333333333333333333333333333333333333333333333333\",\"size\":64,\"applicability\":{\"colour\":[\"blue\"]}}]}"
+   },
+   "expect": {
+    "valid": true,
+    "kind": "content",
+    "ref": "sha256:8469161cb0e0437f01f461dbd4aafd087e3a0dadc033d7c8125aa21c8aa7fda3",
+    "head": {
+     "kind": "content",
+     "collection": "loan-rules",
+     "partition": "region-a"
+    }
+   }
+  },
+  {
+   "name": "valid-256-character-level",
+   "candidate": {
+    "kind": "content",
+    "manifest": "{\"format\":\"entelos.content/1\",\"collection\":\"loan-rules\",\"partition\":\"region-a\",\"base\":\"\",\"items\":[{\"item_id\":\"doc-3\",\"digest\":\"sha256:3333333333333333333333333333333333333333333333333333333333333333\",\"size\":64,\"applicability\":{\"region\":[\"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\"]}}]}"
+   },
+   "expect": {
+    "valid": true,
+    "kind": "content",
+    "ref": "sha256:9a638b98e8d6021b7c8f5afa4ea9e706c98b714c4aa6583bfdab2f84373fd49c",
+    "head": {
+     "kind": "content",
+     "collection": "loan-rules",
+     "partition": "region-a"
+    }
+   }
+  },
+  {
+   "name": "applicability-count-empty",
+   "candidate": {
+    "kind": "content",
+    "manifest": "{\"format\":\"entelos.content/1\",\"collection\":\"loan-rules\",\"partition\":\"region-a\",\"base\":\"\",\"items\":[{\"item_id\":\"doc-3\",\"digest\":\"sha256:3333333333333333333333333333333333333333333333333333333333333333\",\"size\":64,\"applicability\":{}}]}"
+   },
+   "expect": {
+    "valid": false,
+    "code": "invalid_content",
+    "rule": "applicability_count"
+   }
+  },
+  {
+   "name": "applicability-count-17",
+   "candidate": {
+    "kind": "content",
+    "manifest": "{\"format\":\"entelos.content/1\",\"collection\":\"loan-rules\",\"partition\":\"region-a\",\"base\":\"\",\"items\":[{\"item_id\":\"doc-3\",\"digest\":\"sha256:3333333333333333333333333333333333333333333333333333333333333333\",\"size\":64,\"applicability\":{\"f-00\":[\"v\"],\"f-01\":[\"v\"],\"f-02\":[\"v\"],\"f-03\":[\"v\"],\"f-04\":[\"v\"],\"f-05\":[\"v\"],\"f-06\":[\"v\"],\"f-07\":[\"v\"],\"f-08\":[\"v\"],\"f-09\":[\"v\"],\"f-10\":[\"v\"],\"f-11\":[\"v\"],\"f-12\":[\"v\"],\"f-13\":[\"v\"],\"f-14\":[\"v\"],\"f-15\":[\"v\"],\"f-16\":[\"v\"]}}]}"
+   },
+   "expect": {
+    "valid": false,
+    "code": "invalid_content",
+    "rule": "applicability_count"
+   }
+  },
+  {
+   "name": "applicability-name",
+   "candidate": {
+    "kind": "content",
+    "manifest": "{\"format\":\"entelos.content/1\",\"collection\":\"loan-rules\",\"partition\":\"region-a\",\"base\":\"\",\"items\":[{\"item_id\":\"doc-3\",\"digest\":\"sha256:3333333333333333333333333333333333333333333333333333333333333333\",\"size\":64,\"applicability\":{\"sales region\":[\"eu\"]}}]}"
+   },
+   "expect": {
+    "valid": false,
+    "code": "invalid_content",
+    "rule": "applicability_name"
+   }
+  },
+  {
+   "name": "applicability-name-empty",
+   "candidate": {
+    "kind": "content",
+    "manifest": "{\"format\":\"entelos.content/1\",\"collection\":\"loan-rules\",\"partition\":\"region-a\",\"base\":\"\",\"items\":[{\"item_id\":\"doc-3\",\"digest\":\"sha256:3333333333333333333333333333333333333333333333333333333333333333\",\"size\":64,\"applicability\":{\"\":[\"eu\"]}}]}"
+   },
+   "expect": {
+    "valid": false,
+    "code": "invalid_content",
+    "rule": "applicability_name"
+   }
+  },
+  {
+   "name": "schema-applicability-not-object",
+   "candidate": {
+    "kind": "content",
+    "manifest": "{\"format\":\"entelos.content/1\",\"collection\":\"loan-rules\",\"partition\":\"region-a\",\"base\":\"\",\"items\":[{\"item_id\":\"doc-3\",\"digest\":\"sha256:3333333333333333333333333333333333333333333333333333333333333333\",\"size\":64,\"applicability\":[\"eu\"]}]}"
+   },
+   "expect": {
+    "valid": false,
+    "code": "invalid_content",
+    "rule": "schema"
+   }
+  },
+  {
+   "name": "schema-applicability-string-value",
+   "candidate": {
+    "kind": "content",
+    "manifest": "{\"format\":\"entelos.content/1\",\"collection\":\"loan-rules\",\"partition\":\"region-a\",\"base\":\"\",\"items\":[{\"item_id\":\"doc-3\",\"digest\":\"sha256:3333333333333333333333333333333333333333333333333333333333333333\",\"size\":64,\"applicability\":{\"region\":\"eu\"}}]}"
+   },
+   "expect": {
+    "valid": false,
+    "code": "invalid_content",
+    "rule": "schema"
+   }
+  },
+  {
+   "name": "schema-applicability-no-levels",
+   "candidate": {
+    "kind": "content",
+    "manifest": "{\"format\":\"entelos.content/1\",\"collection\":\"loan-rules\",\"partition\":\"region-a\",\"base\":\"\",\"items\":[{\"item_id\":\"doc-3\",\"digest\":\"sha256:3333333333333333333333333333333333333333333333333333333333333333\",\"size\":64,\"applicability\":{\"region\":[]}}]}"
+   },
+   "expect": {
+    "valid": false,
+    "code": "invalid_content",
+    "rule": "schema"
+   }
+  },
+  {
+   "name": "schema-applicability-9-levels",
+   "candidate": {
+    "kind": "content",
+    "manifest": "{\"format\":\"entelos.content/1\",\"collection\":\"loan-rules\",\"partition\":\"region-a\",\"base\":\"\",\"items\":[{\"item_id\":\"doc-3\",\"digest\":\"sha256:3333333333333333333333333333333333333333333333333333333333333333\",\"size\":64,\"applicability\":{\"region\":[\"l0\",\"l1\",\"l2\",\"l3\",\"l4\",\"l5\",\"l6\",\"l7\",\"l8\"]}}]}"
+   },
+   "expect": {
+    "valid": false,
+    "code": "invalid_content",
+    "rule": "schema"
+   }
+  },
+  {
+   "name": "schema-applicability-number-level",
+   "candidate": {
+    "kind": "content",
+    "manifest": "{\"format\":\"entelos.content/1\",\"collection\":\"loan-rules\",\"partition\":\"region-a\",\"base\":\"\",\"items\":[{\"item_id\":\"doc-3\",\"digest\":\"sha256:3333333333333333333333333333333333333333333333333333333333333333\",\"size\":64,\"applicability\":{\"region\":[1]}}]}"
+   },
+   "expect": {
+    "valid": false,
+    "code": "invalid_content",
+    "rule": "schema"
+   }
+  },
+  {
+   "name": "schema-applicability-empty-level",
+   "candidate": {
+    "kind": "content",
+    "manifest": "{\"format\":\"entelos.content/1\",\"collection\":\"loan-rules\",\"partition\":\"region-a\",\"base\":\"\",\"items\":[{\"item_id\":\"doc-3\",\"digest\":\"sha256:3333333333333333333333333333333333333333333333333333333333333333\",\"size\":64,\"applicability\":{\"region\":[\"\"]}}]}"
+   },
+   "expect": {
+    "valid": false,
+    "code": "invalid_content",
+    "rule": "schema"
+   }
+  },
+  {
+   "name": "schema-applicability-257-character-level",
+   "candidate": {
+    "kind": "content",
+    "manifest": "{\"format\":\"entelos.content/1\",\"collection\":\"loan-rules\",\"partition\":\"region-a\",\"base\":\"\",\"items\":[{\"item_id\":\"doc-3\",\"digest\":\"sha256:3333333333333333333333333333333333333333333333333333333333333333\",\"size\":64,\"applicability\":{\"region\":[\"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\"]}}]}"
+   },
+   "expect": {
+    "valid": false,
+    "code": "invalid_content",
+    "rule": "schema"
+   }
+  },
+  {
+   "name": "schema-before-applicability-count",
+   "candidate": {
+    "kind": "content",
+    "manifest": "{\"format\":\"entelos.content/1\",\"collection\":\"loan-rules\",\"partition\":\"region-a\",\"base\":\"\",\"items\":[{\"item_id\":\"doc-3\",\"digest\":\"sha256:3333333333333333333333333333333333333333333333333333333333333333\",\"size\":64,\"applicability\":{\"region\":[],\"f-00\":[\"v\"],\"f-01\":[\"v\"],\"f-02\":[\"v\"],\"f-03\":[\"v\"],\"f-04\":[\"v\"],\"f-05\":[\"v\"],\"f-06\":[\"v\"],\"f-07\":[\"v\"],\"f-08\":[\"v\"],\"f-09\":[\"v\"],\"f-10\":[\"v\"],\"f-11\":[\"v\"],\"f-12\":[\"v\"],\"f-13\":[\"v\"],\"f-14\":[\"v\"],\"f-15\":[\"v\"],\"f-16\":[\"v\"]}}]}"
+   },
+   "expect": {
+    "valid": false,
+    "code": "invalid_content",
+    "rule": "schema"
+   }
   }
  ],
  "bindings": [

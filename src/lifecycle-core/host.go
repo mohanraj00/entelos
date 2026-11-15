@@ -1183,8 +1183,14 @@ func (h *Host) apply(v *View, op string, q Object) any {
 		if hasReject(h.verdicts(v, reviewEntry(index, text(report["snapshot_ref"]), false))) {
 			fail("proposal_rejected", "a verdict on this snapshot is a reject", "admission")
 		}
+		confirmed := confirmApplicability(q, snapshot)
 		event := merge(pick(snapshot, interval4...), Object{"kind": "enable", "snapshot_ref": report["snapshot_ref"], "report_ref": decision["report_ref"],
 			"decision_ref": q["decision_ref"], "targets": lookup(q, "targets", Array{}), "actor": actor})
+		// The record names the confirmed applicability values. A record
+		// with no values has the bytes of an earlier Host.
+		if len(confirmed) > 0 {
+			event["applicability"] = confirmed
+		}
 		// The record names the updates that it supersedes. A record with
 		// no supersession has the bytes of an earlier Host.
 		if list := lookup(q, "supersedes", Array{}); truthy(list) {

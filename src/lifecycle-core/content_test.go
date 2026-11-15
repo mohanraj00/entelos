@@ -158,6 +158,30 @@ func failure(err error) Object {
 	return out
 }
 
+// values gives the stated applicability of a manifest, or nil.
+func (r *contentRun) values(name string) any {
+	return lookup(r.manifests[name], "applicability", nil)
+}
+
+// recorded checks that the snapshot and the event of an activation record
+// the stated applicability values, and no field for a manifest without them.
+func (r *contentRun) recorded(name string) {
+	root, err := r.w.store.Read(nil)
+	if err != nil {
+		r.t.Fatal(err)
+	}
+	want := r.values(name)
+	for kind, ref := range map[string]string{"snapshot": r.snapshots[name], "event": r.events[name]} {
+		record, err := root.Get(ref, kind)
+		if err != nil {
+			r.t.Fatal(err)
+		}
+		if got := lookup(record, "applicability", nil); !equal(got, want) {
+			r.t.Errorf("the %s of %s records applicability %s, want %s", kind, name, Encode(got), Encode(want))
+		}
+	}
+}
+
 func (r *contentRun) step(step Object) any {
 	w, at := r.w, Object{"function": r.subject, "date": step["date"]}
 	switch {
@@ -201,11 +225,16 @@ func (r *contentRun) step(step Object) any {
 		return "accept"
 	case step["activate"] != nil:
 		name := step["activate"].(string)
-		out, err := w.do("reviewer", "reviewer", w.runner, "activate", Object{"decision_ref": r.decisions[name], "targets": Array{}})
+		q := Object{"decision_ref": r.decisions[name], "targets": Array{}}
+		if values, has := step["applicability"]; has {
+			q["applicability"] = values
+		}
+		out, err := w.do("reviewer", "reviewer", w.runner, "activate", q)
 		if err != nil {
 			return failure(err)
 		}
 		r.events[name] = out["event_ref"].(string)
+		r.recorded(name)
 		return name
 	case step["mark"] != nil:
 		root, err := w.store.Read(nil)
@@ -234,6 +263,9 @@ func (r *contentRun) step(step Object) any {
 		if selection["bundle_ref"] != r.ref(name) || selection["snapshot_ref"] != r.snapshots[name] || selection["event_ref"] != r.events[name] ||
 			selection["collection"] != "loan-rules" || selection["partition"] != "region-a" {
 			r.t.Errorf("resolve %s: selection %s", step["resolve"], Encode(selection))
+		}
+		if got, want := lookup(selection, "applicability", nil), r.values(name); !equal(got, want) {
+			r.t.Errorf("resolve %s: applicability %s, want %s", step["resolve"], Encode(got), Encode(want))
 		}
 		return name
 	case step["load"] != nil:

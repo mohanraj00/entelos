@@ -29,6 +29,7 @@ KINDS=('cel-bundle','content')
 MAX_BYTES=262144
 MAX_ITEMS=1024
 MAX_METADATA=64
+MAX_APPLICABILITY=16
 
 def table_terms(text):
     """The rule names and the codes in the rules table of CONTENT.md."""
@@ -109,6 +110,9 @@ def judge(cand):
     meta=doc.get('metadata',{})
     if len(meta)>MAX_METADATA:return bad('invalid_content','too_many_metadata')
     if any(not NAME.fullmatch(k) for k in meta):return bad('invalid_content','metadata_name')
+    values=[i['applicability'] for i in doc['items'] if 'applicability' in i]
+    if any(not 1<=len(v)<=MAX_APPLICABILITY for v in values):return bad('invalid_content','applicability_count')
+    if any(not NAME.fullmatch(k) for v in values for k in v):return bad('invalid_content','applicability_name')
     return {'valid':True,'kind':'content','ref':'sha256:'+hashlib.sha256(raw).hexdigest(),
             'head':{'kind':'content','collection':doc['collection'],'partition':doc['partition']}}
 
@@ -155,6 +159,8 @@ def check_lifecycle(life):
         result=judge({'kind':'content','manifest':m['text']})
         if result['valid'] and 'content:%s/%s'%(result['head']['collection'],result['head']['partition']) not in life['subjects'] and name not in outside:
             errors.append('manifest '+name+': head is not an installed subject')
+        if result['valid'] and m.get('applicability')!=(recorded(m['text']) or None):
+            errors.append('manifest '+name+': applicability is not the values of its items')
     for case in life['cases']:
         if case['name'] in names:errors.append(case['name']+': duplicate lifecycle case name')
         names.add(case['name'])
@@ -165,7 +171,15 @@ def check_lifecycle(life):
             if op in ('propose','qualify','decide','activate','state') and step[op] not in manifests:
                 errors.append(case['name']+': unknown manifest '+str(step[op]))
             if op=='propose' and not ('from' in step and 'until' in step):errors.append(case['name']+': propose needs from and until')
+            if op=='activate' and step.get('expect') in (step['activate'],{'error':'applicability_mismatch'}):
+                # The Host confirms an activation only if its values equal the values of the snapshot items.
+                equal=step.get('applicability',{})==manifests[step['activate']].get('applicability',{})
+                if equal!=(step['expect']==step['activate']):errors.append(case['name']+': activate '+step['activate']+' expects the wrong applicability result')
     return errors
+
+def recorded(text):
+    """The applicability of each item that has one, by item_id, as CONTENT.md says a snapshot records it."""
+    return {i['item_id']:i['applicability'] for i in json.loads(text)['items'] if 'applicability' in i}
 
 def self_test(doc,life):
     """Change a copy of the vectors. The checker must report each change."""
@@ -184,7 +198,9 @@ def self_test(doc,life):
         if not run(d):missed.append(f.__name__)
     def change_manifest(d):m=d['manifests']['first'];m['text']=m['text'][:-1]+' }'
     def two_ops(d):d['cases'][0]['steps'][0]['resolve']='2026-01-01'
-    for f in (change_manifest,two_ops):
+    def drop_value(d):del d['manifests']['regions']['applicability']['rules-fr']
+    def confirm_mismatch(d):next(s for c in d['cases'] for s in c['steps'] if s.get('expect')=={'error':'applicability_mismatch'})['expect']='regions'
+    for f in (change_manifest,two_ops,drop_value,confirm_mismatch):
         d=copy.deepcopy(life);f(d)
         if not check_lifecycle(d):missed.append(f.__name__)
     return ['self-test: no error for '+m for m in missed]
