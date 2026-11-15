@@ -74,7 +74,7 @@ On 2026-11-12, the policy verdict `entelos.policy/1` for [#154](https://github.c
 
 ### Decision event export
 
-Issue [#158](https://github.com/mohanraj00/entelos/issues/158), part 1, proposes [EVENTS.md](../src/protocol/events/EVENTS.md) and `entelos.decision-event/1`: one event per fact in each recorded verdict, actor kind, a per-fact blind mark and exclusive cursor resume. The schema and hand-written vectors have an offline checker in `make check`. No Host exports events. The later Host job must capture the missing provenance, implement the read and run the vectors on it; the synthetic source decisions do not test a store or transport.
+On 2026-11-15, issue [#158](https://github.com/mohanraj00/entelos/issues/158), part 1, proposes [EVENTS.md](../src/protocol/events/EVENTS.md) and `entelos.decision-event/1`: one event per fact in each recorded verdict, actor kind, a per-fact blind mark and exclusive cursor resume. The schema and hand-written vectors have an offline checker in `make check`. No Host exports events. The later Host job must capture the missing provenance, implement the read and run the vectors on it; the synthetic source decisions do not test a store or transport.
 
 ### M1 First contact
 

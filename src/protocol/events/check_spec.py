@@ -60,7 +60,7 @@ def judge(event):
 
 def project(decision, stream, start):
     """Project a complete synthetic decision; never use an expected event."""
-    if not isinstance(decision, dict) or set(decision) != {'decision_ref', 'actor_kind', 'disposition', 'facts'}:
+    if not isinstance(decision, dict) or set(decision) != {'decision_ref', 'actor_kind', 'disposition', 'facts', 'before_stream_start'}:
         return None
     if decision['disposition'] not in ('approve', 'reject'):
         return None
@@ -102,14 +102,15 @@ def read(stream, request):
     except SchemaError:
         return refuse('invalid_request')
     namespace = stream['namespace']
-    total = sum(len(d['facts']) for d in stream['decisions'])
+    decisions = [d for d in stream['decisions'] if not d['before_stream_start']]
+    total = sum(len(d['facts']) for d in decisions)
     start = position(request['cursor'], namespace) if 'cursor' in request else 0
     if start is None or start > total:
         return refuse('invalid_cursor')
     end = min(start + request['limit'], total)
     events = []
     offset = 0
-    for decision in stream['decisions']:
+    for decision in decisions:
         count = len(decision['facts'])
         if offset < end and offset + count > start:
             projected = project(decision, namespace, offset)
@@ -117,7 +118,11 @@ def read(stream, request):
                 return refuse('unexportable_decision')
             events.extend(e for e in projected if start < position(e['cursor']) <= end)
         offset += count
-    return {'ok': True, 'events': events, 'next_cursor': 'ev1:%s:%d' % (namespace, end)}
+    return {
+        'ok': True, 'events': events,
+        'next_cursor': 'ev1:%s:%d' % (namespace, end),
+        'stream_start': stream['stream_start'],
+    }
 
 
 def table_results(title):
@@ -187,7 +192,9 @@ def run(event_doc, export_doc):
                     else:
                         before = doc['streams'][prior['stream']]
                         prefix = before['decisions']
-                        if before['namespace'] != stream['namespace'] or stream['decisions'][:len(prefix)] != prefix:
+                        if (before['namespace'] != stream['namespace']
+                                or before['stream_start'] != stream['stream_start']
+                                or stream['decisions'][:len(prefix)] != prefix):
                             errors.append(name + ': after must use the same stream prefix')
                         if case['request'].get('cursor') != prior['expect']['next_cursor']:
                             errors.append(name + ': resume cursor differs from previous page')
@@ -209,11 +216,27 @@ def run(event_doc, export_doc):
         'three-facts-first-page', 'resume-middle', 'resume-end', 'retry-first-page',
         'read-appended', 'repeat-decision-fact', 'empty-stream', 'zero-fact-proposal',
         'whole-decision-before-partial-page', 'policy-approval', 'model-rejection',
+        'no-partial-page-on-source-error', 'first-page-stream-start',
+        'old-decisions-excluded-read-continues', 'resume-after-old-decisions',
+        'only-old-decisions-empty-page', 'append-after-only-old-decisions',
+        'old-decisions-consume-no-positions', 'source-error-after-old-decisions',
     }
     errors += ['missing export boundary case: ' + n for n in sorted(required_cases - names)]
     for name, stream in export_doc['streams'].items():
         if not re.fullmatch(r'[0-9a-f]{64}', stream['namespace']):
             errors.append(name + ': invalid stream namespace')
+        try:
+            shape('stream_start', stream['stream_start'])
+        except SchemaError as error:
+            errors.append(name + ': ' + error.message)
+        in_stream = False
+        for decision in stream['decisions']:
+            earlier = decision['before_stream_start']
+            if type(earlier) is not bool:
+                errors.append(name + ': before_stream_start must be a boolean')
+            if earlier and in_stream:
+                errors.append(name + ': earlier decisions must form a prefix')
+            in_stream = in_stream or not earlier
         refs = [d['decision_ref'] for d in stream['decisions']]
         if len(set(refs)) != len(refs):
             errors.append(name + ': duplicate decision reference')
@@ -262,8 +285,28 @@ def self_test(event_doc, export_doc):
     def schema_type(e, x):
         named(e, 'blind-not-bool')['expect'] = {'valid': True}
 
+    def missing_stream_start(e, x):
+        del named(x, 'first-page-stream-start')['expect']['stream_start']
+
+    def wrong_stream_start(e, x):
+        named(x, 'first-page-stream-start')['expect']['stream_start'] = 'other-revision'
+
+    def include_old_decision(e, x):
+        x['streams']['with-old']['decisions'][0]['before_stream_start'] = False
+
+    def exclude_new_decision(e, x):
+        x['streams']['missing-actor']['decisions'][0]['before_stream_start'] = True
+
+    def changed_stream_start(e, x):
+        # An append must keep the start, even if its pages agree on a new value.
+        x['streams']['with-old']['stream_start'] = 'other-revision'
+        for case in x['cases']:
+            if case['stream'] == 'with-old' and case['expect']['ok']:
+                case['expect']['stream_start'] = 'other-revision'
+
     errors = []
-    for mutate in (wrong_digest, content, policy_as_human, blind, reorder, duplicate, gap, cursor, version, correction, source_receipt, schema_type):
+    for mutate in (wrong_digest, content, policy_as_human, blind, reorder, duplicate, gap, cursor, version, correction, source_receipt, schema_type,
+                   missing_stream_start, wrong_stream_start, include_old_decision, exclude_new_decision, changed_stream_start):
         e, x = copy.deepcopy(event_doc), copy.deepcopy(export_doc)
         mutate(e, x)
         if not run(e, x):
@@ -279,7 +322,7 @@ def main():
     print(json.dumps({
         'passed': not errors, 'events': len(event_doc['cases']),
         'exports': len(export_doc['cases']), 'errors': errors,
-        'scope': 'Proposed event rules, projection, order and exclusive cursors on synthetic decisions. No Host or transport ran.',
+        'scope': 'Proposed event rules, stream start, projection, order and exclusive cursors on synthetic decisions. No Host or transport ran.',
     }, indent=2))
     return bool(errors)
 

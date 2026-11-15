@@ -25,9 +25,11 @@
               "evidence_receipt_digest": "sha256:8888888888888888888888888888888888888888888888888888888888888888",
               "blind": true
             }
-          ]
+          ],
+          "before_stream_start": false
         }
-      ]
+      ],
+      "stream_start": "store-revision-1"
     },
     "appended": {
       "namespace": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
@@ -53,7 +55,8 @@
               "evidence_receipt_digest": "sha256:8888888888888888888888888888888888888888888888888888888888888888",
               "blind": true
             }
-          ]
+          ],
+          "before_stream_start": false
         },
         {
           "decision_ref": "sha256:2222222222222222222222222222222222222222222222222222222222222222",
@@ -65,9 +68,11 @@
               "evidence_receipt_digest": "sha256:8888888888888888888888888888888888888888888888888888888888888888",
               "blind": false
             }
-          ]
+          ],
+          "before_stream_start": false
         }
-      ]
+      ],
+      "stream_start": "store-revision-1"
     },
     "policy": {
       "namespace": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
@@ -92,9 +97,11 @@
               "evidence_receipt_digest": "sha256:8888888888888888888888888888888888888888888888888888888888888888",
               "blind": false
             }
-          ]
+          ],
+          "before_stream_start": false
         }
-      ]
+      ],
+      "stream_start": "store-revision-1"
     },
     "policy-refusal": {
       "namespace": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
@@ -109,9 +116,11 @@
               "evidence_receipt_digest": "sha256:9999999999999999999999999999999999999999999999999999999999999999",
               "blind": false
             }
-          ]
+          ],
+          "before_stream_start": false
         }
-      ]
+      ],
+      "stream_start": "store-revision-1"
     },
     "model-reject": {
       "namespace": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
@@ -126,9 +135,11 @@
               "evidence_receipt_digest": "sha256:9999999999999999999999999999999999999999999999999999999999999999",
               "blind": false
             }
-          ]
+          ],
+          "before_stream_start": false
         }
-      ]
+      ],
+      "stream_start": "store-revision-1"
     },
     "human-reject": {
       "namespace": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
@@ -143,9 +154,11 @@
               "evidence_receipt_digest": "sha256:9999999999999999999999999999999999999999999999999999999999999999",
               "blind": true
             }
-          ]
+          ],
+          "before_stream_start": false
         }
-      ]
+      ],
+      "stream_start": "store-revision-1"
     },
     "null-correction": {
       "namespace": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
@@ -161,9 +174,11 @@
               "blind": false,
               "corrected_value": null
             }
-          ]
+          ],
+          "before_stream_start": false
         }
-      ]
+      ],
+      "stream_start": "store-revision-1"
     },
     "empty-correction": {
       "namespace": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
@@ -179,13 +194,16 @@
               "blind": false,
               "corrected_value": ""
             }
-          ]
+          ],
+          "before_stream_start": false
         }
-      ]
+      ],
+      "stream_start": "store-revision-1"
     },
     "empty": {
       "namespace": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-      "decisions": []
+      "decisions": [],
+      "stream_start": "store-revision-1"
     },
     "zero-fact": {
       "namespace": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
@@ -194,7 +212,8 @@
           "decision_ref": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
           "actor_kind": "human",
           "disposition": "approve",
-          "facts": []
+          "facts": [],
+          "before_stream_start": false
         },
         {
           "decision_ref": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
@@ -217,9 +236,11 @@
               "evidence_receipt_digest": "sha256:8888888888888888888888888888888888888888888888888888888888888888",
               "blind": true
             }
-          ]
+          ],
+          "before_stream_start": false
         }
-      ]
+      ],
+      "stream_start": "store-revision-1"
     },
     "missing-actor": {
       "namespace": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
@@ -233,9 +254,11 @@
               "evidence_receipt_digest": "sha256:9999999999999999999999999999999999999999999999999999999999999999",
               "blind": false
             }
-          ]
+          ],
+          "before_stream_start": false
         }
-      ]
+      ],
+      "stream_start": "store-revision-1"
     },
     "missing-blind": {
       "namespace": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
@@ -249,9 +272,11 @@
               "fact_digest": "sha256:3333333333333333333333333333333333333333333333333333333333333333",
               "evidence_receipt_digest": "sha256:9999999999999999999999999999999999999999999999999999999999999999"
             }
-          ]
+          ],
+          "before_stream_start": false
         }
-      ]
+      ],
+      "stream_start": "store-revision-1"
     },
     "unknown-actor": {
       "namespace": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
@@ -266,9 +291,11 @@
               "evidence_receipt_digest": "sha256:9999999999999999999999999999999999999999999999999999999999999999",
               "blind": false
             }
-          ]
+          ],
+          "before_stream_start": false
         }
-      ]
+      ],
+      "stream_start": "store-revision-1"
     },
     "policy-blind": {
       "namespace": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
@@ -283,9 +310,11 @@
               "evidence_receipt_digest": "sha256:9999999999999999999999999999999999999999999999999999999999999999",
               "blind": true
             }
-          ]
+          ],
+          "before_stream_start": false
         }
-      ]
+      ],
+      "stream_start": "store-revision-1"
     },
     "model-correction": {
       "namespace": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
@@ -301,9 +330,11 @@
               "blind": false,
               "corrected_value": "green"
             }
-          ]
+          ],
+          "before_stream_start": false
         }
-      ]
+      ],
+      "stream_start": "store-revision-1"
     },
     "reject-correction": {
       "namespace": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
@@ -319,9 +350,11 @@
               "blind": false,
               "corrected_value": "green"
             }
-          ]
+          ],
+          "before_stream_start": false
         }
-      ]
+      ],
+      "stream_start": "store-revision-1"
     },
     "bad-fact": {
       "namespace": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
@@ -336,9 +369,11 @@
               "evidence_receipt_digest": "sha256:9999999999999999999999999999999999999999999999999999999999999999",
               "blind": false
             }
-          ]
+          ],
+          "before_stream_start": false
         }
-      ]
+      ],
+      "stream_start": "store-revision-1"
     },
     "partial-invalid": {
       "namespace": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
@@ -358,9 +393,11 @@
               "evidence_receipt_digest": "sha256:9999999999999999999999999999999999999999999999999999999999999999",
               "blind": "unknown"
             }
-          ]
+          ],
+          "before_stream_start": false
         }
-      ]
+      ],
+      "stream_start": "store-revision-1"
     },
     "later-invalid": {
       "namespace": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
@@ -386,7 +423,8 @@
               "evidence_receipt_digest": "sha256:8888888888888888888888888888888888888888888888888888888888888888",
               "blind": true
             }
-          ]
+          ],
+          "before_stream_start": false
         },
         {
           "decision_ref": "sha256:2222222222222222222222222222222222222222222222222222222222222222",
@@ -398,7 +436,199 @@
               "evidence_receipt_digest": "sha256:9999999999999999999999999999999999999999999999999999999999999999",
               "blind": true
             }
-          ]
+          ],
+          "before_stream_start": false
+        }
+      ],
+      "stream_start": "store-revision-1"
+    },
+    "only-old": {
+      "namespace": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "stream_start": "store-revision-4",
+      "decisions": [
+        {
+          "decision_ref": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "disposition": "approve",
+          "facts": [
+            {
+              "fact_digest": "sha256:3333333333333333333333333333333333333333333333333333333333333333",
+              "evidence_receipt_digest": "sha256:9999999999999999999999999999999999999999999999999999999999999999",
+              "blind": false
+            }
+          ],
+          "before_stream_start": true
+        },
+        {
+          "decision_ref": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "actor_kind": "human",
+          "disposition": "approve",
+          "facts": [
+            {
+              "fact_digest": "sha256:3333333333333333333333333333333333333333333333333333333333333333",
+              "evidence_receipt_digest": "sha256:9999999999999999999999999999999999999999999999999999999999999999"
+            }
+          ],
+          "before_stream_start": true
+        },
+        {
+          "decision_ref": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+          "actor_kind": "human",
+          "disposition": "reject",
+          "facts": [
+            {
+              "fact_digest": "sha256:3333333333333333333333333333333333333333333333333333333333333333",
+              "evidence_receipt_digest": "sha256:9999999999999999999999999999999999999999999999999999999999999999",
+              "blind": true
+            }
+          ],
+          "before_stream_start": true
+        }
+      ]
+    },
+    "with-old": {
+      "namespace": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "stream_start": "store-revision-4",
+      "decisions": [
+        {
+          "decision_ref": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "disposition": "approve",
+          "facts": [
+            {
+              "fact_digest": "sha256:3333333333333333333333333333333333333333333333333333333333333333",
+              "evidence_receipt_digest": "sha256:9999999999999999999999999999999999999999999999999999999999999999",
+              "blind": false
+            }
+          ],
+          "before_stream_start": true
+        },
+        {
+          "decision_ref": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "actor_kind": "human",
+          "disposition": "approve",
+          "facts": [
+            {
+              "fact_digest": "sha256:3333333333333333333333333333333333333333333333333333333333333333",
+              "evidence_receipt_digest": "sha256:9999999999999999999999999999999999999999999999999999999999999999"
+            }
+          ],
+          "before_stream_start": true
+        },
+        {
+          "decision_ref": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+          "actor_kind": "human",
+          "disposition": "reject",
+          "facts": [
+            {
+              "fact_digest": "sha256:3333333333333333333333333333333333333333333333333333333333333333",
+              "evidence_receipt_digest": "sha256:9999999999999999999999999999999999999999999999999999999999999999",
+              "blind": true
+            }
+          ],
+          "before_stream_start": true
+        },
+        {
+          "decision_ref": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+          "actor_kind": "human",
+          "disposition": "approve",
+          "facts": [
+            {
+              "fact_digest": "sha256:3333333333333333333333333333333333333333333333333333333333333333",
+              "evidence_receipt_digest": "sha256:9999999999999999999999999999999999999999999999999999999999999999",
+              "blind": false
+            },
+            {
+              "fact_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+              "evidence_receipt_digest": "sha256:9999999999999999999999999999999999999999999999999999999999999999",
+              "blind": true,
+              "corrected_value": "green"
+            },
+            {
+              "fact_digest": "sha256:2222222222222222222222222222222222222222222222222222222222222222",
+              "evidence_receipt_digest": "sha256:8888888888888888888888888888888888888888888888888888888888888888",
+              "blind": true
+            }
+          ],
+          "before_stream_start": false
+        }
+      ]
+    },
+    "old-then-invalid": {
+      "namespace": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "stream_start": "store-revision-4",
+      "decisions": [
+        {
+          "decision_ref": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "disposition": "approve",
+          "facts": [
+            {
+              "fact_digest": "sha256:3333333333333333333333333333333333333333333333333333333333333333",
+              "evidence_receipt_digest": "sha256:9999999999999999999999999999999999999999999999999999999999999999",
+              "blind": false
+            }
+          ],
+          "before_stream_start": true
+        },
+        {
+          "decision_ref": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "actor_kind": "human",
+          "disposition": "approve",
+          "facts": [
+            {
+              "fact_digest": "sha256:3333333333333333333333333333333333333333333333333333333333333333",
+              "evidence_receipt_digest": "sha256:9999999999999999999999999999999999999999999999999999999999999999"
+            }
+          ],
+          "before_stream_start": true
+        },
+        {
+          "decision_ref": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+          "actor_kind": "human",
+          "disposition": "reject",
+          "facts": [
+            {
+              "fact_digest": "sha256:3333333333333333333333333333333333333333333333333333333333333333",
+              "evidence_receipt_digest": "sha256:9999999999999999999999999999999999999999999999999999999999999999",
+              "blind": true
+            }
+          ],
+          "before_stream_start": true
+        },
+        {
+          "decision_ref": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+          "actor_kind": "human",
+          "disposition": "approve",
+          "facts": [
+            {
+              "fact_digest": "sha256:3333333333333333333333333333333333333333333333333333333333333333",
+              "evidence_receipt_digest": "sha256:9999999999999999999999999999999999999999999999999999999999999999",
+              "blind": false
+            },
+            {
+              "fact_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+              "evidence_receipt_digest": "sha256:9999999999999999999999999999999999999999999999999999999999999999",
+              "blind": true,
+              "corrected_value": "green"
+            },
+            {
+              "fact_digest": "sha256:2222222222222222222222222222222222222222222222222222222222222222",
+              "evidence_receipt_digest": "sha256:8888888888888888888888888888888888888888888888888888888888888888",
+              "blind": true
+            }
+          ],
+          "before_stream_start": false
+        },
+        {
+          "decision_ref": "sha256:2222222222222222222222222222222222222222222222222222222222222222",
+          "actor_kind": "policy",
+          "disposition": "approve",
+          "facts": [
+            {
+              "fact_digest": "sha256:3333333333333333333333333333333333333333333333333333333333333333",
+              "evidence_receipt_digest": "sha256:9999999999999999999999999999999999999999999999999999999999999999",
+              "blind": true
+            }
+          ],
+          "before_stream_start": false
         }
       ]
     }
@@ -435,7 +665,8 @@
             "corrected_value": "green"
           }
         ],
-        "next_cursor": "ev1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:2"
+        "next_cursor": "ev1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:2",
+        "stream_start": "store-revision-1"
       }
     },
     {
@@ -459,7 +690,8 @@
             "blind": true
           }
         ],
-        "next_cursor": "ev1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:3"
+        "next_cursor": "ev1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:3",
+        "stream_start": "store-revision-1"
       },
       "after": "three-facts-first-page"
     },
@@ -473,7 +705,8 @@
       "expect": {
         "ok": true,
         "events": [],
-        "next_cursor": "ev1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:3"
+        "next_cursor": "ev1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:3",
+        "stream_start": "store-revision-1"
       },
       "after": "resume-middle"
     },
@@ -508,7 +741,8 @@
             "corrected_value": "green"
           }
         ],
-        "next_cursor": "ev1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:2"
+        "next_cursor": "ev1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:2",
+        "stream_start": "store-revision-1"
       }
     },
     {
@@ -553,7 +787,8 @@
             "blind": true
           }
         ],
-        "next_cursor": "ev1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:3"
+        "next_cursor": "ev1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:3",
+        "stream_start": "store-revision-1"
       }
     },
     {
@@ -578,7 +813,8 @@
             "corrected_value": "green"
           }
         ],
-        "next_cursor": "ev1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:2"
+        "next_cursor": "ev1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:2",
+        "stream_start": "store-revision-1"
       }
     },
     {
@@ -602,7 +838,8 @@
             "blind": false
           }
         ],
-        "next_cursor": "ev1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:4"
+        "next_cursor": "ev1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:4",
+        "stream_start": "store-revision-1"
       },
       "after": "resume-end"
     },
@@ -657,7 +894,8 @@
             "blind": false
           }
         ],
-        "next_cursor": "ev1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:4"
+        "next_cursor": "ev1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:4",
+        "stream_start": "store-revision-1"
       }
     },
     {
@@ -691,7 +929,8 @@
             "blind": false
           }
         ],
-        "next_cursor": "ev1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:4"
+        "next_cursor": "ev1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:4",
+        "stream_start": "store-revision-1"
       }
     },
     {
@@ -703,7 +942,8 @@
       "expect": {
         "ok": true,
         "events": [],
-        "next_cursor": "ev1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:0"
+        "next_cursor": "ev1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:0",
+        "stream_start": "store-revision-1"
       }
     },
     {
@@ -716,7 +956,8 @@
       "expect": {
         "ok": true,
         "events": [],
-        "next_cursor": "ev1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:0"
+        "next_cursor": "ev1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:0",
+        "stream_start": "store-revision-1"
       }
     },
     {
@@ -760,7 +1001,8 @@
             "blind": true
           }
         ],
-        "next_cursor": "ev1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:3"
+        "next_cursor": "ev1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:3",
+        "stream_start": "store-revision-1"
       }
     },
     {
@@ -803,7 +1045,8 @@
             "blind": false
           }
         ],
-        "next_cursor": "ev1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:3"
+        "next_cursor": "ev1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:3",
+        "stream_start": "store-revision-1"
       }
     },
     {
@@ -826,7 +1069,8 @@
             "blind": false
           }
         ],
-        "next_cursor": "ev1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:1"
+        "next_cursor": "ev1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:1",
+        "stream_start": "store-revision-1"
       }
     },
     {
@@ -849,7 +1093,8 @@
             "blind": false
           }
         ],
-        "next_cursor": "ev1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:1"
+        "next_cursor": "ev1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:1",
+        "stream_start": "store-revision-1"
       }
     },
     {
@@ -872,7 +1117,8 @@
             "blind": true
           }
         ],
-        "next_cursor": "ev1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:1"
+        "next_cursor": "ev1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:1",
+        "stream_start": "store-revision-1"
       }
     },
     {
@@ -896,7 +1142,8 @@
             "corrected_value": null
           }
         ],
-        "next_cursor": "ev1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:1"
+        "next_cursor": "ev1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:1",
+        "stream_start": "store-revision-1"
       }
     },
     {
@@ -920,7 +1167,8 @@
             "corrected_value": ""
           }
         ],
-        "next_cursor": "ev1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:1"
+        "next_cursor": "ev1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:1",
+        "stream_start": "store-revision-1"
       }
     },
     {
@@ -954,7 +1202,8 @@
             "corrected_value": "green"
           }
         ],
-        "next_cursor": "ev1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:2"
+        "next_cursor": "ev1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:2",
+        "stream_start": "store-revision-1"
       }
     },
     {
@@ -1261,6 +1510,174 @@
       "expect": {
         "ok": false,
         "code": "invalid_cursor"
+      }
+    },
+    {
+      "name": "first-page-stream-start",
+      "stream": "with-old",
+      "request": {
+        "limit": 1
+      },
+      "expect": {
+        "ok": true,
+        "events": [
+          {
+            "format": "entelos.decision-event/1",
+            "cursor": "ev1:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb:1",
+            "decision_ref": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+            "disposition": "approve",
+            "fact_digest": "sha256:3333333333333333333333333333333333333333333333333333333333333333",
+            "evidence_receipt_digest": "sha256:9999999999999999999999999999999999999999999999999999999999999999",
+            "actor_kind": "human",
+            "blind": false
+          }
+        ],
+        "next_cursor": "ev1:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb:1",
+        "stream_start": "store-revision-4"
+      }
+    },
+    {
+      "name": "old-decisions-excluded-read-continues",
+      "stream": "with-old",
+      "request": {
+        "limit": 256
+      },
+      "expect": {
+        "ok": true,
+        "events": [
+          {
+            "format": "entelos.decision-event/1",
+            "cursor": "ev1:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb:1",
+            "decision_ref": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+            "disposition": "approve",
+            "fact_digest": "sha256:3333333333333333333333333333333333333333333333333333333333333333",
+            "evidence_receipt_digest": "sha256:9999999999999999999999999999999999999999999999999999999999999999",
+            "actor_kind": "human",
+            "blind": false
+          },
+          {
+            "format": "entelos.decision-event/1",
+            "cursor": "ev1:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb:2",
+            "decision_ref": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+            "disposition": "correct",
+            "fact_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+            "evidence_receipt_digest": "sha256:9999999999999999999999999999999999999999999999999999999999999999",
+            "actor_kind": "human",
+            "blind": true,
+            "corrected_value": "green"
+          },
+          {
+            "format": "entelos.decision-event/1",
+            "cursor": "ev1:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb:3",
+            "decision_ref": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+            "disposition": "approve",
+            "fact_digest": "sha256:2222222222222222222222222222222222222222222222222222222222222222",
+            "evidence_receipt_digest": "sha256:8888888888888888888888888888888888888888888888888888888888888888",
+            "actor_kind": "human",
+            "blind": true
+          }
+        ],
+        "next_cursor": "ev1:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb:3",
+        "stream_start": "store-revision-4"
+      }
+    },
+    {
+      "name": "resume-after-old-decisions",
+      "stream": "with-old",
+      "request": {
+        "limit": 2,
+        "cursor": "ev1:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb:1"
+      },
+      "expect": {
+        "ok": true,
+        "events": [
+          {
+            "format": "entelos.decision-event/1",
+            "cursor": "ev1:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb:2",
+            "decision_ref": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+            "disposition": "correct",
+            "fact_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+            "evidence_receipt_digest": "sha256:9999999999999999999999999999999999999999999999999999999999999999",
+            "actor_kind": "human",
+            "blind": true,
+            "corrected_value": "green"
+          },
+          {
+            "format": "entelos.decision-event/1",
+            "cursor": "ev1:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb:3",
+            "decision_ref": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+            "disposition": "approve",
+            "fact_digest": "sha256:2222222222222222222222222222222222222222222222222222222222222222",
+            "evidence_receipt_digest": "sha256:8888888888888888888888888888888888888888888888888888888888888888",
+            "actor_kind": "human",
+            "blind": true
+          }
+        ],
+        "next_cursor": "ev1:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb:3",
+        "stream_start": "store-revision-4"
+      },
+      "after": "first-page-stream-start"
+    },
+    {
+      "name": "only-old-decisions-empty-page",
+      "stream": "only-old",
+      "request": {
+        "limit": 1
+      },
+      "expect": {
+        "ok": true,
+        "events": [],
+        "next_cursor": "ev1:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb:0",
+        "stream_start": "store-revision-4"
+      }
+    },
+    {
+      "name": "append-after-only-old-decisions",
+      "stream": "with-old",
+      "request": {
+        "limit": 1,
+        "cursor": "ev1:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb:0"
+      },
+      "expect": {
+        "ok": true,
+        "events": [
+          {
+            "format": "entelos.decision-event/1",
+            "cursor": "ev1:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb:1",
+            "decision_ref": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+            "disposition": "approve",
+            "fact_digest": "sha256:3333333333333333333333333333333333333333333333333333333333333333",
+            "evidence_receipt_digest": "sha256:9999999999999999999999999999999999999999999999999999999999999999",
+            "actor_kind": "human",
+            "blind": false
+          }
+        ],
+        "next_cursor": "ev1:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb:1",
+        "stream_start": "store-revision-4"
+      },
+      "after": "only-old-decisions-empty-page"
+    },
+    {
+      "name": "old-decisions-consume-no-positions",
+      "stream": "with-old",
+      "request": {
+        "limit": 1,
+        "cursor": "ev1:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb:4"
+      },
+      "expect": {
+        "ok": false,
+        "code": "invalid_cursor"
+      }
+    },
+    {
+      "name": "source-error-after-old-decisions",
+      "stream": "old-then-invalid",
+      "request": {
+        "limit": 4
+      },
+      "expect": {
+        "ok": false,
+        "code": "unexportable_decision"
       }
     }
   ]

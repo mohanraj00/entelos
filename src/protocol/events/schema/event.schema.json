@@ -11,6 +11,11 @@
       "type": "string",
       "pattern": "^ev1:[0-9a-f]{64}:(0|[1-9][0-9]{0,15})$"
     },
+    "stream_start": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256
+    },
     "request": {
       "type": "object",
       "additionalProperties": false,
@@ -33,7 +38,8 @@
       "additionalProperties": false,
       "required": [
         "events",
-        "next_cursor"
+        "next_cursor",
+        "stream_start"
       ],
       "properties": {
         "events": {
@@ -45,6 +51,9 @@
         },
         "next_cursor": {
           "$ref": "#/$defs/cursor"
+        },
+        "stream_start": {
+          "$ref": "#/$defs/stream_start"
         }
       }
     },
