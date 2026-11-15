@@ -28,7 +28,7 @@ var schema = map[string]struct {
 	"propose":    {"author", []string{"function", "from", "until", "base_snapshot", "source_ref", "bundle", "reason", "stale_mode"}},
 	"qualify":    {"runner", []string{"snapshot_ref", "plan_ref"}},
 	"decide":     {"reviewer", []string{"report_ref", "reason", "disposition"}},
-	"activate":   {"reviewer", []string{"decision_ref", "targets"}},
+	"activate":   {"reviewer", []string{"decision_ref", "targets", "supersedes"}},
 	"suspend":    {"reviewer", []string{"function", "from", "until", "targets", "reason"}},
 	"load":       {"worker", []string{"function", "date"}},
 	"invoke":     {"caller", []string{"function", "date", "expected_bundle_ref", "inputs"}},
@@ -503,12 +503,40 @@ func (h *Host) events(v *View) []Object {
 				fail("invalid_record", "invalid event mask target", "")
 			}
 		}
+		for _, ref := range elements(lookup(event, "supersedes", Array{})) {
+			old, ok := known[hashable(ref)]
+			if !ok || !supersedable(old, event) {
+				fail("invalid_record", "invalid superseded event", "")
+			}
+		}
 		known[hashable(event["ref"])] = event
 	}
 	return values
 }
 
-// live gives the live enable events at a date, in insertion order.
+// supersedable reports if the enable event next can supersede old: old is an
+// enable event of the same function and scope, and it ends after next
+// starts.
+func supersedable(old, next Object) bool {
+	return equal(item(old, "kind"), "enable") && equal(item(next, "kind"), "enable") && same(old, next) &&
+		less(item(next, "from"), item(old, "until"))
+}
+
+// supersededAt reports if a later event supersedes the event of ref at the
+// date. A supersession starts at the from date of the later event and has
+// no end.
+func supersededAt(events []Object, ref any, at any) bool {
+	for _, event := range events {
+		if lessEqual(item(event, "from"), at) && within(ref, lookup(event, "supersedes", Array{})) {
+			return true
+		}
+	}
+	return false
+}
+
+// live gives the live enable events at a date, in insertion order. A mask
+// in targets removes an event only in the interval of the later event. A
+// supersession removes it at each date from the start of the later event.
 func (h *Host) live(v *View, function any, at any) ([]any, map[any]Object) {
 	checkDate(at)
 	probe := Object{"function": function, "scope": h.ctx("scope")}
@@ -528,6 +556,11 @@ func (h *Host) live(v *View, function any, at any) ([]any, map[any]Object) {
 		}
 	}
 	for _, event := range h.events(v) {
+		if same(event, probe) && lessEqual(item(event, "from"), at) {
+			for _, ref := range elements(lookup(event, "supersedes", Array{})) {
+				remove(hashable(ref))
+			}
+		}
 		if same(event, probe) && lessEqual(item(event, "from"), at) && less(at, item(event, "until")) {
 			for _, ref := range elements(item(event, "targets")) {
 				remove(hashable(ref))
@@ -579,7 +612,8 @@ func (h *Host) serving(v *View, function any, at any) (Object, string) {
 	}
 	loaded := lookup(item(v.State, "workers"), h.ctx("worker"), Object{})
 	var event Object
-	for _, x := range h.events(v) {
+	events := h.events(v)
+	for _, x := range events {
 		if equal(x["ref"], lookup(loaded, "event_ref", nil)) {
 			event = x
 		}
@@ -587,6 +621,11 @@ func (h *Host) serving(v *View, function any, at any) (Object, string) {
 	probe := Object{"function": function, "scope": h.ctx("scope")}
 	if event == nil || !equal(item(event, "kind"), "enable") || !same(event, probe) || less(at, item(event, "from")) {
 		fail("out_of_scope", "no enabled revision for the exact function/scope/date", "resolve")
+	}
+	// A superseded activation never gives a new answer, also in the
+	// continue_stale mode.
+	if supersededAt(events, event["ref"], at) {
+		fail("activation_superseded", "a later activation supersedes the loaded activation at this date", "resolve")
 	}
 	reason, code := "revoked", "activation_revoked"
 	if lessEqual(item(event, "until"), at) {
@@ -904,6 +943,14 @@ func (h *Host) appendEvent(v *View, event Object, key any) Object {
 			fail("invalid_targets", "target must exist in this scope and overlap", "")
 		}
 	}
+	superseded := map[any]bool{}
+	for _, ref := range elements(lookup(event, "supersedes", Array{})) {
+		old, ok := known[hashable(ref)]
+		if !ok || superseded[hashable(ref)] || !supersedable(old, event) {
+			fail("invalid_supersession", "a superseded update must be one enable event of this scope and function that ends after the new start", "")
+		}
+		superseded[hashable(ref)] = true
+	}
 	boundaries := map[string]bool{text(item(event, "from")): true}
 	for _, x := range knownOrder {
 		old := known[hashable(x["ref"])]
@@ -933,7 +980,7 @@ func (h *Host) appendEvent(v *View, event Object, key any) Object {
 		}
 	}
 	for ref := range conflicts {
-		if !unique[ref] {
+		if !unique[ref] && !superseded[ref] {
 			fail("ambiguous_activation", "explicitly mask all overlapping live events", "")
 		}
 	}
@@ -1103,6 +1150,11 @@ func (h *Host) apply(v *View, op string, q Object) any {
 		}
 		event := merge(pick(snapshot, interval4...), Object{"kind": "enable", "snapshot_ref": report["snapshot_ref"], "report_ref": decision["report_ref"],
 			"decision_ref": q["decision_ref"], "targets": lookup(q, "targets", Array{}), "actor": actor})
+		// The record names the updates that it supersedes. A record with
+		// no supersession has the bytes of an earlier Host.
+		if list := lookup(q, "supersedes", Array{}); truthy(list) {
+			event["supersedes"] = list
+		}
 		return h.appendEvent(v, event, key)
 	case "suspend":
 		target := h.target(q)

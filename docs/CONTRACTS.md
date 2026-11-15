@@ -61,7 +61,7 @@ The CLI reads one JSON object per line, in a loop, so one process can take many 
 | `propose` | author | `function`, `from`, `until`, `base_snapshot`, `source_ref`, `bundle`, `reason`, `stale_mode` |
 | `qualify` | runner | `snapshot_ref`, `plan_ref` |
 | `decide` | reviewer | `report_ref`, `reason` |
-| `activate` | reviewer | `decision_ref`, `targets` |
+| `activate` | reviewer | `decision_ref`, `targets`, `supersedes` |
 | `suspend` | reviewer | `function`, `from`, `until`, `targets`, `reason` |
 | `load` | worker | `function`, `date` |
 | `invoke` | caller | `function`, `date`, `expected_bundle_ref`, `inputs` |
@@ -79,7 +79,7 @@ The CLI reads one JSON object per line, in a loop, so one process can take many 
 | `receipt` | reader | `receipt_ref` |
 | `ingest` | worker | `entries` |
 
-`source.supersedes` and `plan.supersedes` default to an empty list. `activate.targets` defaults to an empty list. `propose.stale_mode` defaults to `fail_closed`. `checkpoint.correction_snapshot` defaults to an empty string. A log entry in `ingest.entries` has no default fields except `stale_reason`, which defaults to an empty string. `describe`, `resolve`, `inspect`, `record` and `receipt` are read operations; the other operations are writes.
+`source.supersedes` and `plan.supersedes` default to an empty list. `activate.targets` and `activate.supersedes` default to an empty list. `propose.stale_mode` defaults to `fail_closed`. `checkpoint.correction_snapshot` defaults to an empty string. A log entry in `ingest.entries` has no default fields except `stale_reason`, which defaults to an empty string. `describe`, `resolve`, `inspect`, `record` and `receipt` are read operations; the other operations are writes.
 
 `record` gives `scope_mismatch` for a record of another scope or with no scope. `inspect` gives `scope_mismatch` if the store at the cursor holds such a record. An unknown reference stays `artifact_unavailable`. See [APPROVAL.md](../src/protocol/approval/APPROVAL.md#scope-of-record-and-inspect-read) for the rule and its limits.
 
@@ -98,20 +98,37 @@ target gives `ambiguous_activation`. An empty list works for an initial
 activation. A suspension must name at least one overlapping event.
 A bad target or a suspension with an empty `targets` list returns `invalid_targets`.
 
+A target is a mask. It removes the earlier event only at the dates in the
+interval of the new event. After that interval, the earlier event is live
+again.
+
+The `supersedes` array of `activate` names earlier `enable` events that the
+new activation replaces from its `from` date, with no end. A superseded
+activation is never selected at a date on or after that `from` date, also
+after the new activation ends. It does not also need an entry in `targets`.
+The event record names the superseded events in its `supersedes` field. A bad
+entry returns `invalid_supersession`. A replay of an old answer still uses the
+old activation. [SUPERSESSION.md](../src/protocol/supersession/SUPERSESSION.md)
+gives the rules and the vectors. The sidecar wire protocol versions 1.0 and
+1.1 do not accept `supersedes`
+([#180](https://github.com/mohanraj00/entelos/issues/180)).
+
 ## Expiry and revocation
 
 An activation is an `enable` event with a half-open interval from `from` to `until`. The lifecycle uses the existing records for expiry and revocation:
 
 - An activation is expired at a date that is at or after its `until` date.
 - An activation is revoked at a date in its interval if a later event masks it. A `suspend` event is the usual mask. An `enable` event with `targets` is also a mask.
+- An activation is superseded at a date that is at or after the `from` date of a later activation that names it in `supersedes`. A supersession has no end date.
 
 The proposal declares the stale mode of a revision in `stale_mode`. The two values are `fail_closed` (the default) and `continue_stale`. Any other value is `invalid_request`. The snapshot records the mode. Qualification, the decision and the activation bind that snapshot, so the reviewer approves the mode with the revision. `invoke` has no `stale_mode` field, and a caller cannot propose. Thus a caller cannot select the mode. To change the mode, propose a new revision and qualify, decide and activate it.
 
 If an activation is live at the invocation date, `invoke` uses it, and the receipt is not stale. If no activation is live, `invoke` examines the activation that the worker loaded:
 
 1. If the loaded activation is not an `enable` event of this function and scope, or the date is before its `from` date, the result is `out_of_scope`.
-2. If its revision has `fail_closed`, the result is `activation_expired` or `activation_revoked`. The Host publishes no state.
-3. If its revision has `continue_stale`, the loaded activation gives the answer. The receipt has `stale` `true` and `stale_reason` `expired` or `revoked`.
+2. If a later activation supersedes the loaded activation at the date, the result is `activation_superseded`, in each stale mode. The Host publishes no state.
+3. If its revision has `fail_closed`, the result is `activation_expired` or `activation_revoked`. The Host publishes no state.
+4. If its revision has `continue_stale`, the loaded activation gives the answer. The receipt has `stale` `true` and `stale_reason` `expired` or `revoked`.
 
 Each receipt records `stale_mode` (the mode of the selected revision), `stale` (a boolean) and `stale_reason` (`expired`, `revoked` or an empty string). A replay keeps the stale reason of the old receipt, because it runs the old selection again. A restatement always selects a live activation, so it is never stale. The `describe`, `resolve` and `load` operations do not continue a stale activation. They give `out_of_scope`.
 

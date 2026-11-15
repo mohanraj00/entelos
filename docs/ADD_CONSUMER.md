@@ -86,7 +86,9 @@ when constructing the `bundle` argument.
 Read `event_ref` from the result of `activate`. To suspend the first revision,
 pass that reference in `targets` with the interval you want to mask. When
 activating a replacement directly, list every earlier live activation that
-the new interval overlaps. See [activation targets](CONTRACTS.md#activation-targets).
+the new interval overlaps. A target is masked only in the new interval. To
+replace an earlier activation from the new start date with no end, pass its
+reference in `supersedes`. See [activation targets](CONTRACTS.md#activation-targets).
 
 For a changed rule, write a new proposal and leave the first receipt intact.
 Use a reader context to replay the original receipt and restate it at the
