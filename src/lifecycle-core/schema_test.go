@@ -46,10 +46,12 @@ func checkPatterns(t *testing.T, node any, where string) {
 var hostOnly = map[string]bool{"activate.supersedes": true}
 
 func TestProtocolSchemasAgreeWithTheHostTable(t *testing.T) {
-	// The 1.1 table is the 1.0 schemas with the approval schemas over them.
+	// The Host table follows the latest schemas over the older versions.
 	// The credentials file is not an operation.
 	paths, _ := filepath.Glob(filepath.Join("..", "protocol", "schema", "*.schema.json"))
 	approval, _ := filepath.Glob(filepath.Join("..", "protocol", "approval", "schema", "*.schema.json"))
+	latest, _ := filepath.Glob(filepath.Join("..", "protocol", "approval", "schema", "1.2", "*.schema.json"))
+	approval = append(approval, latest...)
 	files := Object{}
 	for _, path := range append(paths, approval...) {
 		raw, err := os.ReadFile(path)

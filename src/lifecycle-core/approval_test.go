@@ -197,3 +197,48 @@ func TestFileClockAcceptsOnlyTheClockFormat(t *testing.T) {
 		}
 	}
 }
+
+// An evidence attachment is retained by the normal propose write and is
+// available on a new Host, including at the original captured revision.
+func TestProposalEvidenceAttachment(t *testing.T) {
+	raw, err := os.ReadFile("../protocol/approval/vectors/approval-evidence.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	doc := must(Decode(raw)).(Object)
+	evidence := doc["steps"].(Array)[3].(Object)["request"].(Object)["body"].(Object)["evidence"]
+	w := newWorld(t, &CELRunner{Runtime: &fakeEngine{build: engineBuild}})
+	source := w.must("reviewer", "reviewer", "source", with(window, Object{"text": "invented source", "reason": "first"}))["source_ref"]
+	fields := with(window, Object{"base_snapshot": "", "source_ref": source, "bundle": bundle("rule"), "reason": "first", "evidence": evidence})
+	snapshot := w.must("author", "author", "propose", fields)["snapshot_ref"]
+	root := must(w.store.Read(nil)).Cursor
+	host := w.host("reviewer", "reviewer", w.runner)
+	result, err := host.Handle(Object{"op": "proposal", "snapshot_ref": snapshot, "cursor": root})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !equal(result.(Object)["evidence"], evidence) || !equal(result.(Object)["snapshot"].(Object)["evidence"], evidence) {
+		t.Fatal("evidence changed")
+	}
+	for _, bad := range []any{nil, "text", Object{"format": "entelos.evidence/2"}} {
+		fields["base_snapshot"], fields["evidence"] = snapshot, bad
+		_, err := w.do("author", "author", w.runner, "propose", fields)
+		if faultCode(t, err) != "invalid_request" || must(w.store.Read(nil)).Cursor != root {
+			t.Fatal("bad attachment wrote state")
+		}
+	}
+	delete(fields, "evidence")
+	fields["base_snapshot"] = snapshot
+	replacement := w.must("author", "author", "propose", fields)["snapshot_ref"]
+	result, err = host.Handle(Object{"op": "proposal", "snapshot_ref": replacement})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, has := result.(Object)["evidence"]; has {
+		t.Fatal("legacy proposal gained an evidence field")
+	}
+	result, err = host.Handle(Object{"op": "proposal", "snapshot_ref": snapshot, "cursor": root})
+	if err != nil || !equal(result.(Object)["evidence"], evidence) {
+		t.Fatal("old evidence changed after replacement")
+	}
+}

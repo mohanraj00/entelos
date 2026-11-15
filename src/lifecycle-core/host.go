@@ -25,7 +25,7 @@ var schema = map[string]struct {
 }{
 	"source":     {"reviewer", []string{"function", "from", "until", "text", "supersedes", "reason"}},
 	"plan":       {"reviewer", []string{"source_ref", "cases", "origin", "supersedes"}},
-	"propose":    {"author", []string{"function", "from", "until", "base_snapshot", "source_ref", "bundle", "reason", "stale_mode"}},
+	"propose":    {"author", []string{"function", "from", "until", "base_snapshot", "source_ref", "bundle", "reason", "stale_mode", "evidence"}},
 	"qualify":    {"runner", []string{"snapshot_ref", "plan_ref"}},
 	"decide":     {"reviewer", []string{"report_ref", "reason", "disposition"}},
 	"activate":   {"reviewer", []string{"decision_ref", "targets", "supersedes"}},
@@ -45,7 +45,7 @@ var schema = map[string]struct {
 	"record":     {"reviewer", []string{"ref", "kind", "cursor"}},
 	"receipt":    {"reader", []string{"receipt_ref"}},
 	"ingest":     {"worker", []string{"entries"}},
-	"proposals":  {"reviewer", []string{"cursor"}},
+	"proposals":  {"reviewer", []string{"cursor", "limit"}},
 	"proposal":   {"reviewer", []string{"snapshot_ref", "cursor"}},
 }
 
@@ -238,6 +238,11 @@ func (h *Host) Handle(request any) (result any, err error) {
 					return nil, NewFault("invalid_request", name+" must be an array of strings", "")
 				}
 			}
+		}
+	}
+	if op == "propose" {
+		if evidence, present := q["evidence"]; present && !checkEvidence(evidence) {
+			return nil, NewFault("invalid_request", "evidence has an invalid structure or exceeds its size or depth bound", "")
 		}
 	}
 	defer func() {
@@ -647,6 +652,9 @@ func (h *Host) selection(v *View, function any, at any, event Object) Object {
 }
 
 func (h *Host) readOperation(op string, q Object) any {
+	if op == "proposals" {
+		return h.proposals(q)
+	}
 	v := must(h.Store.Read(lookup(q, "cursor", nil)))
 	switch op {
 	case "inspect":
@@ -659,8 +667,6 @@ func (h *Host) readOperation(op string, q Object) any {
 		}
 		prepareIndex(v)
 		return Object{"cursor": v.Cursor, "state": v.State}
-	case "proposals":
-		return h.proposals(v)
 	case "proposal":
 		return h.proposal(v, q)
 	case "record":
@@ -1105,6 +1111,11 @@ func (h *Host) apply(v *View, op string, q Object) any {
 		snapshot := merge(target, Object{"base_snapshot": q["base_snapshot"], "source_ref": q["source_ref"], "files": refs,
 			"bundle_ref": item(desc, "bundle_ref"), "engine_build": item(desc, "implementation_ref"), "reason": item(q, "reason"), "producer": actor,
 			"stale_mode": staleMode, "submitted_at": h.now()})
+		if evidence, present := q["evidence"]; present {
+			// Retain the producer document. Admission and policy checks of
+			// EVIDENCE.md are separate from this attachment/read API.
+			snapshot["evidence"] = evidence
+		}
 		ref := v.Put("snapshot", snapshot)
 		heads[headKey] = ref
 		return Object{"snapshot_ref": ref, "bundle_ref": item(desc, "bundle_ref")}

@@ -1,0 +1,652 @@
+{
+ "context": {
+  "scope": "demo",
+  "runner_actor": "fixture-runner",
+  "worker": "local-worker",
+  "functions": [
+   "record.visible"
+  ]
+ },
+ "principals": {
+  "author-a": {
+   "actor": "author-a",
+   "roles": [
+    "author",
+    "reviewer"
+   ]
+  },
+  "runner": {
+   "actor": "fixture-runner",
+   "roles": [
+    "runner"
+   ]
+  },
+  "reviewer-a": {
+   "actor": "reviewer-a",
+   "roles": [
+    "reviewer"
+   ]
+  },
+  "reviewer-b": {
+   "actor": "reviewer-b",
+   "roles": [
+    "reviewer"
+   ]
+  },
+  "reviewer-c": {
+   "actor": "reviewer-c",
+   "roles": [
+    "reviewer"
+   ]
+  },
+  "caller-c": {
+   "actor": "caller-c",
+   "roles": [
+    "caller"
+   ]
+  }
+ },
+ "clock": "2026-11-20T09:00:00Z",
+ "description": "Producer evidence attachment and retrieval, with legacy list and proposal shapes. Hand-written expectations use an existing valid evidence-format example.",
+ "protocol_version": "1.2",
+ "steps": [
+  {
+   "name": "source",
+   "principal": "reviewer-a",
+   "request": {
+    "protocol": "1.2",
+    "request_id": "v-1",
+    "operation": "source",
+    "body": {
+     "function": "record.visible",
+     "from": "2026-10-01",
+     "until": "2026-12-01",
+     "supersedes": [],
+     "reason": "initial requirement",
+     "text": "Invented source table: visible state ready; archived records are invisible.",
+     "expected_revision": "",
+     "request_key": "v-k-source"
+    }
+   },
+   "expect": {
+    "response": {
+     "protocol": "1.2",
+     "request_id": "v-1",
+     "status": "ok",
+     "result": {
+      "cursor": {
+       "$capture": "v-c1"
+      },
+      "result": {
+       "source_ref": {
+        "$capture": "source-1"
+       }
+      },
+      "reused": false
+     }
+    }
+   }
+  },
+  {
+   "name": "plan",
+   "principal": "reviewer-a",
+   "request": {
+    "protocol": "1.2",
+    "request_id": "v-2",
+    "operation": "plan",
+    "body": {
+     "source_ref": {
+      "$use": "source-1"
+     },
+     "cases": [
+      {
+       "case": "visible",
+       "inputs": {
+        "state": "ready",
+        "archived": false
+       },
+       "status": "ok",
+       "value": true
+      },
+      {
+       "case": "other-state",
+       "inputs": {
+        "state": "closed",
+        "archived": false
+       },
+       "status": "ok",
+       "value": false
+      },
+      {
+       "case": "archived",
+       "inputs": {
+        "state": "ready",
+        "archived": true
+       },
+       "status": "ok",
+       "value": false
+      }
+     ],
+     "supersedes": [],
+     "origin": "Hand-written cases from the invented source table",
+     "expected_revision": {
+      "$use": "v-c1"
+     },
+     "request_key": "v-k-plan"
+    }
+   },
+   "expect": {
+    "response": {
+     "protocol": "1.2",
+     "request_id": "v-2",
+     "status": "ok",
+     "result": {
+      "cursor": {
+       "$capture": "v-c2"
+      },
+      "result": {
+       "plan_ref": {
+        "$capture": "plan-1"
+       }
+      },
+      "reused": false
+     }
+    }
+   }
+  },
+  {
+   "name": "list-before-propose",
+   "principal": "reviewer-a",
+   "request": {
+    "protocol": "1.2",
+    "request_id": "v-3",
+    "operation": "proposals",
+    "body": {}
+   },
+   "expect": {
+    "response": {
+     "protocol": "1.2",
+     "request_id": "v-3",
+     "status": "ok",
+     "result": {
+      "cursor": {
+       "$type": "string"
+      },
+      "as_of": "2026-11-20T09:00:00Z",
+      "proposals": []
+     }
+    }
+   }
+  },
+  {
+   "name": "propose",
+   "principal": "author-a",
+   "request": {
+    "protocol": "1.2",
+    "request_id": "v-4",
+    "operation": "propose",
+    "body": {
+     "function": "record.visible",
+     "from": "2026-10-01",
+     "until": "2026-12-01",
+     "base_snapshot": "",
+     "source_ref": {
+      "$use": "source-1"
+     },
+     "bundle": {
+      "$record_bundle": {
+       "allowed_state": "ready"
+      }
+     },
+     "reason": "initial proposal",
+     "expected_revision": {
+      "$use": "v-c2"
+     },
+     "request_key": "v-k-propose",
+     "evidence": {
+      "format": "entelos.evidence/1",
+      "producer": {
+       "id": "producer-a",
+       "version": "1.0.0",
+       "digest_scheme": "producer-a/1"
+      },
+      "facts": [
+       {
+        "fact_id": "f-1",
+        "receipt_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+        "decision_digest": "sha256:2222222222222222222222222222222222222222222222222222222222222222",
+        "packet_digest": "sha256:3333333333333333333333333333333333333333333333333333333333333333",
+        "source_kind": "document",
+        "source_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "text_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "spans": [
+         {
+          "start": 21,
+          "end": 22
+         }
+        ],
+        "outcome": "admitted",
+        "codes": [],
+        "data": {
+         "field": "items",
+         "key": null,
+         "value": "2",
+         "unit": null
+        }
+       }
+      ]
+     }
+    }
+   },
+   "expect": {
+    "response": {
+     "protocol": "1.2",
+     "request_id": "v-4",
+     "status": "ok",
+     "result": {
+      "cursor": {
+       "$capture": "v-c4"
+      },
+      "result": {
+       "snapshot_ref": {
+        "$capture": "snap-1"
+       },
+       "bundle_ref": {
+        "$capture": "bundle-1"
+       }
+      },
+      "reused": false
+     }
+    }
+   }
+  },
+  {
+   "name": "attached-evidence",
+   "principal": "reviewer-a",
+   "request": {
+    "protocol": "1.2",
+    "request_id": "v-8",
+    "operation": "proposal",
+    "body": {
+     "snapshot_ref": {
+      "$use": "snap-1"
+     }
+    }
+   },
+   "expect": {
+    "response": {
+     "protocol": "1.2",
+     "request_id": "v-8",
+     "status": "ok",
+     "result": {
+      "cursor": {
+       "$type": "string"
+      },
+      "as_of": "2026-11-20T09:00:00Z",
+      "proposal": {
+       "snapshot_ref": {
+        "$use": "snap-1"
+       },
+       "function": "record.visible",
+       "scope": "demo",
+       "from": "2026-10-01",
+       "until": "2026-12-01",
+       "producer": "author-a",
+       "reason": "initial proposal",
+       "bundle_ref": {
+        "$use": "bundle-1"
+       },
+       "stale_mode": "fail_closed",
+       "state": "awaiting_qualification",
+       "refusal": "",
+       "report_refs": [],
+       "decision_refs": [],
+       "submitted_at": "2026-11-20T09:00:00Z",
+       "wait_seconds": {
+        "$wait": {
+         "since": "snap-1",
+         "seconds": 0
+        }
+       }
+      },
+      "snapshot": {
+       "$subset": {
+        "format": "entelos.record/1",
+        "producer": "author-a",
+        "submitted_at": "2026-11-20T09:00:00Z",
+        "bundle_ref": {
+         "$use": "bundle-1"
+        },
+        "evidence": {
+         "format": "entelos.evidence/1",
+         "producer": {
+          "id": "producer-a",
+          "version": "1.0.0",
+          "digest_scheme": "producer-a/1"
+         },
+         "facts": [
+          {
+           "fact_id": "f-1",
+           "receipt_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+           "decision_digest": "sha256:2222222222222222222222222222222222222222222222222222222222222222",
+           "packet_digest": "sha256:3333333333333333333333333333333333333333333333333333333333333333",
+           "source_kind": "document",
+           "source_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+           "text_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+           "spans": [
+            {
+             "start": 21,
+             "end": 22
+            }
+           ],
+           "outcome": "admitted",
+           "codes": [],
+           "data": {
+            "field": "items",
+            "key": null,
+            "value": "2",
+            "unit": null
+           }
+          }
+         ]
+        }
+       }
+      },
+      "source": {
+       "$subset": {
+        "format": "entelos.record/1",
+        "text": "Invented source table: visible state ready; archived records are invisible."
+       }
+      },
+      "bundle": {
+       "manifest": {
+        "$type": "string"
+       },
+       "environment": {
+        "$type": "string"
+       },
+       "source": {
+        "$type": "string"
+       },
+       "fixed": {
+        "$type": "string"
+       }
+      },
+      "reports": [],
+      "decisions": [],
+      "evidence": {
+       "format": "entelos.evidence/1",
+       "producer": {
+        "id": "producer-a",
+        "version": "1.0.0",
+        "digest_scheme": "producer-a/1"
+       },
+       "facts": [
+        {
+         "fact_id": "f-1",
+         "receipt_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+         "decision_digest": "sha256:2222222222222222222222222222222222222222222222222222222222222222",
+         "packet_digest": "sha256:3333333333333333333333333333333333333333333333333333333333333333",
+         "source_kind": "document",
+         "source_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+         "text_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+         "spans": [
+          {
+           "start": 21,
+           "end": 22
+          }
+         ],
+         "outcome": "admitted",
+         "codes": [],
+         "data": {
+          "field": "items",
+          "key": null,
+          "value": "2",
+          "unit": null
+         }
+        }
+       ]
+      }
+     }
+    }
+   }
+  },
+  {
+   "name": "legacy-proposal-shape",
+   "principal": "reviewer-a",
+   "request": {
+    "protocol": "1.1",
+    "request_id": "v-8",
+    "operation": "proposal",
+    "body": {
+     "snapshot_ref": {
+      "$use": "snap-1"
+     }
+    }
+   },
+   "expect": {
+    "response": {
+     "protocol": "1.1",
+     "request_id": "v-8",
+     "status": "ok",
+     "result": {
+      "cursor": {
+       "$type": "string"
+      },
+      "as_of": "2026-11-20T09:00:00Z",
+      "proposal": {
+       "snapshot_ref": {
+        "$use": "snap-1"
+       },
+       "function": "record.visible",
+       "scope": "demo",
+       "from": "2026-10-01",
+       "until": "2026-12-01",
+       "producer": "author-a",
+       "reason": "initial proposal",
+       "bundle_ref": {
+        "$use": "bundle-1"
+       },
+       "stale_mode": "fail_closed",
+       "state": "awaiting_qualification",
+       "refusal": "",
+       "report_refs": [],
+       "decision_refs": [],
+       "submitted_at": "2026-11-20T09:00:00Z",
+       "wait_seconds": {
+        "$wait": {
+         "since": "snap-1",
+         "seconds": 0
+        }
+       }
+      },
+      "snapshot": {
+       "format": "entelos.record/1",
+       "function": "record.visible",
+       "scope": "demo",
+       "from": "2026-10-01",
+       "until": "2026-12-01",
+       "base_snapshot": "",
+       "source_ref": {
+        "$use": "source-1"
+       },
+       "files": {
+        "manifest": {
+         "$type": "string"
+        },
+        "environment": {
+         "$type": "string"
+        },
+        "source": {
+         "$type": "string"
+        },
+        "fixed": {
+         "$type": "string"
+        }
+       },
+       "bundle_ref": {
+        "$use": "bundle-1"
+       },
+       "engine_build": {
+        "$type": "string"
+       },
+       "reason": "initial proposal",
+       "producer": "author-a",
+       "stale_mode": "fail_closed",
+       "submitted_at": "2026-11-20T09:00:00Z"
+      },
+      "source": {
+       "$subset": {
+        "format": "entelos.record/1",
+        "text": "Invented source table: visible state ready; archived records are invisible."
+       }
+      },
+      "bundle": {
+       "manifest": {
+        "$type": "string"
+       },
+       "environment": {
+        "$type": "string"
+       },
+       "source": {
+        "$type": "string"
+       },
+       "fixed": {
+        "$type": "string"
+       }
+      },
+      "reports": [],
+      "decisions": []
+     }
+    }
+   }
+  },
+  {
+   "name": "legacy-list-shape",
+   "principal": "reviewer-a",
+   "request": {
+    "protocol": "1.1",
+    "request_id": "v-5",
+    "operation": "proposals",
+    "body": {}
+   },
+   "expect": {
+    "response": {
+     "protocol": "1.1",
+     "request_id": "v-5",
+     "status": "ok",
+     "result": {
+      "cursor": {
+       "$type": "string"
+      },
+      "as_of": "2026-11-20T09:00:00Z",
+      "proposals": [
+       {
+        "snapshot_ref": {
+         "$use": "snap-1"
+        },
+        "function": "record.visible",
+        "scope": "demo",
+        "from": "2026-10-01",
+        "until": "2026-12-01",
+        "producer": "author-a",
+        "reason": "initial proposal",
+        "bundle_ref": {
+         "$use": "bundle-1"
+        },
+        "stale_mode": "fail_closed",
+        "state": "awaiting_qualification",
+        "refusal": "",
+        "report_refs": [],
+        "decision_refs": [],
+        "submitted_at": "2026-11-20T09:00:00Z",
+        "wait_seconds": {
+         "$wait": {
+          "since": "snap-1",
+          "seconds": 0
+         }
+        }
+       }
+      ]
+     }
+    }
+   }
+  },
+  {
+   "name": "missing-evidence-producer",
+   "principal": "author-a",
+   "request": {
+    "protocol": "1.2",
+    "request_id": "v-invalid-evidence",
+    "operation": "propose",
+    "body": {
+     "function": "record.visible",
+     "from": "2026-10-01",
+     "until": "2026-12-01",
+     "base_snapshot": {
+      "$use": "snap-1"
+     },
+     "source_ref": {
+      "$use": "source-1"
+     },
+     "bundle": {
+      "$record_bundle": {
+       "allowed_state": "ready"
+      }
+     },
+     "reason": "initial proposal",
+     "expected_revision": {
+      "$use": "v-c4"
+     },
+     "request_key": "v-k-invalid-evidence",
+     "evidence": {
+      "format": "entelos.evidence/1",
+      "facts": [
+       {
+        "fact_id": "f-1",
+        "receipt_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+        "decision_digest": "sha256:2222222222222222222222222222222222222222222222222222222222222222",
+        "packet_digest": "sha256:3333333333333333333333333333333333333333333333333333333333333333",
+        "source_kind": "document",
+        "source_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "text_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "spans": [
+         {
+          "start": 21,
+          "end": 22
+         }
+        ],
+        "outcome": "admitted",
+        "codes": [],
+        "data": {
+         "field": "items",
+         "key": null,
+         "value": "2",
+         "unit": null
+        }
+       }
+      ]
+     }
+    }
+   },
+   "expect": {
+    "response": {
+     "protocol": "1.2",
+     "request_id": "v-invalid-evidence",
+     "status": "invalid_request",
+     "diagnostic": {
+      "code": "invalid_request",
+      "stage": "lifecycle",
+      "message": {
+       "$type": "string"
+      }
+     }
+    }
+   }
+  }
+ ],
+ "parity": [
+  "propose",
+  "attached-evidence"
+ ]
+}
