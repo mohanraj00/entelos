@@ -1,0 +1,92 @@
+{
+ "format_version": 1,
+ "note": "Each case starts with an empty store. Each expected value is written from SUPERSESSION.md.",
+ "cases": [
+  {
+   "name": "chain-of-three",
+   "steps": [
+    {"activate": "u1", "from": "2026-01-01", "until": "2027-01-01"},
+    {"answer": "a1", "date": "2026-02-15", "expect": "u1"},
+    {"activate": "u2", "from": "2026-03-01", "until": "2026-12-01", "supersedes": ["u1"]},
+    {"record": "u2", "supersedes": ["u1"]},
+    {"answer": "a2", "date": "2026-04-01", "expect": "u2"},
+    {"answer": "a1-new", "date": "2026-02-15", "expect": "u1"},
+    {"activate": "u3", "from": "2026-05-01", "until": "2026-09-01", "supersedes": ["u2"]},
+    {"record": "u3", "supersedes": ["u2"]},
+    {"record": "u1", "supersedes": []},
+    {"resolve": "2025-12-31", "expect": {"error": "out_of_scope"}},
+    {"resolve": "2026-02-15", "expect": "u1"},
+    {"resolve": "2026-02-28", "expect": "u1"},
+    {"resolve": "2026-03-01", "expect": "u2"},
+    {"resolve": "2026-04-30", "expect": "u2"},
+    {"resolve": "2026-05-01", "expect": "u3"},
+    {"resolve": "2026-08-31", "expect": "u3"},
+    {"resolve": "2026-09-01", "expect": {"error": "out_of_scope"}},
+    {"resolve": "2026-11-30", "expect": {"error": "out_of_scope"}},
+    {"resolve": "2026-12-15", "expect": {"error": "out_of_scope"}},
+    {"answer": "a3", "date": "2026-06-01", "expect": "u3"},
+    {"answer": "late", "date": "2026-10-01", "expect": {"error": "out_of_scope"}},
+    {"replay": "a1", "expect": "u1"},
+    {"replay": "a2", "expect": "u2"},
+    {"replay": "a3", "expect": "u3"}
+   ]
+  },
+  {
+   "name": "mask-is-not-supersession",
+   "steps": [
+    {"activate": "u1", "from": "2026-01-01", "until": "2027-01-01"},
+    {"activate": "u2", "from": "2026-03-01", "until": "2026-05-01", "targets": ["u1"]},
+    {"record": "u2", "supersedes": []},
+    {"resolve": "2026-04-01", "expect": "u2"},
+    {"resolve": "2026-06-01", "expect": "u1"}
+   ]
+  },
+  {
+   "name": "supersession-needs-no-target",
+   "steps": [
+    {"activate": "u1", "from": "2026-01-01", "until": "2027-01-01"},
+    {"activate": "u2", "from": "2026-03-01", "until": "2026-05-01", "expect": {"error": "ambiguous_activation"}},
+    {"activate": "u2", "from": "2026-03-01", "until": "2026-05-01", "supersedes": ["u1"]},
+    {"resolve": "2026-02-01", "expect": "u1"},
+    {"resolve": "2026-04-01", "expect": "u2"},
+    {"resolve": "2026-06-01", "expect": {"error": "out_of_scope"}}
+   ]
+  },
+  {
+   "name": "superseded-update-with-an-earlier-start",
+   "steps": [
+    {"activate": "u1", "from": "2026-03-01", "until": "2027-01-01"},
+    {"activate": "u2", "from": "2026-01-01", "until": "2026-06-01", "supersedes": ["u1"]},
+    {"resolve": "2026-02-01", "expect": "u2"},
+    {"resolve": "2026-04-01", "expect": "u2"},
+    {"resolve": "2026-07-01", "expect": {"error": "out_of_scope"}}
+   ]
+  },
+  {
+   "name": "suspended-successor-does-not-restore",
+   "steps": [
+    {"activate": "u1", "from": "2026-01-01", "until": "2027-01-01"},
+    {"activate": "u2", "from": "2026-03-01", "until": "2026-09-01", "supersedes": ["u1"]},
+    {"suspend": "s1", "from": "2026-03-01", "until": "2026-09-01", "targets": ["u2"]},
+    {"resolve": "2026-02-01", "expect": "u1"},
+    {"resolve": "2026-04-01", "expect": {"error": "out_of_scope"}},
+    {"resolve": "2026-10-01", "expect": {"error": "out_of_scope"}}
+   ]
+  },
+  {
+   "name": "refused-supersessions",
+   "steps": [
+    {"activate": "u1", "from": "2026-01-01", "until": "2026-03-01"},
+    {"activate": "u2", "from": "2026-03-01", "until": "2026-06-01", "supersedes": ["u1"], "expect": {"error": "invalid_supersession"}},
+    {"activate": "u2", "from": "2026-02-01", "until": "2026-06-01", "supersedes": ["u1", "u1"], "expect": {"error": "invalid_supersession"}},
+    {"activate": "u2", "from": "2026-02-01", "until": "2026-06-01", "supersedes": ["missing"], "expect": {"error": "invalid_supersession"}},
+    {"suspend": "s1", "from": "2026-01-01", "until": "2026-02-01", "targets": ["u1"]},
+    {"activate": "u2", "from": "2026-01-01", "until": "2026-06-01", "supersedes": ["s1"], "expect": {"error": "invalid_supersession"}},
+    {"resolve": "2026-02-15", "expect": "u1"},
+    {"activate": "u2", "from": "2026-02-01", "until": "2026-06-01", "supersedes": ["u1"]},
+    {"resolve": "2026-02-15", "expect": "u2"},
+    {"resolve": "2026-01-15", "expect": {"error": "out_of_scope"}}
+   ]
+  }
+ ]
+}

@@ -52,6 +52,12 @@ Issue [#155](https://github.com/mohanraj00/entelos/issues/155) adds a signature 
 
 The 47 vectors have expected values that a person wrote from the spec. `check_spec.py` judges them with a separate Ed25519 implementation in Python, which it first checks against two RFC 8032 test vectors. `TestSignedVectors` runs the same vectors on the Go verifier, and `TestSignerReproducesTheValidVectors` shows that the Go signer and the Python signer give the same bytes. `TestHostSignsApprovalAndActivationRecords` runs the Host path. Limits: a signed record has no trusted time, the key set has no signature, and a record from before the key has no signed record. The declarations are experimental.
 
+### Supersession
+
+Issue [#129](https://github.com/mohanraj00/entelos/issues/129) lets a new activation supersede an earlier one. [SUPERSESSION.md](../src/protocol/supersession/SUPERSESSION.md) is the spec. `activate` takes the optional field `supersedes`, and the activation record names the superseded events. A supersession starts at the `from` date of the new activation and has no end. A mask in `targets` still applies only in the interval of the new event. `replay` uses the selection of the old receipt, so an old answer does not change.
+
+The six vector cases have 56 steps with expected values that a person wrote from the spec. One case is a chain of three updates. `check_spec.py` judges the steps on its own model of the selection. `TestSupersessionVectors` runs the same steps on the Go Host with a fixture runner, a fake engine and a signing key, and it checks that each activation record has a signed record. `TestSupersededUpdateGivesNoStaleAnswer` covers a worker that still has a superseded update. Limits: the sidecar wire protocol versions 1.0 and 1.1 do not accept `supersedes`, and the vectors do not run a CEL rule.
+
 ### v0.4 evidence format
 
 On 2026-11-12, the evidence format `entelos.evidence/1` for [#148](https://github.com/mohanraj00/entelos/issues/148) was proposed in [EVIDENCE.md](../src/protocol/evidence/EVIDENCE.md). It is the first part of #104. It gives the identity, source, spans, producer outcome, data and reviews of the facts that a proposal cites, 14 refusal rules in a fixed order and four bool policy inputs. Attached objects with a digest are the extension point for new producer fields. On 2026-11-12, a check against groundgate 0.14.0 found fields that the first draft lost, and the revision adds them. The 97 vectors are hand-written. `check_spec.py` applies the rules to them. No Host reads the format.
