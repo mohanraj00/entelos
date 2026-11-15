@@ -85,7 +85,7 @@ Apply these checks in order before returning any event or cursor:
 |---|---|---|
 | 1 | The request agrees with the request schema. | `invalid_request` |
 | 2 | The supplied cursor, if any, is valid for this stream and prefix. | `invalid_cursor` |
-| 3 | Each selected decision at or after the stream start has complete recorded fact identities, actor kind and per-fact blind marks, and valid corrections under the event rules. | `unexportable_decision` |
+| 3 | Each decision at or after the stream start that contributes an event to this page has complete recorded fact identities, actor kind and per-fact blind marks, and valid corrections under the event rules. | `unexportable_decision` |
 
 Step 3 applies to the complete decisions contributing events to this page, even if a page boundary cuts a decision. On refusal return no partial page and no next cursor. Decisions before the stream start do not contribute events. Missing provenance at or after the stream start is a refusal, not a default of `human` or `false`. Never infer blind from the absence of an original value in this export. This contract does not change the format of existing verdict records or invent provenance for them.
 

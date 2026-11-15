@@ -245,7 +245,7 @@
   "src/protocol/content/schema/candidate.schema.json": "07637fbfa06c68ebaa47e5843b4b02a61c6ce6c64d9ac949527b0d22855f7651",
   "src/protocol/content/schema/manifest.schema.json": "ea6d2d211d8faed8918ed74b181e1260cd2aa295b48abfb29cc88c36058ac3e3",
   "src/protocol/content/vectors/content-cases.json": "c74646c5fcf044aee380aa068cfb35580d7608fb3e725706d4f46fe04a3d72b1",
-  "src/protocol/events/EVENTS.md": "5b6098269f1578d38274576e6df78ebea1d41571720ccb520361c05e4c1bf232",
+  "src/protocol/events/EVENTS.md": "395399a8f1cf635c93101aea34d68d0bdb2cc7abad1519bcd2d1acf71c582113",
   "src/protocol/events/check_spec.py": "4a4de4a80ac3810d6c2fcb7de9ae8c27effb059759200c716a2905bcaf8e58a0",
   "src/protocol/events/schema/event.schema.json": "f6cd3d5b13222b95124db4e5dcb8c5ae1e190bc565c90c944cbda6da9e156029",
   "src/protocol/events/vectors/event-cases.json": "1d47ed65226198d4190841dc9887e993b34339da902b5e6ea8ea39b9baaeb5ac",
