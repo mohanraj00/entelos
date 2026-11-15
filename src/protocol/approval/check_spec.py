@@ -22,6 +22,7 @@ from test_protocol import OPERATIONS as V10, SchemaError, validate  # noqa: E402
 
 APPROVAL={p.name[:-len('.schema.json')]:json.loads(p.read_text()) for p in sorted((HERE/'schema').glob('*.schema.json'))}
 CREDENTIALS=APPROVAL.pop('credentials')
+APPROVAL12=dict(APPROVAL,**{p.name[:-len('.schema.json')]:json.loads(p.read_text()) for p in sorted((HERE/'schema'/'1.2').glob('*.schema.json'))})
 SAMPLES={'^sha256:[0-9a-f]{64}$':'sha256:'+'0'*64,'^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$':'2026-01-01T00:00:00Z',
          '^[0-9]{4}-[0-9]{2}-[0-9]{2}$':'2026-01-01','^[0-9a-f]{64}$':'0'*64}
 STAMP='%Y-%m-%dT%H:%M:%SZ'
@@ -78,7 +79,7 @@ def check_file(name,doc,codes,new_seen):
     for key in ('description','protocol_version','context','principals','clock','steps'):
         if key not in doc:errors.append('%s: missing %s'%(name,key))
     if errors:return errors
-    if doc['protocol_version']!='1.1':errors.append(name+': protocol_version must be 1.1')
+    if doc['protocol_version'] not in ('1.1','1.2'):errors.append(name+': protocol_version must be 1.1 or 1.2')
     if {'actor','roles'}&set(doc['context']):errors.append(name+': context must not have actor or roles')
     principals=doc['principals'];actors=[p['actor'] for p in principals.values()]
     if len(set(actors))!=len(actors):errors.append(name+': duplicate principal actor')
@@ -101,8 +102,9 @@ def check_file(name,doc,codes,new_seen):
             clock=later
         request,response=step['request'],step['expect']['response']
         op,version=request['operation'],request['protocol']
-        supported=version in ('1.0','1.1')
-        if version=='1.1' and op in APPROVAL:root=APPROVAL[op]['$defs']
+        supported=version in ('1.0','1.1','1.2')
+        if version=='1.2' and op in APPROVAL12:root=APPROVAL12[op]['$defs']
+        elif version=='1.1' and op in APPROVAL:root=APPROVAL[op]['$defs']
         elif op in V10:root=V10[op]['$defs']
         elif op in APPROVAL:root=None
         else:errors.append(where+': unknown operation '+op);continue
@@ -137,15 +139,16 @@ def check_file(name,doc,codes,new_seen):
         if parity not in names:errors.append(name+': parity names no step: '+parity)
     return errors
 
-def run(docs):
+def run(docs,pages):
     text=(HERE/'APPROVAL.md').read_text();codes,new=refusals(text);seen=set();errors=[]
     for name,doc in docs.items():errors+=check_file(name,doc,codes,seen)
+    errors+=check_pages(pages,codes,seen)
     for code in sorted(new-seen-uncovered(text)):errors.append('new code without a vector or a coverage limit: '+code)
     for op in APPROVAL:
         if '`%s`'%op not in text:errors.append('APPROVAL.md does not name the operation '+op)
     return errors
 
-def self_test(docs):
+def self_test(docs,pages):
     """Each change must give at least one error."""
     def mutate(f):
         d=copy.deepcopy(docs);f(d);return d
@@ -163,14 +166,50 @@ def self_test(docs):
         'scope-unknown-principal':lambda d:d['approval-scope.json']['principal_scopes'].update(nobody='branch-c'),
         'scope-same-as-context':lambda d:d['approval-scope.json']['principal_scopes'].update({'reviewer-b':'branch-a'}),
     }
-    missed=[name for name,f in cases.items() if not run(mutate(f))]
+    missed=[name for name,f in cases.items() if not run(mutate(f),pages)]
     return ['self-test: no error for '+m for m in missed]
+
+def check_pages(doc,codes,new_seen):
+    """Check the synthetic fixture and its independent expected page ranges."""
+    errors=[]
+    if doc.get('protocol_version')!='1.2':errors.append('page-cases: version must be 1.2')
+    if doc.get('fixture',{}).get('count')!=250:errors.append('page-cases: fixture needs 250 proposals')
+    steps=doc.get('steps',[])
+    for i,name in enumerate(('first-page','changed-list','third-page','fourth-page','last-page')):
+        if i>=len(steps):errors.append('page-cases: missing '+name);continue
+        step=steps[i]
+        want={'first':i*50,'last':i*50+49,'count':50,'more':i<4}
+        if step.get('name')!=name or step.get('expect')!=want or step.get('limit')!=50 or step.get('cursor')!=('' if i==0 else 'previous'):
+            errors.append('page-cases: wrong page expectation: '+name)
+    if len(steps)>1 and steps[1].get('change')!={'close':50,'open':250}:errors.append('page-cases: missing changed list')
+    by_name={s['name']:s for s in steps}
+    if by_name.get('bad-cursor',{}).get('expect')!={'status':'invalid_cursor'}:errors.append('page-cases: missing bad cursor')
+    if by_name.get('fresh-list',{}).get('expect')!={'first':250,'last':250,'count':1,'more':True}:errors.append('page-cases: wrong fresh list')
+    root=json.loads((HERE/'schema'/'1.2'/'proposals.schema.json').read_text())['$defs']
+    for step in steps:
+        code=step['expect'].get('status')
+        if code and code!='ok':
+            if code not in codes:errors.append('page-cases:'+step['name']+': code not in the refusal table: '+code)
+            new_seen.add(code)
+        if step['expect'].get('status')=='invalid_request':continue
+        try:validate(root['request_body'],{'limit':step['limit'],'cursor':step['cursor']},step['name'],root)
+        except SchemaError as e:errors.append(e.message)
+    return errors
 
 def main():
     p=argparse.ArgumentParser(description=__doc__);p.parse_args()
     docs={p.name:json.loads(p.read_text()) for p in sorted((HERE/'vectors').glob('approval-*.json'))}
-    errors=run(docs)+self_test(docs)
-    print(json.dumps({'passed':not errors,'files':sorted(docs),'steps':sum(len(d['steps']) for d in docs.values()),'errors':errors,
+    pages=json.loads((HERE/'vectors'/'page-cases.json').read_text())
+    codes,_=refusals((HERE/'APPROVAL.md').read_text())
+    errors=run(docs,pages)+self_test(docs,pages)
+    for field,value in (('first',1),('last',48),('count',49),('more',False)):
+        changed=copy.deepcopy(pages);changed['steps'][0]['expect'][field]=value
+        if not check_pages(changed,codes,set()):errors.append('page self-test missed '+field)
+    if not check_pages(pages,codes-{'invalid_cursor'},set()):errors.append('page self-test missed missing refusal code')
+    changed=copy.deepcopy(pages)
+    changed['steps'].append({'name':'unknown-code','limit':1,'cursor':'','expect':{'status':'no_such_code'}})
+    if not check_pages(changed,codes,set()):errors.append('page self-test missed unknown refusal code')
+    print(json.dumps({'passed':not errors,'files':sorted(docs)+['page-cases.json'],'steps':sum(len(d['steps']) for d in docs.values())+len(pages['steps']),'errors':errors,
         'scope':'Approval API vectors: structure, schemas, refusal codes and clock arithmetic. This checker runs no Host; TestApprovalVectors in src/lifecycle-core/protocol runs them.'},indent=2))
     return bool(errors)
 

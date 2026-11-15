@@ -1,17 +1,17 @@
-# Approval API 1.1 (proposed)
+# Approval API 1.2
 
 This file specifies the approval API of issue [#130](https://github.com/mohanraj00/entelos/issues/130). A reviewer client uses it to list the open proposals, read the evidence of one proposal and record a verdict. The reviewer does not need Git. Entelos does not supply a user interface.
 
 Status: **implemented**. The Go Host and the sidecar in [`src/lifecycle-core`](../../lifecycle-core) implement this file. The schemas and vectors in this directory are the contract. The vectors have expected values that a person wrote from this text. No candidate output made them. [`check_spec.py`](check_spec.py) checks their structure and their arithmetic. It does not run a Host. The Go test `TestApprovalVectors` in [`approval_vectors_test.go`](../../lifecycle-core/protocol/approval_vectors_test.go) runs each step on three transports: the sidecar socket, the [HTTP binding](#http-binding) with signed claims, and the HTTP binding with local static tokens. It compares each response with the vector, and it compares the record references of the three runs.
 
-The API extends [wire protocol 1.0](../PROTOCOL.md) to version 1.1. A 1.0 client sees no change.
+The API extends [wire protocol 1.0](../PROTOCOL.md) to version 1.2. A 1.0 or 1.1 request keeps its earlier result shape.
 
 ## Terms
 
 | Term | Meaning |
 |---|---|
 | Proposal | A `snapshot` record that `propose` wrote. Its reference is the `snapshot_ref`. |
-| Evidence | The snapshot, its source record, its bundle text, and each qualification report on it, with the plan of the report. |
+| Evidence | The producer document in the [evidence format](../evidence/EVIDENCE.md), when attached, plus the snapshot, source, bundle and qualification reports with their plans. |
 | Verdict | A `decision` record that `decide` wrote. Its `disposition` is `accept` or `reject`. |
 | Principal | One credential with an actor and a set of roles. The operator writes it. A request cannot select it. |
 | Open proposal | A proposal that is the current head of its function and scope, and that has no verdict. |
@@ -27,6 +27,12 @@ The API extends [wire protocol 1.0](../PROTOCOL.md) to version 1.1. A 1.0 client
 7. `decide` refuses a second verdict from the same actor on the same snapshot.
 
 Items 6 and 7 make the approval stricter. They do not remove a refusal or a check of 1.0.
+
+## Contract notes for 1.2 (#161)
+
+Version 1.2 adds `limit` to `proposals`, a page token in its request `cursor`, and `next_cursor` in a paged result. It also adds an optional `evidence` document to `propose` and exposes that document in `proposal`. The [1.2 schemas](schema/1.2/) override only these three operations. The [1.1 schemas](schema/) stay in use for 1.1 clients. The JSONL Host, socket and HTTP all call the same Host implementation.
+
+An old `proposals` request without `limit` keeps its exact result fields, including the existing store-revision `cursor`. The dashboard continues to send protocol 1.1 and needs no client change. The envelope now accepts response version `1.2`; the unsupported-minor cases move to `1.3`. The earlier 1.0 and 1.1 successful expectations stay unchanged.
 
 ## Principals and authentication
 
@@ -217,9 +223,15 @@ All three operations need the `reviewer` role. A principal without it gets `forb
 
 ### `proposals` (read)
 
-Body: `{"cursor"?: string}`. The [schema](schema/proposals.schema.json) defines the body and the result.
+Body through 1.1: `{"cursor"?: string}`. The [schema](schema/proposals.schema.json) defines that body and result. In 1.2, the [schema](schema/1.2/proposals.schema.json) also permits `limit`, an integer from 1 to 1000.
 
 Result: `{"cursor", "as_of", "proposals": [item, …]}`. The list contains each open proposal of the host scope and of the host functions. It omits a proposal of another scope or function. It is not a refusal. The order is by `submitted_at`, the oldest first, then by `snapshot_ref`. A snapshot without `submitted_at` comes last.
+
+With `limit`, omit `cursor` or send `""` to start at the current accepted revision. The result adds `next_cursor`. Send that value as `cursor`, together with `limit`, to read the next page. An empty `next_cursor` ends the list. Each page contains at most `limit` items. The limit can change between pages. An empty store gives an empty list and an empty next cursor.
+
+A continuation pins the first page's store revision and `as_of`. Each page therefore sees the same open proposals, states, report references and wait times, in the order above. A proposal opened, closed or superseded after that revision does not alter the traversal. Start again with an empty cursor to see changes. The result `cursor` remains the pinned store revision, usable by `proposal` to read the same evidence view.
+
+The page token is opaque to clients. Its implementation is `approval-page/1.` followed by unpadded base64url JSON with `root`, `offset`, `as_of` and `context`. `context` identifies the Host scope and sorted installed functions. A malformed token, an unavailable root, an invalid offset or a different context gives `invalid_cursor` at stage `store`. A page token without `limit` gives `invalid_request`; without `limit`, other cursors retain the old store-read behavior. Tokens are query positions, not signatures or credentials. Every read still checks the reviewer role and filters to the Host scope and functions.
 
 A proposal item has these fields:
 
@@ -248,7 +260,23 @@ Result:
 | `reports` | One entry for each report, in write order: `{"report_ref", "report", "plan_ref", "plan", "refusal"}`. `refusal` is the report refusal of this report. |
 | `decisions` | One entry for each verdict, in write order: `{"decision_ref", "decision"}`. |
 
+In 1.2, the result also has `evidence` when the snapshot has an evidence document. The Host checks only the structure of that document. It does not apply the admission rules of [EVIDENCE.md](../evidence/EVIDENCE.md). The document is the statement of the producer. A client must not show its `outcome` as verified by the Host.
+
 The records are the stored records. The schema requires `format` `entelos.record/1` on each record and does not define the other fields. Thus a change of the case or value types (issue [#126](https://github.com/mohanraj00/entelos/issues/126)) does not change this schema.
+
+### Evidence attachment in 1.2
+
+`propose` accepts optional `evidence`, an object with `format: "entelos.evidence/1"`. The producer supplies the document described by [EVIDENCE.md](../evidence/EVIDENCE.md). The Host retains the object in the snapshot. This binds it to the snapshot content reference and idempotency payload.
+
+The Host checks the required members and JSON types in the [evidence schema](../evidence/schema/evidence.schema.json). This check includes nested members. It applies to each path, including the JSONL Host and direct `Handle` calls. The Host refuses unknown members outside attached `value` objects. These checks do not test patterns or value ranges.
+
+The document can have at most 32 nested object or array levels. The document object is at level 1. The encoded document can have at most 262144 bytes (256 KiB). This count uses compact sorted JSON, raw UTF-8 and one final newline, as the core codec writes it. Both limits include attached `value` objects.
+
+An incorrect structure or format, or a document above either limit, gives `invalid_request`. This check occurs with the other request field checks, before a store transaction. The Host writes nothing for that request. A replacement snapshot must explicitly attach its own evidence. It does not inherit a document.
+
+The 1.2 `proposal` result adds `evidence` with the retained document, when present. When absent, the field is omitted. Reads at an earlier store cursor retain that document. A response for a version below 1.2 omits both the top-level `evidence` field and `snapshot.evidence`. The stored snapshot does not change. A proposal made without evidence keeps its earlier record and response fields.
+
+This issue adds attachment and retrieval only. It does not implement the proposed evidence admission rules, validate the producer's factual claims, derive policy inputs or retrieve external objects. The document is the producer's statement. It remains subject to the protocol integer-only value domain and frame bound.
 
 ### `decide` (write)
 
@@ -318,16 +346,17 @@ Thus a caller that has a reference can learn that a record with that reference i
 
 ## Refusal codes
 
-The codes in **bold** are new in 1.1. The other codes have the meaning of 1.0.
+The codes in **bold** are new in 1.1, except `invalid_cursor`, which is new in 1.2. The other codes have the meaning of 1.0.
 
 | Code | Stage | Operations | Condition |
 |---|---|---|---|
 | `unauthenticated` | `authentication` | all | No principal agrees with the prelude token, or the HTTP credential is missing or not valid. |
 | `forbidden` | `authority` | all | The principal does not have the role of the operation. |
 | `invalid_request` | `protocol` or Host | all | The body does not agree with its schema, the 1.0 request names a 1.1 operation or field, or `reason` is empty. |
-| `unsupported_version` | `protocol` | all | The major version is not 1, or the minor version is more than 1. |
+| `unsupported_version` | `protocol` | all | The major version is not 1, or the minor version is more than 2. |
 | `artifact_unavailable` | `store` | `proposal`, `decide` | The reference is not in the store. |
 | `invalid_record` | `store` | `proposal`, `decide` | The reference is a record of another kind. |
+| **`invalid_cursor`** | `store` | `proposals` with `limit` | A page token is not valid, is not available or is for another query context. |
 | `out_of_scope` | Host | `proposal`, `decide` | The record has another scope or a function that is not installed. |
 | **`scope_mismatch`** | `admission` | `record`, `inspect` | The record has another scope or no scope, or the store at the cursor holds such a record. |
 | **`index_unavailable`** | `store` | `proposals`, `proposal`, `qualify`, `decide`, `activate` | The store has no `state.reviews`. |
@@ -344,9 +373,9 @@ The codes in **bold** are new in 1.1. The other codes have the meaning of 1.0.
 
 ## Protocol version
 
-A 1.1 receiver accepts the minor versions 0 and 1. A response has the version of its request when the receiver supports that version. For each other response, the version is `"1.0"`, the lowest version that the receiver supports. Thus a 1.0 client can read each failure. This applies to a request with a missing, invalid or unsupported version, and to a frame that is not a readable request.
+A 1.2 receiver accepts the minor versions 0, 1 and 2. The rules below record the earlier 1.1 extension. A response has the version of its request when the receiver supports that version. For each other response, the version is `"1.0"`, the lowest version that the receiver supports. Thus a 1.0 client can read each failure. This applies to a request with a missing, invalid or unsupported version, and to a frame that is not a readable request.
 
-The implementation PR must change these existing 1.0 files, and name each change:
+The following table records the changes from 1.0 to 1.1:
 
 | File | Change | Reason |
 |---|---|---|
@@ -357,9 +386,19 @@ The implementation PR must change these existing 1.0 files, and name each change
 | `vectors/session-lifecycle.json` | Step `inspect-empty`: add `"reviews":{}` to the expected state. | The same reason. |
 | `test_protocol.py` | The runner and its sidecar self-test expect the response version from the rule above: the request version if it is `"1.0"` or `"1.1"`, else `"1.0"`. | The runner must check the 1.1 rule. |
 
-All other expected values in `../vectors/` stay the same, because each other step sends a 1.0 request or an unreadable frame, and gets `"1.0"`. The old vectors stay in the history of the repository. The implementation PR changes them in place and names each step in its description.
+For the 1.1 change, all other expected values in `../vectors/` stay the same, because each other step sends a 1.0 request or an unreadable frame, and gets `"1.0"`. The old vectors stay in the history of the repository. The implementation PR changes them in place and names each step in its description.
 
 The implementation PR also corrected one vector in this directory. In `approval-verdicts.json`, the step `unknown-token` expected `"protocol":"1.1"`. The sidecar does not read a frame with an unknown token, so the version rule above gives `"1.0"`. The step now expects `"1.0"`, and `check_spec.py` checks this case.
+
+The current 1.2 state adds these changes after the 1.1 changes above:
+
+| File | Current 1.2 state |
+|---|---|
+| `schema/envelope.schema.json` | `success.protocol` and `failure.protocol` use `enum` `["1.0","1.1","1.2"]`. |
+| `vectors/envelope-schema.json` | Success and failure cases accept `"1.2"` and refuse `"1.3"`. |
+| `vectors/session-envelope.json` | Step `higher-minor` sends `"1.3"`. It expects `unsupported_version` with `"1.0"`. |
+| `approval/vectors/approval-version.json` | Unsupported minor cases send `"1.3"`. They expect `unsupported_version` with `"1.0"`. |
+| `test_protocol.py` | The runner and its sidecar self-test expect the request version for `"1.0"`, `"1.1"` or `"1.2"`. For each other version, they expect `"1.0"`. |
 
 ## Vectors
 
@@ -372,7 +411,7 @@ The implementation PR also corrected one vector in this directory. In `approval-
 - `{"$subset":{…}}` in an expected value matches an object that has each of these fields with an equal value. Other fields can be present.
 - `{"$type":"object"}` matches any object.
 - `{"$wait":{"since":"snap-1","seconds":172800}}` in an expected value matches the integer `seconds`. `since` names the `$capture` of a `propose` step. The checker uses it to compare the hand-written value with the step clocks.
-- `protocol_version` at the top level is `1.1`. It names the receiver version that the file needs. The 1.0 runner reads only `../vectors/session-*.json`, so it does not read these files.
+- `protocol_version` at the top level is `1.1` or `1.2`. It names the receiver version that the file needs. The 1.0 runner reads only `../vectors/session-*.json`, so it does not read these files.
 - `principal_scopes` at the top level maps a principal name to another scope. The runner serves a second Host with that scope in its context, on the same store as the first Host, on each transport. The steps of that principal go to the second Host. The other principals use the scope of `context`.
 - `parity` at the top level names the steps that the runner also sends to a second Host on a separate store, through `HandleAs` in the same process, with the same principal and clock. The record references (`sha256:` values) in the `$capture` values of those steps must be equal on both paths. A cursor is a Git commit of one store, so the cursor values can differ.
 
@@ -384,6 +423,10 @@ The implementation PR also corrected one vector in this directory. In `approval-
 4. Each `$wait` value equals the clock of its step minus the clock of the `propose` step that it names.
 5. A self-test changes a copy of the vectors and checks that the checker reports each change.
 
+`vectors/page-cases.json` is a synthetic fixture with 250 open proposals, numbered in chronological order. Five calls with a limit of 50 return numbers 0 through 249 exactly once. Before page two, number 50 closes and number 250 opens with an earlier submission time. The continuation retains the original sequence; a fresh read sees number 250 first. The file also pins a bad cursor and invalid limits. `check_spec.py` checks the page ranges and includes mutation self-tests. `TestApprovalPageVectors` builds the fixture and checks the responses through the Host, socket framing with credentials, and both HTTP credential modes. It uses an in-memory store, in-memory streams and the HTTP handler, without listeners or CEL. Existing session vectors cover real listeners and Git stores.
+
+`approval-evidence.json` attaches a valid evidence-format example through `propose`, reads it through `proposal` and pins the old list and proposal response shapes. It also refuses a document without the required `producer` member and has direct Host parity steps. `TestApprovalEvidenceVectorsOffline` runs the same attachment/read vector without CEL or listeners, using a describe-only fixture runtime; it makes no qualification claim.
+
 ## Coverage limits
 
 - `index_unavailable` needs a store from v0.3.0. The implementation PR adds a Go test with such a store for each of the five operations. The test also checks that the root does not change. No vector covers it.
@@ -394,11 +437,11 @@ The implementation PR also corrected one vector in this directory. In `approval-
 - The vectors do not prove constant-time comparison. A code review must check it.
 - The vectors do not contain HTTP refusals. The Go tests in [`http_test.go`](../../lifecycle-core/protocol/http_test.go) cover a missing claim, a bad signature, a wrong issuer, an expired claim, the other claim checks, a static token in local mode and the request bounds.
 - The Host never writes a record without a `scope` field, so no vector contains one. The Go test `TestRecordAndInspectRefuseAnotherScope` puts such a record in a store and checks that `record` and `inspect` give `scope_mismatch`.
-- The vectors install one function, so a list never has two open proposals. The implementation PR adds a Go test for the order of the list.
+- The session vectors install one function. The synthetic page fixture installs 251; `TestProposalListOrder` also checks ties and missing submission times.
 
 ## Limits
 
-- The list has no pagination. A store with many open proposals can get `response_too_large`. A later version can add a page cursor.
+- Pagination bounds the number of returned items, not the bytes of one item or the cost of reading and sorting the full list at the pinned revision. A page or evidence document can still get `response_too_large`. Page tokens require the retained store revision; there is no server-side session or expiry. Unpaged requests still return the entire list.
 - `proposals` shows only the head snapshot of each function and scope. An older snapshot without a verdict is `superseded`. `decide` can still accept it, as in 1.0. `proposal` shows its state.
 - `record` and `inspect` show if a reference is in the store, as the section on their scope says. `inspect` reads each record object of the store at the cursor, in one Git process.
 - Issue [#127](https://github.com/mohanraj00/entelos/issues/127) (a verdict stale after an edit) and issue [#128](https://github.com/mohanraj00/entelos/issues/128) (human and model verdicts) are in v0.5. This version adds no verdict kind and no digest rule. A later minor version can add fields to the decision record.

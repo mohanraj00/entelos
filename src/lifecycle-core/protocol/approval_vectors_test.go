@@ -299,8 +299,8 @@ func readApprovalVector(t *testing.T, path string) lifecycle.Object {
 		t.Fatal(err)
 	}
 	doc := value.(lifecycle.Object)
-	if doc["protocol_version"] != "1.1" {
-		t.Fatalf("%s: protocol_version is not 1.1", path)
+	if doc["protocol_version"] != "1.1" && doc["protocol_version"] != "1.2" {
+		t.Fatalf("%s: protocol_version is not 1.1 or 1.2", path)
 	}
 	return doc
 }
@@ -432,8 +432,8 @@ func TestApprovalVectors(t *testing.T) {
 	bundleDir, _ = filepath.Abs(bundleDir)
 	s := loadTestSchemas(t)
 	paths, _ := filepath.Glob(filepath.Join(protocolDir, "approval", "vectors", "approval-*.json"))
-	if len(paths) != 4 {
-		t.Fatalf("found %d approval vector files, want 4", len(paths))
+	if len(paths) != 5 {
+		t.Fatalf("found %d approval vector files, want 5", len(paths))
 	}
 	total := map[string]int{}
 	for _, path := range paths {
@@ -485,8 +485,8 @@ func TestApprovalVectors(t *testing.T) {
 		})
 	}
 	for _, name := range transports {
-		if total[name] != 57 {
-			t.Fatalf("%s: ran %d approval steps; the vector files have 57", name, total[name])
+		if total[name] != 65 {
+			t.Fatalf("%s: ran %d approval steps; the vector files have 65", name, total[name])
 		}
 	}
 }
@@ -525,6 +525,13 @@ func checkParity(t *testing.T, doc lifecycle.Object, parity lifecycle.Array, soc
 		result, err := host.HandleAs(p["actor"].(string), roles, q)
 		if err != nil {
 			t.Fatalf("parity %s: %v", step["name"], err)
+		}
+		// The direct Host has no wire version. Apply the documented 1.1
+		// response projection before comparing an old proposal response.
+		if request["operation"] == "proposal" && request["protocol"] == "1.1" {
+			out := result.(lifecycle.Object)
+			delete(out, "evidence")
+			delete(out["snapshot"].(lifecycle.Object), "evidence")
 		}
 		for _, e := range approvalMatch(response["result"], normal(t, result), bound, "data") {
 			t.Errorf("parity %s: %s", step["name"], e)

@@ -243,7 +243,9 @@ func shape(s *Schemas, response any, operation any) []string {
 			return []string{"response schema: " + err.Error()}
 		}
 		minor := 0
-		if obj["protocol"] == "1.1" {
+		if obj["protocol"] == "1.2" {
+			minor = 2
+		} else if obj["protocol"] == "1.1" {
 			minor = 1
 		}
 		defs, known := s.Operation(fmt.Sprint(operation), minor)
