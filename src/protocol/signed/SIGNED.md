@@ -47,7 +47,7 @@ A signed record is one JSON object. [`schema/signed.schema.json`](schema/signed.
 | `function` | string | The function of the record. 1 to 256 characters. |
 | `record_kind` | string | `decision` or `event`. |
 | `record_ref` | string | The record reference of the record bytes. |
-| `record` | string | The record bytes in base64. The bytes have a maximum length of 1 MiB. |
+| `record` | string | The record bytes in base64. The text has 699,052 characters maximum, which is the text of 512 KiB. |
 | `algorithm` | string | `ed25519`. |
 | `key_id` | string | The key identifier of the key that signed the record. |
 | `signature` | string | The 64 bytes of the signature in base64. |
@@ -148,6 +148,8 @@ The embedding host installs one signing key in the Host. A request cannot select
 
 With a signing key, each write that stores a `decision` record or an `event` record also stores one signed record of that record, in the same transaction. The state field `signatures` maps the record reference to the reference of the signed record. A record that has a signed record keeps it.
 
+A Host with a signing key refuses a write that makes a `decision` record or an `event` record of more than 512 KiB. The refusal is `record_too_large` with the stage `signature`, and the write stores nothing. Thus each signed record fits in one protocol frame of 1 MiB, and the `record` operation can give it on each transport. A Host without a signing key has no such limit.
+
 To get a signed record, do these steps:
 
 1. Read the state with the `inspect` operation, and find the record reference in `signatures`.
@@ -183,5 +185,6 @@ A valid signature shows that the holder of the private key signed these record b
 - The key set has no signature and no expiry. Its integrity comes from the channel that gives it to the consumer.
 - The Host signs only records that it writes after the embedding host installs a signing key. An earlier record has no signed record.
 - The Host signs only `decision` and `event` records. A receipt, a snapshot and a qualification report have no signature.
+- The vectors do not cover the size limit of `record`. `TestSignedRecordFitsInOneFrame` covers it on the Go Host and the Go verifier.
 - The Python Ed25519 code in [`ref_ed25519.py`](ref_ed25519.py) is for the public vectors only. It is slow and not constant-time.
 - The test keys of the vectors are public. Never use them outside the vectors.

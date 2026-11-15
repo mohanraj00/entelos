@@ -256,6 +256,61 @@ func TestSigningKeyIsOptionalAndRotationKeepsEarlierRecords(t *testing.T) {
 	}
 }
 
+// A signing Host refuses an approval whose record is over the limit, and
+// stores nothing. A record at the limit gets a signed record that fits in
+// one protocol frame of 1 MiB. The verifier refuses a longer record text.
+func TestSignedRecordFitsInOneFrame(t *testing.T) {
+	const frame = 1 << 20
+	w := newWorld(t, &fixtureRunner{name: "fixture-a", verdicts: map[string]string{bundleRefOf("pass"): "passed"}})
+	signer, keys := newTestSigner(t)
+	w.signer = signer
+	snapshot, plan, _ := w.candidate("pass")
+	qualified := w.must("fixture-runner", "runner", "qualify", Object{"snapshot_ref": snapshot, "plan_ref": plan})
+	before, _ := w.store.Read(nil)
+	_, err := w.do("reviewer", "reviewer", w.runner, "decide", Object{"report_ref": qualified["report_ref"], "reason": strings.Repeat("r", 600000)})
+	if fault, ok := err.(*Fault); !ok || fault.Code != "record_too_large" || fault.Stage != "signature" {
+		t.Fatalf("long reason: %v", err)
+	}
+	if after, _ := w.store.Read(nil); after.Cursor != before.Cursor {
+		t.Fatal("the refused approval published state")
+	}
+	// Find the reason length that makes a record of exactly the limit.
+	small := w.must("reviewer", "reviewer", "decide", Object{"report_ref": qualified["report_ref"], "reason": "r", "disposition": "reject"})
+	record := small["decision"].(Object)
+	fill := maxSignedRecord - len(Encode(record))
+	other := newWorld(t, w.runner)
+	other.signer = signer
+	snapshot, plan, _ = other.candidate("pass")
+	qualified = other.must("fixture-runner", "runner", "qualify", Object{"snapshot_ref": snapshot, "plan_ref": plan})
+	if _, err := other.do("reviewer", "reviewer", other.runner, "decide", Object{"report_ref": qualified["report_ref"],
+		"reason": strings.Repeat("r", fill+2), "disposition": "reject"}); faultCode(t, err) != "record_too_large" {
+		t.Fatalf("one byte over the limit: %v", err)
+	}
+	decision := other.must("reviewer", "reviewer", "decide", Object{"report_ref": qualified["report_ref"],
+		"reason": strings.Repeat("r", fill+1), "disposition": "reject"})["decision_ref"].(string)
+	signed, err := other.read(Object{"op": "record", "kind": "signed", "ref": other.signatures()[decision]})
+	if err != nil {
+		t.Fatal(err)
+	}
+	raw, _ := base64.StdEncoding.DecodeString(signed["record"].(string))
+	if len(raw) != maxSignedRecord {
+		t.Fatalf("record of %d bytes, want the limit %d", len(raw), maxSignedRecord)
+	}
+	// 4096 bytes is more than the envelope of a protocol response.
+	if size := len(Encode(signed)); size+4096 > frame {
+		t.Fatalf("the signed record has %d bytes", size)
+	}
+	if _, err := VerifySigned(Encode(signed), keys); err != nil {
+		t.Fatal(err)
+	}
+	long := signer.sign("demo", "record.visible", "decision", append(raw[:len(raw)-1], []byte("  \n")...))
+	long["format"] = RecordFormat
+	_, err = VerifySigned(Encode(long), keys)
+	if fault, ok := err.(*Fault); !ok || fault.Code != "invalid_signed_record" || !strings.HasPrefix(fault.Message, "schema: ") {
+		t.Fatalf("record over the limit: %v", err)
+	}
+}
+
 func TestSigningKeyFileIsChecked(t *testing.T) {
 	raw, err := NewSigningKey(rand.Reader)
 	if err != nil {

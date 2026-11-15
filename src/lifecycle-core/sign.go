@@ -13,6 +13,7 @@ import (
 	"io"
 	"regexp"
 	"sort"
+	"strconv"
 )
 
 const (
@@ -26,9 +27,13 @@ const (
 
 	signatureAlgorithm = "ed25519"
 	signedKind         = "signed"
-	maxSignedRecord    = 1 << 20
-	maxKeySetKeys      = 64
-	maxSignedText      = 256
+	// maxSignedRecord is the largest record that gets a signed record. The
+	// base64 text of 512 KiB has 699,052 characters. Thus the signed record
+	// fits in one protocol frame of 1 MiB, and the record operation can
+	// give it on each transport.
+	maxSignedRecord = 512 << 10
+	maxKeySetKeys   = 64
+	maxSignedText   = 256
 )
 
 // signedKinds are the record kinds that the Host signs: an approval record
@@ -204,6 +209,12 @@ func (h *Host) signStaged(v *View) {
 			continue
 		}
 		_, raw, _ := bytes.Cut(v.pending[ref], []byte{0})
+		// Refuse the write. A record without its signed record, or with a
+		// signed record that no transport can give, is not acceptable.
+		if len(raw) > maxSignedRecord {
+			fail("record_too_large", "the record has "+strconv.Itoa(len(raw))+" bytes; a signing Host accepts a decision or event record of "+
+				strconv.Itoa(maxSignedRecord)+" bytes maximum", "signature")
+		}
 		record := must(Decode(raw))
 		index[ref] = v.Put(signedKind, h.signer.sign(text(item(record, "scope")), text(item(record, "function")), kinds[ref], raw))
 	}

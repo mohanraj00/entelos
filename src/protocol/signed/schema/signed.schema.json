@@ -11,7 +11,7 @@
     "function": {"$ref": "#/$defs/text"},
     "record_kind": {"type": "string", "enum": ["decision", "event"]},
     "record_ref": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
-    "record": {"type": "string", "minLength": 1, "maxLength": 1398104},
+    "record": {"type": "string", "minLength": 1, "maxLength": 699052},
     "algorithm": {"$ref": "#/$defs/algorithm"},
     "key_id": {"$ref": "#/$defs/key_id"},
     "signature": {"type": "string"}
