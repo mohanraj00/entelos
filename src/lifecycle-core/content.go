@@ -139,7 +139,11 @@ func judgeCandidate(value any) candidateResult {
 	if match[1] != "1" {
 		return candidateResult{Code: "unsupported_content_format"}
 	}
-	if field := unknownField(text); field != "" {
+	field, walked := unknownField(text)
+	if !walked {
+		return refused("invalid_content", "json")
+	}
+	if field != "" {
 		return candidateResult{Code: "invalid_content", Rule: "unknown_field", Field: field}
 	}
 	if !manifestShape(doc) {
@@ -202,6 +206,19 @@ func manifestShape(doc Object) bool {
 		s, ok := value.(string)
 		return ok && pattern.MatchString(s)
 	}
+	// The walk of rule unknown_field ran before. Check the member names
+	// again on the decoded values, so that no unknown field passes.
+	known := func(value Object, fields map[string]bool) bool {
+		for name := range value {
+			if !fields[name] {
+				return false
+			}
+		}
+		return true
+	}
+	if !known(doc, manifestFields) {
+		return false
+	}
 	for _, name := range []string{"format", "collection", "partition", "base", "items"} {
 		if _, has := doc[name]; !has {
 			return false
@@ -216,7 +233,7 @@ func manifestShape(doc Object) bool {
 	}
 	for _, x := range items {
 		entry, ok := x.(Object)
-		if !ok || !str(entry["item_id"], contentName) || !str(entry["digest"], contentDigest) {
+		if !ok || !known(entry, itemFields) || !str(entry["item_id"], contentName) || !str(entry["digest"], contentDigest) {
 			return false
 		}
 		size, ok := entry["size"].(Int)
@@ -241,7 +258,7 @@ func manifestShape(doc Object) bool {
 	}
 	if raw, has := doc["evidence"]; has {
 		evidence, ok := raw.(Object)
-		if !ok || !equal(evidence["format"], "entelos.evidence/1") || !str(evidence["digest"], contentDigest) {
+		if !ok || !known(evidence, evidenceFields) || !equal(evidence["format"], "entelos.evidence/1") || !str(evidence["digest"], contentDigest) {
 			return false
 		}
 	}
@@ -257,10 +274,12 @@ type keyNode struct {
 	array    bool
 }
 
-func readKeys(dec *json.Decoder) *keyNode {
+// readKeys reads one value. Each number stays text, so no number gives a
+// conversion error. Any error stops the walk.
+func readKeys(dec *json.Decoder) (*keyNode, error) {
 	token, err := dec.Token()
 	if err != nil {
-		return &keyNode{}
+		return nil, err
 	}
 	node := &keyNode{}
 	switch token {
@@ -269,21 +288,31 @@ func readKeys(dec *json.Decoder) *keyNode {
 		for dec.More() {
 			name, err := dec.Token()
 			if err != nil {
-				return node
+				return nil, err
 			}
 			key, _ := name.(string)
 			node.names = append(node.names, key)
-			node.members[key] = readKeys(dec)
+			if node.members[key], err = readKeys(dec); err != nil {
+				return nil, err
+			}
 		}
-		_, _ = dec.Token()
+		if _, err := dec.Token(); err != nil {
+			return nil, err
+		}
 	case json.Delim('['):
 		node.array = true
 		for dec.More() {
-			node.elements = append(node.elements, readKeys(dec))
+			entry, err := readKeys(dec)
+			if err != nil {
+				return nil, err
+			}
+			node.elements = append(node.elements, entry)
 		}
-		_, _ = dec.Token()
+		if _, err := dec.Token(); err != nil {
+			return nil, err
+		}
 	}
-	return node
+	return node, nil
 }
 
 // unknownField gives the path of the first member name that the manifest
@@ -291,8 +320,13 @@ func readKeys(dec *json.Decoder) *keyNode {
 // strict JSON object. The walk enters only the objects of the table: the
 // manifest, each item and the evidence reference. The names in metadata
 // are data.
-func unknownField(text string) string {
-	root := readKeys(json.NewDecoder(strings.NewReader(text)))
+func unknownField(text string) (string, bool) {
+	dec := json.NewDecoder(strings.NewReader(text))
+	dec.UseNumber()
+	root, err := readKeys(dec)
+	if err != nil {
+		return "", false
+	}
 	first := func(node *keyNode, known map[string]bool, path string) string {
 		if !node.object {
 			return ""
@@ -306,7 +340,7 @@ func unknownField(text string) string {
 	}
 	for _, name := range root.names {
 		if !manifestFields[name] {
-			return name
+			return name, true
 		}
 		value := root.members[name]
 		switch name {
@@ -314,17 +348,17 @@ func unknownField(text string) string {
 			if value.array {
 				for i, entry := range value.elements {
 					if found := first(entry, itemFields, "items["+strconv.Itoa(i)+"]."); found != "" {
-						return found
+						return found, true
 					}
 				}
 			}
 		case "evidence":
 			if found := first(value, evidenceFields, "evidence."); found != "" {
-				return found
+				return found, true
 			}
 		}
 	}
-	return ""
+	return "", true
 }
 
 // hostOnlyFields has the request fields of the Host that no protocol schema

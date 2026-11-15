@@ -437,3 +437,16 @@ func TestApprovalAPIListsAContentProposal(t *testing.T) {
 		t.Fatalf("proposal: %s", Encode(one))
 	}
 }
+
+// A large integer does not stop the walk for unknown fields. The walk keeps
+// each number as text.
+func TestUnknownFieldAfterALargeInteger(t *testing.T) {
+	digest := "sha256:" + strings.Repeat("a", 64)
+	text := `{"format":"entelos.content/1","collection":"c","partition":"p","base":"","items":[{"item_id":"a","digest":"` + digest +
+		`","size":1` + strings.Repeat("0", 400) + `}],"owner":"x"}`
+	got := judgeCandidate(Object{"kind": "content", "manifest": text}).Object()
+	want := Object{"valid": false, "code": "invalid_content", "rule": "unknown_field", "field": "owner"}
+	if !equal(got, want) {
+		t.Fatalf("got %s", Encode(got))
+	}
+}
