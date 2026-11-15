@@ -448,6 +448,12 @@ func (h *Host) proposeContent(v *View, q Object, result candidateResult) Object 
 	if evidence, has := result.Manifest["evidence"]; has {
 		snapshot["evidence_reference"] = evidence
 	}
+	// The evidence document of the request is kept as for a CEL bundle.
+	// The Host does not compare it with the evidence reference of the
+	// manifest.
+	if evidence, has := q["evidence"]; has {
+		snapshot["evidence"] = evidence
+	}
 	ref := v.Put("snapshot", snapshot)
 	heads[key] = ref
 	return Object{"snapshot_ref": ref, "candidate": copyObject(candidate),

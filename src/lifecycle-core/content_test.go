@@ -438,6 +438,28 @@ func TestApprovalAPIListsAContentProposal(t *testing.T) {
 	}
 }
 
+// A content proposal keeps the evidence document of the request, as a CEL
+// proposal does, and the proposal read gives it.
+func TestContentProposalKeepsTheEvidenceDocument(t *testing.T) {
+	raw, err := os.ReadFile("../protocol/approval/vectors/approval-evidence.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	doc := must(Decode(raw)).(Object)
+	evidence := doc["steps"].(Array)[3].(Object)["request"].(Object)["body"].(Object)["evidence"]
+	first := contentVectors(t, "lifecycle-cases.json")["manifests"].(Object)["first"].(Object)
+	w, source := contentWorld(t, &contentRunner{})
+	ref := w.must("author", "author", "propose", Object{"candidate": Object{"kind": "content", "manifest": first["text"]}, "from": "2026-01-01",
+		"until": "2027-01-01", "source_ref": source, "reason": "first", "evidence": evidence})["snapshot_ref"]
+	one, err := w.read(Object{"op": "proposal", "snapshot_ref": ref})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !equal(one["evidence"], evidence) || !equal(item(one["snapshot"], "evidence"), evidence) {
+		t.Fatalf("proposal: %s", Encode(one))
+	}
+}
+
 // A large integer does not stop the walk for unknown fields. The walk keeps
 // each number as text.
 func TestUnknownFieldAfterALargeInteger(t *testing.T) {
