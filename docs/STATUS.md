@@ -54,6 +54,10 @@ Issue [#155](https://github.com/mohanraj00/entelos/issues/155) adds a signature 
 
 The 47 vectors have expected values that a person wrote from the spec. `check_spec.py` judges them with a separate Ed25519 implementation in Python, which it first checks against two RFC 8032 test vectors. `TestSignedVectors` runs the same vectors on the Go verifier, and `TestSignerReproducesTheValidVectors` shows that the Go signer and the Python signer give the same bytes. `TestHostSignsApprovalAndActivationRecords` runs the Host path. Limits: a signed record has no trusted time, the key set has no signature, and a record from before the key has no signed record. The declarations are experimental.
 
+### Activation record
+
+Issue [#105](https://github.com/mohanraj00/entelos/issues/105) proposes a generic activation record in [ACTIVATION.md](../src/protocol/activation/ACTIVATION.md). It is a new record kind `activation`, with the candidate, the base, the receipts, the actors, the partition, the half-open interval and the applicability values of one `enable` event. A table maps each field to the stored record that it comes from. The Host is to write and sign it with the event, and an optional publisher adapter is to give it to a consumer before the commit. No Host writes it yet. The 30 vector cases have expected values that a person wrote from the spec, and `check_spec.py` judges them without a Host.
+
 ### Supersession
 
 Issue [#129](https://github.com/mohanraj00/entelos/issues/129) lets a new activation supersede an earlier one. [SUPERSESSION.md](../src/protocol/supersession/SUPERSESSION.md) is the spec. `activate` takes the optional field `supersedes`, and the activation record names the superseded events. A supersession starts at the `from` date of the new activation and has no end. A mask in `targets` still applies only in the interval of the new event. `replay` uses the selection of the old receipt, so an old answer does not change.

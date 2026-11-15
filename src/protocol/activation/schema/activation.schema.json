@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "entelos.activation-record",
+  "title": "Activation record of the record format entelos.record/1",
+  "type": "object",
+  "required": ["format", "scope", "function", "event_ref", "request_key", "candidate", "base", "from", "until", "source_ref",
+    "snapshot_ref", "report_ref", "decision_ref", "producer", "runner", "approver", "activator", "targets", "supersedes", "applicability"],
+  "additionalProperties": false,
+  "properties": {
+    "format": {"type": "string", "const": "entelos.record/1"},
+    "scope": {"type": "string", "minLength": 1},
+    "function": {"type": "string", "minLength": 1},
+    "event_ref": {"$ref": "#/$defs/ref"},
+    "request_key": {"type": "string"},
+    "candidate": {"$ref": "#/$defs/candidate"},
+    "base": {"type": "string", "pattern": "^(sha256:[0-9a-f]{64})?$"},
+    "collection": {"$ref": "#/$defs/name"},
+    "partition": {"$ref": "#/$defs/name"},
+    "from": {"$ref": "#/$defs/date"},
+    "until": {"$ref": "#/$defs/date"},
+    "source_ref": {"$ref": "#/$defs/ref"},
+    "snapshot_ref": {"$ref": "#/$defs/ref"},
+    "report_ref": {"$ref": "#/$defs/ref"},
+    "decision_ref": {"$ref": "#/$defs/ref"},
+    "producer": {"type": "string", "minLength": 1},
+    "runner": {"type": "string", "minLength": 1},
+    "approver": {"type": "string", "minLength": 1},
+    "activator": {"type": "string", "minLength": 1},
+    "targets": {"type": "array", "items": {"$ref": "#/$defs/ref"}},
+    "supersedes": {"type": "array", "items": {"$ref": "#/$defs/ref"}},
+    "applicability": {"type": "object", "additionalProperties": {"$ref": "#/$defs/values"}}
+  },
+  "$defs": {
+    "ref": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "name": {"type": "string", "pattern": "^[A-Za-z0-9._-]{1,128}$"},
+    "date": {"type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"},
+    "candidate": {
+      "type": "object",
+      "required": ["kind", "ref"],
+      "additionalProperties": false,
+      "properties": {
+        "kind": {"type": "string", "enum": ["cel-bundle", "content"]},
+        "ref": {"$ref": "#/$defs/ref"}
+      }
+    },
+    "values": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "array", "minItems": 1, "maxItems": 8,
+        "items": {"type": "string", "minLength": 1, "maxLength": 256}
+      }
+    }
+  }
+}
