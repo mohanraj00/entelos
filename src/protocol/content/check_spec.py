@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Check the proposed content proposal vectors without a Host.
+"""Check the content proposal vectors without a Host.
 
 The checker applies the rules of CONTENT.md to each case. A pass shows that
 the vectors, the schemas and the rules agree. It does not show that a Host agrees.
@@ -140,7 +140,34 @@ def run(doc):
     errors+=['rule not in CONTENT.md: '+r for r in sorted(rules_seen-rules)]
     return errors
 
-def self_test(doc):
+STEPS={'propose','qualify','decide','activate','state','mark','resolve','load','invoke','describe'}
+
+def check_lifecycle(life):
+    """Check the lifecycle vectors without a Host: each ref, each manifest and each step name."""
+    errors=[];names=set()
+    if life.get('format_version')!=1:errors.append('lifecycle format_version must be 1')
+    manifests=life['manifests']
+    # A manifest of a head that is not installed must be refused with out_of_scope at each propose.
+    outside={st['propose'] for c in life['cases'] for st in c['steps'] if st.get('expect')=={'error':'out_of_scope'} and 'propose' in st}
+    for name,m in manifests.items():
+        got='sha256:'+hashlib.sha256(m['text'].encode('utf-8')).hexdigest()
+        if got!=m['ref']:errors.append('manifest '+name+': ref is not the SHA-256 of its text')
+        result=judge({'kind':'content','manifest':m['text']})
+        if result['valid'] and 'content:%s/%s'%(result['head']['collection'],result['head']['partition']) not in life['subjects'] and name not in outside:
+            errors.append('manifest '+name+': head is not an installed subject')
+    for case in life['cases']:
+        if case['name'] in names:errors.append(case['name']+': duplicate lifecycle case name')
+        names.add(case['name'])
+        for step in case['steps']:
+            ops=STEPS&set(step)
+            if len(ops)!=1:errors.append(case['name']+': a step needs one operation: '+json.dumps(step,sort_keys=True));continue
+            op=ops.pop()
+            if op in ('propose','qualify','decide','activate','state') and step[op] not in manifests:
+                errors.append(case['name']+': unknown manifest '+str(step[op]))
+            if op=='propose' and not ('from' in step and 'until' in step):errors.append(case['name']+': propose needs from and until')
+    return errors
+
+def self_test(doc,life):
     """Change a copy of the vectors. The checker must report each change."""
     def case(d,n):return next(c for c in d['cases']+d['bindings'] if c['name']==n)
     def change_ref(d):e=case(d,'valid-three-items')['expect'];e['ref']=e['ref'][:-1]+('0' if e['ref'][-1]!='0' else '1')
@@ -155,14 +182,20 @@ def self_test(doc):
     for f in (change_ref,same_ref_after_space,change_rule,wrong_field,drop_rule_case,grow_text,major_as_format,bind_changed):
         d=copy.deepcopy(doc);f(d)
         if not run(d):missed.append(f.__name__)
+    def change_manifest(d):m=d['manifests']['first'];m['text']=m['text'][:-1]+' }'
+    def two_ops(d):d['cases'][0]['steps'][0]['resolve']='2026-01-01'
+    for f in (change_manifest,two_ops):
+        d=copy.deepcopy(life);f(d)
+        if not check_lifecycle(d):missed.append(f.__name__)
     return ['self-test: no error for '+m for m in missed]
 
 def main():
     p=argparse.ArgumentParser(description=__doc__);p.parse_args()
     doc=json.loads((HERE/'vectors'/'content-cases.json').read_text())
-    errors=run(doc)+self_test(doc)
-    print(json.dumps({'passed':not errors,'cases':len(doc['cases']),'bindings':len(doc['bindings']),'errors':errors,
-                      'scope':'Proposed content proposal vectors: candidate kinds, manifest schema, rule order, refusal codes, refs and report binding. No Host ran.'},indent=1))
+    life=json.loads((HERE/'vectors'/'lifecycle-cases.json').read_text())
+    errors=run(doc)+check_lifecycle(life)+self_test(doc,life)
+    print(json.dumps({'passed':not errors,'cases':len(doc['cases']),'bindings':len(doc['bindings']),'lifecycle_cases':len(life['cases']),'errors':errors,
+                      'scope':'Content proposal vectors: candidate kinds, manifest schema, rule order, refusal codes, refs, report binding and the lifecycle vector shape. No Host ran; the Go tests run the vectors on the Host.'},indent=1))
     return 1 if errors else 0
 
 if __name__=='__main__':raise SystemExit(main())

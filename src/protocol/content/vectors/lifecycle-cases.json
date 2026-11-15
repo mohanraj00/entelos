@@ -1,0 +1,288 @@
+{
+ "format_version": 1,
+ "note": "Each case starts with an empty store. The Host installs the subject content:loan-rules/region-a. A source and a plan cover 2025-01-01 to 2029-01-01. A propose step gives the interval of the candidate. Each expected value is written from CONTENT.md. Each ref was calculated with shasum -a 256 on the manifest text.",
+ "subjects": [
+  "content:loan-rules/region-a"
+ ],
+ "manifests": {
+  "first": {
+   "text": "{\"format\":\"entelos.content/1\",\"collection\":\"loan-rules\",\"partition\":\"region-a\",\"base\":\"\",\"items\":[{\"item_id\":\"limits\",\"digest\":\"sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"size\":120,\"media_type\":\"text/markdown\"}]}",
+   "ref": "sha256:12ff473e4cec51c00d4c005eab1b0b7bfcd1c22cedec8169759721dba72410b3"
+  },
+  "second": {
+   "text": "{\"format\":\"entelos.content/1\",\"collection\":\"loan-rules\",\"partition\":\"region-a\",\"base\":\"sha256:12ff473e4cec51c00d4c005eab1b0b7bfcd1c22cedec8169759721dba72410b3\",\"items\":[{\"item_id\":\"limits\",\"digest\":\"sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\",\"size\":130,\"media_type\":\"text/markdown\"}],\"evidence\":{\"format\":\"entelos.evidence/1\",\"digest\":\"sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc\"}}",
+   "ref": "sha256:ceb03e6677fca9ca107177fc6ed4f063c51896367dd8b0b88d4e7a443fed3f85"
+  },
+  "other-head": {
+   "text": "{\"format\":\"entelos.content/1\",\"collection\":\"loan-rules\",\"partition\":\"region-b\",\"base\":\"\",\"items\":[{\"item_id\":\"limits\",\"digest\":\"sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"size\":120}]}",
+   "ref": "sha256:ea3d7a1bd9ae54d4598b06000fb087f5a5bbe10d2a02aa3dd070e914cf0dedd9"
+  },
+  "unknown-field": {
+   "text": "{\"format\":\"entelos.content/1\",\"collection\":\"loan-rules\",\"partition\":\"region-a\",\"base\":\"\",\"items\":[{\"item_id\":\"limits\",\"digest\":\"sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"size\":120,\"colour\":\"red\"}]}",
+   "ref": "sha256:43fb8dbe1ab27175690c3c2feebc9bad436f30f9febd98f5a17a947f84d6f9c5"
+  }
+ },
+ "cases": [
+  {
+   "name": "propose-to-replay",
+   "steps": [
+    {
+     "propose": "first",
+     "from": "2026-01-01",
+     "until": "2027-01-01",
+     "expect": "first"
+    },
+    {
+     "state": "first",
+     "expect": "awaiting_qualification"
+    },
+    {
+     "qualify": "first",
+     "verdict": "passed",
+     "expect": "passed"
+    },
+    {
+     "state": "first",
+     "expect": "awaiting_verdict"
+    },
+    {
+     "decide": "first",
+     "expect": "accept"
+    },
+    {
+     "activate": "first",
+     "expect": "first"
+    },
+    {
+     "resolve": "2026-06-01",
+     "expect": "first"
+    },
+    {
+     "resolve": "2027-06-01",
+     "expect": {
+      "error": "out_of_scope"
+     }
+    },
+    {
+     "mark": "after-first"
+    },
+    {
+     "propose": "second",
+     "from": "2027-01-01",
+     "until": "2028-01-01",
+     "expect": "second"
+    },
+    {
+     "state": "first",
+     "expect": "accepted"
+    },
+    {
+     "qualify": "second",
+     "verdict": "passed",
+     "expect": "passed"
+    },
+    {
+     "decide": "second",
+     "expect": "accept"
+    },
+    {
+     "activate": "second",
+     "expect": "second"
+    },
+    {
+     "resolve": "2026-06-01",
+     "expect": "first"
+    },
+    {
+     "resolve": "2027-06-01",
+     "expect": "second"
+    },
+    {
+     "resolve": "2027-06-01",
+     "cursor": "after-first",
+     "expect": {
+      "error": "out_of_scope"
+     }
+    },
+    {
+     "resolve": "2026-06-01",
+     "cursor": "after-first",
+     "expect": "first"
+    }
+   ]
+  },
+  {
+   "name": "report-binds-the-exact-manifest",
+   "steps": [
+    {
+     "propose": "first",
+     "from": "2026-01-01",
+     "until": "2027-01-01",
+     "expect": "first"
+    },
+    {
+     "qualify": "first",
+     "verdict": "passed",
+     "runner_names": "second",
+     "expect": "failed"
+    },
+    {
+     "state": "first",
+     "expect": "not_approvable"
+    },
+    {
+     "decide": "first",
+     "expect": {
+      "error": "qualification_failed"
+     }
+    },
+    {
+     "qualify": "first",
+     "verdict": "passed",
+     "expect": "passed"
+    },
+    {
+     "propose": "second",
+     "from": "2026-01-01",
+     "until": "2027-01-01",
+     "expect": "second"
+    },
+    {
+     "state": "first",
+     "expect": "superseded"
+    },
+    {
+     "state": "second",
+     "expect": "awaiting_qualification"
+    },
+    {
+     "qualify": "second",
+     "verdict": "failed",
+     "expect": "failed"
+    },
+    {
+     "decide": "second",
+     "expect": {
+      "error": "qualification_failed"
+     }
+    }
+   ]
+  },
+  {
+   "name": "stale-base",
+   "steps": [
+    {
+     "propose": "second",
+     "from": "2026-01-01",
+     "until": "2027-01-01",
+     "expect": {
+      "error": "stale_base"
+     }
+    },
+    {
+     "propose": "first",
+     "from": "2026-01-01",
+     "until": "2027-01-01",
+     "expect": "first"
+    },
+    {
+     "propose": "first",
+     "from": "2026-01-01",
+     "until": "2027-01-01",
+     "expect": {
+      "error": "stale_base"
+     }
+    },
+    {
+     "propose": "second",
+     "from": "2026-01-01",
+     "until": "2027-01-01",
+     "expect": "second"
+    },
+    {
+     "propose": "second",
+     "from": "2026-01-01",
+     "until": "2027-01-01",
+     "expect": {
+      "error": "stale_base"
+     }
+    }
+   ]
+  },
+  {
+   "name": "refusals-at-propose",
+   "steps": [
+    {
+     "propose": "unknown-field",
+     "from": "2026-01-01",
+     "until": "2027-01-01",
+     "expect": {
+      "error": "invalid_content",
+      "rule": "unknown_field",
+      "field": "items[0].colour"
+     }
+    },
+    {
+     "propose": "other-head",
+     "from": "2026-01-01",
+     "until": "2027-01-01",
+     "expect": {
+      "error": "out_of_scope"
+     }
+    },
+    {
+     "propose": "first",
+     "from": "2026-01-01",
+     "until": "2027-01-01",
+     "expect": "first"
+    }
+   ]
+  },
+  {
+   "name": "content-is-not-loaded-or-invoked",
+   "steps": [
+    {
+     "propose": "first",
+     "from": "2026-01-01",
+     "until": "2027-01-01",
+     "expect": "first"
+    },
+    {
+     "qualify": "first",
+     "verdict": "passed",
+     "expect": "passed"
+    },
+    {
+     "decide": "first",
+     "expect": "accept"
+    },
+    {
+     "activate": "first",
+     "expect": "first"
+    },
+    {
+     "load": "2026-06-01",
+     "expect": {
+      "error": "unsupported_candidate_kind"
+     }
+    },
+    {
+     "invoke": "2026-06-01",
+     "expect": {
+      "error": "unsupported_candidate_kind"
+     }
+    },
+    {
+     "describe": "2026-06-01",
+     "expect": {
+      "error": "unsupported_candidate_kind"
+     }
+    },
+    {
+     "resolve": "2026-06-01",
+     "expect": "first"
+    }
+   ]
+  }
+ ]
+}

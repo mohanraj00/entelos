@@ -62,6 +62,8 @@ type world struct {
 	signer *Signer
 	// scope is the Host scope. An empty value is "demo".
 	scope string
+	// functions are the installed subjects. Nil is record.visible.
+	functions Array
 }
 
 func newWorld(t *testing.T, runner Runner) *world {
@@ -74,8 +76,12 @@ func (w *world) host(actor, role string, runner Runner) *Host {
 	if scope == "" {
 		scope = "demo"
 	}
+	functions := w.functions
+	if functions == nil {
+		functions = Array{"record.visible"}
+	}
 	context := Object{"actor": actor, "roles": Array{role}, "scope": scope, "runner_actor": "fixture-runner",
-		"worker": "worker-1", "functions": Array{"record.visible"}}
+		"worker": "worker-1", "functions": functions}
 	h, err := NewHostWithRunner(w.store, &fakeEngine{build: engineBuild}, runner, context)
 	if err != nil {
 		w.t.Fatal(err)
