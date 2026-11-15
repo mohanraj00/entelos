@@ -1,3 +1,5 @@
+//go:build unix
+
 // Package private reads a secret file of the current user.
 package private
 

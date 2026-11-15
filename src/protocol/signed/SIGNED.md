@@ -158,7 +158,7 @@ To get a signed record, do these steps:
 2. Read the signed record with the `record` operation, with the kind `signed` and the reference from step 1.
 3. Write the result to a file.
 
-The commands `lifecycle-core` and `entelos-sidecar` take the signing key file with `--signing-key`. The file must be a regular file of the current user with the mode `0600`. `entelos-keygen` makes a new signing key file and prints its key set entry.
+The commands `lifecycle-core` and `entelos-sidecar` take the signing key file with `--signing-key`. The file must be a regular file of the current user with the mode `0600`. The commands read a signing key file only on a Unix system. On each other system, `--signing-key` gives an error. `entelos-keygen` makes a new signing key file and prints its key set entry.
 
 A signing key file is one JSON object with the fields `format` (`entelos.signing-key/1`), `algorithm` (`ed25519`), `key_id` and `seed`. `seed` is the 32 bytes of the Ed25519 private key seed in base64. Keep this file secret.
 
