@@ -274,7 +274,7 @@ def response_version(step):
     """APPROVAL.md: a response has the version of its request when the receiver supports it. Each other response has 1.0."""
     request=step.get('request')
     version=request.get('protocol') if isinstance(request,dict) else None
-    return version if version in ('1.0','1.1') else '1.0'
+    return version if version in ('1.0','1.1','1.2') else '1.0'
 
 def run_step(transport,step,bound,name):
     errors=[];expect=step['expect']

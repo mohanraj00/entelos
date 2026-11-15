@@ -28,13 +28,14 @@ The pin reads the Go source with the Go parser. It does not read doc comments, u
 
 ### Wire protocol
 
-The sidecar wire protocol has the versions 1.0 ([PROTOCOL.md](../src/protocol/PROTOCOL.md)) and 1.1 ([APPROVAL.md](../src/protocol/approval/APPROVAL.md)) on the Unix domain socket. These files are the stable surface:
+The sidecar wire protocol has the versions 1.0 ([PROTOCOL.md](../src/protocol/PROTOCOL.md)) and approval versions 1.1 and 1.2 ([APPROVAL.md](../src/protocol/approval/APPROVAL.md)) on the Unix domain socket. These files are the stable surface:
 
 - `src/protocol/schema/*.json`: the envelope and the operation schemas.
 - `src/protocol/vectors/*.json`: the session, RFC 8785 and envelope vectors.
-- `src/protocol/approval/schema/*.json` and `src/protocol/approval/vectors/*.json`: the 1.1 approval schemas and vectors.
+- `src/protocol/approval/schema/*.json` and `src/protocol/approval/vectors/*.json`: the 1.1 approval schemas and the approval vectors.
+- `src/protocol/approval/schema/1.2/*.json`: the 1.2 approval schema overrides.
 
-The pin records the SHA-256 of each of these files. An added, removed or changed file fails the pin. The pin also checks that the envelope schema accepts exactly the protocol versions `1.0` and `1.1`, and that the Go constant `protocol.Version` is `1.0`.
+The pin records the SHA-256 of each of these files. An added, removed or changed file fails the pin. The pin also checks that the envelope schema accepts exactly the protocol versions `1.0`, `1.1` and `1.2`, and that the Go constant `protocol.Version` is `1.0`.
 
 ### Record format
 
@@ -70,6 +71,14 @@ A release is a tag that the owner creates. In a 0.x minor release (for example v
 - Add a vector file to a pinned set.
 - Mark a stable declaration as deprecated.
 - Remove a declaration that was deprecated for the full notice period.
+
+Only cases that use the first unsupported minor version can move. They can move only when that minor version becomes supported. This rule applies only to these files:
+
+- `src/protocol/vectors/envelope-schema.json`
+- `src/protocol/vectors/session-envelope.json`
+- `src/protocol/approval/vectors/approval-version.json`
+
+Each moved case must keep a refusal case at the new first unsupported minor version. Thus no refusal coverage is lost. This change is level 1 and needs owner approval. In all other cases, the vectors of an existing version must not change which messages are valid. Their results must not change.
 
 A 0.x release does not do these things to a stable surface:
 

@@ -8,6 +8,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 
@@ -31,15 +32,9 @@ func run() int {
 		fmt.Fprintln(os.Stderr, "lifecycle-core: --repo, --context, --runtime and --work are required")
 		return 2
 	}
-	out := bufio.NewWriter(os.Stdout)
-	defer out.Flush()
-	write := func(value any) {
-		out.Write(lifecycle.Encode(value))
-		out.Flush()
-	}
 	host, err := open(*repo, *context, *runtime, *work)
 	if err != nil {
-		write(configuration(err))
+		os.Stdout.Write(lifecycle.Encode(configuration(err)))
 		return 1
 	}
 	if *clockFile != "" {
@@ -48,12 +43,23 @@ func run() int {
 	if *signingKey != "" {
 		signer, err := readSigner(*signingKey)
 		if err != nil {
-			write(configuration(err))
+			os.Stdout.Write(lifecycle.Encode(configuration(err)))
 			return 1
 		}
 		host.SetSigner(signer)
 	}
-	in := bufio.NewReaderSize(os.Stdin, maxRequest+1)
+	return serve(host, os.Stdin, os.Stdout)
+}
+
+// serve is the JSONL path shared by the command and its stream tests.
+func serve(host *lifecycle.Host, input io.Reader, output io.Writer) int {
+	out := bufio.NewWriter(output)
+	defer out.Flush()
+	write := func(value any) {
+		out.Write(lifecycle.Encode(value))
+		out.Flush()
+	}
+	in := bufio.NewReaderSize(input, maxRequest+1)
 	for {
 		raw, err := readLine(in)
 		if len(raw) == 0 && err != nil {

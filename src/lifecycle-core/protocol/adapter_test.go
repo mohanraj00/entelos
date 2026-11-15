@@ -82,6 +82,31 @@ func TestFaultMapping(t *testing.T) {
 	wantFailure(t, got, "stale_revision", "lifecycle")
 }
 
+func TestLegacyProposalEvidenceProjection(t *testing.T) {
+	evidence := lifecycle.Object{"format": "entelos.evidence/1"}
+	snapshot := lifecycle.Object{"format": lifecycle.RecordFormat, "producer": "author-a", "evidence": evidence}
+	result := lifecycle.Object{"snapshot": snapshot, "evidence": evidence}
+	before := lifecycle.Encode(result)
+	a := NewAdapter(stubHost{result: result}, loadTestSchemas(t))
+	for _, version := range []string{"1.1", "1.2"} {
+		got := a.Message(lifecycle.Object{"protocol": version, "request_id": "r", "operation": "proposal",
+			"body": lifecycle.Object{"snapshot_ref": "sha256:" + strings.Repeat("a", 64)}})
+		if got["status"] != "ok" {
+			t.Fatalf("%s: %s", version, lifecycle.Encode(got))
+		}
+		want := before
+		if version == "1.1" {
+			want = lifecycle.Encode(lifecycle.Object{"snapshot": lifecycle.Object{"format": lifecycle.RecordFormat, "producer": "author-a"}})
+		}
+		if !bytes.Equal(lifecycle.Encode(got["result"]), want) {
+			t.Errorf("%s: %s, want %s", version, lifecycle.Encode(got["result"]), want)
+		}
+		if !bytes.Equal(lifecycle.Encode(result), before) {
+			t.Fatal("the response projection changed the Host result")
+		}
+	}
+}
+
 // A 1.1 request with a result over the frame bound gets a 1.1
 // response_too_large failure, as the version rule of APPROVAL.md says.
 func TestResponseTooLargeKeepsTheRequestVersion(t *testing.T) {
