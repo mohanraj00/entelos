@@ -2,7 +2,7 @@
 
 This file specifies a generic activation record. Issue [#105](https://github.com/mohanraj00/entelos/issues/105) tracks it. An activation record is one self-contained statement of an activation: the candidate, its base, the receipts, the actors, the partition, the interval and the applicability values. A consumer, for example a store with gated collections, verifies it offline and makes no call to entelos.
 
-Status: **proposed**. No Host writes this record yet. The schema and the vectors in this directory are the contract. The vectors have expected values that a person wrote from this text. No candidate output made them. [`check_spec.py`](check_spec.py) applies the rules of this file to the vectors, without a Host.
+Status: **implemented, experimental**. The Go Host writes and signs the record, and calls the optional publisher ([activation.go](../../lifecycle-core/activation.go)). The schema and the vectors in this directory are the contract. The vectors have expected values that a person wrote from this text. No candidate output made them. [`check_spec.py`](check_spec.py) applies the rules of this file to the vectors, without a Host. The Go test `TestActivationVectors` applies the Go mapping and the Go rules to the same vectors.
 
 ## Terms
 
@@ -17,7 +17,7 @@ Status: **proposed**. No Host writes this record yet. The schema and the vectors
 ## Decision
 
 1. The activation record is a new record kind, `activation`. It is a lifecycle record of the format `entelos.record/1`, as each other record of the Host.
-2. The Host writes one activation record for each `enable` event, in the same transaction, when the Host has a signing key. It signs the activation record as it signs the event. Without a signing key, the Host writes no activation record, and its behavior does not change.
+2. The Host writes one activation record for each `enable` event, in the same transaction, when the Host has a signing key. It signs the activation record as it signs the event. The state field `activations` maps the event reference to the activation record reference. Without a signing key, the Host writes no activation record and no `activations` field, and its behavior does not change.
 3. The record copies its values from the event, the snapshot, the qualification report and the decision. It adds no value that the store does not have. Thus the record is a function of the stored records and the request key.
 4. The record has no time field. A retry of the same `activate` request makes the same bytes, the same reference and the same signature.
 5. The publisher is optional. Entelos core does not need a consumer or a store. The Host calls the publisher before it commits the activation. If the publisher refuses, the activation does not become active, and the Host stores no record.
@@ -71,9 +71,11 @@ This table gives the origin of each field. The Host reads each record in the sam
 
 The Host writes an activation record only for an `enable` event. A `suspend` event has no activation record.
 
+To read a record, use the `inspect` operation, find the event reference in `activations`, and then find the activation record reference in `signatures`. The `record` operation with the kind `signed` gives the signed record.
+
 ## Rules
 
-A consumer applies these rules to the record bytes, after the checks of [SIGNED.md](../signed/SIGNED.md), in this order. The first rule that fails gives the result.
+A consumer applies these rules to the record bytes, after the checks of [SIGNED.md](../signed/SIGNED.md), in this order. The first rule that fails gives the result. The Go function `VerifyActivation` does the checks of SIGNED.md and then these rules. Its refusal has the stage `activation`, and the message starts with the rule name.
 
 | Step | Rule | Result |
 |---|---|---|
@@ -98,13 +100,14 @@ A record that passes all of the rules is valid. The result gives the record. A v
 
 ## Publisher
 
-The publisher is an adapter of the embedding host. The Go interface comes with the Host change. It has one operation: give the bytes of the activation record and of its signed record to a consumer, and get an accept or a refusal with a reason.
+The publisher is an adapter of the embedding host. The Go interface is `Publisher`, and `Host.SetPublisher` installs it. It has one operation, `Publish`: give the bytes of the activation record and of its signed record to a consumer, and get an accept or a refusal with a reason. The bytes are the bytes that the store keeps.
 
 - The Host calls the publisher in the `activate` write, after it stages and signs the records, and before it commits them.
 - On an accept, the Host commits the write.
 - On a refusal, the Host commits nothing. The result is `publish_refused` with the stage `publish`, and the message has the reason of the consumer.
 - On a failure of the commit after an accept, the consumer has a record that the store does not have. A retry of the same request makes the same bytes, and the consumer gets them again. The consumer must accept a record that it already has.
-- A Host with a publisher and no signing key refuses each `activate` with `publish_unsigned`, because a consumer cannot verify the record.
+- A retry of a stored request is a reuse. The Host does not call the publisher again.
+- A Host with a publisher and no signing key refuses each `activate` with `publish_unsigned` and the stage `publish`, because a consumer cannot verify the record. It stores nothing.
 
 | Code | Use |
 |---|---|
@@ -136,11 +139,12 @@ Each item of `records` has:
 4. It checks that each rule and each code of the rules table has one or more cases.
 5. A self-test changes a copy of the vectors and checks that the checker reports each change.
 
-The checker applies the same rules that the Host will apply. Agreement of the checker and the vectors shows that the two agree with each other.
+The Go test `TestActivationVectors` does checks 1 to 3 with the Go mapping and the Go rules. Agreement of the checker, the Go code and the vectors shows that the three agree with each other. It does not show that the text is correct.
 
 ## Limits
 
-- No Host writes the record yet. The Host change, the publisher interface, the record kind `activation` in [SIGNED.md](../signed/SIGNED.md) and a Go reader come in a later change of #105.
+- The wire protocol and the sidecar have no publisher setting. An embedding Go host calls `SetPublisher`.
+- No consumer adapter is in this repository. The Go tests use a test publisher.
 - The record has no trusted time. The signature shows who signed, not when.
 - A `suspend` event has no activation record. A consumer cannot learn of a suspension from this record.
 - The Host stores no record of a refused publish. The caller gets the code and the reason.
