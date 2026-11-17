@@ -442,7 +442,7 @@ The current 1.2 state adds these changes after the 1.1 changes above:
 ## Limits
 
 - Pagination bounds the number of returned items, not the bytes of one item or the cost of reading and sorting the full list at the pinned revision. A page or evidence document can still get `response_too_large`. Page tokens require the retained store revision; there is no server-side session or expiry. Unpaged requests still return the entire list.
-- `proposals` shows only the head snapshot of each function and scope. An older snapshot without a verdict is `superseded`. `decide` can still accept it, as in 1.0. `proposal` shows its state.
+- `proposals` shows only the head snapshot of each function and scope. An older snapshot without a verdict is `superseded`. `decide` can still accept it, as in 1.0, if it has the content of the head. [VERDICT.md](../verdict/VERDICT.md) (proposed, #127) adds the refusal `stale_verdict` for other content. `proposal` shows its state.
 - `record` and `inspect` show if a reference is in the store, as the section on their scope says. `inspect` reads each record object of the store at the cursor, in one Git process.
 - Issue [#127](https://github.com/mohanraj00/entelos/issues/127) (a verdict stale after an edit) and issue [#128](https://github.com/mohanraj00/entelos/issues/128) (human and model verdicts) are in v0.5. This version adds no verdict kind and no digest rule. A later minor version can add fields to the decision record.
 - A verdict records who decided and when. It does not record what the reviewer looked at.
