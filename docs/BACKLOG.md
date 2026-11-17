@@ -4,6 +4,7 @@ GitHub issues own live status. This map identifies bounded work for this source 
 
 | Issue | Scope |
 |---|---|
+| [README: the approval workflow for versioned content](https://github.com/mohanraj00/entelos/issues/163) | Implemented in this branch: content first, then rule hosting. The content example embeds the Host with file checks. Local checks and review precede merge. |
 | [Switch project licensing to Apache-2.0](https://github.com/mohanraj00/entelos/issues/5) | Licence, attribution, documentation and verification; prior history and dependency terms retained. |
 | [Bootstrap the runnable reference and shared agent workflow](https://github.com/mohanraj00/entelos/issues/1) | Initial publication, shared project workflow and verification. |
 | [Run the full standalone reference suite in GitHub Actions](https://github.com/mohanraj00/entelos/issues/2) | Done: the `Full suite` workflow runs `verify.py` on `ubuntu-24.04`. |

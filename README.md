@@ -7,15 +7,39 @@
 
 # Entelos
 
-A service often asks a rule for an answer, and people change that rule over time. Later, someone asks why the service gave a specific answer on a specific date. Often nobody can show the exact rule, inputs and approval behind that answer. If a correction changes the old rule in place, the earlier answer has no explanation. I want each answer tied to its exact rule version, inputs and approval, and each correction recorded as a new, separate answer.
+Entelos is an approval workflow for versioned content. An author proposes a change. The application qualifies the exact content. A reviewer approves it. An activation makes it effective on a date. Each version keeps its proposal, checks and approval. Rule hosting is one use: each answer has a receipt with its exact rule version and inputs. Replay uses that earlier version. A correction adds a new record and preserves the earlier answer.
 
-> **Limits:** This is local reference code. [STABILITY.md](docs/STABILITY.md) names the stable APIs and records. It is not a hosted service, an authentication boundary or a production database. Rules accept only string and bool inputs and give a bool result. See [Limits](#limits) and [SUPPORT.md](docs/SUPPORT.md).
+> **Limits:** This is local reference code. [STABILITY.md](docs/STABILITY.md) names the stable APIs and records. Content support is experimental. The application supplies content checks and storage. See [Limits](#limits) and [SUPPORT.md](docs/SUPPORT.md).
 
-## Run the demo
+## Run a content update
 
-Entelos does this with [CEL](https://cel.dev) rules and a local Git history. The demo runs one invented rule through an answer, a rule change, a replay and a restatement. One run on a Mac took about 1.5 minutes.
+Use Go 1.27.2 or later and Git. Get the code:
 
-### 1. Install the tools
+```sh
+git clone https://github.com/mohanraj00/entelos.git
+cd entelos
+```
+
+Run the synthetic product FAQ update from the repository root:
+
+```sh
+go -C examples/content-update run .
+```
+
+The example embeds the real Go Host with an application qualification runner and an in-memory store. It needs no network or CEL build. It prints these steps:
+
+1. Propose an `entelos.content/1` manifest with two FAQ items.
+2. Qualify a folder with a changed item. Its digest differs, so qualification fails and the Host refuses approval.
+3. Qualify the correct files against the same manifest. Each digest and size agrees. The failed report stays.
+4. A separate reviewer accepts the qualified manifest.
+5. Activate it from 2026-11-01 until 2026-12-01. The interval excludes the end date.
+6. Read the active candidate at 2026-11-15 and show its FAQ text.
+
+[content-update/README.md](examples/content-update/README.md) explains the files and limits. [CONTENT.md](src/protocol/content/CONTENT.md) specifies the manifest and dated reads. The proposed [policy verdict spec](src/protocol/policy/POLICY.md) adds accept, refuse or route to a person. No Host writes a policy verdict yet.
+
+## Run a rule update
+
+The rule demo uses [CEL](https://cel.dev) and a local Git history. It runs one invented rule through an answer, a rule change, a replay and a restatement. One run on a Mac took about 1.5 minutes.
 
 | Tool | Version | Check | Install |
 |---|---|---|---|
@@ -23,57 +47,21 @@ Entelos does this with [CEL](https://cel.dev) rules and a local Git history. The
 | Python | 3 (tested with 3.14.6) | `python3 --version` | [python.org/downloads](https://www.python.org/downloads/) |
 | Git | tested with 2.54.0 | `git --version` | [git-scm.com/downloads](https://git-scm.com/downloads) |
 
-You also need network access. The demo downloads the pinned Go modules on each run. macOS and Linux are tested. Windows is not tested. Before it starts, the demo checks that Go and Git are installed and that Go is 1.27.2 or later. It does not check the Git or Python version.
+This demo needs network access. It downloads the pinned Go modules on each run. macOS and Linux are tested. Windows is not tested. The demo checks Go and Git before the build. It does not check the Git or Python version.
 
-### 2. Get the code
-
-```sh
-git clone https://github.com/mohanraj00/entelos.git
-cd entelos
-```
-
-### 3. Run the demo
-
-The demo writes to a new directory outside this checkout. The directory must not exist. The demo does not overwrite an earlier run.
+Use a new work directory outside this checkout. The directory must not exist:
 
 ```sh
 export TASK_WORK="$(mktemp -d)/run"
 python3 -B examples/quickstart/demo.py --work "$TASK_WORK"
 ```
 
-### 4. Read the output
+- **Answer:** on 2026-11-15, a `reviewed` record that is not archived is visible. The answer is `true`. A receipt keeps its rule version and input.
+- **Rule change:** a new version changes the fixed value from `reviewed` to `approved`. The old version and receipt stay.
+- **Replay:** the old receipt still gives `true` on its old rule version.
+- **Restatement:** the same input and date under the new rule gives `false`. This is a new answer with its own receipt.
 
-This is the output of one run. The hashes in your run can differ.
-
-```text
-Entelos demo: each answer stays explainable after its rule changes.
-The rule record.visible answers one question: can a user see this record?
-  Rule:   state == allowed_state && !archived
-  Values: allowed_state is "ready" from 2026-10-01, then "reviewed" from 2026-11-01.
-
-  1. Answer       Is a "reviewed", not archived record visible on 2026-11-15? -> true (expected true)
-                  A receipt in the Git store saves the exact rule version, input and answer.
-  2. Rule change  A reviewer changes allowed_state from "reviewed" to "approved".
-                  This makes a new rule version. The old version and the receipt stay.
-  3. Replay       Why was the answer true? Run the receipt on its old rule version. -> true (expected true)
-  4. Restatement  Under the new rule, what is the answer for the same record and date? -> false (expected false)
-                  This is a new, separate answer. The first answer stays in the history.
-
-  The expected values come from the fixture file, not from this run.
-  Input:   {"state":"reviewed","archived":false}
-  Records: receipt sha256:47121ec901a7..., old rule sha256:66e12e967a63...,
-           new rule sha256:9e30a2cd3dac..., change event sha256:78730c528391...
-  Build:   sha256:94ac3b7b4d34... (cel-go v0.32.0)
-Result: passed. Details: <TASK_WORK>/summary.json
-Next: read "After the demo" in README.md.
-```
-
-- **Answer:** the service asks the rule a question. The receipt keeps the exact rule version and input.
-- **Rule change:** a reviewer changes the rule value. The change is a new version. Nothing old is edited. [CORRECTION.md](docs/CORRECTION.md) calls this path a rule restatement, and it also explains a fact correction.
-- **Replay:** you can still show why the first answer was `true`, because its rule version still exists.
-- **Restatement:** the same question under the new rule gives `false`. You now have two answers, and each one has its own record.
-
-The `expected` values come from a fixture file, not from the demo. `Result: passed` means that each answer agrees with the fixture. [examples/quickstart/README.md](examples/quickstart/README.md) explains `summary.json` and the failure output.
+The expected values come from a fixture file. `Result: passed` means that the answers agree with that fixture. [quickstart/README.md](examples/quickstart/README.md) explains the output and failure records. [CORRECTION.md](docs/CORRECTION.md) explains a rule restatement and a fact correction.
 
 ## Call a rule from your service
 
@@ -125,7 +113,7 @@ The answer is in `data.result.actual.value` only if both fields are `ok`. The st
 
 ## What the examples show
 
-Entelos uses [CEL](https://cel.dev) for the rule text and Git for the history. It does not add a new expression language. The two main examples are:
+Entelos uses [CEL](https://cel.dev) for the rule text and Git for the history. It does not add a new expression language. The content example above checks a manifest without CEL. These two examples show rule hosting:
 
 - The record filter, `record.visible`, decides if a user can see a record. Its correction changes a fixed value of the rule. [WALKTHROUGH.md](docs/WALKTHROUGH.md) shows each step.
 - The CI example, `ci.pr_should_run`, decides if a pull request starts CI. Its correction changes the rule formula. It changes nested event data into string and bool inputs. It also compares the CEL rule with an ordinary typed function. [examples/ci-trigger/README.md](examples/ci-trigger/README.md) names its entry point, arguments, files and result.
@@ -133,9 +121,9 @@ Entelos uses [CEL](https://cel.dev) for the rule text and Git for the history. I
 Both examples use these terms:
 
 - **Caller contract:** the named inputs and the bool output that a caller can see. A caller cannot send a **fixed value**. A fixed value is a value that the author sets in the rule, for example `allowed_state`. See [CONTRACTS.md](docs/CONTRACTS.md).
-- **Snapshot:** one exact set of rule files. Its content hash identifies it. A hash is an identity. It is not a signature.
-- **Qualification:** a test of one snapshot against cases that the host owns, not the author. A passed test does not let the rule give answers to callers.
-- **Activation:** a reviewer approves a qualified snapshot for one scope and one date interval. A call for a date uses the snapshot that is active on that date.
+- **Snapshot:** one exact manifest or set of rule files. Its content hash identifies it. A hash is an identity. It is not a signature.
+- **Qualification:** checks of one exact snapshot. The application owns the checks. A passed report does not grant approval or activation.
+- **Activation:** after approval, a reviewer makes a qualified snapshot effective for one scope and date interval. A read for a date selects the active snapshot.
 - **Store:** a local Git repository that holds the approved state. Each change is one update of one Git ref. The update fails if another writer changed the ref first. A **cursor** is the Git commit of one state. A read at an earlier cursor shows the earlier state.
 - **Receipt:** the record of one answer: the snapshot, the input, the host build and the result.
 - **Correction:** a new snapshot replaces an incorrect snapshot for later calls. The old snapshot, its cases and its receipts stay in the store. **Replay** runs an old receipt again on its own snapshot and build. **Restatement** gives a new, separate answer for the old input at a later cursor. See [CORRECTION.md](docs/CORRECTION.md).
@@ -143,7 +131,7 @@ Both examples use these terms:
 
 The ordinary-code comparison uses the same lifecycle. It does not show that CEL or this lifecycle is always the better choice.
 
-Three smaller examples show other uses:
+Other examples show these uses:
 
 - [tier-eligibility](examples/tier-eligibility/README.md) is a third consumer of `src/`.
 - [sidecar-client](examples/sidecar-client/README.md) calls the lifecycle only through a local socket.
@@ -152,15 +140,17 @@ Three smaller examples show other uses:
 
 ## Limits
 
+The Go Host reads content manifests through `propose.candidate`. The sidecar wire protocol does not accept this field yet. The shipped commands install `CELRunner`, which refuses content candidates. An application must embed the Host with its own runner, as the content example does. Entelos keeps the manifest, not the item files. A content read selects a candidate; it does not execute content or write an answer receipt. An earlier cursor can select the earlier candidate. Policy verdicts and evidence admission remain proposed.
+
 The callable profile `cel-string-bool/v1` accepts named string/bool variables and a boolean result. The engine also implements `cel-typed/v1` with integers, dates, lists and records ([typed-profile-spec.md](src/cel-lifecycle/typed-profile-spec.md)). The executor and the WASM bridge refuse a typed bundle. Floating-point numbers and custom extensions are unsupported. Internal expressions use the pinned CEL standard language. Resource ceilings are configured example bounds, not measured production-safe defaults.
 
-This is local reference code. [STABILITY.md](docs/STABILITY.md) names the stable surfaces and the experimental surfaces. Host context and repository writers are trusted. It is not a network authentication boundary, distributed database, resident-worker coordinator or hosted service. Preparation acknowledgement records a successful ephemeral preparation; each call prepares and checks its exact closure again.
+This is local reference code. [STABILITY.md](docs/STABILITY.md) names the stable surfaces and the experimental surfaces. Host context and repository writers are trusted. It is not a public internet boundary, distributed database, resident-worker coordinator or hosted service. Preparation acknowledgement records a successful ephemeral preparation; each call prepares and checks its exact closure again.
 
 CI ingress verification is simulated. No webhook is authenticated and no pipeline is launched. Its raw-event audit sidecar is not atomic with the Git receipt. The application supplies source truth, independent expectations, admission/learning policy, authentication, retention and side effects. See [INTEGRATION.md](docs/INTEGRATION.md), [SUPPORT.md](docs/SUPPORT.md) and [SECURITY.md](SECURITY.md).
 
-The M5 security review found two open limits. #160 closed the first: the `inspect` and `record` reads now refuse a record of another scope with `scope_mismatch`. On a shared store, `inspect` is refused in each scope, and `record` still shows if a reference is in the store. Use one store for each scope if a reviewer needs `inspect` or if that signal is not permitted. The second limit is still open. A `request_key` that contains a NUL byte gives `store_error` on the Git store and leaves unused Git objects, but it does not change the state. The in-memory store accepts this key. The M5 review covered the v0.1.0 Python path. Security-relevant M6 pull requests had a security review one at a time. A local Codex security review covered the full Go approval and record path at `9b8261d` (#136). It found one P2 issue, and #137 fixed it.
+The `inspect` and `record` reads refuse records from another scope with `scope_mismatch`. A shared store prevents `inspect` in each scope. The `record` read can still show if a reference exists. Use one store for each scope. A `request_key` with a NUL byte gives `store_error` on the Git store. It leaves unused objects but does not change the state. The in-memory store accepts this key. The full Go path review at `9b8261d` (#136) found one P2 issue, fixed in #137. It does not cover later changes.
 
-The sidecar serves local Unix sockets and requires a token for each request. Each token grants the host context selected for that socket. An ingested receipt is the statement of the executor: the Host does not run the rule again, and a content reference is not a signature. The browser executor keeps its receipt log in one browser profile. The example does not test storage eviction, private windows or more than one tab. The application must supply the expected module reference and the pin from a source that it trusts.
+The sidecar serves local Unix sockets and requires a token for each request. A credentials file can give each reviewer a separate actor and roles. The HTTP approval binding accepts signed claims or local static tokens. It needs a TLS front proxy for remote use. An ingested receipt is the statement of the executor: the Host does not run the rule again, and a content reference is not a signature. The Host signs approval and event records only when the embedding application installs a signing key. The browser executor keeps its receipt log in one browser profile. The example does not test storage eviction, private windows or more than one tab. The application must supply the expected module reference and the pin from a source that it trusts.
 
 The complete source-to-correction workflow is reproducible here. Production adapters and operations remain separate work. Ordinary code plus Git is appropriate when these explicit contracts and histories are unnecessary.
 

@@ -2,6 +2,8 @@
 
 This page compares [Open Policy Agent](https://www.openpolicyagent.org/) (OPA) and its policy language Rego with the Entelos decision path. It uses the `record.visible` record filter from the [quickstart demo](../../examples/quickstart/README.md). It writes the same rule, the correction and the replay question in Rego.
 
+Scope: This page compares rule hosting. Entelos also provides an approval workflow for versioned content, with an application runner and dated activation. The [content example](../../examples/content-update/README.md) uses a manifest without a rule engine. The rule comparison below keeps its stated versions and test limits.
+
 ## Version and sources
 
 - OPA version: 1.22.0, [release page](https://github.com/open-policy-agent/opa/releases/tag/v1.22.0), released on 2026-10-29. Build commit `d4c8d0c8812290c3e3715ca4cf958f75283f6ec4`, Rego version v1.

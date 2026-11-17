@@ -2,6 +2,8 @@
 
 This page compares the Entelos decision path with two feature-flag services. It uses the `record.visible` record filter from the [quickstart demo](../../examples/quickstart/README.md). It writes the same rule, the correction and the replay question in each service where the service can.
 
+Scope: This page compares rule hosting. Entelos also provides an approval workflow for versioned content, with an application runner and dated activation. The [content example](../../examples/content-update/README.md) uses a manifest without a rule engine. The rule comparison below keeps its stated versions and test limits.
+
 The page does not measure speed, effort or cost. It makes no claim about which tool is better in general.
 
 ## Sources and versions
