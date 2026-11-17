@@ -82,6 +82,8 @@ On 2026-11-15, issue [#158](https://github.com/mohanraj00/entelos/issues/158), p
 
 Issue [#127](https://github.com/mohanraj00/entelos/issues/127) proposes the verdict binding in [VERDICT.md](../src/protocol/verdict/VERDICT.md). A verdict judges the candidate reference of its snapshot, and the decision record does not change. A verdict is stale when the head of its subject has other content. `decide` and `activate` refuse a stale verdict with `stale_verdict`, and the history keeps it. The read operation `approval` answers if a candidate reference has a current approval. No Host applies these rules yet.
 
+Issue [#128](https://github.com/mohanraj00/entelos/issues/128) proposes verdict kinds in [KINDS.md](../src/protocol/verdict/KINDS.md). The kinds are `human`, `model` and `policy`. The Host context field `actor_kinds` gives the kind of each actor, and the decision record gets the field `kind`. A `policy` or `model` verdict never counts as a `human` verdict. The Host context field `verdict_policy` gives the count of each kind that `activate` requires, with the new code `verdicts_required`. `separation_required` also refuses an actor with a verdict of another kind on the same content. The `approval` read reports the counts. No Host applies these rules yet.
+
 ### M1 First contact
 
 On 2026-10-30, the M1 work was complete in `main` (merge commit `e844246`):
