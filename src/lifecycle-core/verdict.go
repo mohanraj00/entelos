@@ -5,12 +5,14 @@ package lifecycle
 import "sort"
 
 // hostOnlyOps are the operations of Handle that the wire protocol does not
-// have yet. The approval read of VERDICT.md is one.
+// have yet. The approval read of VERDICT.md and the evidence read of
+// EVIDENCE.md are two.
 var hostOnlyOps = map[string]struct {
 	role   string
 	fields []string
 }{
 	"approval": {"reader", []string{"function", "candidate", "cursor"}},
+	"evidence": {"reviewer", []string{"snapshot_ref", "cursor"}},
 }
 
 // Verdict states of VERDICT.md.

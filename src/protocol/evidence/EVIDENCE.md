@@ -2,7 +2,7 @@
 
 This file specifies the admission evidence that an external producer gives for a proposal. It is the first part of issue [#104](https://github.com/mohanraj00/entelos/issues/104), and issue [#148](https://github.com/mohanraj00/entelos/issues/148) tracks it.
 
-Status: **proposed admission rules**. Approval API 1.2 retains and returns the producer document; no Host applies these admission rules. The schema and the vectors in this directory are the contract for a later implementation in #104. The vectors have expected values that a person wrote from this text. No candidate output made them. [`check_spec.py`](check_spec.py) checks the vectors against the schema and the rules of this file. It does not run a Host.
+Status: **implemented in the evidence read**. Approval API 1.2 retains and returns the producer document. The Go lifecycle Host applies these admission rules in the Host-only `evidence` read ([below](#the-evidence-read)). `propose` does not apply them yet. The schema and the vectors in this directory are the contract. The vectors have expected values that a person wrote from this text. No candidate output made them. [`check_spec.py`](check_spec.py) checks the vectors against the schema and the rules of this file. It does not run a Host.
 
 ## Terms
 
@@ -188,12 +188,28 @@ This table shows how a mapping can give one fact from groundgate 0.14.0 (spec v0
 
 ## Citation in a proposal
 
-Approval API [1.2](../approval/APPROVAL.md#evidence-attachment-in-12) (#161) implements attachment and retrieval of the producer document. It checks the object and format and retains it in the snapshot. The admission rules and policy inputs below remain a proposal for #104.
+Approval API [1.2](../approval/APPROVAL.md#evidence-attachment-in-12) (#161) implements attachment and retrieval of the producer document. It checks the object and format and retains it in the snapshot. The evidence read applies the admission rules and gives the policy inputs ([below](#the-evidence-read)). The first two items of this list are still a proposal.
 
 - The `propose` request gets an optional field `evidence`, with one evidence document.
 - The Host applies the rules of this file before it writes the snapshot. A refusal stops the write, and the root does not change.
 - The snapshot records the document. Entelos stores the digests, the spans, the outcomes, the data, the reviews, the attached objects and the policy inputs. It does not copy the receipts or the sources.
 - The approval policy reads the policy inputs.
+
+### The evidence read
+
+The Go lifecycle Host has the Host-only read `evidence` (#104). The wire protocol does not have it yet.
+
+Role: `reviewer`, as `proposal`. Body: `{"snapshot_ref": string, "cursor"?: string}`. The snapshot must be in the host scope, as for `proposal`.
+
+Result: `{"cursor", "snapshot_ref", "admission", "code"?, "rule"?, "inputs"?}`.
+
+| `admission` | Meaning | Other fields |
+|---|---|---|
+| `absent` | The snapshot has no evidence document. | None. |
+| `valid` | The document passes all of the rules. | `inputs`: the four policy inputs. |
+| `invalid` | A rule refuses the document. | `code`, and `rule` for `invalid_evidence`. |
+
+The read applies the rules to the document that the snapshot retains, at the read cursor. It writes nothing. The snapshot bytes and the 1.2 `propose` and `proposal` results do not change, so the stable approval vectors keep their bytes. A document that a rule refuses stays in the snapshot. `propose` 1.2 does not refuse it, because that would change which 1.2 requests are valid ([STABILITY.md](../../../docs/STABILITY.md)). A later wire version can refuse it at `propose`.
 
 ## Versions
 
@@ -219,11 +235,12 @@ The attached objects are the extension point. A producer can put a new field in 
 2. It checks that each rule and each code in the tables has one or more cases.
 3. A self-test changes a copy of the cases and checks that the checker reports each change.
 
-The checker applies the same rules that a Host will apply. Agreement of the checker and the vectors shows that the two agree with each other. It does not show that a later Host agrees with them. The implementation in #104 must run the vectors against the Host.
+The checker applies the same rules as the Host. Agreement of the checker and the vectors shows that the two agree with each other. `TestEvidenceAdmissionVectors` in `src/lifecycle-core` runs the same vectors against the Go Host rules. `TestEvidenceRead` checks the evidence read on retained documents.
 
 ## Limits
 
-- The Host retains and returns an attachment through approval API 1.2. It does not yet apply the admission rules or derive policy inputs. A passing format check does not show Host admission of evidence.
+- The Host retains and returns an attachment through approval API 1.2. Only the Host-only `evidence` read applies the admission rules and gives the policy inputs. `propose` does not refuse a document that a rule refuses, and the wire protocol has no evidence read. A passing format check does not show Host admission of evidence.
+- No approval policy of the Host reads the policy inputs yet. The policy verdict of [POLICY.md](../policy/POLICY.md) (proposed) is the place for that.
 - Entelos cannot check a digest, a span, an outcome, a code or a review, because it does not read the receipts or the sources. The policy inputs are statements of the producer.
 - Entelos does not check that an attached object agrees with its digest.
 - The format has no signature and no producer authentication. The caller of `propose` is responsible for the source of the document.
