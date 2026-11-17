@@ -1,6 +1,6 @@
 # Verdict binding
 
-This file specifies how a verdict binds to the content that it judged. Issue [#127](https://github.com/mohanraj00/entelos/issues/127) tracks it. A verdict names the candidate reference of its proposal. When a later proposal of the same subject has other content, the verdict is stale. A stale verdict cannot approve, and it stays in the history.
+This file specifies how a verdict binds to the content that it judged. Issue [#127](https://github.com/mohanraj00/entelos/issues/127) tracks it. A verdict judged the candidate reference of its snapshot. When a later proposal of the same subject has other content, the verdict is stale. A stale verdict cannot approve, and it stays in the history.
 
 Status: **proposed**. No Host applies these rules yet. This text is the contract. The vectors come with the Host code.
 
@@ -16,14 +16,14 @@ Status: **proposed**. No Host applies these rules yet. This text is the contract
 
 ## Decision
 
-1. The decision record has a new field, `candidate`: a copy of the candidate reference of its snapshot. The verdict judged the content with this reference.
+1. The decision record does not change. Its `snapshot_ref` is the content hash of the snapshot, and the snapshot names the candidate reference. Thus the record binds the verdict to the content that it judged.
 2. The state of a verdict is a function of the store at a cursor. The rules below give it. The Host does not store the state.
 3. `decide` refuses an `accept` on a snapshot whose candidate reference differs from the candidate reference of the head. The code is `stale_verdict`.
 4. `activate` refuses a verdict that is not `current`. The code is `stale_verdict`, or `proposal_rejected` as in 1.2.
 5. The Host deletes no verdict and changes no verdict. A stale verdict stays in the store, in `state.reviews` and in the `proposal` result.
 6. A new read operation, `approval`, answers if a candidate reference has a current approval for a subject. It is read-only. The consumer enforces the answer.
 
-The reason for decision 1: the decision record names the snapshot and the report, and these name the content. A field in the decision record lets a consumer read the content reference with no other record.
+The reason for decision 1: the approval vectors pin the bytes of the decision record, and [STABILITY.md](../../../docs/STABILITY.md) makes these vectors a stable surface. A copy of the candidate reference in the record would change those bytes and add no binding. The `approval` read finds the verdicts by candidate reference, so a consumer does not read the snapshot.
 
 The reason for decision 3: an `accept` on old content after an edit would make a verdict that is stale at once.
 
@@ -38,7 +38,7 @@ The Host gives each `accept` verdict one state, in this order. The first rule th
 | `stale` | The candidate reference of the head differs from the candidate reference of the verdict. |
 | `current` | No rule above applies. |
 
-The candidate reference of a verdict is its `candidate` field. A decision record of an earlier Host has no `candidate` field. For that record, the Host uses the candidate reference of its snapshot.
+The candidate reference of a verdict is the candidate reference of its snapshot.
 
 A `reject` verdict has no state in this table. It never approves.
 
@@ -51,15 +51,6 @@ For `accept`, a new check 7 comes after check 6 of [APPROVAL.md](../approval/APP
 7. The candidate reference of the snapshot equals the candidate reference of the head: `stale_verdict`.
 
 For `reject`, nothing changes. A reviewer can reject old content.
-
-The decision record gets the field `candidate`:
-
-```json
-{"format":"entelos.record/1","function":"…","scope":"…","from":"…","until":"…",
- "snapshot_ref":"…","report_ref":"…","candidate":{"kind":"content","ref":"sha256:…"},
- "actor":"reviewer-a","reason":"…","disposition":"accept","runner_policy":"fixture-runner",
- "decided_at":"2026-11-22T09:00:00Z"}
-```
 
 ## Changes to `activate`
 
@@ -92,7 +83,7 @@ Thus a reference that no proposal has, and a proposal with no verdict, both give
 
 ## Wire protocol
 
-The decision record gets one field. The schemas of the approval API do not define the fields of a record, so they do not change. The refusal code is new. The `approval` read is a Host operation. The sidecar wire protocol does not have it yet.
+The decision record and the approval schemas do not change, so the stable approval vectors keep their bytes. The refusal code is new. The `approval` read is a Host operation. The sidecar wire protocol does not have it yet.
 
 ## Limits
 
