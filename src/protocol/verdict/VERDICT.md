@@ -69,16 +69,18 @@ After the checks of 1.2, `activate` finds the state of the verdict at the curren
 
 Role: `reader`, as `resolve`. Body: `{"function": string, "candidate": {"kind", "ref"}, "cursor"?: string}`. The function is the subject in the host scope. A function that the Host does not have gives `out_of_scope`. A `candidate` that is not an object with the two string fields `kind` and `ref` gives `invalid_request`.
 
-Result: `{"cursor", "approved", "state", "decision_ref", "decision"}`.
+Result: `{"cursor", "approved", "state", "verdicts"}`.
 
-The Host looks at each verdict on a snapshot of the subject with the stated candidate reference. It applies these rules in this order:
+`verdicts` lists each verdict on a snapshot of the subject with the stated candidate reference. Each item is `{"decision_ref", "decision", "state"}`. The item `state` is the verdict state of an `accept`, or `rejected` for a `reject`. The order is the order of the `proposals` list: by `submitted_at` of the snapshot, the oldest first, then by `snapshot_ref`. A snapshot without `submitted_at` comes last. The verdicts of one snapshot are in write order.
 
-| Rule | `state` | `approved` | `decision_ref` and `decision` |
-|---|---|---|---|
-| 1. A verdict has the state `current`. | `current` | `true` | The last `current` verdict in write order. |
-| 2. A verdict has the state `rejected`, or is a `reject`. | `rejected` | `false` | The last such verdict in write order. |
-| 3. A verdict has the state `stale`. | `stale` | `false` | The last `stale` verdict in write order. |
-| 4. No verdict applies. | `unknown` | `false` | `""` and `null`. |
+The Host gives `state` from the items, with these rules in this order:
+
+| Rule | `state` | `approved` |
+|---|---|---|
+| 1. An item has the state `current`. | `current` | `true` |
+| 2. An item has the state `rejected`. | `rejected` | `false` |
+| 3. An item has the state `stale`. | `stale` | `false` |
+| 4. The list is empty. | `unknown` | `false` |
 
 Thus a reference that no proposal has, and a proposal with no verdict, both give `unknown`. With `cursor`, the Host answers at that earlier root. An answer at an earlier root can be `current` for content that is `stale` now.
 
@@ -96,5 +98,6 @@ The decision record gets one field. The schemas of the approval API do not defin
 
 - The state follows the head of the subject. A rejected or failed later proposal makes an earlier verdict stale, until a new proposal returns to the old content.
 - `proposal` and `proposals` do not show the verdict state. The `approval` read shows it.
+- The `approval` read looks at each snapshot in `state.reviews`. Its cost grows with the number of reviewed snapshots in the store.
 - The verdict state does not change an activation that occurred before the edit. A new activation needs a current verdict.
 - Issue [#128](https://github.com/mohanraj00/entelos/issues/128) adds the verdict kinds. This file does not count verdicts.

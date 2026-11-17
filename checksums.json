@@ -303,7 +303,7 @@
   "src/protocol/vectors/session-envelope.json": "e3e6b23d0147e76031a9c426be8c8697f67ed0252e053d15305bdfbeebacdbb7",
   "src/protocol/vectors/session-lifecycle.json": "ac6e4cb56caf68f0bc4b2406781d802ffc7af61e1c37091777a88a0256c30c9d",
   "src/protocol/vectors/session-stream.json": "044d13fe610428a80ed6a8ca518887cd9053dfd96e2510b96edd07ecc31dc38d",
-  "src/protocol/verdict/VERDICT.md": "65b850e4d10b7a3e28ec4bfa2d09fabbc0b03981dbe079edcdfee2f3da51af03",
+  "src/protocol/verdict/VERDICT.md": "2d5e5e11e0b664335e098e8cba5406f19b44b2cadac3de4106fd3692d3e37231",
   "tests/test_claude_review.py": "46142657b88e0a7125b73f01ba9273214ebb15bd72301feb1bcf29437b67f498",
   "tests/test_export_boundaries.py": "2f1f451e03f7603e489945dfd31f3d6d8258803a02707d0434750b3c48dd2dfa",
   "tools/check_project.py": "b7f3b3575852d885358526edf942ce398e282af0f33d283a97310ad18410afa0",
