@@ -1,8 +1,8 @@
-# Content proposal `entelos.content/1` (proposed)
+# Content proposal `entelos.content/1`
 
-This file specifies a second kind of candidate: a content proposal. Issue [#153](https://github.com/mohanraj00/entelos/issues/153) tracks it. A content proposal goes from proposal to activation with no CEL file.
+This file specifies a second kind of candidate: a content proposal. Issues [#153](https://github.com/mohanraj00/entelos/issues/153) (the spec) and [#175](https://github.com/mohanraj00/entelos/issues/175) (the Host) track it. A content proposal goes from proposal to activation with no CEL file.
 
-Status: **proposed**. No Host reads this format. The schemas and the vectors in this directory are the contract for the implementation in v0.5. The vectors have expected values that a person wrote from this text. No candidate output made them. [`check_spec.py`](check_spec.py) applies the rules of this file to the vectors. It does not run a Host.
+Status: **implemented in the Host, unstable**. The Host reads this format through the Host request field `candidate` of `propose`. The wire protocol does not have that field yet. The schemas and the vectors in this directory are the contract. The vectors have expected values that a person wrote from this text. No candidate output made them. [`check_spec.py`](check_spec.py) applies the rules of this file to the vectors, without a Host. The Go tests of `src/lifecycle-core` run the same vectors against the Host. [Decision 0003](../../../docs/decisions/0003-content-kind.md) records the kind model.
 
 ## Terms
 
@@ -110,24 +110,61 @@ Rule 12 makes one order for each list of items. Rule 11 comes first, so a duplic
 
 A candidate that passes all of the rules is valid. The result gives the kind. For `content`, the result also gives the candidate `ref` and the head.
 
-## Host behavior (proposal for v0.5)
+## Host behavior
 
-This section is a proposal. No code implements it. The vectors in this directory do not test it.
+### Subject
 
-- The `propose` body gets an optional field `candidate`. A body with `bundle` and no `candidate` is a `cel-bundle` candidate, as in 1.0. A body with both is `invalid_request`.
-- For a `content` candidate, the body has no `function`. The Host applies the rules of this file before it writes the snapshot. A refusal stops the write, and the root does not change.
-- The snapshot records the candidate reference, the head and the manifest text. It does not record a `bundle_ref`.
+The Host keeps one record model for each kind. A record of the lifecycle has the fields `function` and `scope`. For a content head, the value of `function` is the subject `content:<collection>/<partition>`, for example `content:loan-rules/region-a`. Thus the existing rules for scope, interval, source, plan, supersession, signature and approval apply to a content head without change.
+
+- The embedding host installs a subject in the `functions` list of the Host context, as it installs a CEL function. A subject that is not installed gives `out_of_scope`.
+- A `source`, a `plan` and a `suspend` request name the subject in the `function` field.
+- A CEL bundle never has a function name that starts with `content:`. `propose` refuses it with `invalid_request`.
+
+### Requests
+
+- The `propose` body has an optional field `candidate`. A body with `bundle` and no `candidate` is a `cel-bundle` candidate, as in 1.0. A body with both is `invalid_request`. A `cel-bundle` candidate gives the same snapshot as the `bundle` field.
+- For a `content` candidate, the body has no `function` and no `base_snapshot`. Else `propose` refuses with `invalid_request`. The body has `from`, `until`, `source_ref`, `reason` and an optional `stale_mode`, as for a CEL bundle.
+- The Host applies the rules of this file before it writes the snapshot. A refusal stops the write, and the root does not change. The message of a rule refusal is `rule <rule>`. For rule `unknown_field`, it is `rule unknown_field: unknown field <path>`.
 - The `base` of the manifest must be the candidate `ref` of the current head, or an empty string if the head has no proposal. Else `propose` refuses with `stale_base`.
-- `qualify` gives the manifest text to the runner of the application. The report records the candidate reference.
-- `decide` and `activate` work as for a CEL bundle. The activation interval and the dated selection do not change.
-- `load` and `invoke` on a `content` snapshot refuse with `unsupported_candidate_kind`.
-- `proposals` and `proposal` of the approval API list a content proposal with its head, its candidate reference and its evidence reference.
-- `replay` of a content activation gives the candidate reference that the date selected. It does not run the content.
+- The source must cover the subject and the interval of the proposal. Else `propose` refuses with `source_not_applicable`.
+- The `propose` result has `snapshot_ref`, `candidate` and `head`.
+
+### Records
+
+A content snapshot has these fields in addition to `function`, `scope`, `from`, `until`, `source_ref`, `reason`, `producer`, `stale_mode` and `submitted_at`:
+
+| Field | Value |
+|---|---|
+| `candidate` | `{"kind":"content","ref":<ref>}`. |
+| `collection`, `partition` | From the manifest. |
+| `base` | The `base` of the manifest. |
+| `manifest_ref` | The store reference of the exact manifest text, with the media type `application/vnd.entelos.content-manifest+json`. |
+| `bundle_ref` | The candidate `ref`. Thus the qualification bindings of a CEL bundle apply: a passed verdict must name this `ref`. |
+| `evidence_reference` | The `evidence` object of the manifest, if the manifest has one. |
+| `evidence` | The evidence document of the `propose` request, if the request has one. The Host keeps it as for a CEL bundle, and `proposal` gives it. The Host does not compare it with `evidence_reference`. |
+
+A content snapshot has no `files`, no `engine_build` and no `base_snapshot`. A CEL snapshot has no `candidate` field and keeps the bytes of an earlier Host.
+
+### Qualification and activation
+
+- `qualify` gives the exact manifest text to the qualification runner, as the file `content`. The `Candidate` of the runner has the candidate `ref` in `BundleRef` and an empty `EngineBuild`.
+- A report of a content snapshot has the field `candidate`. Admission refuses a report whose `candidate` differs from the `candidate` of its snapshot, with `stale_qualification`. A passed verdict must name the candidate `ref` in `bundle_ref`, else the status is `failed`.
+- The CEL runner refuses a content candidate with the diagnostic `unsupported_candidate_kind`, so the report is `unresolved`. An application installs its own runner for content.
+- `decide` and `activate` work as for a CEL bundle. The activation interval and the dated selection do not change. The event record has the bytes of a CEL event record, with the subject in `function`.
+- `resolve` of a content subject gives the selection with `candidate`, `collection` and `partition`. It has `bundle_ref` (the candidate `ref`) and no `engine_build`.
+- A replay of a content activation is `resolve` with the `cursor` of an earlier root. It gives the candidate reference that the date selected at that root. It does not run the content.
+- `load`, `invoke`, `describe` and `ingest` of a content snapshot refuse with `unsupported_candidate_kind`.
+- `proposals` lists a content proposal with its subject in `function` and its candidate `ref` in `bundle_ref`. `proposal` gives the snapshot, with `candidate` and `evidence_reference`, and the manifest text as the file `content` in `bundle`.
 
 | Code | Use |
 |---|---|
 | `stale_base` | The `base` of the manifest is not the `ref` of the current head. |
-| `unsupported_candidate_kind` | Also from `load` and `invoke` on a `content` snapshot. |
+| `unsupported_candidate_kind` | Also from `load`, `invoke`, `describe` and `ingest` of a content snapshot, and from the CEL runner. |
+| `stale_qualification` | Also for a report whose candidate differs from the candidate of its snapshot. |
+
+### Host decoder
+
+The Host decodes the manifest with the strict record decoder. It gives rule `json` for a duplicate member name, a number that is not finite as a 64-bit float, a lone surrogate escape, an integer of more than 4300 digits and 1000 or more levels of nesting. The vectors do not test these edges, and the Python checker can give another rule for them.
 
 ## Versions
 
@@ -160,14 +197,25 @@ Each item of `bindings` has a `report` and a `snapshot`, each a candidate refere
 3. It applies the binding rule to each binding, and compares the result with `expect`.
 4. A self-test changes a copy of the vectors and checks that the checker reports each change.
 
-The checker applies the same rules that a Host will apply. Agreement of the checker and the vectors shows that the two agree with each other. It does not show that a later Host agrees with them. The implementation in v0.5 must run the vectors against the Host.
+The checker applies the same rules that the Host applies. Agreement of the checker and the vectors shows that the two agree with each other. The Go tests `TestContentCandidateVectors` and `TestHostProposeAppliesTheContentVectors` run the cases against the Host rules and the Host `propose`.
+
+[`vectors/lifecycle-cases.json`](vectors/lifecycle-cases.json) has the lifecycle vectors. Each case starts with an empty store, a source and a plan for the subject `content:loan-rules/region-a`. `manifests` gives each manifest text and its `ref`, calculated with `shasum -a 256`. Each step has one operation and an optional `expect`:
+
+- `propose`: the manifest name, with `from` and `until`. The result is the name, or `{"error": <code>}`.
+- `qualify`: the manifest name and the `verdict` of the fixture runner. `runner_names` is the manifest that the verdict names, if it is not the same. The result is the report status.
+- `decide`: an accept verdict on the last report. `activate`: an activation of the last decision. The result is `accept` or the name.
+- `state`: the `state` of the proposal in the approval API.
+- `mark`: keep the current root as a named cursor. `resolve`: the date, and an optional `cursor` name. The result is the manifest name of the selected candidate.
+- `load`, `invoke`, `describe`: the date. The result is the error.
+
+The Go test `TestContentLifecycleVectors` runs them on the Host with a fixture runner. The fixture runner checks that it got the exact manifest bytes. `check_spec.py` checks each `ref`, each manifest against the rules and each step name.
 
 ## Limits
 
-- No Host reads this format yet. A passing check does not show that entelos accepts a content proposal.
-- The vectors do not go from `propose` to `activate` and to `replay` on a Host. Those lifecycle vectors, with a fixture runner, come with the v0.5 code.
-- The codes of the Host behavior section have no vector.
+- The wire protocol has no `candidate` field yet. Only a Host request (the Go API or the JSONL Host) can give a content candidate.
+- `proposals` gives no separate `candidate` or `evidence_reference` field in its list item. A reader gets them from `proposal`.
+- The Host does not get or check the evidence document that the manifest `evidence` names. A `propose` request can attach an evidence document, and the Host keeps it, but the Host does not compare it with the reference.
 - Entelos cannot check an item digest, an item size or a media type. The qualification runner of the application is responsible for them.
-- The manifest has no signature and no author authentication. The caller of `propose` is responsible for the source of the manifest.
+- The manifest has no signature and no author authentication. The caller of `propose` is responsible for the source of the manifest. A signed activation record of the Host names the subject, not the manifest text.
 - The manifest does not record when an item was written or by whom.
-- This file does not specify a decision record in `docs/decisions`. The owner decides the kind model when the owner accepts this spec.
+- The content subject uses the `function` field. A reader of a record must read the `content:` prefix to know the kind of the subject.

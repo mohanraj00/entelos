@@ -202,7 +202,7 @@ func (h *Host) Handle(request any) (result any, err error) {
 		return nil, NewFault("forbidden", "host role does not permit "+op, "authority")
 	}
 	allowed := map[string]bool{"op": true}
-	for _, f := range spec.fields {
+	for _, f := range append(append([]string{}, spec.fields...), hostOnlyFields[op]...) {
 		allowed[f] = true
 	}
 	if !Reads[op] {
@@ -296,7 +296,7 @@ func (h *Host) Handle(request any) (result any, err error) {
 func (h *Host) authorizeRetry(op string, q Object, cursor any) {
 	switch op {
 	case "source", "propose", "suspend", "load", "invoke":
-		h.owned(Object{"function": item(q, "function"), "scope": h.ctx("scope")})
+		h.owned(Object{"function": requestSubject(op, q), "scope": h.ctx("scope")})
 		return
 	}
 	v := must(h.Store.Read(cursor))
@@ -406,6 +406,10 @@ func (h *Host) target(q Object) Object {
 func (h *Host) scoped(v *View, ref any, kind string) Object { return h.owned(get(v, ref, kind)) }
 
 func (h *Host) files(v *View, snapshot Object) map[string][]byte {
+	// A content snapshot has one file: the exact manifest text.
+	if snapshotKind(snapshot) == contentKind {
+		return map[string][]byte{contentFile: getRaw(v, item(snapshot, "manifest_ref"), contentMime)}
+	}
 	refs := item(snapshot, "files")
 	names := map[any]bool{}
 	for _, x := range elements(refs) {
@@ -471,6 +475,11 @@ func (h *Host) reportValid(v *View, ref any) (Object, Object) {
 	// snapshot and the runner identity of this report. Thus a passed flag
 	// never moves to other bytes or to another runner.
 	outcome := item(report, "outcome")
+	// A report of a content snapshot names its candidate reference. A
+	// report qualifies a snapshot only if the two references are equal.
+	if !equal(lookup(report, "candidate", nil), lookup(snapshot, "candidate", nil)) {
+		fail("stale_qualification", "the report names another candidate", "admission")
+	}
 	if !equal(lookupAny(outcome, "bundle_ref"), item(snapshot, "bundle_ref")) ||
 		!equal(lookupAny(outcome, "implementation_ref"), item(report, "engine_build")) ||
 		!equal(item(report, "engine_build"), h.Runner.Expected(candidate(item(report, "snapshot_ref"), snapshot))) {
@@ -646,6 +655,9 @@ func (h *Host) serving(v *View, function any, at any) (Object, string) {
 // selection is the resolved selection of one enable event.
 func (h *Host) selection(v *View, function any, at any, event Object) Object {
 	snapshot := h.scoped(v, item(event, "snapshot_ref"), "snapshot")
+	if snapshotKind(snapshot) == contentKind {
+		return contentSelection(v, function, at, event, snapshot)
+	}
 	return Object{"function": function, "scope": h.ctx("scope"), "date": at, "registry_cursor": v.Cursor,
 		"event_ref": item(event, "ref"), "snapshot_ref": item(event, "snapshot_ref"), "bundle_ref": item(snapshot, "bundle_ref"),
 		"engine_build": item(snapshot, "engine_build"), "report_ref": item(event, "report_ref"), "decision_ref": item(event, "decision_ref")}
@@ -685,6 +697,7 @@ func (h *Host) readOperation(op string, q Object) any {
 		return selected
 	}
 	snapshot := h.scoped(v, selected["snapshot_ref"], "snapshot")
+	celOnly(snapshot)
 	desc := must(h.Runtime.Execute(h.files(v, snapshot), "describe", nil, nil))
 	return Object{"cursor": v.Cursor, "selection": selected, "callable": desc}
 }
@@ -694,6 +707,7 @@ func (h *Host) readOperation(op string, q Object) any {
 // selected snapshot, and stale is true only for a continue_stale answer.
 func (h *Host) receipt(v *View, selection Object, inputs []byte, key any, mode string, previous, reason, original any, staleReason string) Object {
 	snapshot := h.scoped(v, item(selection, "snapshot_ref"), "snapshot")
+	celOnly(snapshot)
 	if !equal(must(h.Runtime.Build()), item(selection, "engine_build")) {
 		fail("implementation_unavailable", "exact replay/execution build unavailable", "runtime")
 	}
@@ -883,6 +897,7 @@ func (h *Host) ingest(v *View, entries any) Object {
 		// scoped refuses a snapshot outside the trusted scope or for a
 		// function that the context does not install, as resolve does.
 		snapshot := h.scoped(v, item(entry, "snapshot_ref"), "snapshot")
+		celOnly(snapshot)
 		hostReason := h.hostStaleReason(v, entry["snapshot_ref"], snapshot, date)
 		if !equal(lookup(response, "bundle_ref", nil), item(snapshot, "bundle_ref")) {
 			fail("artifact_mismatch", "the response names a bundle that differs from the pinned snapshot", "")
@@ -1055,7 +1070,23 @@ func (h *Host) apply(v *View, op string, q Object) any {
 		appendOnce(v, "plans", ref)
 		return Object{"plan_ref": ref}
 	case "propose":
+		if raw, has := q["candidate"]; has {
+			if _, both := q["bundle"]; both {
+				fail("invalid_request", "a propose body has a candidate or a bundle, not both", "")
+			}
+			result := judgeCandidate(raw)
+			if !result.Valid {
+				panic(result.fault())
+			}
+			if result.Kind == contentKind {
+				return h.proposeContent(v, q, result)
+			}
+			q = merge(q, Object{"bundle": raw.(Object)["bundle"]})
+		}
 		target := h.target(q)
+		if strings.HasPrefix(text(target["function"]), contentPrefix) {
+			fail("invalid_request", "a function name with the content: prefix is a content head", "")
+		}
 		staleMode := lookup(q, "stale_mode", failClosed)
 		if !within(staleMode, Array{failClosed, continueStale}) {
 			fail("invalid_request", "stale_mode must be fail_closed or continue_stale", "")
@@ -1143,6 +1174,10 @@ func (h *Host) apply(v *View, op string, q Object) any {
 		report := merge(pick(snapshot, interval4...), Object{"snapshot_ref": q["snapshot_ref"], "source_ref": snapshot["source_ref"], "plan_ref": q["plan_ref"],
 			"runner": actor, "engine_build": expected, "lifecycle_build": h.BuildRef,
 			"status": status, "source_and_plan_applicable": applicable, "outcome": outcome, "diagnostic": diagnostic})
+		// A CEL report keeps the bytes of an earlier Host.
+		if candidate, has := snapshot["candidate"]; has {
+			report["candidate"] = candidate
+		}
 		ref := v.Put("qualification", report)
 		appendEntry(reviewEntry(index, text(q["snapshot_ref"]), true), "reports", ref)
 		return Object{"report_ref": ref, "report": report}
@@ -1174,6 +1209,7 @@ func (h *Host) apply(v *View, op string, q Object) any {
 	case "load":
 		selection := h.resolve(v, item(q, "function"), item(q, "date"))
 		snapshot := h.scoped(v, selection["snapshot_ref"], "snapshot")
+		celOnly(snapshot)
 		h.qualifiedBuild(v, selection)
 		actual := must(h.Runtime.Execute(h.files(v, snapshot), "describe", nil, nil))
 		if !equal(item(actual, "bundle_ref"), selection["bundle_ref"]) || !equal(item(actual, "implementation_ref"), selection["engine_build"]) {
@@ -1185,6 +1221,7 @@ func (h *Host) apply(v *View, op string, q Object) any {
 		return loaded
 	case "invoke":
 		selection, staleReason := h.serving(v, item(q, "function"), item(q, "date"))
+		celOnly(h.scoped(v, selection["snapshot_ref"], "snapshot"))
 		if !equal(selection["bundle_ref"], item(q, "expected_bundle_ref")) {
 			fail("artifact_mismatch", "discover the selected bundle before invocation", "")
 		}

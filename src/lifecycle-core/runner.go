@@ -73,6 +73,9 @@ func (r *CELRunner) Expected(c Candidate) string { return c.EngineBuild }
 // Qualify runs the CEL check. A check report with exit 1 is a verdict, not a
 // fault. Runtime.Execute owns that rule.
 func (r *CELRunner) Qualify(in QualificationInput) (Verdict, error) {
+	if _, content := in.Files[contentFile]; content {
+		return Verdict{}, NewFault("unsupported_candidate_kind", "the CEL runner qualifies a CEL bundle only", "runner")
+	}
 	outcome, err := r.Runtime.Execute(in.Files, "check", nil, in.Cases)
 	if err != nil {
 		return Verdict{}, err
@@ -88,5 +91,5 @@ func candidate(snapshotRef any, snapshot Object) Candidate {
 		return s
 	}
 	return Candidate{SnapshotRef: asString(snapshotRef), BundleRef: asString(lookupAny(snapshot, "bundle_ref")),
-		EngineBuild: asString(item(snapshot, "engine_build"))}
+		EngineBuild: asString(lookupAny(snapshot, "engine_build"))}
 }
