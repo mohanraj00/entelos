@@ -99,7 +99,7 @@ func TestPlanChecks(t *testing.T) {
 		t.Fatal(err)
 	}
 	for index, name := range []string{"charging", "returns"} {
-		for _, change := range []string{"manifest-and-files", "missing-case", "case-size"} {
+		for _, change := range []string{"manifest-and-files", "missing-case", "case-size", "missing-item"} {
 			t.Run(name+"/"+change, func(t *testing.T) {
 				items := itemFiles(t)
 				cases := reviewerCases(t)
@@ -118,6 +118,17 @@ func TestPlanChecks(t *testing.T) {
 					cases = append(cases[:index], cases[index+1:]...)
 				case "case-size":
 					cases[index].(lifecycle.Object)["size"] = len(items[name+".md"].Data) + 1
+				case "missing-item":
+					// The candidate drops an item that the plan expects.
+					var m map[string]any
+					if err := json.Unmarshal(raw, &m); err != nil {
+						t.Fatal(err)
+					}
+					list := m["items"].([]any)
+					m["items"] = append(list[:index:index], list[index+1:]...)
+					if candidate, err = json.Marshal(m); err != nil {
+						t.Fatal(err)
+					}
 				}
 				runner := &contentRunner{files: items}
 				verdict, err := runner.Qualify(lifecycle.QualificationInput{
@@ -127,7 +138,12 @@ func TestPlanChecks(t *testing.T) {
 					t.Fatal(err)
 				}
 				outcome := verdict.Outcome.(lifecycle.Object)
-				if outcome["status"] != "failed" || outcome["items"].(lifecycle.Array)[index].(lifecycle.Object)["passed"] != false {
+				failed := false
+				for _, check := range outcome["items"].(lifecycle.Array) {
+					check := check.(lifecycle.Object)
+					failed = failed || check["item_id"] == name && check["passed"] == false
+				}
+				if outcome["status"] != "failed" || !failed {
 					t.Fatalf("plan mismatch must fail %s: %v", name, outcome)
 				}
 			})

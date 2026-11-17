@@ -23,7 +23,8 @@ prints the item text.
 
 [runner.go](runner.go) reads the installed plan cases from `QualificationInput.Cases`.
 An item passes only if its bytes agree with both its plan case and its manifest
-entry. An item with no plan case fails. In this example, expected.json simulates
+entry. An item with no plan case fails. A plan case with no manifest item also
+fails, so a candidate cannot drop an item. In this example, expected.json simulates
 a plan that the reviewer owns. It is in the same folder and commit as the
 candidate, so it does not prove independence. In a real deployment, the plan
 must come from a source outside the candidate. The runner identity binds its source and Go

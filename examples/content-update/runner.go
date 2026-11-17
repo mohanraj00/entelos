@@ -60,7 +60,9 @@ func (r *contentRunner) Qualify(in lifecycle.QualificationInput) (lifecycle.Verd
 	}
 	status := "passed"
 	checks := lifecycle.Array{}
+	listed := make(map[string]bool, len(m.Items))
 	for _, item := range m.Items {
+		listed[item.ID] = true
 		// A Host-validated item_id has no slash. Read only this folder.
 		body, err := fs.ReadFile(r.files, item.ID+".md")
 		c, covered := expected[item.ID]
@@ -68,6 +70,13 @@ func (r *contentRunner) Qualify(in lifecycle.QualificationInput) (lifecycle.Verd
 			len(body) == item.Size && digest(body) == item.Digest
 		checks = append(checks, lifecycle.Object{"item_id": item.ID, "passed": matches})
 		if !matches {
+			status = "failed"
+		}
+	}
+	// A plan case with no manifest item fails, so a candidate cannot drop an item.
+	for _, c := range cases {
+		if !listed[c.ID] {
+			checks = append(checks, lifecycle.Object{"item_id": c.ID, "passed": false})
 			status = "failed"
 		}
 	}
