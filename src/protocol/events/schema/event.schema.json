@@ -1,0 +1,120 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "entelos.decision-event/1",
+  "title": "One fact in an entelos decision",
+  "$defs": {
+    "digest": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "cursor": {
+      "type": "string",
+      "pattern": "^ev1:[0-9a-f]{64}:(0|[1-9][0-9]{0,15})$"
+    },
+    "stream_start": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256
+    },
+    "request": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "limit"
+      ],
+      "properties": {
+        "cursor": {
+          "type": "string"
+        },
+        "limit": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 256
+        }
+      }
+    },
+    "page": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "events",
+        "next_cursor",
+        "stream_start"
+      ],
+      "properties": {
+        "events": {
+          "type": "array",
+          "maxItems": 256,
+          "items": {
+            "$ref": "#/$defs/event"
+          }
+        },
+        "next_cursor": {
+          "$ref": "#/$defs/cursor"
+        },
+        "stream_start": {
+          "$ref": "#/$defs/stream_start"
+        }
+      }
+    },
+    "event": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "format",
+        "cursor",
+        "decision_ref",
+        "disposition",
+        "fact_digest",
+        "evidence_receipt_digest",
+        "actor_kind",
+        "blind"
+      ],
+      "properties": {
+        "format": {
+          "type": "string",
+          "const": "entelos.decision-event/1"
+        },
+        "cursor": {
+          "$ref": "#/$defs/cursor"
+        },
+        "decision_ref": {
+          "$ref": "#/$defs/digest"
+        },
+        "disposition": {
+          "type": "string",
+          "enum": [
+            "approve",
+            "reject",
+            "correct"
+          ]
+        },
+        "fact_digest": {
+          "$ref": "#/$defs/digest"
+        },
+        "evidence_receipt_digest": {
+          "$ref": "#/$defs/digest"
+        },
+        "actor_kind": {
+          "type": "string",
+          "enum": [
+            "human",
+            "model",
+            "policy"
+          ]
+        },
+        "blind": {
+          "type": "boolean"
+        },
+        "corrected_value": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 65536
+        }
+      }
+    }
+  },
+  "$ref": "#/$defs/event"
+}

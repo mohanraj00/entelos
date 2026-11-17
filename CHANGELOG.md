@@ -14,6 +14,10 @@ This file lists the changes for each snapshot tag. A tag is a stable snapshot to
 - The vectors in `src/protocol/signed/vectors/` cover a valid record, a changed record, an unknown key, a revoked key and a retired key. `check_spec.py` checks them with a separate Ed25519 implementation in Python, and `TestSignedVectors` runs them on the Go verifier. The new declarations are experimental.
 - Approval API 1.2 adds `proposals.limit` and an opaque `next_cursor` pinned to the first page's store revision and time (#161). Opens and closes during a traversal do not shift its pages. `propose` can retain a producer evidence document, and `proposal` returns it. Evidence admission and policy evaluation remain proposed. Requests without pagination keep their old result; the protocol 1.1 dashboard client is unchanged. The envelope adds 1.2 and unsupported-minor vectors now use 1.3. No exported Go declaration changes.
 
+### Docs
+
+- [EVENTS.md](src/protocol/events/EVENTS.md) proposes `entelos.decision-event/1`, with a schema, hand-written vectors and an offline checker (#158, part 1). The export has one event per fact, actor kinds, a blind mark and resumable cursors. No Host exports it yet.
+
 ## v0.4.0 (2026-11-14)
 
 This snapshot adds typed rule inputs, the approval API with two transports, a dashboard example, a store migration and a scope check. It also adds four proposed specs that no Host reads or writes yet.
