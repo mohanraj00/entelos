@@ -29,18 +29,22 @@ var (
 // store with gated collections. The embedding host installs it.
 //
 // The Host calls Publish in the activate write, after it signs the records
-// and before it commits them. record is the activation record and signed is
-// its signed record, as the store keeps them. An error refuses the
-// activation, and the Host stores nothing. A commit can fail after an
-// accept. A retry of the same request then gives the same bytes again, so
-// the consumer must accept a record that it already has.
+// and before it commits them. The store makes the call after it owns the
+// root update, so a write that loses the compare-and-swap does not publish.
+// The store holds its lock during the call, so Publish must not call the
+// Host or the store. record is the activation record and signed is its
+// signed record, as the store keeps them. An error refuses the activation,
+// and the Host stores nothing. A commit can fail after an accept. A retry
+// of the same request then gives the same bytes again, so the consumer must
+// accept a record that it already has.
 type Publisher interface {
 	Publish(record, signed []byte) error
 }
 
 // SetPublisher installs the publisher of the Host. Nil removes it. A Host
 // with a publisher and no signing key refuses each activate with
-// publish_unsigned. A Host that As gives has the publisher of its source at
+// publish_unsigned. A Host with a publisher and a store of another package
+// refuses each activate with publish_unsupported. A Host that As gives has the publisher of its source at
 // that time.
 func (h *Host) SetPublisher(p Publisher) { h.publisher = p }
 
@@ -94,16 +98,22 @@ func (h *Host) putActivation(v *View, event Object, eventRef string, snapshot, r
 }
 
 // publish gives the signed activation record of this write to the
-// publisher. A refusal stops the write.
+// publisher. The bytes are read now. The store calls the publisher after it
+// owns the root update, so a write that loses the compare-and-swap does not
+// publish. A refusal stops the write.
 func (h *Host) publish(v *View, value any) {
 	if h.publisher == nil {
 		return
 	}
 	ref := item(item(v.State, "activations"), text(item(value, "event_ref")))
 	signed := item(item(v.State, "signatures"), text(ref))
-	if err := h.publisher.Publish(getRaw(v, ref, Media(activationKind)), getRaw(v, signed, Media(signedKind))); err != nil {
-		fail("publish_refused", "the publisher refused the activation record: "+err.Error(), "publish")
-	}
+	record, signedRaw, publisher := getRaw(v, ref, Media(activationKind)), getRaw(v, signed, Media(signedKind)), h.publisher
+	v.beforeCommit(func() error {
+		if err := publisher.Publish(record, signedRaw); err != nil {
+			return NewFault("publish_refused", "the publisher refused the activation record: "+err.Error(), "publish")
+		}
+		return nil
+	})
 }
 
 func activationFault(code, rule, message string) *Fault {
@@ -174,7 +184,7 @@ func checkActivation(recordKind string, raw []byte) (Object, error) {
 
 func calendarDate(s string) bool {
 	parsed, err := time.Parse("2006-01-02", s)
-	return err == nil && parsed.Format("2006-01-02") == s
+	return err == nil && parsed.Year() >= 1 && parsed.Format("2006-01-02") == s
 }
 
 // unknownActivationField gives the path of the first member name that the

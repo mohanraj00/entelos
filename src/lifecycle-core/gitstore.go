@@ -295,6 +295,59 @@ func contains(list []string, value string) bool {
 	return false
 }
 
+func (s *GitStore) runsCommitSteps() {}
+
+// updateWithSteps moves the root from old to commit in one ref transaction
+// of git update-ref. The prepare command locks the root ref and checks the
+// old value. The steps run while the lock is held, and the commit command
+// then moves the root. A failed step aborts the transaction. This path does
+// not use Hook. If the process stops between prepare and commit, the lock
+// file stays, and a person must remove it.
+func (s *GitStore) updateWithSteps(commit, old, base string, steps []func() error) (err error) {
+	cmd := exec.Command("git", "--git-dir="+s.Path, "-c", "core.hooksPath="+os.DevNull, "-c", "core.fsmonitor=false",
+		"update-ref", "--stdin")
+	cmd.Env = s.env
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
+	in, err := cmd.StdinPipe()
+	if err != nil {
+		return NewFault("store_error", err.Error(), "store")
+	}
+	out, err := cmd.StdoutPipe()
+	if err != nil {
+		return NewFault("store_error", err.Error(), "store")
+	}
+	if err := cmd.Start(); err != nil {
+		return NewFault("store_error", err.Error(), "store")
+	}
+	end := func(command string) error {
+		if command != "" {
+			io.WriteString(in, command+"\n")
+		}
+		in.Close()
+		return cmd.Wait()
+	}
+	io.WriteString(in, "start\nupdate "+RootRef+" "+commit+" "+old+"\nprepare\n")
+	reader := bufio.NewReader(out)
+	for _, want := range []string{"start: ok", "prepare: ok"} {
+		if line, _ := reader.ReadString('\n'); strings.TrimSpace(line) != want {
+			end("")
+			if root, err := s.Root(); err == nil && root != base {
+				return NewFault("stale_revision", "root CAS lost; no state/outbox was published", "")
+			}
+			return NewFault("store_error", "the root ref is locked or changed: "+stderr.String(), "store")
+		}
+	}
+	if err := runSteps(steps); err != nil {
+		end("abort")
+		return err
+	}
+	if err := end("commit"); err != nil {
+		return NewFault("store_error", "the root ref update failed after the steps: "+stderr.String(), "store")
+	}
+	return nil
+}
+
 func (s *GitStore) Transact(expected, key, payload any, apply func(*View) (any, error)) (Object, error) {
 	k, err := checkKey(key)
 	if err != nil {
@@ -364,6 +417,12 @@ func (s *GitStore) Transact(expected, key, payload any, apply func(*View) (any, 
 		old = strings.Repeat("0", 40)
 	}
 	// This is the sole state publication point. No automatic retry after a lost CAS.
+	if len(view.steps) > 0 {
+		if err := s.updateWithSteps(commit, old, base, view.steps); err != nil {
+			return nil, err
+		}
+		return Object{"cursor": commit, "result": result, "reused": false}, nil
+	}
 	r, err := s.run([]string{"update-ref", RootRef, commit, old}, nil)
 	if err != nil {
 		return nil, err

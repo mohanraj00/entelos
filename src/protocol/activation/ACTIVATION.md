@@ -102,17 +102,20 @@ A record that passes all of the rules is valid. The result gives the record. A v
 
 The publisher is an adapter of the embedding host. The Go interface is `Publisher`, and `Host.SetPublisher` installs it. It has one operation, `Publish`: give the bytes of the activation record and of its signed record to a consumer, and get an accept or a refusal with a reason. The bytes are the bytes that the store keeps.
 
-- The Host calls the publisher in the `activate` write, after it stages and signs the records, and before it commits them.
+- The Host calls the publisher in the `activate` write, after it stages and signs the records, and before it commits them. The store calls the publisher only after it owns the root update: the in-memory store holds its lock, and the Git store holds the lock of the root ref in one `git update-ref --stdin` transaction. Thus a write that loses the compare-and-swap to another write does not publish.
+- The publisher must not call the Host or the store, because the store holds its lock during the call.
 - On an accept, the Host commits the write.
 - On a refusal, the Host commits nothing. The result is `publish_refused` with the stage `publish`, and the message has the reason of the consumer.
 - On a failure of the commit after an accept, the consumer has a record that the store does not have. A retry of the same request makes the same bytes, and the consumer gets them again. The consumer must accept a record that it already has.
 - A retry of a stored request is a reuse. The Host does not call the publisher again.
 - A Host with a publisher and no signing key refuses each `activate` with `publish_unsigned` and the stage `publish`, because a consumer cannot verify the record. It stores nothing.
+- A Host with a publisher refuses each `activate` with `publish_unsupported` and the stage `publish` if its store is not one of the stores of the Go package. Only those stores call the publisher under the lock.
 
 | Code | Use |
 |---|---|
 | `publish_refused` | The publisher refused the activation record. The message has the reason. |
 | `publish_unsigned` | The Host has a publisher and no signing key. |
+| `publish_unsupported` | The Host has a publisher and a store that does not call it under the lock. |
 
 ## Vectors
 
@@ -149,3 +152,4 @@ The Go test `TestActivationVectors` does checks 1 to 3 with the Go mapping and t
 - A `suspend` event has no activation record. A consumer cannot learn of a suspension from this record.
 - The Host stores no record of a refused publish. The caller gets the code and the reason.
 - An activation before the signing key has no activation record.
+- A slow publisher holds the store lock, and the other writes wait or fail for that time. If the process stops during the call, the Git store keeps the lock file of the root ref, and a person must remove it.

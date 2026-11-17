@@ -260,6 +260,10 @@ func (h *Host) Handle(request any) (result any, err error) {
 	if op == "activate" && h.publisher != nil && h.signer == nil {
 		return nil, NewFault("publish_unsigned", "the Host has a publisher and no signing key", "publish")
 	}
+	// Only a store that runs the commit steps publishes after it owns the root.
+	if _, ok := h.Store.(stepStore); op == "activate" && h.publisher != nil && !ok {
+		return nil, NewFault("publish_unsupported", "the store does not run a step before the commit", "publish")
+	}
 	_, hasRevision := q["expected_revision"]
 	_, hasKey := q["request_key"]
 	if !hasRevision || !hasKey {
