@@ -30,6 +30,11 @@ const (
 	maxManifestBytes = 262144
 	maxContentItems  = 1024
 	maxMetadata      = 64
+	// An item has 1 to 16 applicability fields. A field has 1 to 8 levels,
+	// and a level has 1 to 256 characters.
+	maxApplicability = 16
+	maxLevels        = 8
+	maxLevelText     = 256
 )
 
 var (
@@ -41,7 +46,8 @@ var (
 
 	manifestFields = map[string]bool{"format": true, "collection": true, "partition": true, "base": true, "items": true,
 		"metadata": true, "evidence": true}
-	itemFields     = map[string]bool{"item_id": true, "digest": true, "size": true, "media_type": true}
+	itemFields = map[string]bool{"item_id": true, "digest": true, "size": true, "media_type": true,
+		"applicability": true}
 	evidenceFields = map[string]bool{"format": true, "digest": true}
 )
 
@@ -176,6 +182,20 @@ func judgeCandidate(value any) candidateResult {
 			return refused("invalid_content", "metadata_name")
 		}
 	}
+	// Rule 15 applies to each item before rule 16 applies to any item.
+	for _, x := range items {
+		if values, has := x.(Object)["applicability"].(Object); has && (len(values) == 0 || len(values) > maxApplicability) {
+			return refused("invalid_content", "applicability_count")
+		}
+	}
+	for _, x := range items {
+		values, _ := x.(Object)["applicability"].(Object)
+		for name := range values {
+			if !contentName.MatchString(name) {
+				return refused("invalid_content", "applicability_name")
+			}
+		}
+	}
 	sum := sha256.Sum256([]byte(text))
 	return candidateResult{Valid: true, Kind: contentKind, Ref: "sha256:" + hex.EncodeToString(sum[:]),
 		Collection: doc["collection"].(string), Partition: doc["partition"].(string), Manifest: doc, Text: text}
@@ -241,6 +261,9 @@ func manifestShape(doc Object) bool {
 			return false
 		}
 		if media, has := entry["media_type"]; has && !str(media, mediaType) {
+			return false
+		}
+		if raw, has := entry["applicability"]; has && !applicabilityShape(raw) {
 			return false
 		}
 	}
@@ -363,7 +386,7 @@ func unknownField(text string) (string, bool) {
 
 // hostOnlyFields has the request fields of the Host that no protocol schema
 // has yet. The wire protocol gets them in a later minor version.
-var hostOnlyFields = map[string][]string{"propose": {"candidate"}}
+var hostOnlyFields = map[string][]string{"propose": {"candidate"}, "activate": {"applicability"}}
 
 // requestSubject gives the function value of a request for the access check
 // of a retry. For a content proposal, it is the subject of the head that the
@@ -399,14 +422,70 @@ func celOnly(snapshot Object) {
 	}
 }
 
+// applicabilityShape applies the schema of the applicability of an item: an
+// object whose values are lists of 1 to 8 level strings. Rules 15 and 16
+// check the count and the names.
+func applicabilityShape(raw any) bool {
+	values, ok := raw.(Object)
+	if !ok {
+		return false
+	}
+	for _, value := range values {
+		levels, ok := value.(Array)
+		if !ok || len(levels) == 0 || len(levels) > maxLevels {
+			return false
+		}
+		for _, level := range levels {
+			s, ok := level.(string)
+			if n := utf8.RuneCountInString(s); !ok || n == 0 || n > maxLevelText {
+				return false
+			}
+		}
+	}
+	return true
+}
+
+// itemApplicability gives the applicability of each item that has one, by
+// item_id. The Host records the values and does not interpret them.
+func itemApplicability(manifest Object) Object {
+	out := Object{}
+	for _, x := range elements(manifest["items"]) {
+		entry := x.(Object)
+		if values, has := entry["applicability"]; has {
+			out[entry["item_id"].(string)] = values
+		}
+	}
+	return out
+}
+
+// confirmApplicability checks the applicability field of an activate
+// request. It must be equal to the values of the snapshot: the same items,
+// the same names and the same levels in the same order. A snapshot with no
+// values takes no field or an empty object. The result is the confirmed set.
+func confirmApplicability(q, snapshot Object) Object {
+	confirmed, ok := lookup(q, "applicability", Object{}).(Object)
+	if !ok {
+		fail("invalid_request", "applicability must be an object of item values", "")
+	}
+	recorded, _ := lookup(snapshot, "applicability", Object{}).(Object)
+	if !equal(confirmed, recorded) {
+		fail("applicability_mismatch", "the applicability of the request is not the applicability of the snapshot items", "admission")
+	}
+	return recorded
+}
+
 // contentSelection is the dated selection of a content activation. It gives
 // the candidate reference. The bundle_ref field holds the same reference, so
 // that the qualification bindings of a CEL bundle apply without change.
 func contentSelection(v *View, function, at any, event, snapshot Object) Object {
-	return Object{"function": function, "scope": item(snapshot, "scope"), "date": at, "registry_cursor": v.Cursor,
+	selection := Object{"function": function, "scope": item(snapshot, "scope"), "date": at, "registry_cursor": v.Cursor,
 		"event_ref": item(event, "ref"), "snapshot_ref": item(event, "snapshot_ref"), "bundle_ref": item(snapshot, "bundle_ref"),
 		"candidate": item(snapshot, "candidate"), "collection": item(snapshot, "collection"), "partition": item(snapshot, "partition"),
 		"report_ref": item(event, "report_ref"), "decision_ref": item(event, "decision_ref")}
+	if values, has := event["applicability"]; has {
+		selection["applicability"] = values
+	}
+	return selection
 }
 
 // proposeContent writes the snapshot of a valid content candidate. The
@@ -447,6 +526,10 @@ func (h *Host) proposeContent(v *View, q Object, result candidateResult) Object 
 		"submitted_at": h.now()})
 	if evidence, has := result.Manifest["evidence"]; has {
 		snapshot["evidence_reference"] = evidence
+	}
+	// A snapshot with no item values keeps the bytes of an earlier Host.
+	if values := itemApplicability(result.Manifest); len(values) > 0 {
+		snapshot["applicability"] = values
 	}
 	// The evidence document of the request is kept as for a CEL bundle.
 	// The Host does not compare it with the evidence reference of the

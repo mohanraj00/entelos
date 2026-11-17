@@ -53,16 +53,43 @@ The content manifest is a JSON text. It is one object. [`schema/manifest.schema.
 | `items[].digest` | string | `sha256:` and 64 lowercase hex digits. |
 | `items[].size` | integer | The size of the item in bytes. 0 or more. |
 | `items[].media_type` | string | Optional. A media type such as `text/markdown`, in lowercase. |
+| `items[].applicability` | object | Optional. The applicability values of the item. 1 to 16 entries. Each name has the same characters as `collection`. Each value is an array of 1 to 8 levels. Each level is a string of 1 to 256 characters. |
 | `metadata` | object | Optional. 0 to 64 entries. Each name has the same characters as `collection`. Each value is a string of 0 to 1024 characters. |
 | `evidence` | object | Optional. A reference to an evidence document. |
 | `evidence.format` | string | `entelos.evidence/1`. |
 | `evidence.digest` | string | `sha256:` and 64 lowercase hex digits. |
 
-A field that is not in this table is not permitted. The names in `metadata` are data, not fields.
+A field that is not in this table is not permitted. The names in `metadata` and in `applicability` are data, not fields.
 
 The `evidence` reference names an evidence document of format `entelos.evidence/1` ([#148](https://github.com/mohanraj00/entelos/issues/148)) by its digest. This file does not specify how the Host gets or checks that document.
 
 A digest is an identity of bytes. It is not a signature. Entelos does not read the items, so it cannot check an item digest or an item size. The qualification runner of the application must check them.
+
+## Applicability
+
+An item can declare applicability values ([#106](https://github.com/mohanraj00/entelos/issues/106)). A store uses them to select the items that apply to a read. The application declares the names and their meaning. For example, `{"region": ["eu", "de"]}` is the field `region` with two levels, from the widest to the narrowest.
+
+Version 1 has one value type: an array of level strings. Entelos records the values as exact data. It does not interpret them, and it does not compare one level with another level. A store applies them as exact filters.
+
+The values are on the items. The effective interval stays on the activation, and it applies to all of the items of the manifest. The activation confirms the values of the items. It does not give a second set.
+
+For example, a manifest has two items with different regions:
+
+```json
+{"format":"entelos.content/1","collection":"loan-rules","partition":"region-a","base":"",
+ "items":[
+  {"item_id":"rules-de","digest":"sha256:dd…","size":200,"applicability":{"region":["eu","de"]}},
+  {"item_id":"rules-fr","digest":"sha256:ff…","size":180,"applicability":{"region":["eu","fr"]}}]}
+```
+
+The `activate` request of its decision confirms both sets:
+
+```json
+{"op":"activate","decision_ref":"…","targets":[],
+ "applicability":{"rules-de":{"region":["eu","de"]},"rules-fr":{"region":["eu","fr"]}}}
+```
+
+The case `two-regions-confirmed` of the lifecycle vectors runs this example with the exact text.
 
 ## Candidate reference
 
@@ -101,10 +128,12 @@ A reader applies these rules to a candidate in this order. The first rule that f
 | 12 | The items are in strictly ascending order of `item_id`, by Unicode code point. | `invalid_content`, rule `item_order` |
 | 13 | `metadata` has 64 entries or fewer. | `invalid_content`, rule `too_many_metadata` |
 | 14 | Each name in `metadata` has 1 to 128 characters from `A-Z`, `a-z`, `0-9`, `.`, `_` and `-`. | `invalid_content`, rule `metadata_name` |
+| 15 | Each `applicability` of an item has 1 to 16 entries. | `invalid_content`, rule `applicability_count` |
+| 16 | Each name in an `applicability` has 1 to 128 characters from `A-Z`, `a-z`, `0-9`, `.`, `_` and `-`. | `invalid_content`, rule `applicability_name` |
 
-Steps 4 to 14 apply only to the kind `content`. A `cel-bundle` candidate that passes step 3 is valid for this file.
+Steps 4 to 16 apply only to the kind `content`. A `cel-bundle` candidate that passes step 3 is valid for this file.
 
-The refusal of rule `unknown_field` gives the path of the first unknown member name, in the order of the text. The path has the form `items[0].colour` or `colour`. Thus the author can see which field the Host refused. The reader looks for unknown names only in an object that the manifest table defines. A value of the wrong type is a rule `schema` refusal.
+The refusal of rule `unknown_field` gives the path of the first unknown member name, in the order of the text. The path has the form `items[0].colour` or `colour`. Thus the author can see which field the Host refused. The reader looks for unknown names only in an object that the manifest table defines. Thus it does not look in `metadata` or in `applicability`. A value of the wrong type is a rule `schema` refusal.
 
 Rule 12 makes one order for each list of items. Rule 11 comes first, so a duplicate gets its own reason.
 
@@ -141,6 +170,7 @@ A content snapshot has these fields in addition to `function`, `scope`, `from`, 
 | `manifest_ref` | The store reference of the exact manifest text, with the media type `application/vnd.entelos.content-manifest+json`. |
 | `bundle_ref` | The candidate `ref`. Thus the qualification bindings of a CEL bundle apply: a passed verdict must name this `ref`. |
 | `evidence_reference` | The `evidence` object of the manifest, if the manifest has one. |
+| `applicability` | An object with the `applicability` of each item that has one, by `item_id`. A snapshot whose items have no values has no field. |
 | `evidence` | The evidence document of the `propose` request, if the request has one. The Host keeps it as for a CEL bundle, and `proposal` gives it. The Host does not compare it with `evidence_reference`. |
 
 A content snapshot has no `files`, no `engine_build` and no `base_snapshot`. A CEL snapshot has no `candidate` field and keeps the bytes of an earlier Host.
@@ -151,6 +181,9 @@ A content snapshot has no `files`, no `engine_build` and no `base_snapshot`. A C
 - A report of a content snapshot has the field `candidate`. Admission refuses a report whose `candidate` differs from the `candidate` of its snapshot, with `stale_qualification`. A passed verdict must name the candidate `ref` in `bundle_ref`, else the status is `failed`.
 - The CEL runner refuses a content candidate with the diagnostic `unsupported_candidate_kind`, so the report is `unresolved`. An application installs its own runner for content.
 - `decide` and `activate` work as for a CEL bundle. The activation interval and the dated selection do not change. The event record has the bytes of a CEL event record, with the subject in `function`.
+- `activate` takes the Host field `applicability`, an object. It confirms the values of the snapshot. It must be equal to the `applicability` of the snapshot: the same items, the same names, and the same levels in the same order. If it is not equal, `activate` refuses with `applicability_mismatch` and writes no record. A snapshot with values thus needs the field. For a snapshot with no values, the field is absent or `{}`. This rule also applies to a CEL snapshot, which has no values.
+- The event record of an activation with values has the field `applicability`, with the confirmed values. Thus a signed activation record names them. An event record with no values has the bytes of an earlier Host.
+- `resolve` of a content subject gives the `applicability` of the event in the selection, if the event has it. A replay at an earlier cursor gives the values that the activation at that root confirmed.
 - `resolve` of a content subject gives the selection with `candidate`, `collection` and `partition`. It has `bundle_ref` (the candidate `ref`) and no `engine_build`.
 - A replay of a content activation is `resolve` with the `cursor` of an earlier root. It gives the candidate reference that the date selected at that root. It does not run the content.
 - `load`, `invoke`, `describe` and `ingest` of a content snapshot refuse with `unsupported_candidate_kind`.
@@ -159,6 +192,7 @@ A content snapshot has no `files`, no `engine_build` and no `base_snapshot`. A C
 | Code | Use |
 |---|---|
 | `stale_base` | The `base` of the manifest is not the `ref` of the current head. |
+| `applicability_mismatch` | The `applicability` of an `activate` request is not equal to the values of the snapshot items. |
 | `unsupported_candidate_kind` | Also from `load`, `invoke`, `describe` and `ingest` of a content snapshot, and from the CEL runner. |
 | `stale_qualification` | Also for a report whose candidate differs from the candidate of its snapshot. |
 
@@ -168,7 +202,9 @@ The Host decodes the manifest with the strict record decoder. It gives rule `jso
 
 ## Versions
 
-The major version is the number after the slash in `format`. A reader reads only the major version that it knows. An unknown major version gives `unsupported_content_format`. A new field or a new enum value needs a new major version, because a reader of version 1 refuses a field that it does not know. A new kind is not a new manifest version. A reader that does not know a kind gives `unsupported_candidate_kind`.
+The major version is the number after the slash in `format`. A reader reads only the major version that it knows. An unknown major version gives `unsupported_content_format`. After version 1 is stable, a new field or a new enum value needs a new major version, because a reader of version 1 refuses a field that it does not know.
+
+Version 1 is unstable. Before it is stable, an optional field can come into version 1. The field `items[].applicability` came this way. A manifest without it keeps its bytes and its `ref`. An earlier reader refuses a manifest with the field, with rule `unknown_field`. Thus no reader accepts values that it does not record. A new kind is not a new manifest version. A reader that does not know a kind gives `unsupported_candidate_kind`.
 
 ## Vectors
 
@@ -199,20 +235,20 @@ Each item of `bindings` has a `report` and a `snapshot`, each a candidate refere
 
 The checker applies the same rules that the Host applies. Agreement of the checker and the vectors shows that the two agree with each other. The Go tests `TestContentCandidateVectors` and `TestHostProposeAppliesTheContentVectors` run the cases against the Host rules and the Host `propose`.
 
-[`vectors/lifecycle-cases.json`](vectors/lifecycle-cases.json) has the lifecycle vectors. Each case starts with an empty store, a source and a plan for the subject `content:loan-rules/region-a`. `manifests` gives each manifest text and its `ref`, calculated with `shasum -a 256`. Each step has one operation and an optional `expect`:
+[`vectors/lifecycle-cases.json`](vectors/lifecycle-cases.json) has the lifecycle vectors. Each case starts with an empty store, a source and a plan for the subject `content:loan-rules/region-a`. `manifests` gives each manifest text and its `ref`, calculated with `shasum -a 256`. A manifest with item values also has `applicability`: the values that the snapshot, the event and the selection record. Each step has one operation and an optional `expect`:
 
 - `propose`: the manifest name, with `from` and `until`. The result is the name, or `{"error": <code>}`.
 - `qualify`: the manifest name and the `verdict` of the fixture runner. `runner_names` is the manifest that the verdict names, if it is not the same. The result is the report status.
-- `decide`: an accept verdict on the last report. `activate`: an activation of the last decision. The result is `accept` or the name.
+- `decide`: an accept verdict on the last report. `activate`: an activation of the last decision, with the optional `applicability` of the request. The result is `accept` or the name, or `{"error": <code>}`.
 - `state`: the `state` of the proposal in the approval API.
 - `mark`: keep the current root as a named cursor. `resolve`: the date, and an optional `cursor` name. The result is the manifest name of the selected candidate.
 - `load`, `invoke`, `describe`: the date. The result is the error.
 
-The Go test `TestContentLifecycleVectors` runs them on the Host with a fixture runner. The fixture runner checks that it got the exact manifest bytes. `check_spec.py` checks each `ref`, each manifest against the rules and each step name.
+The Go test `TestContentLifecycleVectors` runs them on the Host with a fixture runner. The fixture runner checks that it got the exact manifest bytes. The test also checks the `applicability` of each snapshot, each event and each selection against the manifest entry. `check_spec.py` checks each `ref`, each manifest against the rules, the `applicability` of each manifest entry against its items, the result of each `activate` against the confirmation rule and each step name.
 
 ## Limits
 
-- The wire protocol has no `candidate` field yet. Only a Host request (the Go API or the JSONL Host) can give a content candidate.
+- The wire protocol has no `candidate` field and no `activate` field `applicability` yet. Only a Host request (the Go API or the JSONL Host) can give a content candidate or confirm its values.
 - `proposals` gives no separate `candidate` or `evidence_reference` field in its list item. A reader gets them from `proposal`.
 - The Host does not get or check the evidence document that the manifest `evidence` names. A `propose` request can attach an evidence document, and the Host keeps it, but the Host does not compare it with the reference.
 - Entelos cannot check an item digest, an item size or a media type. The qualification runner of the application is responsible for them.

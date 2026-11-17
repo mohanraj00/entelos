@@ -1,6 +1,6 @@
 {
  "format_version": 1,
- "note": "Each case starts with an empty store. The Host installs the subject content:loan-rules/region-a. A source and a plan cover 2025-01-01 to 2029-01-01. A propose step gives the interval of the candidate. Each expected value is written from CONTENT.md. Each ref was calculated with shasum -a 256 on the manifest text.",
+ "note": "Each case starts with an empty store. The Host installs the subject content:loan-rules/region-a. A source and a plan cover 2025-01-01 to 2029-01-01. A propose step gives the interval of the candidate. Each expected value is written from CONTENT.md. Each ref was calculated with shasum -a 256 on the manifest text. A manifest with item values has the field applicability: the values that the snapshot, the event and the selection record, written from CONTENT.md.",
  "subjects": [
   "content:loan-rules/region-a"
  ],
@@ -20,6 +20,24 @@
   "unknown-field": {
    "text": "{\"format\":\"entelos.content/1\",\"collection\":\"loan-rules\",\"partition\":\"region-a\",\"base\":\"\",\"items\":[{\"item_id\":\"limits\",\"digest\":\"sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"size\":120,\"colour\":\"red\"}]}",
    "ref": "sha256:43fb8dbe1ab27175690c3c2feebc9bad436f30f9febd98f5a17a947f84d6f9c5"
+  },
+  "regions": {
+   "text": "{\"format\":\"entelos.content/1\",\"collection\":\"loan-rules\",\"partition\":\"region-a\",\"base\":\"\",\"items\":[{\"item_id\":\"rules-de\",\"digest\":\"sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd\",\"size\":200,\"media_type\":\"text/markdown\",\"applicability\":{\"region\":[\"eu\",\"de\"]}},{\"item_id\":\"rules-fr\",\"digest\":\"sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff\",\"size\":180,\"media_type\":\"text/markdown\",\"applicability\":{\"region\":[\"eu\",\"fr\"]}}]}",
+   "ref": "sha256:fce331c66161eea70e7fffa02a4d2eb37be51fc59a0765aeae4cd29dc42a00da",
+   "applicability": {
+    "rules-de": {
+     "region": [
+      "eu",
+      "de"
+     ]
+    },
+    "rules-fr": {
+     "region": [
+      "eu",
+      "fr"
+     ]
+    }
+   }
   }
  },
  "cases": [
@@ -277,6 +295,185 @@
      "expect": {
       "error": "unsupported_candidate_kind"
      }
+    },
+    {
+     "resolve": "2026-06-01",
+     "expect": "first"
+    }
+   ]
+  },
+  {
+   "name": "two-regions-confirmed",
+   "steps": [
+    {
+     "propose": "regions",
+     "from": "2026-01-01",
+     "until": "2027-01-01",
+     "expect": "regions"
+    },
+    {
+     "qualify": "regions",
+     "verdict": "passed",
+     "expect": "passed"
+    },
+    {
+     "decide": "regions",
+     "expect": "accept"
+    },
+    {
+     "activate": "regions",
+     "expect": {
+      "error": "applicability_mismatch"
+     }
+    },
+    {
+     "activate": "regions",
+     "applicability": {
+      "rules-de": {
+       "region": [
+        "eu",
+        "de"
+       ]
+      }
+     },
+     "expect": {
+      "error": "applicability_mismatch"
+     }
+    },
+    {
+     "activate": "regions",
+     "applicability": {
+      "rules-de": {
+       "region": [
+        "eu",
+        "de"
+       ]
+      },
+      "rules-fr": {
+       "region": [
+        "fr",
+        "eu"
+       ]
+      }
+     },
+     "expect": {
+      "error": "applicability_mismatch"
+     }
+    },
+    {
+     "activate": "regions",
+     "applicability": {
+      "rules-de": {
+       "region": [
+        "eu",
+        "de"
+       ]
+      },
+      "rules-fr": {
+       "region": [
+        "eu",
+        "fr"
+       ]
+      },
+      "rules-it": {
+       "region": [
+        "eu",
+        "it"
+       ]
+      }
+     },
+     "expect": {
+      "error": "applicability_mismatch"
+     }
+    },
+    {
+     "activate": "regions",
+     "applicability": {
+      "rules-de": {
+       "region": [
+        "eu",
+        "de"
+       ]
+      },
+      "rules-fr": {
+       "region": [
+        "eu",
+        "fr"
+       ],
+       "channel": [
+        "branch"
+       ]
+      }
+     },
+     "expect": {
+      "error": "applicability_mismatch"
+     }
+    },
+    {
+     "activate": "regions",
+     "applicability": {
+      "rules-de": {
+       "region": [
+        "eu",
+        "de"
+       ]
+      },
+      "rules-fr": {
+       "region": [
+        "eu",
+        "fr"
+       ]
+      }
+     },
+     "expect": "regions"
+    },
+    {
+     "resolve": "2026-06-01",
+     "expect": "regions"
+    },
+    {
+     "resolve": "2027-06-01",
+     "expect": {
+      "error": "out_of_scope"
+     }
+    }
+   ]
+  },
+  {
+   "name": "no-values-confirm-empty",
+   "steps": [
+    {
+     "propose": "first",
+     "from": "2026-01-01",
+     "until": "2027-01-01",
+     "expect": "first"
+    },
+    {
+     "qualify": "first",
+     "verdict": "passed",
+     "expect": "passed"
+    },
+    {
+     "decide": "first",
+     "expect": "accept"
+    },
+    {
+     "activate": "first",
+     "applicability": {
+      "limits": {
+       "region": [
+        "eu"
+       ]
+      }
+     },
+     "expect": {
+      "error": "applicability_mismatch"
+     }
+    },
+    {
+     "activate": "first",
+     "applicability": {},
+     "expect": "first"
     },
     {
      "resolve": "2026-06-01",
