@@ -30,7 +30,7 @@ Items 6 and 7 make the approval stricter. They do not remove a refusal or a chec
 
 ## Contract notes for 1.2 (#161)
 
-Version 1.2 adds `limit` to `proposals`, a page token in its request `cursor`, and `next_cursor` in a paged result. It also adds an optional `evidence` document to `propose` and exposes that document in `proposal`. The [1.2 schemas](schema/1.2/) override only these three operations. The [1.1 schemas](schema/) stay in use for 1.1 clients. The JSONL Host, socket and HTTP all call the same Host implementation.
+Version 1.2 adds `limit` to `proposals`, a page token in its request `cursor`, and `next_cursor` in a paged result. It also adds an optional `evidence` document to `propose` and exposes that document in `proposal`. Version 1.2 also adds the optional `activate.supersedes` array of event references with the same shape as `targets` (#180). [SUPERSESSION.md](../supersession/SUPERSESSION.md) defines the Host rules. The [1.2 schemas](schema/1.2/) override these four operations. Versions 1.0 and 1.1 refuse `activate.supersedes` with `invalid_request` at the protocol stage. The [1.1 schemas](schema/) stay in use for 1.1 clients. The JSONL Host, socket and HTTP all call the same Host implementation.
 
 An old `proposals` request without `limit` keeps its exact result fields, including the existing store-revision `cursor`. The dashboard continues to send protocol 1.1 and needs no client change. The envelope now accepts response version `1.2`; the unsupported-minor cases move to `1.3`. The earlier 1.0 and 1.1 successful expectations stay unchanged.
 

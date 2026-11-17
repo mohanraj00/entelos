@@ -76,7 +76,7 @@ func (s *Schemas) LoadApproval(dir string) error {
 		return fmt.Errorf("%s: no approval operation schema", dir)
 	}
 	s.Approval = ops
-	// Version 1.2 overrides only its three changed operations. Keep the
+	// Version 1.2 overrides only its four changed operations. Keep the
 	// 1.1 definitions intact for old clients and schema users.
 	paths, err = filepath.Glob(filepath.Join(dir, "1.2", "*.schema.json"))
 	if err != nil {
@@ -103,14 +103,14 @@ func (s *Schemas) LoadApproval(dir string) error {
 		name := strings.TrimSuffix(filepath.Base(path), ".schema.json")
 		_, body := defs["request_body"].(lifecycle.Object)
 		_, result := defs["result"].(lifecycle.Object)
-		if !body || !result || (name != "proposals" && name != "proposal" && name != "propose") ||
+		if !body || !result || (name != "proposals" && name != "proposal" && name != "propose" && name != "activate") ||
 			(doc["x-entelos-access"] == "read") != lifecycle.Reads[name] {
 			return fmt.Errorf("%s: invalid approval 1.2 operation", path)
 		}
 		latest[name] = defs
 	}
-	if len(latest) != 0 && len(latest) != 3 {
-		return fmt.Errorf("%s: approval 1.2 needs three operation schemas", dir)
+	if len(latest) != 0 && len(latest) != 4 {
+		return fmt.Errorf("%s: approval 1.2 needs four operation schemas", dir)
 	}
 	s.approval12 = latest
 	return nil

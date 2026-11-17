@@ -363,8 +363,8 @@ func TestSessionVectors(t *testing.T) {
 			}
 		})
 	}
-	if total < 61 {
-		t.Fatalf("ran %d session steps; the vector files have at least 61", total)
+	if total < 68 {
+		t.Fatalf("ran %d session steps; the vector files have at least 68", total)
 	}
 }
 

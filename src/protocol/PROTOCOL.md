@@ -4,7 +4,7 @@ This file defines the versioned wire protocol between an application module and 
 
 [STABILITY.md](../../docs/STABILITY.md) states the compatibility of the protocol. The schemas and vectors of 1.0, 1.1 and 1.2 are stable surfaces.
 
-Versions 1.1 and 1.2 are defined in [approval/APPROVAL.md](approval/APPROVAL.md) for issues [#130](https://github.com/mohanraj00/entelos/issues/130) and [#161](https://github.com/mohanraj00/entelos/issues/161). This file defines only 1.0. The Go Host and sidecar implement all three versions.
+Versions 1.1 and 1.2 are defined in [approval/APPROVAL.md](approval/APPROVAL.md) for issues [#130](https://github.com/mohanraj00/entelos/issues/130) and [#161](https://github.com/mohanraj00/entelos/issues/161). This file defines the base 1.0 contract. Protocol 1.2 also adds the optional `activate.supersedes` array of event references, with the same shape as `targets` ([#180](https://github.com/mohanraj00/entelos/issues/180)). Its [schema](approval/schema/1.2/activate.schema.json) overrides the 1.0 `activate` schema only for 1.2 requests. Versions 1.0 and 1.1 keep the old schema and refuse the field with `invalid_request` at the protocol stage. [SUPERSESSION.md](supersession/SUPERSESSION.md) defines the unchanged Host rules. The Go Host and sidecar implement all three versions.
 
 ## Files
 
