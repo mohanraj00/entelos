@@ -1,0 +1,766 @@
+{
+ "format_version": 1,
+ "spec": "ACTIVATION.md",
+ "note": "Hand-written cases. The references are invented. An expected record of mappings is written from the mapping table of ACTIVATION.md.",
+ "mappings": [
+  {
+   "name": "content-two-regions",
+   "records": {
+    "event": {
+     "format": "entelos.record/1",
+     "function": "content:loan-rules/region-a",
+     "scope": "lending",
+     "from": "2026-01-01",
+     "until": "2027-01-01",
+     "kind": "enable",
+     "snapshot_ref": "sha256:5555555555555555555555555555555555555555555555555555555555555555",
+     "report_ref": "sha256:7777777777777777777777777777777777777777777777777777777777777777",
+     "decision_ref": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+     "targets": [],
+     "actor": "reviewer-1",
+     "applicability": {
+      "rules-de": {
+       "region": [
+        "eu",
+        "de"
+       ]
+      },
+      "rules-fr": {
+       "region": [
+        "eu",
+        "fr"
+       ]
+      }
+     }
+    },
+    "snapshot": {
+     "format": "entelos.record/1",
+     "function": "content:loan-rules/region-a",
+     "scope": "lending",
+     "from": "2026-01-01",
+     "until": "2027-01-01",
+     "candidate": {
+      "kind": "content",
+      "ref": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+     },
+     "collection": "loan-rules",
+     "partition": "region-a",
+     "base": "",
+     "manifest_ref": "sha256:6666666666666666666666666666666666666666666666666666666666666666",
+     "bundle_ref": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+     "source_ref": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+     "reason": "update",
+     "producer": "author-1",
+     "stale_mode": "fail_closed",
+     "submitted_at": "2026-01-01T00:00:00Z",
+     "applicability": {
+      "rules-de": {
+       "region": [
+        "eu",
+        "de"
+       ]
+      },
+      "rules-fr": {
+       "region": [
+        "eu",
+        "fr"
+       ]
+      }
+     }
+    },
+    "report": {
+     "format": "entelos.record/1",
+     "snapshot_ref": "sha256:5555555555555555555555555555555555555555555555555555555555555555",
+     "plan_ref": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+     "runner": "runner-1",
+     "status": "passed"
+    },
+    "decision": {
+     "format": "entelos.record/1",
+     "snapshot_ref": "sha256:5555555555555555555555555555555555555555555555555555555555555555",
+     "report_ref": "sha256:7777777777777777777777777777777777777777777777777777777777777777",
+     "disposition": "accept",
+     "actor": "approver-1"
+    }
+   },
+   "event_ref": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+   "request_key": "activate-1",
+   "expect": {
+    "format": "entelos.record/1",
+    "scope": "lending",
+    "function": "content:loan-rules/region-a",
+    "event_ref": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+    "request_key": "activate-1",
+    "candidate": {
+     "kind": "content",
+     "ref": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+    },
+    "base": "",
+    "collection": "loan-rules",
+    "partition": "region-a",
+    "from": "2026-01-01",
+    "until": "2027-01-01",
+    "source_ref": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "snapshot_ref": "sha256:5555555555555555555555555555555555555555555555555555555555555555",
+    "report_ref": "sha256:7777777777777777777777777777777777777777777777777777777777777777",
+    "decision_ref": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+    "producer": "author-1",
+    "runner": "runner-1",
+    "approver": "approver-1",
+    "activator": "reviewer-1",
+    "targets": [],
+    "supersedes": [],
+    "applicability": {
+     "rules-de": {
+      "region": [
+       "eu",
+       "de"
+      ]
+     },
+     "rules-fr": {
+      "region": [
+       "eu",
+       "fr"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "name": "content-with-base-no-values",
+   "records": {
+    "event": {
+     "format": "entelos.record/1",
+     "function": "content:loan-rules/region-a",
+     "scope": "lending",
+     "from": "2026-01-01",
+     "until": "2027-01-01",
+     "kind": "enable",
+     "snapshot_ref": "sha256:5555555555555555555555555555555555555555555555555555555555555555",
+     "report_ref": "sha256:7777777777777777777777777777777777777777777777777777777777777777",
+     "decision_ref": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+     "targets": [],
+     "actor": "reviewer-1"
+    },
+    "snapshot": {
+     "format": "entelos.record/1",
+     "function": "content:loan-rules/region-a",
+     "scope": "lending",
+     "from": "2026-01-01",
+     "until": "2027-01-01",
+     "candidate": {
+      "kind": "content",
+      "ref": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+     },
+     "collection": "loan-rules",
+     "partition": "region-a",
+     "base": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+     "manifest_ref": "sha256:6666666666666666666666666666666666666666666666666666666666666666",
+     "bundle_ref": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+     "source_ref": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+     "reason": "update",
+     "producer": "author-1",
+     "stale_mode": "fail_closed",
+     "submitted_at": "2026-01-01T00:00:00Z"
+    },
+    "report": {
+     "format": "entelos.record/1",
+     "snapshot_ref": "sha256:5555555555555555555555555555555555555555555555555555555555555555",
+     "plan_ref": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+     "runner": "runner-1",
+     "status": "passed"
+    },
+    "decision": {
+     "format": "entelos.record/1",
+     "snapshot_ref": "sha256:5555555555555555555555555555555555555555555555555555555555555555",
+     "report_ref": "sha256:7777777777777777777777777777777777777777777777777777777777777777",
+     "disposition": "accept",
+     "actor": "approver-1"
+    }
+   },
+   "event_ref": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+   "request_key": "activate-2",
+   "expect": {
+    "format": "entelos.record/1",
+    "scope": "lending",
+    "function": "content:loan-rules/region-a",
+    "event_ref": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+    "request_key": "activate-2",
+    "candidate": {
+     "kind": "content",
+     "ref": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+    },
+    "base": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+    "collection": "loan-rules",
+    "partition": "region-a",
+    "from": "2026-01-01",
+    "until": "2027-01-01",
+    "source_ref": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "snapshot_ref": "sha256:5555555555555555555555555555555555555555555555555555555555555555",
+    "report_ref": "sha256:7777777777777777777777777777777777777777777777777777777777777777",
+    "decision_ref": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+    "producer": "author-1",
+    "runner": "runner-1",
+    "approver": "approver-1",
+    "activator": "reviewer-1",
+    "targets": [],
+    "supersedes": [],
+    "applicability": {}
+   }
+  },
+  {
+   "name": "content-targets-and-supersedes",
+   "records": {
+    "event": {
+     "format": "entelos.record/1",
+     "function": "content:loan-rules/region-a",
+     "scope": "lending",
+     "from": "2026-01-01",
+     "until": "2027-01-01",
+     "kind": "enable",
+     "snapshot_ref": "sha256:5555555555555555555555555555555555555555555555555555555555555555",
+     "report_ref": "sha256:7777777777777777777777777777777777777777777777777777777777777777",
+     "decision_ref": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+     "targets": [
+      "sha256:1111111111111111111111111111111111111111111111111111111111111111"
+     ],
+     "actor": "reviewer-1",
+     "supersedes": [
+      "sha256:2222222222222222222222222222222222222222222222222222222222222222"
+     ]
+    },
+    "snapshot": {
+     "format": "entelos.record/1",
+     "function": "content:loan-rules/region-a",
+     "scope": "lending",
+     "from": "2026-01-01",
+     "until": "2027-01-01",
+     "candidate": {
+      "kind": "content",
+      "ref": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+     },
+     "collection": "loan-rules",
+     "partition": "region-a",
+     "base": "",
+     "manifest_ref": "sha256:6666666666666666666666666666666666666666666666666666666666666666",
+     "bundle_ref": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+     "source_ref": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+     "reason": "update",
+     "producer": "author-1",
+     "stale_mode": "fail_closed",
+     "submitted_at": "2026-01-01T00:00:00Z"
+    },
+    "report": {
+     "format": "entelos.record/1",
+     "snapshot_ref": "sha256:5555555555555555555555555555555555555555555555555555555555555555",
+     "plan_ref": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+     "runner": "runner-1",
+     "status": "passed"
+    },
+    "decision": {
+     "format": "entelos.record/1",
+     "snapshot_ref": "sha256:5555555555555555555555555555555555555555555555555555555555555555",
+     "report_ref": "sha256:7777777777777777777777777777777777777777777777777777777777777777",
+     "disposition": "accept",
+     "actor": "approver-1"
+    }
+   },
+   "event_ref": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+   "request_key": "activate-3",
+   "expect": {
+    "format": "entelos.record/1",
+    "scope": "lending",
+    "function": "content:loan-rules/region-a",
+    "event_ref": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+    "request_key": "activate-3",
+    "candidate": {
+     "kind": "content",
+     "ref": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+    },
+    "base": "",
+    "collection": "loan-rules",
+    "partition": "region-a",
+    "from": "2026-01-01",
+    "until": "2027-01-01",
+    "source_ref": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "snapshot_ref": "sha256:5555555555555555555555555555555555555555555555555555555555555555",
+    "report_ref": "sha256:7777777777777777777777777777777777777777777777777777777777777777",
+    "decision_ref": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+    "producer": "author-1",
+    "runner": "runner-1",
+    "approver": "approver-1",
+    "activator": "reviewer-1",
+    "targets": [
+     "sha256:1111111111111111111111111111111111111111111111111111111111111111"
+    ],
+    "supersedes": [
+     "sha256:2222222222222222222222222222222222222222222222222222222222222222"
+    ],
+    "applicability": {}
+   }
+  },
+  {
+   "name": "cel-no-base",
+   "records": {
+    "event": {
+     "format": "entelos.record/1",
+     "function": "record.visible",
+     "scope": "lending",
+     "from": "2026-01-01",
+     "until": "2027-01-01",
+     "kind": "enable",
+     "snapshot_ref": "sha256:5555555555555555555555555555555555555555555555555555555555555555",
+     "report_ref": "sha256:7777777777777777777777777777777777777777777777777777777777777777",
+     "decision_ref": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+     "targets": [],
+     "actor": "reviewer-1"
+    },
+    "snapshot": {
+     "format": "entelos.record/1",
+     "function": "record.visible",
+     "scope": "lending",
+     "from": "2026-01-01",
+     "until": "2027-01-01",
+     "base_snapshot": null,
+     "source_ref": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+     "files": {},
+     "bundle_ref": "sha256:9999999999999999999999999999999999999999999999999999999999999999",
+     "engine_build": "sha256:3333333333333333333333333333333333333333333333333333333333333333",
+     "reason": "update",
+     "producer": "author-1",
+     "stale_mode": "fail_closed",
+     "submitted_at": "2026-01-01T00:00:00Z"
+    },
+    "report": {
+     "format": "entelos.record/1",
+     "snapshot_ref": "sha256:5555555555555555555555555555555555555555555555555555555555555555",
+     "plan_ref": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+     "runner": "runner-1",
+     "status": "passed"
+    },
+    "decision": {
+     "format": "entelos.record/1",
+     "snapshot_ref": "sha256:5555555555555555555555555555555555555555555555555555555555555555",
+     "report_ref": "sha256:7777777777777777777777777777777777777777777777777777777777777777",
+     "disposition": "accept",
+     "actor": "approver-1"
+    }
+   },
+   "event_ref": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+   "request_key": "",
+   "expect": {
+    "format": "entelos.record/1",
+    "scope": "lending",
+    "function": "record.visible",
+    "event_ref": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+    "request_key": "",
+    "candidate": {
+     "kind": "cel-bundle",
+     "ref": "sha256:9999999999999999999999999999999999999999999999999999999999999999"
+    },
+    "base": "",
+    "from": "2026-01-01",
+    "until": "2027-01-01",
+    "source_ref": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "snapshot_ref": "sha256:5555555555555555555555555555555555555555555555555555555555555555",
+    "report_ref": "sha256:7777777777777777777777777777777777777777777777777777777777777777",
+    "decision_ref": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+    "producer": "author-1",
+    "runner": "runner-1",
+    "approver": "approver-1",
+    "activator": "reviewer-1",
+    "targets": [],
+    "supersedes": [],
+    "applicability": {}
+   }
+  },
+  {
+   "name": "cel-with-base",
+   "records": {
+    "event": {
+     "format": "entelos.record/1",
+     "function": "record.visible",
+     "scope": "lending",
+     "from": "2026-01-01",
+     "until": "2027-01-01",
+     "kind": "enable",
+     "snapshot_ref": "sha256:5555555555555555555555555555555555555555555555555555555555555555",
+     "report_ref": "sha256:7777777777777777777777777777777777777777777777777777777777777777",
+     "decision_ref": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+     "targets": [],
+     "actor": "reviewer-1"
+    },
+    "snapshot": {
+     "format": "entelos.record/1",
+     "function": "record.visible",
+     "scope": "lending",
+     "from": "2026-01-01",
+     "until": "2027-01-01",
+     "base_snapshot": "sha256:4444444444444444444444444444444444444444444444444444444444444444",
+     "source_ref": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+     "files": {},
+     "bundle_ref": "sha256:9999999999999999999999999999999999999999999999999999999999999999",
+     "engine_build": "sha256:3333333333333333333333333333333333333333333333333333333333333333",
+     "reason": "update",
+     "producer": "author-1",
+     "stale_mode": "fail_closed",
+     "submitted_at": "2026-01-01T00:00:00Z"
+    },
+    "report": {
+     "format": "entelos.record/1",
+     "snapshot_ref": "sha256:5555555555555555555555555555555555555555555555555555555555555555",
+     "plan_ref": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+     "runner": "runner-1",
+     "status": "passed"
+    },
+    "decision": {
+     "format": "entelos.record/1",
+     "snapshot_ref": "sha256:5555555555555555555555555555555555555555555555555555555555555555",
+     "report_ref": "sha256:7777777777777777777777777777777777777777777777777777777777777777",
+     "disposition": "accept",
+     "actor": "approver-1"
+    },
+    "base_snapshot": {
+     "format": "entelos.record/1",
+     "function": "record.visible",
+     "scope": "lending",
+     "from": "2026-01-01",
+     "until": "2027-01-01",
+     "base_snapshot": null,
+     "source_ref": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+     "files": {},
+     "bundle_ref": "sha256:8888888888888888888888888888888888888888888888888888888888888888",
+     "engine_build": "sha256:3333333333333333333333333333333333333333333333333333333333333333",
+     "reason": "update",
+     "producer": "author-1",
+     "stale_mode": "fail_closed",
+     "submitted_at": "2026-01-01T00:00:00Z"
+    }
+   },
+   "event_ref": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+   "request_key": "",
+   "expect": {
+    "format": "entelos.record/1",
+    "scope": "lending",
+    "function": "record.visible",
+    "event_ref": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+    "request_key": "",
+    "candidate": {
+     "kind": "cel-bundle",
+     "ref": "sha256:9999999999999999999999999999999999999999999999999999999999999999"
+    },
+    "base": "sha256:8888888888888888888888888888888888888888888888888888888888888888",
+    "from": "2026-01-01",
+    "until": "2027-01-01",
+    "source_ref": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "snapshot_ref": "sha256:5555555555555555555555555555555555555555555555555555555555555555",
+    "report_ref": "sha256:7777777777777777777777777777777777777777777777777777777777777777",
+    "decision_ref": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+    "producer": "author-1",
+    "runner": "runner-1",
+    "approver": "approver-1",
+    "activator": "reviewer-1",
+    "targets": [],
+    "supersedes": [],
+    "applicability": {}
+   }
+  },
+  {
+   "name": "suspend-has-no-record",
+   "records": {
+    "event": {
+     "format": "entelos.record/1",
+     "function": "content:loan-rules/region-a",
+     "scope": "lending",
+     "from": "2026-01-01",
+     "until": "2027-01-01",
+     "kind": "suspend",
+     "targets": [
+      "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+     ],
+     "actor": "reviewer-1",
+     "reason": "stop",
+     "snapshot_ref": "sha256:5555555555555555555555555555555555555555555555555555555555555555",
+     "report_ref": "sha256:7777777777777777777777777777777777777777777777777777777777777777",
+     "decision_ref": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+    },
+    "snapshot": {
+     "format": "entelos.record/1",
+     "function": "content:loan-rules/region-a",
+     "scope": "lending",
+     "from": "2026-01-01",
+     "until": "2027-01-01",
+     "candidate": {
+      "kind": "content",
+      "ref": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+     },
+     "collection": "loan-rules",
+     "partition": "region-a",
+     "base": "",
+     "manifest_ref": "sha256:6666666666666666666666666666666666666666666666666666666666666666",
+     "bundle_ref": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+     "source_ref": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+     "reason": "update",
+     "producer": "author-1",
+     "stale_mode": "fail_closed",
+     "submitted_at": "2026-01-01T00:00:00Z"
+    },
+    "report": {
+     "format": "entelos.record/1",
+     "snapshot_ref": "sha256:5555555555555555555555555555555555555555555555555555555555555555",
+     "plan_ref": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+     "runner": "runner-1",
+     "status": "passed"
+    },
+    "decision": {
+     "format": "entelos.record/1",
+     "snapshot_ref": "sha256:5555555555555555555555555555555555555555555555555555555555555555",
+     "report_ref": "sha256:7777777777777777777777777777777777777777777777777777777777777777",
+     "disposition": "accept",
+     "actor": "approver-1"
+    }
+   },
+   "event_ref": "sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+   "request_key": "suspend-1",
+   "expect": {
+    "none": true
+   }
+  }
+ ],
+ "records": [
+  {
+   "name": "valid-content",
+   "record_kind": "activation",
+   "record": "{\"format\":\"entelos.record/1\",\"scope\":\"lending\",\"function\":\"content:loan-rules/region-a\",\"event_ref\":\"sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee\",\"request_key\":\"activate-1\",\"candidate\":{\"kind\":\"content\",\"ref\":\"sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc\"},\"base\":\"\",\"collection\":\"loan-rules\",\"partition\":\"region-a\",\"from\":\"2026-01-01\",\"until\":\"2027-01-01\",\"source_ref\":\"sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"snapshot_ref\":\"sha256:5555555555555555555555555555555555555555555555555555555555555555\",\"report_ref\":\"sha256:7777777777777777777777777777777777777777777777777777777777777777\",\"decision_ref\":\"sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd\",\"producer\":\"author-1\",\"runner\":\"runner-1\",\"approver\":\"approver-1\",\"activator\":\"reviewer-1\",\"targets\":[],\"supersedes\":[],\"applicability\":{\"rules-de\":{\"region\":[\"eu\",\"de\"]},\"rules-fr\":{\"region\":[\"eu\",\"fr\"]}}}",
+   "expect": {
+    "valid": true
+   }
+  },
+  {
+   "name": "valid-cel",
+   "record_kind": "activation",
+   "record": "{\"format\":\"entelos.record/1\",\"scope\":\"lending\",\"function\":\"record.visible\",\"event_ref\":\"sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee\",\"request_key\":\"\",\"candidate\":{\"kind\":\"cel-bundle\",\"ref\":\"sha256:9999999999999999999999999999999999999999999999999999999999999999\"},\"base\":\"sha256:8888888888888888888888888888888888888888888888888888888888888888\",\"from\":\"2026-01-01\",\"until\":\"2027-01-01\",\"source_ref\":\"sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"snapshot_ref\":\"sha256:5555555555555555555555555555555555555555555555555555555555555555\",\"report_ref\":\"sha256:7777777777777777777777777777777777777777777777777777777777777777\",\"decision_ref\":\"sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd\",\"producer\":\"author-1\",\"runner\":\"runner-1\",\"approver\":\"approver-1\",\"activator\":\"reviewer-1\",\"targets\":[],\"supersedes\":[],\"applicability\":{}}",
+   "expect": {
+    "valid": true
+   }
+  },
+  {
+   "name": "applicability-names-are-data",
+   "record_kind": "activation",
+   "record": "{\"format\":\"entelos.record/1\",\"scope\":\"lending\",\"function\":\"content:loan-rules/region-a\",\"event_ref\":\"sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee\",\"request_key\":\"activate-1\",\"candidate\":{\"kind\":\"content\",\"ref\":\"sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc\"},\"base\":\"\",\"collection\":\"loan-rules\",\"partition\":\"region-a\",\"from\":\"2026-01-01\",\"until\":\"2027-01-01\",\"source_ref\":\"sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"snapshot_ref\":\"sha256:5555555555555555555555555555555555555555555555555555555555555555\",\"report_ref\":\"sha256:7777777777777777777777777777777777777777777777777777777777777777\",\"decision_ref\":\"sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd\",\"producer\":\"author-1\",\"runner\":\"runner-1\",\"approver\":\"approver-1\",\"activator\":\"reviewer-1\",\"targets\":[],\"supersedes\":[],\"applicability\":{\"rules-de\":{\"colour\":[\"blue\"]}}}",
+   "expect": {
+    "valid": true
+   }
+  },
+  {
+   "name": "record-kind-event",
+   "record_kind": "event",
+   "record": "{\"format\":\"entelos.record/1\",\"scope\":\"lending\",\"function\":\"content:loan-rules/region-a\",\"event_ref\":\"sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee\",\"request_key\":\"activate-1\",\"candidate\":{\"kind\":\"content\",\"ref\":\"sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc\"},\"base\":\"\",\"collection\":\"loan-rules\",\"partition\":\"region-a\",\"from\":\"2026-01-01\",\"until\":\"2027-01-01\",\"source_ref\":\"sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"snapshot_ref\":\"sha256:5555555555555555555555555555555555555555555555555555555555555555\",\"report_ref\":\"sha256:7777777777777777777777777777777777777777777777777777777777777777\",\"decision_ref\":\"sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd\",\"producer\":\"author-1\",\"runner\":\"runner-1\",\"approver\":\"approver-1\",\"activator\":\"reviewer-1\",\"targets\":[],\"supersedes\":[],\"applicability\":{\"rules-de\":{\"region\":[\"eu\",\"de\"]},\"rules-fr\":{\"region\":[\"eu\",\"fr\"]}}}",
+   "expect": {
+    "valid": false,
+    "code": "unexpected_record_kind"
+   }
+  },
+  {
+   "name": "json-not-an-object",
+   "record_kind": "activation",
+   "record": "[]",
+   "expect": {
+    "valid": false,
+    "code": "invalid_activation",
+    "rule": "json"
+   }
+  },
+  {
+   "name": "json-duplicate",
+   "record_kind": "activation",
+   "record": "{\"format\":\"entelos.record/1\",\"scope\":\"lending\",\"function\":\"content:loan-rules/region-a\",\"event_ref\":\"sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee\",\"request_key\":\"activate-1\",\"candidate\":{\"kind\":\"content\",\"ref\":\"sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc\"},\"base\":\"\",\"collection\":\"loan-rules\",\"partition\":\"region-a\",\"from\":\"2026-01-01\",\"until\":\"2027-01-01\",\"source_ref\":\"sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"snapshot_ref\":\"sha256:5555555555555555555555555555555555555555555555555555555555555555\",\"report_ref\":\"sha256:7777777777777777777777777777777777777777777777777777777777777777\",\"decision_ref\":\"sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd\",\"producer\":\"author-1\",\"runner\":\"runner-1\",\"approver\":\"approver-1\",\"activator\":\"reviewer-1\",\"targets\":[],\"supersedes\":[],\"applicability\":{\"rules-de\":{\"region\":[\"eu\",\"de\"]},\"rules-fr\":{\"region\":[\"eu\",\"fr\"]}},\"base\":\"\"}",
+   "expect": {
+    "valid": false,
+    "code": "invalid_activation",
+    "rule": "json"
+   }
+  },
+  {
+   "name": "json-nan",
+   "record_kind": "activation",
+   "record": "{\"format\":\"entelos.record/1\",\"scope\":\"lending\",\"function\":\"content:loan-rules/region-a\",\"event_ref\":\"sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee\",\"request_key\":\"activate-1\",\"candidate\":{\"kind\":\"content\",\"ref\":\"sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc\"},\"base\":\"\",\"collection\":\"loan-rules\",\"partition\":\"region-a\",\"from\":\"2026-01-01\",\"until\":\"2027-01-01\",\"source_ref\":\"sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"snapshot_ref\":\"sha256:5555555555555555555555555555555555555555555555555555555555555555\",\"report_ref\":\"sha256:7777777777777777777777777777777777777777777777777777777777777777\",\"decision_ref\":\"sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd\",\"producer\":\"author-1\",\"runner\":\"runner-1\",\"approver\":\"approver-1\",\"activator\":\"reviewer-1\",\"targets\":[],\"supersedes\":[],\"applicability\":{\"rules-de\":{\"region\":[\"eu\",\"de\"]},\"rules-fr\":{\"region\":[\"eu\",\"fr\"]}},\"x\":NaN}",
+   "expect": {
+    "valid": false,
+    "code": "invalid_activation",
+    "rule": "json"
+   }
+  },
+  {
+   "name": "format-missing",
+   "record_kind": "activation",
+   "record": "{\"scope\":\"lending\",\"function\":\"content:loan-rules/region-a\",\"event_ref\":\"sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee\",\"request_key\":\"activate-1\",\"candidate\":{\"kind\":\"content\",\"ref\":\"sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc\"},\"base\":\"\",\"collection\":\"loan-rules\",\"partition\":\"region-a\",\"from\":\"2026-01-01\",\"until\":\"2027-01-01\",\"source_ref\":\"sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"snapshot_ref\":\"sha256:5555555555555555555555555555555555555555555555555555555555555555\",\"report_ref\":\"sha256:7777777777777777777777777777777777777777777777777777777777777777\",\"decision_ref\":\"sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd\",\"producer\":\"author-1\",\"runner\":\"runner-1\",\"approver\":\"approver-1\",\"activator\":\"reviewer-1\",\"targets\":[],\"supersedes\":[],\"applicability\":{\"rules-de\":{\"region\":[\"eu\",\"de\"]},\"rules-fr\":{\"region\":[\"eu\",\"fr\"]}}}",
+   "expect": {
+    "valid": false,
+    "code": "unsupported_record_format"
+   }
+  },
+  {
+   "name": "format-other-major",
+   "record_kind": "activation",
+   "record": "{\"format\":\"entelos.record/2\",\"scope\":\"lending\",\"function\":\"content:loan-rules/region-a\",\"event_ref\":\"sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee\",\"request_key\":\"activate-1\",\"candidate\":{\"kind\":\"content\",\"ref\":\"sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc\"},\"base\":\"\",\"collection\":\"loan-rules\",\"partition\":\"region-a\",\"from\":\"2026-01-01\",\"until\":\"2027-01-01\",\"source_ref\":\"sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"snapshot_ref\":\"sha256:5555555555555555555555555555555555555555555555555555555555555555\",\"report_ref\":\"sha256:7777777777777777777777777777777777777777777777777777777777777777\",\"decision_ref\":\"sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd\",\"producer\":\"author-1\",\"runner\":\"runner-1\",\"approver\":\"approver-1\",\"activator\":\"reviewer-1\",\"targets\":[],\"supersedes\":[],\"applicability\":{}}",
+   "expect": {
+    "valid": false,
+    "code": "unsupported_record_format"
+   }
+  },
+  {
+   "name": "unknown-top-field",
+   "record_kind": "activation",
+   "record": "{\"format\":\"entelos.record/1\",\"scope\":\"lending\",\"function\":\"content:loan-rules/region-a\",\"event_ref\":\"sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee\",\"request_key\":\"activate-1\",\"candidate\":{\"kind\":\"content\",\"ref\":\"sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc\"},\"base\":\"\",\"collection\":\"loan-rules\",\"partition\":\"region-a\",\"from\":\"2026-01-01\",\"until\":\"2027-01-01\",\"source_ref\":\"sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"snapshot_ref\":\"sha256:5555555555555555555555555555555555555555555555555555555555555555\",\"report_ref\":\"sha256:7777777777777777777777777777777777777777777777777777777777777777\",\"decision_ref\":\"sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd\",\"producer\":\"author-1\",\"runner\":\"runner-1\",\"approver\":\"approver-1\",\"activator\":\"reviewer-1\",\"targets\":[],\"supersedes\":[],\"applicability\":{\"rules-de\":{\"region\":[\"eu\",\"de\"]},\"rules-fr\":{\"region\":[\"eu\",\"fr\"]}},\"signature\":\"x\"}",
+   "expect": {
+    "valid": false,
+    "code": "invalid_activation",
+    "rule": "unknown_field",
+    "field": "signature"
+   }
+  },
+  {
+   "name": "unknown-candidate-field",
+   "record_kind": "activation",
+   "record": "{\"format\":\"entelos.record/1\",\"scope\":\"lending\",\"function\":\"content:loan-rules/region-a\",\"event_ref\":\"sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee\",\"request_key\":\"activate-1\",\"candidate\":{\"kind\":\"content\",\"ref\":\"sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc\",\"digest\":\"sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc\"},\"base\":\"\",\"collection\":\"loan-rules\",\"partition\":\"region-a\",\"from\":\"2026-01-01\",\"until\":\"2027-01-01\",\"source_ref\":\"sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"snapshot_ref\":\"sha256:5555555555555555555555555555555555555555555555555555555555555555\",\"report_ref\":\"sha256:7777777777777777777777777777777777777777777777777777777777777777\",\"decision_ref\":\"sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd\",\"producer\":\"author-1\",\"runner\":\"runner-1\",\"approver\":\"approver-1\",\"activator\":\"reviewer-1\",\"targets\":[],\"supersedes\":[],\"applicability\":{}}",
+   "expect": {
+    "valid": false,
+    "code": "invalid_activation",
+    "rule": "unknown_field",
+    "field": "candidate.digest"
+   }
+  },
+  {
+   "name": "unknown-field-before-type-error",
+   "record_kind": "activation",
+   "record": "{\"format\":\"entelos.record/1\",\"scope\":\"lending\",\"function\":\"content:loan-rules/region-a\",\"event_ref\":\"sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee\",\"request_key\":\"activate-1\",\"candidate\":{\"kind\":\"content\",\"ref\":\"sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc\"},\"base\":\"\",\"collection\":\"loan-rules\",\"partition\":\"region-a\",\"from\":\"2026-01-01\",\"until\":\"2027-01-01\",\"source_ref\":\"sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"snapshot_ref\":\"sha256:5555555555555555555555555555555555555555555555555555555555555555\",\"report_ref\":\"sha256:7777777777777777777777777777777777777777777777777777777777777777\",\"decision_ref\":\"sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd\",\"producer\":\"author-1\",\"runner\":\"runner-1\",\"approver\":7,\"activator\":\"reviewer-1\",\"targets\":[],\"supersedes\":[],\"applicability\":{},\"owner\":\"x\"}",
+   "expect": {
+    "valid": false,
+    "code": "invalid_activation",
+    "rule": "unknown_field",
+    "field": "owner"
+   }
+  },
+  {
+   "name": "schema-missing-approver",
+   "record_kind": "activation",
+   "record": "{\"format\":\"entelos.record/1\",\"scope\":\"lending\",\"function\":\"content:loan-rules/region-a\",\"event_ref\":\"sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee\",\"request_key\":\"activate-1\",\"candidate\":{\"kind\":\"content\",\"ref\":\"sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc\"},\"base\":\"\",\"collection\":\"loan-rules\",\"partition\":\"region-a\",\"from\":\"2026-01-01\",\"until\":\"2027-01-01\",\"source_ref\":\"sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"snapshot_ref\":\"sha256:5555555555555555555555555555555555555555555555555555555555555555\",\"report_ref\":\"sha256:7777777777777777777777777777777777777777777777777777777777777777\",\"decision_ref\":\"sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd\",\"producer\":\"author-1\",\"runner\":\"runner-1\",\"activator\":\"reviewer-1\",\"targets\":[],\"supersedes\":[],\"applicability\":{\"rules-de\":{\"region\":[\"eu\",\"de\"]},\"rules-fr\":{\"region\":[\"eu\",\"fr\"]}}}",
+   "expect": {
+    "valid": false,
+    "code": "invalid_activation",
+    "rule": "schema"
+   }
+  },
+  {
+   "name": "schema-bad-event-ref",
+   "record_kind": "activation",
+   "record": "{\"format\":\"entelos.record/1\",\"scope\":\"lending\",\"function\":\"content:loan-rules/region-a\",\"event_ref\":\"sha256:E\",\"request_key\":\"activate-1\",\"candidate\":{\"kind\":\"content\",\"ref\":\"sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc\"},\"base\":\"\",\"collection\":\"loan-rules\",\"partition\":\"region-a\",\"from\":\"2026-01-01\",\"until\":\"2027-01-01\",\"source_ref\":\"sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"snapshot_ref\":\"sha256:5555555555555555555555555555555555555555555555555555555555555555\",\"report_ref\":\"sha256:7777777777777777777777777777777777777777777777777777777777777777\",\"decision_ref\":\"sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd\",\"producer\":\"author-1\",\"runner\":\"runner-1\",\"approver\":\"approver-1\",\"activator\":\"reviewer-1\",\"targets\":[],\"supersedes\":[],\"applicability\":{}}",
+   "expect": {
+    "valid": false,
+    "code": "invalid_activation",
+    "rule": "schema"
+   }
+  },
+  {
+   "name": "schema-candidate-kind-other",
+   "record_kind": "activation",
+   "record": "{\"format\":\"entelos.record/1\",\"scope\":\"lending\",\"function\":\"content:loan-rules/region-a\",\"event_ref\":\"sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee\",\"request_key\":\"activate-1\",\"candidate\":{\"kind\":\"wasm\",\"ref\":\"sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc\"},\"base\":\"\",\"collection\":\"loan-rules\",\"partition\":\"region-a\",\"from\":\"2026-01-01\",\"until\":\"2027-01-01\",\"source_ref\":\"sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"snapshot_ref\":\"sha256:5555555555555555555555555555555555555555555555555555555555555555\",\"report_ref\":\"sha256:7777777777777777777777777777777777777777777777777777777777777777\",\"decision_ref\":\"sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd\",\"producer\":\"author-1\",\"runner\":\"runner-1\",\"approver\":\"approver-1\",\"activator\":\"reviewer-1\",\"targets\":[],\"supersedes\":[],\"applicability\":{}}",
+   "expect": {
+    "valid": false,
+    "code": "invalid_activation",
+    "rule": "schema"
+   }
+  },
+  {
+   "name": "schema-empty-level",
+   "record_kind": "activation",
+   "record": "{\"format\":\"entelos.record/1\",\"scope\":\"lending\",\"function\":\"content:loan-rules/region-a\",\"event_ref\":\"sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee\",\"request_key\":\"activate-1\",\"candidate\":{\"kind\":\"content\",\"ref\":\"sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc\"},\"base\":\"\",\"collection\":\"loan-rules\",\"partition\":\"region-a\",\"from\":\"2026-01-01\",\"until\":\"2027-01-01\",\"source_ref\":\"sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"snapshot_ref\":\"sha256:5555555555555555555555555555555555555555555555555555555555555555\",\"report_ref\":\"sha256:7777777777777777777777777777777777777777777777777777777777777777\",\"decision_ref\":\"sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd\",\"producer\":\"author-1\",\"runner\":\"runner-1\",\"approver\":\"approver-1\",\"activator\":\"reviewer-1\",\"targets\":[],\"supersedes\":[],\"applicability\":{\"rules-de\":{\"region\":[\"\"]}}}",
+   "expect": {
+    "valid": false,
+    "code": "invalid_activation",
+    "rule": "schema"
+   }
+  },
+  {
+   "name": "schema-no-levels",
+   "record_kind": "activation",
+   "record": "{\"format\":\"entelos.record/1\",\"scope\":\"lending\",\"function\":\"content:loan-rules/region-a\",\"event_ref\":\"sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee\",\"request_key\":\"activate-1\",\"candidate\":{\"kind\":\"content\",\"ref\":\"sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc\"},\"base\":\"\",\"collection\":\"loan-rules\",\"partition\":\"region-a\",\"from\":\"2026-01-01\",\"until\":\"2027-01-01\",\"source_ref\":\"sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"snapshot_ref\":\"sha256:5555555555555555555555555555555555555555555555555555555555555555\",\"report_ref\":\"sha256:7777777777777777777777777777777777777777777777777777777777777777\",\"decision_ref\":\"sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd\",\"producer\":\"author-1\",\"runner\":\"runner-1\",\"approver\":\"approver-1\",\"activator\":\"reviewer-1\",\"targets\":[],\"supersedes\":[],\"applicability\":{\"rules-de\":{\"region\":[]}}}",
+   "expect": {
+    "valid": false,
+    "code": "invalid_activation",
+    "rule": "schema"
+   }
+  },
+  {
+   "name": "schema-date-shape",
+   "record_kind": "activation",
+   "record": "{\"format\":\"entelos.record/1\",\"scope\":\"lending\",\"function\":\"content:loan-rules/region-a\",\"event_ref\":\"sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee\",\"request_key\":\"activate-1\",\"candidate\":{\"kind\":\"content\",\"ref\":\"sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc\"},\"base\":\"\",\"collection\":\"loan-rules\",\"partition\":\"region-a\",\"from\":\"2026-01-01\",\"until\":\"2027-1-1\",\"source_ref\":\"sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"snapshot_ref\":\"sha256:5555555555555555555555555555555555555555555555555555555555555555\",\"report_ref\":\"sha256:7777777777777777777777777777777777777777777777777777777777777777\",\"decision_ref\":\"sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd\",\"producer\":\"author-1\",\"runner\":\"runner-1\",\"approver\":\"approver-1\",\"activator\":\"reviewer-1\",\"targets\":[],\"supersedes\":[],\"applicability\":{}}",
+   "expect": {
+    "valid": false,
+    "code": "invalid_activation",
+    "rule": "schema"
+   }
+  },
+  {
+   "name": "candidate-fields-missing",
+   "record_kind": "activation",
+   "record": "{\"format\":\"entelos.record/1\",\"scope\":\"lending\",\"function\":\"content:loan-rules/region-a\",\"event_ref\":\"sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee\",\"request_key\":\"activate-1\",\"candidate\":{\"kind\":\"content\",\"ref\":\"sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc\"},\"base\":\"\",\"collection\":\"loan-rules\",\"from\":\"2026-01-01\",\"until\":\"2027-01-01\",\"source_ref\":\"sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"snapshot_ref\":\"sha256:5555555555555555555555555555555555555555555555555555555555555555\",\"report_ref\":\"sha256:7777777777777777777777777777777777777777777777777777777777777777\",\"decision_ref\":\"sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd\",\"producer\":\"author-1\",\"runner\":\"runner-1\",\"approver\":\"approver-1\",\"activator\":\"reviewer-1\",\"targets\":[],\"supersedes\":[],\"applicability\":{\"rules-de\":{\"region\":[\"eu\",\"de\"]},\"rules-fr\":{\"region\":[\"eu\",\"fr\"]}}}",
+   "expect": {
+    "valid": false,
+    "code": "invalid_activation",
+    "rule": "candidate_fields"
+   }
+  },
+  {
+   "name": "candidate-fields-for-cel",
+   "record_kind": "activation",
+   "record": "{\"format\":\"entelos.record/1\",\"scope\":\"lending\",\"function\":\"record.visible\",\"event_ref\":\"sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee\",\"request_key\":\"\",\"candidate\":{\"kind\":\"cel-bundle\",\"ref\":\"sha256:9999999999999999999999999999999999999999999999999999999999999999\"},\"base\":\"\",\"from\":\"2026-01-01\",\"until\":\"2027-01-01\",\"source_ref\":\"sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"snapshot_ref\":\"sha256:5555555555555555555555555555555555555555555555555555555555555555\",\"report_ref\":\"sha256:7777777777777777777777777777777777777777777777777777777777777777\",\"decision_ref\":\"sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd\",\"producer\":\"author-1\",\"runner\":\"runner-1\",\"approver\":\"approver-1\",\"activator\":\"reviewer-1\",\"targets\":[],\"supersedes\":[],\"applicability\":{},\"collection\":\"loan-rules\",\"partition\":\"region-a\"}",
+   "expect": {
+    "valid": false,
+    "code": "invalid_activation",
+    "rule": "candidate_fields"
+   }
+  },
+  {
+   "name": "subject-mismatch",
+   "record_kind": "activation",
+   "record": "{\"format\":\"entelos.record/1\",\"scope\":\"lending\",\"function\":\"content:loan-rules/region-a\",\"event_ref\":\"sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee\",\"request_key\":\"activate-1\",\"candidate\":{\"kind\":\"content\",\"ref\":\"sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc\"},\"base\":\"\",\"collection\":\"loan-rules\",\"partition\":\"region-b\",\"from\":\"2026-01-01\",\"until\":\"2027-01-01\",\"source_ref\":\"sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"snapshot_ref\":\"sha256:5555555555555555555555555555555555555555555555555555555555555555\",\"report_ref\":\"sha256:7777777777777777777777777777777777777777777777777777777777777777\",\"decision_ref\":\"sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd\",\"producer\":\"author-1\",\"runner\":\"runner-1\",\"approver\":\"approver-1\",\"activator\":\"reviewer-1\",\"targets\":[],\"supersedes\":[],\"applicability\":{}}",
+   "expect": {
+    "valid": false,
+    "code": "invalid_activation",
+    "rule": "subject"
+   }
+  },
+  {
+   "name": "interval-empty",
+   "record_kind": "activation",
+   "record": "{\"format\":\"entelos.record/1\",\"scope\":\"lending\",\"function\":\"content:loan-rules/region-a\",\"event_ref\":\"sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee\",\"request_key\":\"activate-1\",\"candidate\":{\"kind\":\"content\",\"ref\":\"sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc\"},\"base\":\"\",\"collection\":\"loan-rules\",\"partition\":\"region-a\",\"from\":\"2026-01-01\",\"until\":\"2026-01-01\",\"source_ref\":\"sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"snapshot_ref\":\"sha256:5555555555555555555555555555555555555555555555555555555555555555\",\"report_ref\":\"sha256:7777777777777777777777777777777777777777777777777777777777777777\",\"decision_ref\":\"sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd\",\"producer\":\"author-1\",\"runner\":\"runner-1\",\"approver\":\"approver-1\",\"activator\":\"reviewer-1\",\"targets\":[],\"supersedes\":[],\"applicability\":{}}",
+   "expect": {
+    "valid": false,
+    "code": "invalid_activation",
+    "rule": "interval"
+   }
+  },
+  {
+   "name": "interval-reversed",
+   "record_kind": "activation",
+   "record": "{\"format\":\"entelos.record/1\",\"scope\":\"lending\",\"function\":\"content:loan-rules/region-a\",\"event_ref\":\"sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee\",\"request_key\":\"activate-1\",\"candidate\":{\"kind\":\"content\",\"ref\":\"sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc\"},\"base\":\"\",\"collection\":\"loan-rules\",\"partition\":\"region-a\",\"from\":\"2027-01-01\",\"until\":\"2026-01-01\",\"source_ref\":\"sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"snapshot_ref\":\"sha256:5555555555555555555555555555555555555555555555555555555555555555\",\"report_ref\":\"sha256:7777777777777777777777777777777777777777777777777777777777777777\",\"decision_ref\":\"sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd\",\"producer\":\"author-1\",\"runner\":\"runner-1\",\"approver\":\"approver-1\",\"activator\":\"reviewer-1\",\"targets\":[],\"supersedes\":[],\"applicability\":{}}",
+   "expect": {
+    "valid": false,
+    "code": "invalid_activation",
+    "rule": "interval"
+   }
+  },
+  {
+   "name": "interval-not-a-date",
+   "record_kind": "activation",
+   "record": "{\"format\":\"entelos.record/1\",\"scope\":\"lending\",\"function\":\"content:loan-rules/region-a\",\"event_ref\":\"sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee\",\"request_key\":\"activate-1\",\"candidate\":{\"kind\":\"content\",\"ref\":\"sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc\"},\"base\":\"\",\"collection\":\"loan-rules\",\"partition\":\"region-a\",\"from\":\"2026-01-01\",\"until\":\"2026-02-30\",\"source_ref\":\"sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"snapshot_ref\":\"sha256:5555555555555555555555555555555555555555555555555555555555555555\",\"report_ref\":\"sha256:7777777777777777777777777777777777777777777777777777777777777777\",\"decision_ref\":\"sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd\",\"producer\":\"author-1\",\"runner\":\"runner-1\",\"approver\":\"approver-1\",\"activator\":\"reviewer-1\",\"targets\":[],\"supersedes\":[],\"applicability\":{}}",
+   "expect": {
+    "valid": false,
+    "code": "invalid_activation",
+    "rule": "interval"
+   }
+  }
+ ]
+}
