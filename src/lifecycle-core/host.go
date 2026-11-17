@@ -51,7 +51,7 @@ var schema = map[string]struct {
 
 // Reads are the operations that publish no state.
 var Reads = map[string]bool{"describe": true, "resolve": true, "inspect": true, "record": true, "receipt": true,
-	"proposals": true, "proposal": true}
+	"proposals": true, "proposal": true, "approval": true}
 
 //go:embed *.go
 var sources embed.FS
@@ -192,6 +192,9 @@ func (h *Host) Handle(request any) (result any, err error) {
 	}
 	op, _ := q["op"].(string)
 	spec, known := schema[op]
+	if !known {
+		spec, known = hostOnlyOps[op]
+	}
 	if !known {
 		return nil, NewFault("invalid_request", "unknown operation", "")
 	}
@@ -691,6 +694,8 @@ func (h *Host) readOperation(op string, q Object) any {
 		return record
 	case "receipt":
 		return h.scoped(v, item(q, "receipt_ref"), "receipt")
+	case "approval":
+		return h.approval(v, q)
 	}
 	selected := h.resolve(v, item(q, "function"), item(q, "date"))
 	if op == "resolve" {
@@ -1191,8 +1196,11 @@ func (h *Host) apply(v *View, op string, q Object) any {
 			!equal(item(decision, "runner_policy"), h.ctx("runner_actor")) {
 			fail("invalid_decision", "decision bindings differ from qualification", "")
 		}
-		if hasReject(h.verdicts(v, reviewEntry(index, text(report["snapshot_ref"]), false))) {
+		switch h.verdictState(v, index, decision, snapshot) {
+		case verdictRejected:
 			fail("proposal_rejected", "a verdict on this snapshot is a reject", "admission")
+		case verdictStale:
+			fail("stale_verdict", "the head of this subject has other content than the verdict judged", "admission")
 		}
 		confirmed := confirmApplicability(q, snapshot)
 		event := merge(pick(snapshot, interval4...), Object{"kind": "enable", "snapshot_ref": report["snapshot_ref"], "report_ref": decision["report_ref"],

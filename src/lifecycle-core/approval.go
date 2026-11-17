@@ -418,6 +418,10 @@ func (h *Host) decide(v *View, q Object) Object {
 	if disposition == "accept" && hasReject(decisions) {
 		fail("proposal_rejected", "a verdict on this snapshot is a reject", "admission")
 	}
+	// VERDICT.md check 7: an accept judges the content of the head only.
+	if _, head := h.headOf(v, snapshot); disposition == "accept" && (head == nil || !equal(candidateRef(head), candidateRef(snapshot))) {
+		fail("stale_verdict", "the head of this subject has other content than this snapshot", "admission")
+	}
 	record := merge(pick(snapshot, interval4...), Object{"snapshot_ref": snapshotRef, "report_ref": q["report_ref"], "actor": actor,
 		"reason": q["reason"], "disposition": disposition, "runner_policy": h.ctx("runner_actor"), "decided_at": h.now()})
 	ref := v.Put("decision", record)

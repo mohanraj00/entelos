@@ -18,9 +18,11 @@ type supersedeRun struct {
 	head     string
 	// decisions has the decision of each update and interval.
 	decisions map[string]string
-	events    map[string]string
-	bundles   map[string]string
-	receipts  map[string]Object
+	// headBundle is the bundle of the head proposal.
+	headBundle string
+	events     map[string]string
+	bundles    map[string]string
+	receipts   map[string]Object
 }
 
 func newSupersedeRun(t *testing.T) *supersedeRun {
@@ -38,6 +40,13 @@ func newSupersedeRun(t *testing.T) *supersedeRun {
 func (r *supersedeRun) decision(id, from, until string) string {
 	key := id + " " + from + " " + until
 	if ref, ok := r.decisions[key]; ok {
+		// A later proposal made the verdict stale (VERDICT.md). A
+		// proposal of the same bytes makes it current again.
+		if r.headBundle != r.bundles[key] {
+			r.head = r.w.must("author", "author", "propose", Object{"function": "record.visible", "from": from, "until": until,
+				"base_snapshot": r.head, "source_ref": r.source, "bundle": bundle(strings.ReplaceAll(key, " ", "-")), "reason": "again " + id})["snapshot_ref"].(string)
+			r.headBundle = r.bundles[key]
+		}
 		return ref
 	}
 	rule := strings.ReplaceAll(key, " ", "-")
@@ -46,6 +55,7 @@ func (r *supersedeRun) decision(id, from, until string) string {
 		"base_snapshot": r.head, "source_ref": r.source, "bundle": bundle(rule), "reason": "update " + id})
 	r.head = proposal["snapshot_ref"].(string)
 	r.bundles[key] = proposal["bundle_ref"].(string)
+	r.headBundle = r.bundles[key]
 	qualified := r.w.must("fixture-runner", "runner", "qualify", Object{"snapshot_ref": r.head, "plan_ref": r.plan})
 	ref := r.w.must("reviewer", "reviewer", "decide", Object{"report_ref": qualified["report_ref"], "reason": "accept " + id})["decision_ref"].(string)
 	r.decisions[key] = ref
