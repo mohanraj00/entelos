@@ -80,6 +80,8 @@ On 2026-11-12, the policy verdict `entelos.policy/1` for [#154](https://github.c
 
 On 2026-11-15, issue [#158](https://github.com/mohanraj00/entelos/issues/158), part 1, proposes [EVENTS.md](../src/protocol/events/EVENTS.md) and `entelos.decision-event/1`: one event per fact in each recorded verdict, actor kind, a per-fact blind mark and exclusive cursor resume. The schema and hand-written vectors have an offline checker in `make check`. No Host exports events. The later Host job must capture the missing provenance, implement the read and run the vectors on it; the synthetic source decisions do not test a store or transport.
 
+Issue [#127](https://github.com/mohanraj00/entelos/issues/127) proposes the verdict binding in [VERDICT.md](../src/protocol/verdict/VERDICT.md). A decision record names the candidate reference that it judged. A verdict is stale when the head of its subject has other content. `decide` and `activate` refuse a stale verdict with `stale_verdict`, and the history keeps it. The read operation `approval` answers if a candidate reference has a current approval. No Host applies these rules yet.
+
 ### M1 First contact
 
 On 2026-10-30, the M1 work was complete in `main` (merge commit `e844246`):
