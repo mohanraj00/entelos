@@ -191,3 +191,28 @@ func TestStaleVerdictStaysInTheHistory(t *testing.T) {
 		t.Fatalf("decisions %v, want the stale verdict %s", decisions, r.decisions["d1"])
 	}
 }
+
+// TestApprovalSkipsOtherScopes checks that a qualified snapshot of another
+// scope in the same store does not stop the approval read.
+func TestApprovalSkipsOtherScopes(t *testing.T) {
+	r := newVerdictRun(t)
+	for _, step := range []Object{{"propose": "p1", "content": "a"}, {"qualify": "p1"}, {"decide": "d1", "proposal": "p1", "actor": "reviewer-a"}} {
+		if got := r.step(step); got != nil {
+			t.Fatalf("%v: %v", step, got)
+		}
+	}
+	demo := struct{ head, source, plan string }{r.head, r.source, r.plan}
+	r.w.scope, r.head = "other", ""
+	r.source = r.w.must("reviewer", "reviewer", "source", with(window, Object{"text": "visible rule", "reason": "other", "supersedes": Array{}}))["source_ref"].(string)
+	r.plan = r.w.must("reviewer", "reviewer", "plan", Object{"source_ref": r.source, "cases": Array{Object{"name": "one"}}, "origin": "independent", "supersedes": Array{}})["plan_ref"].(string)
+	for _, step := range []Object{{"propose": "q1", "content": "a"}, {"qualify": "q1"}} {
+		if got := r.step(step); got != nil {
+			t.Fatalf("other scope %v: %v", step, got)
+		}
+	}
+	r.w.scope, r.head, r.source, r.plan = "", demo.head, demo.source, demo.plan
+	got := r.step(Object{"approval": "a"})
+	if got["error"] != nil || got["approved"] != true {
+		t.Fatalf("approval with another scope in the store: %v", got)
+	}
+}

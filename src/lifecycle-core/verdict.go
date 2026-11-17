@@ -76,8 +76,14 @@ func (h *Host) approval(v *View, q Object) Object {
 	}
 	var proposals []proposal
 	for snapshotRef := range index {
-		snapshot := h.scoped(v, snapshotRef, "snapshot")
-		if equal(snapshot["function"], function) && equal(candidateRef(snapshot), asked) {
+		// The index covers the whole store. Skip the snapshots of other
+		// scopes and other subjects before the candidate check, as the
+		// proposals list does.
+		snapshot := get(v, snapshotRef, "snapshot")
+		if !equal(item(snapshot, "scope"), h.ctx("scope")) || !equal(snapshot["function"], function) {
+			continue
+		}
+		if equal(candidateRef(snapshot), asked) {
 			submitted, _ := snapshot["submitted_at"].(string)
 			proposals = append(proposals, proposal{snapshotRef, submitted, snapshot})
 		}
