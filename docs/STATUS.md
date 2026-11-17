@@ -8,7 +8,7 @@ The project name is Entelos, with the tagline "Entelos: grow toward the goal." O
 
 The source reference contains a primitive typed CEL callable, a local qualified Git lifecycle in Go, record-filter and PR CI examples, and an ordinary-function comparison. APIs and record formats are unstable. See [SUPPORT.md](SUPPORT.md) for the tested environment and operating limits.
 
-Issue [#163](https://github.com/mohanraj00/entelos/issues/163) puts the approval workflow for versioned content first in the README. The [content-update example](../examples/content-update/README.md) embeds the Host with an application runner. It checks file digests and sizes, retains a failed qualification, records human approval and reads the active candidate at a date. The example uses an in-memory store. The shipped commands still install the CEL runner.
+Issue [#163](https://github.com/mohanraj00/entelos/issues/163) puts the approval workflow for versioned content first in the README. The [content-update example](../examples/content-update/README.md) embeds the Host with an application runner. It checks files against reviewer plan cases and the candidate manifest. It reads back a failed qualification, records human approval and checks item bytes at the dated read. The example uses an in-memory store. The shipped commands still install the CEL runner.
 
 ## Licence
 

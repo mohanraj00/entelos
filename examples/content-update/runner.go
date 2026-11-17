@@ -47,12 +47,25 @@ func (r *contentRunner) Qualify(in lifecycle.QualificationInput) (lifecycle.Verd
 	if err := json.Unmarshal(raw, &m); err != nil {
 		return lifecycle.Verdict{}, err
 	}
+	var cases []item
+	if err := json.Unmarshal(lifecycle.Encode(in.Cases), &cases); err != nil {
+		return lifecycle.Verdict{}, lifecycle.NewFault("invalid_plan", "expected item digests and sizes", "runner")
+	}
+	expected := make(map[string]item, len(cases))
+	for _, c := range cases {
+		if _, duplicate := expected[c.ID]; duplicate {
+			return lifecycle.Verdict{}, lifecycle.NewFault("invalid_plan", "duplicate item case", "runner")
+		}
+		expected[c.ID] = c
+	}
 	status := "passed"
 	checks := lifecycle.Array{}
 	for _, item := range m.Items {
 		// A Host-validated item_id has no slash. Read only this folder.
 		body, err := fs.ReadFile(r.files, item.ID+".md")
-		matches := err == nil && len(body) == item.Size && digest(body) == item.Digest
+		c, covered := expected[item.ID]
+		matches := covered && err == nil && len(body) == c.Size && digest(body) == c.Digest &&
+			len(body) == item.Size && digest(body) == item.Digest
 		checks = append(checks, lifecycle.Object{"item_id": item.ID, "passed": matches})
 		if !matches {
 			status = "failed"

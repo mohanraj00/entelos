@@ -28,7 +28,11 @@ class ContentExample(unittest.TestCase):
                 self.assertIn(command, [block.strip() for block in blocks])
                 output = self.run_command(command)
                 self.assertIn('Approval refused: qualification_failed', output)
+                self.assertRegex(output, r'Retained report: sha256:[0-9a-f]{64}, status failed\.')
                 self.assertIn('6. Read at 2026-11-15:', output)
+                self.assertIn('Read checks passed: item digests and sizes agree with the active manifest.', output)
+                self.assertLess(output.index('3. Qualify: passed'), output.index('Retained report:'))
+                self.assertLess(output.index('6. Read at 2026-11-15:'), output.index('Read checks passed:'))
                 self.assertIn('returns: Return the sample device within 30 days.', output)
 
 

@@ -9,19 +9,26 @@ Use Go 1.27.2 or later and Git. From the repository root, run:
 go -C examples/content-update run .
 ```
 
-The example proposes [manifest.json](manifest.json), which lists two FAQ files
-by SHA-256 digest and size. It first qualifies [refused/](refused/). The charging
+The reviewer installs plan cases from [expected.json](expected.json).
+Each case gives an item identifier, SHA-256 digest and size.
+The example then proposes [manifest.json](manifest.json), which lists two FAQ
+files by digest and size. It first qualifies [refused/](refused/). The charging
 file has the same size but a different digest. Qualification fails, and the
-Host refuses approval. It then qualifies [items/](items/) against the same
-manifest. A separate reviewer accepts it and activates it for November 2026.
-The last step selects the active candidate at 2026-11-15 and prints its text.
+Host refuses approval. It then qualifies [items/](items/) against the same plan
+and manifest. The example reads the failed report from the Host to check that
+the store still has it. A separate reviewer accepts the passed report and
+activates the manifest for November 2026. The last step selects the active
+candidate at 2026-11-15. It checks each file against that manifest before it
+prints the item text.
 
-[runner.go](runner.go) checks each item file against the manifest.
-Its identity binds its source and Go version. The manifest holds fixed expected
-digests and sizes. The example never replaces them with the files under test.
-The program embeds these files so each run uses the same bytes.
+[runner.go](runner.go) reads the installed plan cases from `QualificationInput.Cases`.
+An item passes only if its bytes agree with both its plan case and its manifest
+entry. An item with no plan case fails. The reviewer expectation file is separate
+from the candidate manifest. The example does not derive expectations from the
+candidate or the files under test. The runner identity binds its source and Go
+version. The program embeds the fixtures so each run uses the same bytes.
 
-Run the example and the digest, size and missing-file tests with:
+Run the workflow, plan mismatch and item read tests with:
 
 ```sh
 go -C examples/content-update test ./...

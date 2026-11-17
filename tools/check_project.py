@@ -1,11 +1,10 @@
 #!/usr/bin/env python3
-"""Offline layout, links, stability pins, source inventory and content example checks."""
+"""Offline shared-harness layout, local-link, stability pin and regular-source inventory check."""
 import argparse
 import hashlib
 import json
 from pathlib import Path
 import re
-import subprocess
 import sys
 
 ROOT=Path(__file__).resolve().parents[1]
@@ -83,11 +82,7 @@ if a.write_checksums:
     checksum.write_text(json.dumps(inventory,indent=2,sort_keys=True)+'\n')
 elif not checksum.exists() or json.loads(checksum.read_text())!=inventory:
     errors.append('source checksum inventory differs; review intended edits, then regenerate')
-if not a.write_checksums:
-    example=subprocess.run([sys.executable,'-B','-m','unittest','tests/test_content_example.py'],cwd=ROOT,capture_output=True,text=True)
-    if example.returncode:
-        errors.append('content example: '+example.stdout+example.stderr)
 result={'passed':not errors,'regular_source_files':len(inventory),'local_links_checked':links,
     'shared_skill_link':alias.is_symlink() and alias.resolve()==(ROOT/'.agents/skills').resolve(),
-    'checksums_updated':a.write_checksums,'errors':errors,'scope':'Source/layout integrity and offline content example; no CEL, model, platform-compatibility or production result.'}
+    'checksums_updated':a.write_checksums,'errors':errors,'scope':'Source/layout integrity only; no model, runtime, platform-compatibility or production result.'}
 print(json.dumps(result,indent=2));raise SystemExit(bool(errors))

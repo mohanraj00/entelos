@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"embed"
 	"encoding/json"
 	"fmt"
@@ -11,7 +12,7 @@ import (
 	lifecycle "github.com/mohanraj00/entelos/src/lifecycle-core"
 )
 
-//go:embed manifest.json items/* refused/*
+//go:embed manifest.json expected.json items/* refused/*
 var files embed.FS
 
 const subject = "content:product-faq/en"
@@ -50,8 +51,16 @@ func run(out io.Writer) error {
 	if err != nil {
 		return err
 	}
+	expected, err := files.ReadFile("expected.json")
+	if err != nil {
+		return err
+	}
+	cases, err := lifecycle.Decode(expected)
+	if err != nil {
+		return err
+	}
 	plan, err := write("reviewer", "reviewer", "plan", lifecycle.Object{
-		"source_ref": source["source_ref"], "cases": lifecycle.Array{"digest-and-size"},
+		"source_ref": source["source_ref"], "cases": cases,
 		"origin": "independent", "supersedes": lifecycle.Array{}})
 	if err != nil {
 		return err
@@ -94,7 +103,16 @@ func run(out io.Writer) error {
 	if err != nil {
 		return err
 	}
-	fmt.Fprintln(out, "3. Qualify: passed, each digest and size agrees. The failed report stays.")
+	fmt.Fprintln(out, "3. Qualify: passed, files agree with the plan and manifest.")
+	retained, err := host.HandleAs("reviewer", []string{"reviewer"}, lifecycle.Object{
+		"op": "record", "kind": "qualification", "ref": failed["report_ref"]})
+	if err != nil {
+		return err
+	}
+	if !bytes.Equal(lifecycle.Encode(retained), lifecycle.Encode(failed["report"])) {
+		return fmt.Errorf("the retained failed report differs")
+	}
+	fmt.Fprintf(out, "   Retained report: %s, status failed.\n", failed["report_ref"])
 	decision, err := write("reviewer", "reviewer", "decide", lifecycle.Object{
 		"report_ref": report["report_ref"], "disposition": "accept", "reason": "Files checked; approve this FAQ"})
 	if err != nil {
@@ -116,6 +134,10 @@ func run(out io.Writer) error {
 	}
 	fmt.Fprintf(out, "6. Read at 2026-11-15: %s\n", digest(raw))
 	// Resolve identifies the manifest. The application reads its item files.
+	return printItems(out, items, raw)
+}
+
+func printItems(out io.Writer, items fs.FS, raw []byte) error {
 	var active manifest
 	if err := json.Unmarshal(raw, &active); err != nil {
 		return err
@@ -125,8 +147,12 @@ func run(out io.Writer) error {
 		if err != nil {
 			return err
 		}
+		if digest(body) != item.Digest || len(body) != item.Size {
+			return fmt.Errorf("read refused: %s digest or size differs from the active manifest", item.ID)
+		}
 		fmt.Fprintf(out, "   %s: %s", item.ID, body)
 	}
+	fmt.Fprintln(out, "   Read checks passed: item digests and sizes agree with the active manifest.")
 	return nil
 }
 

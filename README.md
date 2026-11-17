@@ -30,10 +30,12 @@ The example embeds the real Go Host with an application qualification runner and
 
 1. Propose an `entelos.content/1` manifest with two FAQ items.
 2. Qualify a folder with a changed item. Its digest differs, so qualification fails and the Host refuses approval.
-3. Qualify the correct files against the same manifest. Each digest and size agrees. The failed report stays.
+3. Qualify the correct files against the reviewer plan and manifest. Each digest and size agrees. Read the failed report from the Host to check that the store still has it.
 4. A separate reviewer accepts the qualified manifest.
 5. Activate it from 2026-11-01 until 2026-12-01. The interval excludes the end date.
-6. Read the active candidate at 2026-11-15 and show its FAQ text.
+6. Read the active candidate at 2026-11-15. Check each file against the manifest digest and size before you show its FAQ text.
+
+The reviewer installs the plan cases from [expected.json](examples/content-update/expected.json). This file gives each expected item identifier, digest and size. These expectations come from outside the candidate.
 
 [content-update/README.md](examples/content-update/README.md) explains the files and limits. [CONTENT.md](src/protocol/content/CONTENT.md) specifies the manifest and dated reads. The proposed [policy verdict spec](src/protocol/policy/POLICY.md) adds accept, refuse or route to a person. No Host writes a policy verdict yet.
 
