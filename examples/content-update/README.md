@@ -3,7 +3,7 @@
 This example runs a synthetic product FAQ through the real Go lifecycle Host.
 It uses an in-memory store and a runner that the application supplies.
 The Go module uses the standard library and the local lifecycle-core module.
-Use Go 1.27.2 or later and Git. From the repository root, run:
+Use Go 1.27.2 or later. From the repository root, run:
 
 ```sh
 go -C examples/content-update run .
@@ -23,9 +23,10 @@ prints the item text.
 
 [runner.go](runner.go) reads the installed plan cases from `QualificationInput.Cases`.
 An item passes only if its bytes agree with both its plan case and its manifest
-entry. An item with no plan case fails. The reviewer expectation file is separate
-from the candidate manifest. The example does not derive expectations from the
-candidate or the files under test. The runner identity binds its source and Go
+entry. An item with no plan case fails. In this example, expected.json simulates
+a plan that the reviewer owns. It is in the same folder and commit as the
+candidate, so it does not prove independence. In a real deployment, the plan
+must come from a source outside the candidate. The runner identity binds its source and Go
 version. The program embeds the fixtures so each run uses the same bytes.
 
 Run the workflow, plan mismatch and item read tests with:

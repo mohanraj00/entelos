@@ -35,7 +35,7 @@ The example embeds the real Go Host with an application qualification runner and
 5. Activate it from 2026-11-01 until 2026-12-01. The interval excludes the end date.
 6. Read the active candidate at 2026-11-15. Check each file against the manifest digest and size before you show its FAQ text.
 
-The reviewer installs the plan cases from [expected.json](examples/content-update/expected.json). This file gives each expected item identifier, digest and size. These expectations come from outside the candidate.
+The reviewer installs the plan cases from [expected.json](examples/content-update/expected.json). This file gives each expected item identifier, digest and size. It simulates a plan that the reviewer owns. In a real deployment, the plan must come from a source outside the candidate.
 
 [content-update/README.md](examples/content-update/README.md) explains the files and limits. [CONTENT.md](src/protocol/content/CONTENT.md) specifies the manifest and dated reads. The proposed [policy verdict spec](src/protocol/policy/POLICY.md) adds accept, refuse or route to a person. No Host writes a policy verdict yet.
 
