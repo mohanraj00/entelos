@@ -72,6 +72,10 @@ On 2026-11-12, the evidence format `entelos.evidence/1` for [#148](https://githu
 
 On 2026-11-12, the policy verdict `entelos.policy/1` for [#154](https://github.com/mohanraj00/entelos/issues/154) was proposed in [POLICY.md](../src/protocol/policy/POLICY.md). An approved policy gives accept, refuse or route to a person. Nine rules in a fixed order route an item to a person: a policy change, a human head, no policy, a suspend, a policy that is not valid, an unknown input, a missing input, an engine error and an invalid value. The verdict has a receipt with the policy version, the input digest and the build, and an audit draw from a Host nonce. A policy verdict never satisfies a human verdict requirement. The 40 vectors are hand-written. `check_spec.py` applies the rules to them. No Host writes the record, and no CEL engine ran the synthetic policy.
 
+### Decision event export
+
+On 2026-11-15, issue [#158](https://github.com/mohanraj00/entelos/issues/158), part 1, proposes [EVENTS.md](../src/protocol/events/EVENTS.md) and `entelos.decision-event/1`: one event per fact in each recorded verdict, actor kind, a per-fact blind mark and exclusive cursor resume. The schema and hand-written vectors have an offline checker in `make check`. No Host exports events. The later Host job must capture the missing provenance, implement the read and run the vectors on it; the synthetic source decisions do not test a store or transport.
+
 ### M1 First contact
 
 On 2026-10-30, the M1 work was complete in `main` (merge commit `e844246`):
