@@ -1,0 +1,165 @@
+{
+ "description": "Protocol 1.2 accepts activate.supersedes and reaches the Host, which refuses an unknown decision. Versions 1.0 and 1.1 refuse the field before dispatch. Malformed values are schema refusals.",
+ "context": {
+  "actor": "reviewer-a",
+  "roles": [
+   "reviewer"
+  ],
+  "scope": "tenant-example",
+  "functions": [
+   "record.visible"
+  ],
+  "runner_actor": "fixture-runner",
+  "worker": "local-worker"
+ },
+ "steps": [
+  {
+   "name": "legacy-1.0-refuses-supersedes",
+   "request": {
+    "protocol": "1.0",
+    "request_id": "s-1",
+    "operation": "activate",
+    "body": {
+     "decision_ref": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+     "supersedes": [
+      "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+     ],
+     "expected_revision": "",
+     "request_key": "activate"
+    }
+   },
+   "expect": {
+    "response": {
+     "protocol": "1.0",
+     "request_id": "s-1",
+     "status": "invalid_request",
+     "diagnostic": {
+      "code": "invalid_request",
+      "stage": "protocol",
+      "message": {
+       "$type": "string"
+      }
+     }
+    }
+   }
+  },
+  {
+   "name": "legacy-1.1-refuses-supersedes",
+   "request": {
+    "protocol": "1.1",
+    "request_id": "s-2",
+    "operation": "activate",
+    "body": {
+     "decision_ref": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+     "supersedes": [
+      "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+     ],
+     "expected_revision": "",
+     "request_key": "activate"
+    }
+   },
+   "expect": {
+    "response": {
+     "protocol": "1.1",
+     "request_id": "s-2",
+     "status": "invalid_request",
+     "diagnostic": {
+      "code": "invalid_request",
+      "stage": "protocol",
+      "message": {
+       "$type": "string"
+      }
+     }
+    }
+   }
+  },
+  {
+   "name": "supersedes-reaches-host",
+   "request": {
+    "protocol": "1.2",
+    "request_id": "s-3",
+    "operation": "activate",
+    "body": {
+     "decision_ref": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+     "supersedes": [
+      "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+     ],
+     "expected_revision": "",
+     "request_key": "activate"
+    }
+   },
+   "expect": {
+    "response": {
+     "protocol": "1.2",
+     "request_id": "s-3",
+     "status": "artifact_unavailable",
+     "diagnostic": {
+      "code": "artifact_unavailable",
+      "stage": "store",
+      "message": {
+       "$type": "string"
+      }
+     }
+    }
+   }
+  },
+  {
+   "name": "supersedes-must-be-an-array",
+   "request": {
+    "protocol": "1.2",
+    "request_id": "s-4",
+    "operation": "activate",
+    "body": {
+     "decision_ref": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+     "supersedes": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+     "expected_revision": "",
+     "request_key": "activate"
+    }
+   },
+   "expect": {
+    "response": {
+     "protocol": "1.2",
+     "request_id": "s-4",
+     "status": "invalid_request",
+     "diagnostic": {
+      "code": "invalid_request",
+      "stage": "protocol",
+      "message": {
+       "$type": "string"
+      }
+     }
+    }
+   }
+  },
+  {
+   "name": "supersedes-must-contain-event-references",
+   "request": {
+    "protocol": "1.2",
+    "request_id": "s-5",
+    "operation": "activate",
+    "body": {
+     "decision_ref": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+     "supersedes": [
+      "not-an-event-ref"
+     ],
+     "expected_revision": "",
+     "request_key": "activate"
+    }
+   },
+   "expect": {
+    "response": {
+     "protocol": "1.2",
+     "request_id": "s-5",
+     "status": "invalid_request",
+     "diagnostic": {
+      "code": "invalid_request",
+      "stage": "protocol",
+      "message": {
+       "$type": "string"
+      }
+     }
+    }
+   }
+  }
+ ]
+}

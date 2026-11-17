@@ -23,7 +23,7 @@ Update U1 is active from 2026-01-01. Update U2 corrects it and supersedes it fro
 
 ## Request
 
-`activate` has an optional field `supersedes`. It is an array of event references. An absent field is the same as an empty array.
+`activate` has an optional field `supersedes`. It is an array of event references. An absent field is the same as an empty array. The JSONL Host, Go API and wire protocol 1.2 accept it. Wire protocol 1.0 and 1.1 refuse the field with `invalid_request` at the protocol stage. See [#180](https://github.com/mohanraj00/entelos/issues/180).
 
 The Host accepts the request only if each entry agrees with these rules. Else the result is `invalid_supersession`, and the write stores nothing.
 
@@ -65,7 +65,6 @@ These results follow from the rules:
 
 ## Limits
 
-- The sidecar wire protocol versions 1.0 and 1.1 do not accept `supersedes` in `activate`. Their schemas are pinned. The JSONL Host and the Go API accept the field. A later protocol minor version must add it. Issue [#180](https://github.com/mohanraj00/entelos/issues/180) tracks this.
 - A supersession cannot be removed. It is a record, and records are not deleted.
 - The check does not examine if the successor is a correct replacement. The reviewer who activates it states that.
 - The vectors run with a fixture runner and a fake engine. They show the selection and the replay binding. They do not run a CEL rule.
