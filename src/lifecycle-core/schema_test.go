@@ -8,7 +8,6 @@ package lifecycle
 import (
 	"os"
 	"path/filepath"
-	"slices"
 	"sort"
 	"strings"
 	"testing"
@@ -38,12 +37,6 @@ func checkPatterns(t *testing.T, node any, where string) {
 		}
 	}
 }
-
-// hostOnly has each Host request field that no protocol schema has. See
-// "Limits" in src/protocol/supersession/SUPERSESSION.md. Issue #180 adds
-// activate.supersedes to the next protocol minor version and removes its
-// entry here.
-var hostOnly = map[string]bool{"activate.supersedes": true}
 
 func TestProtocolSchemasAgreeWithTheHostTable(t *testing.T) {
 	// The Host table follows the latest schemas over the older versions.
@@ -83,10 +76,6 @@ func TestProtocolSchemasAgreeWithTheHostTable(t *testing.T) {
 		if !Reads[op] {
 			fields = append(fields, "expected_revision", "request_key")
 		}
-		// The protocol versions 1.0 and 1.1 do not carry these Host fields.
-		// Their schemas are pinned. A later protocol minor version must add
-		// each field, and then its entry goes away.
-		fields = slices.DeleteFunc(fields, func(name string) bool { return hostOnly[op+"."+name] })
 		sort.Strings(fields)
 		if got := names(body["properties"].(Object)); strings.Join(got, ",") != strings.Join(fields, ",") {
 			t.Errorf("%s: schema fields %v, Host fields %v", op, got, fields)

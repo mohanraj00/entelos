@@ -110,8 +110,9 @@ after the new activation ends. It does not also need an entry in `targets`.
 The event record names the superseded events in its `supersedes` field. A bad
 entry returns `invalid_supersession`. A replay of an old answer still uses the
 old activation. [SUPERSESSION.md](../src/protocol/supersession/SUPERSESSION.md)
-gives the rules and the vectors. The sidecar wire protocol versions 1.0 and
-1.1 do not accept `supersedes`
+gives the rules and the vectors. Wire protocol 1.2 accepts `supersedes`
+with the same event reference shape as `targets`. Versions 1.0 and 1.1
+refuse the field with `invalid_request` at the protocol stage
 ([#180](https://github.com/mohanraj00/entelos/issues/180)).
 
 ## Expiry and revocation
