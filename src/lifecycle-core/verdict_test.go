@@ -54,9 +54,13 @@ func (r *verdictRun) step(step Object) Object {
 	case step["propose"] != nil:
 		content := step["content"].(string)
 		r.verdicts[bundleRefOf(content)] = "passed"
+		body := with(window, Object{"base_snapshot": r.head,
+			"source_ref": r.source, "bundle": bundle(content), "reason": "propose " + step["propose"].(string)})
+		if mode, has := step["stale_mode"]; has {
+			body["stale_mode"] = mode
+		}
 		var out Object
-		out, err = w.do("author", "author", w.runner, "propose", with(window, Object{"base_snapshot": r.head,
-			"source_ref": r.source, "bundle": bundle(content), "reason": "propose " + step["propose"].(string)}))
+		out, err = w.do("author", "author", w.runner, "propose", body)
 		if err == nil {
 			r.head = out["snapshot_ref"].(string)
 			r.snapshots[step["propose"].(string)] = r.head

@@ -12,7 +12,7 @@ Status: **implemented** in the Go lifecycle Host. The vectors are in [vectors/ki
 | Kind | One value from the closed set `human`, `model` and `policy`. A `human` verdict comes from a person. A `model` verdict comes from a model. A `policy` verdict comes from an automatic policy check. |
 | Identity | The `actor` of the verdict: the name of the person, the model or the policy check. The credential of the request gives it, as in 1.0. |
 | Actor kinds | The Host context field `actor_kinds`. It maps an actor to its kind. |
-| Count | The number of distinct identities of one kind that have a `current` verdict on a candidate reference, with a qualification that `activate` accepts. |
+| Count | The number of distinct identities of one kind that have a `current` verdict on one snapshot, with a qualification that `activate` accepts. |
 | Verdict policy | The Host context field `verdict_policy`. It gives the minimum count of each kind that `activate` requires. |
 
 ## Decision
@@ -50,14 +50,16 @@ A Host context without `actor_kinds` names no actor. A Host context without `ver
 
 ## Counts
 
-The Host counts the verdicts of one candidate reference of one subject, at one root:
+The Host counts the verdicts of one snapshot of one subject, at one root:
 
-1. Take each `accept` verdict on a snapshot of the subject whose candidate reference is the stated reference.
+1. Take each `accept` verdict on the snapshot.
 2. Keep each verdict whose state is `current` ([VERDICT.md](VERDICT.md#verdict-state)).
 3. Keep each verdict that `activate` accepts as its own verdict: its qualification report is still valid, and the decision bindings agree with the report. Thus a verdict with a stale qualification does not count.
 4. For each kind, count the distinct `actor` values of the verdicts of that kind.
 
-A `reject` verdict does not count. It makes the verdicts `rejected`, as in VERDICT.md. An actor with verdicts on two snapshots of the same content counts once.
+A `reject` verdict does not count. It makes the verdicts `rejected`, as in VERDICT.md.
+
+Verdicts on two snapshots of the same content do not combine. Two such snapshots can have a different `stale_mode` or interval. Thus a `human` verdict on a `fail_closed` snapshot does not satisfy the policy for a `continue_stale` snapshot. Each snapshot needs its own verdicts. The separation check still compares all the snapshots of the same content.
 
 ## Separation
 
@@ -84,7 +86,7 @@ The `decide` result schema does not close the fields of the decision record, so 
 
 ## Changes to `activate`
 
-After the checks of VERDICT.md, `activate` finds the counts of the candidate reference of the verdict at the current root. If a count is less than the verdict policy, the code is `verdicts_required`. The message names each kind that has too few verdicts.
+After the checks of VERDICT.md, `activate` finds the counts of the snapshot of the verdict at the current root. If a count is less than the verdict policy, the code is `verdicts_required`. The message names each kind that has too few verdicts.
 
 Without `verdict_policy`, `activate` needs one `current` verdict, as before. A verdict without a kind can then activate.
 
@@ -99,7 +101,7 @@ The result gets two fields:
  "verdicts":[…]}
 ```
 
-`counts` has the three kinds, also when a count is 0. `required` is the verdict policy of the Host, with 0 for a missing kind. `approved` is `true` only when `state` is `current` and each count is at least its required value.
+The read asks for a candidate reference, and the counts are of one snapshot of that reference. They are the counts of the first snapshot in the order of the proposals list that meets the verdict policy. If no snapshot meets the policy, they are the counts of the last snapshot with a counted verdict. If no verdict counts, each count is 0. `counts` has the three kinds, also when a count is 0. `required` is the verdict policy of the Host, with 0 for a missing kind. `approved` is `true` only when `state` is `current` and each count is at least its required value.
 
 ## Combinations
 
@@ -116,7 +118,7 @@ The vectors of the Host code cover these combinations, with the policy `{"human"
 | One `human` and one `model`, then an edit | 0, 0, 0 for the old reference | `false` | `activate`: `stale_verdict` |
 | One actor as `model`, then the same actor as `human` | 0, 1, 0 | `false` | `decide`: `separation_required` |
 
-More vectors cover a verdict without a kind, a body with a `kind` field, an invalid `actor_kinds` and an invalid `verdict_policy`.
+More vectors cover verdicts on two snapshots of the same content, a verdict without a kind, a body with a `kind` field, an invalid `actor_kinds` and an invalid `verdict_policy`.
 
 ## Refusal codes
 

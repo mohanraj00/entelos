@@ -146,17 +146,26 @@ func countKinds(current []Object) Object {
 	return out
 }
 
-// candidateCounts gives the counts of a candidate reference of a subject at
-// the view (KINDS.md, Counts). A verdict counts only if it is current and
-// activate accepts its report and bindings.
-func (h *Host) candidateCounts(v *View, index Object, function any, candidate Object) Object {
+// counted reports if a count is more than 0.
+func counted(counts Object) bool {
+	for _, kind := range verdictKinds {
+		if counts[kind].(int) > 0 {
+			return true
+		}
+	}
+	return false
+}
+
+// snapshotCounts gives the counts of one snapshot (KINDS.md, Counts). A
+// verdict counts only if it is current and activate accepts its report and
+// bindings. Verdicts on other snapshots of the same content do not count,
+// because their stale mode or interval can differ.
+func (h *Host) snapshotCounts(v *View, index Object, s subjectSnapshot) Object {
 	var current []Object
-	for _, s := range h.sameCandidate(v, index, function, candidate) {
-		for _, decisionRef := range elements(reviewEntry(index, s.ref, false)["decisions"]) {
-			decision := get(v, decisionRef, "decision")
-			if h.verdictState(v, index, decision, s.snapshot) == verdictCurrent && h.activatable(v, decision) {
-				current = append(current, decision)
-			}
+	for _, decisionRef := range elements(reviewEntry(index, s.ref, false)["decisions"]) {
+		decision := get(v, decisionRef, "decision")
+		if h.verdictState(v, index, decision, s.snapshot) == verdictCurrent && h.activatable(v, decision) {
+			current = append(current, decision)
 		}
 	}
 	return countKinds(current)
@@ -197,10 +206,10 @@ func (h *Host) checkVerdictKinds(v *View, index Object, actor, kind string, snap
 	}
 }
 
-// checkVerdictPolicy refuses an activation when a count is less than the
-// verdict policy (KINDS.md, Changes to activate).
-func (h *Host) checkVerdictPolicy(v *View, index Object, snapshot Object) {
-	counts := h.candidateCounts(v, index, item(snapshot, "function"), candidateRef(snapshot))
+// checkVerdictPolicy refuses an activation when a count of the activated
+// snapshot is less than the verdict policy (KINDS.md, Changes to activate).
+func (h *Host) checkVerdictPolicy(v *View, index Object, snapshotRef string, snapshot Object) {
+	counts := h.snapshotCounts(v, index, subjectSnapshot{ref: snapshotRef, snapshot: snapshot})
 	if missing := lacking(counts, h.required()); len(missing) > 0 {
 		fail("verdicts_required", "too few current verdicts of the kind "+strings.Join(missing, ", "), "admission")
 	}

@@ -72,16 +72,20 @@ func (h *Host) approval(v *View, q Object) Object {
 	index := reviews(v)
 	items := Array{}
 	found := map[string]bool{}
-	var current []Object
+	required := h.required()
+	// KINDS.md: the counts are of one snapshot. They are the counts of the
+	// first snapshot that meets the verdict policy, else of the last snapshot
+	// with a counted verdict.
+	counts, met := countKinds(nil), false
 	for _, p := range h.sameCandidate(v, index, function, asked) {
 		for _, decisionRef := range elements(reviewEntry(index, p.ref, false)["decisions"]) {
 			decision := get(v, decisionRef, "decision")
 			state := h.verdictState(v, index, decision, p.snapshot)
 			found[state] = true
-			if state == verdictCurrent && h.activatable(v, decision) {
-				current = append(current, decision)
-			}
 			items = append(items, Object{"decision_ref": decisionRef, "decision": decision, "state": state})
+		}
+		if c := h.snapshotCounts(v, index, p); !met && counted(c) {
+			counts, met = c, len(lacking(c, required)) == 0
 		}
 	}
 	state := verdictUnknown
@@ -92,7 +96,6 @@ func (h *Host) approval(v *View, q Object) Object {
 		}
 	}
 	// KINDS.md: approved needs each count of the verdict policy.
-	counts, required := countKinds(current), h.required()
 	approved := state == verdictCurrent && len(lacking(counts, required)) == 0
 	return Object{"cursor": v.Cursor, "approved": approved, "state": state, "counts": counts, "required": required, "verdicts": items}
 }
