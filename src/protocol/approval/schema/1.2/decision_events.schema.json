@@ -18,47 +18,6 @@
    "minLength": 1,
    "maxLength": 256
   },
-  "request": {
-   "type": "object",
-   "additionalProperties": false,
-   "required": [
-    "limit"
-   ],
-   "properties": {
-    "cursor": {
-     "type": "string"
-    },
-    "limit": {
-     "type": "integer",
-     "minimum": 1,
-     "maximum": 256
-    }
-   }
-  },
-  "page": {
-   "type": "object",
-   "additionalProperties": false,
-   "required": [
-    "events",
-    "next_cursor",
-    "stream_start"
-   ],
-   "properties": {
-    "events": {
-     "type": "array",
-     "maxItems": 256,
-     "items": {
-      "$ref": "#/$defs/event"
-     }
-    },
-    "next_cursor": {
-     "$ref": "#/$defs/cursor"
-    },
-    "stream_start": {
-     "$ref": "#/$defs/stream_start"
-    }
-   }
-  },
   "event": {
    "type": "object",
    "additionalProperties": false,

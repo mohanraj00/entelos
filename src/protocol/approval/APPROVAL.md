@@ -223,7 +223,7 @@ The proposal item has `refusal`. For `not_approvable`, it is the report refusal 
 
 ## Operations
 
-All operations in this section need the `reviewer` role, except `decision_events`, which needs the `event_reader` role. A principal without the needed role gets `forbidden`. A request with protocol `1.0` for `proposals` or `proposal` gets `invalid_request`, because 1.0 has no such operation.
+All operations in this section need the `reviewer` role, except `decision_events`, which needs the `event_reader` role. A principal without the needed role gets `forbidden`. A request with protocol `1.0` for `proposals` or `proposal` gets `invalid_request`, because 1.0 has no such operation. A request with protocol `1.0` or `1.1` for `decision_events` gets `invalid_request` at the protocol stage, because only 1.2 has that operation.
 
 ### `proposals` (read)
 
