@@ -1,0 +1,82 @@
+{
+  "format_version": 1,
+  "spec": "src/protocol/verdict/VERDICT.md",
+  "note": "Minimum lifecycle steps for the Go Host test. A person wrote each expected value from VERDICT.md. The subject is the CEL function record.visible. A content name such as a stands for the bundle of that name. A proposal name such as p1 stands for its snapshot, and a decision name such as d1 for its decision. The producer is author, and the runner is fixture-runner. A later job adds the full conformance vectors.",
+  "cases": [
+    {
+      "name": "edit-after-approval",
+      "steps": [
+        {"propose": "p1", "content": "a"},
+        {"qualify": "p1"},
+        {"decide": "d1", "proposal": "p1", "actor": "reviewer-a"},
+        {"approval": "a", "expect": {"approved": true, "state": "current", "verdicts": [["d1", "current"]]}},
+        {"mark": "before-edit"},
+        {"propose": "p2", "content": "b"},
+        {"approval": "a", "expect": {"approved": false, "state": "stale", "verdicts": [["d1", "stale"]]}},
+        {"approval": "b", "expect": {"approved": false, "state": "unknown", "verdicts": []}},
+        {"decide": "d2", "proposal": "p1", "actor": "reviewer-b", "expect": {"error": "stale_verdict"}},
+        {"activate": "d1", "expect": {"error": "stale_verdict"}},
+        {"approval": "a", "cursor": "before-edit", "expect": {"approved": true, "state": "current", "verdicts": [["d1", "current"]]}}
+      ]
+    },
+    {
+      "name": "return-to-the-old-content",
+      "steps": [
+        {"propose": "p1", "content": "a"},
+        {"qualify": "p1"},
+        {"decide": "d1", "proposal": "p1", "actor": "reviewer-a"},
+        {"propose": "p2", "content": "b"},
+        {"activate": "d1", "expect": {"error": "stale_verdict"}},
+        {"propose": "p3", "content": "a"},
+        {"approval": "a", "expect": {"approved": true, "state": "current", "verdicts": [["d1", "current"]]}},
+        {"activate": "d1"},
+        {"approval": "a", "expect": {"approved": true, "state": "current", "verdicts": [["d1", "current"]]}}
+      ]
+    },
+    {
+      "name": "reject-on-the-same-proposal",
+      "steps": [
+        {"propose": "p1", "content": "a"},
+        {"qualify": "p1"},
+        {"decide": "d1", "proposal": "p1", "actor": "reviewer-a"},
+        {"decide": "d2", "proposal": "p1", "actor": "reviewer-b", "disposition": "reject"},
+        {"approval": "a", "expect": {"approved": false, "state": "rejected", "verdicts": [["d1", "rejected"], ["d2", "rejected"]]}},
+        {"activate": "d1", "expect": {"error": "proposal_rejected"}}
+      ]
+    },
+    {
+      "name": "reject-on-a-later-proposal-of-the-same-content",
+      "steps": [
+        {"propose": "p1", "content": "a"},
+        {"qualify": "p1"},
+        {"decide": "d1", "proposal": "p1", "actor": "reviewer-a"},
+        {"propose": "p2", "content": "a"},
+        {"qualify": "p2"},
+        {"decide": "d2", "proposal": "p2", "actor": "reviewer-b", "disposition": "reject"},
+        {"approval": "a", "expect": {"approved": false, "state": "rejected", "verdicts": [["d1", "rejected"], ["d2", "rejected"]]}},
+        {"activate": "d1", "expect": {"error": "proposal_rejected"}}
+      ]
+    },
+    {
+      "name": "reject-of-old-content",
+      "steps": [
+        {"propose": "p1", "content": "a"},
+        {"qualify": "p1"},
+        {"propose": "p2", "content": "b"},
+        {"decide": "d1", "proposal": "p1", "actor": "reviewer-a", "disposition": "reject"},
+        {"approval": "a", "expect": {"approved": false, "state": "rejected", "verdicts": [["d1", "rejected"]]}}
+      ]
+    },
+    {
+      "name": "unknown-and-refused-requests",
+      "steps": [
+        {"approval": "a", "expect": {"approved": false, "state": "unknown", "verdicts": []}},
+        {"propose": "p1", "content": "a"},
+        {"approval": "a", "expect": {"approved": false, "state": "unknown", "verdicts": []}},
+        {"approval": "a", "function": "record.other", "expect": {"error": "out_of_scope"}},
+        {"approval": "a", "candidate": {"kind": "cel-bundle"}, "expect": {"error": "invalid_request"}},
+        {"approval": "a", "candidate": {"kind": "cel-bundle", "ref": "sha256:00", "extra": "x"}, "expect": {"error": "invalid_request"}}
+      ]
+    }
+  ]
+}
