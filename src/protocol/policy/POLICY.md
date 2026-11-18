@@ -29,6 +29,8 @@ Status: **proposed**. No Host writes this record. The schemas and the vectors in
 8. The sample rate of the audit is a fixed value of the policy bundle. A person audits each accept that the draw selects.
 9. The verdict has a receipt with the policy version, the input digest and the build. A replay of the receipt gives the same outcome.
 
+[KINDS.md](../verdict/KINDS.md) (proposed, #128) changes decision 1: a `decide` record is a human verdict only when the Host context names its actor as `human`.
+
 ## Policy
 
 A policy is a typed rule ([typed-profile-spec.md](../../cel-lifecycle/typed-profile-spec.md)). Its environment declares each input that it reads and an output of type `string`. Its fixed values hold `audit_rate_ppm`. The approved bytes thus fix the inputs, the expression and the sample rate. A change to one of them is a new snapshot of the policy function, so it needs a human verdict (rule 1).
