@@ -64,6 +64,8 @@ The Host builds each input. A producer, a reviewer or a caller cannot supply an 
 | `evidence_model_reviewed` | bool | The same. | The same. |
 | `evidence_all_automatic` | bool | The same. | The same. |
 | `evidence_corrected` | bool | The same. | The same. |
+| `measure_max_bound_bp` | int | The largest `bound_bp` of the measure summary of the item report ([PROMOTION.md](../promotion/PROMOTION.md#measure-summary)), in basis points. | The item has no report, or a rule of PROMOTION.md fails for the item. |
+| `measure_gold_digest` | string | The `gold_digest` of the same measure summary. | The same. |
 
 The call gets only the inputs that the policy declares. The input object has one member for each declared name.
 
@@ -162,12 +164,14 @@ This section is a proposal. No code implements it. The vectors in this directory
 - The Host stores the canonical input bytes at `inputs_ref`, so a replay can read them. The Host writes the call as an `invoke` receipt with the same `inputs_ref`, snapshot and build.
 - `activate` applies the verdict requirement rules. It refuses with a new code if the result is not `satisfied`.
 - `proposal` of the approval API lists the policy verdicts beside the human verdicts. `proposals` shows an item with a policy `route` as `awaiting_verdict`, and shows a selected accept as an audit task.
-- The qualification report gets an optional field `change_class`. The runner of the application gives it.
+- The qualification report gets the optional fields `change_class` and `measure`. The runner of the application gives them. [PROMOTION.md](../promotion/PROMOTION.md#measure-summary) gives the fields of `measure`.
 - The stop control is the current `suspend` operation, with the policy activation in `targets`.
 
 ## Versions
 
 The major version is the number after the slash in `format`. A reader reads only the major version that it knows. A new field, a new reason, a new outcome or a new policy input needs a new major version, because a reader of version 1 refuses a field or a value that it does not know.
+
+The two `measure_` inputs of [PROMOTION.md](../promotion/PROMOTION.md) ([#152](https://github.com/mohanraj00/entelos/issues/152)) are part of version 1. They came before a Host read version 1.
 
 ## Vectors
 
