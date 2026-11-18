@@ -34,6 +34,8 @@ The Host sets the record status, not the runner. The status is `passed` only if 
 
 Else the status is `failed`.
 
+`Verdict.Measure` is optional. It is the measure summary of [PROMOTION.md](../protocol/promotion/PROMOTION.md#measure-summary). If it is not nil, the Host keeps it as the `measure` field of the qualification record. The Host does not check it at `qualify`. The promotion read applies the rules of PROMOTION.md to it. If it is nil, the record has no `measure` field, and the record bytes do not change.
+
 ## Structured diagnostics
 
 If the runner cannot give a verdict, it gives a `*Fault` with a code, a stage and a message. The Host records the fault as the `diagnostic` field and sets the status to `unresolved`. A missing candidate file is also a diagnostic. Another error stops the request, and the Host publishes no state.
