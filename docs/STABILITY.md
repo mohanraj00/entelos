@@ -35,6 +35,8 @@ The sidecar wire protocol has the versions 1.0 ([PROTOCOL.md](../src/protocol/PR
 - `src/protocol/approval/schema/*.json` and `src/protocol/approval/vectors/*.json`: the 1.1 approval schemas and the approval vectors.
 - `src/protocol/approval/schema/1.2/*.json`: the 1.2 approval schema overrides.
 
+Version 1.2 is first in the v0.5.0 snapshot. Its schemas include the read `decision_events` and the field `decide.fact_reviews` (#158), so the pin checks them.
+
 The pin records the SHA-256 of each of these files. An added, removed or changed file fails the pin. The pin also checks that the envelope schema accepts exactly the protocol versions `1.0`, `1.1` and `1.2`, and that the Go constant `protocol.Version` is `1.0`.
 
 ### Record format
@@ -45,9 +47,9 @@ Stored records have the format `entelos.record/1`. The pin checks that the Go co
 
 These surfaces are experimental:
 
-- Each line of `api.txt` that starts with `experimental`. Today these are the test hooks `FileClock`, `GitStore.Git`, `GitStore.RunGit` and `GitResult`, the package variables `FileNames`, `Mimes` and `Reads`, `handoff.Variable`, which has the typed profile fields, and the HTTP binding declarations.
+- Each line of `api.txt` that starts with `experimental`. These include the test hooks `FileClock`, `GitStore.Git`, `GitStore.RunGit` and `GitResult`, the package variables `FileNames`, `Mimes` and `Reads`, `handoff.Variable`, which has the typed profile fields, and the HTTP binding declarations.
 - Each new exported declaration. It starts as experimental. A later change can promote it to stable.
-- The field `Verdict.Measure` of the stable type `Verdict` in `lifecycle` (#152), and the promotion read and the report field `measure` of [PROMOTION.md](../src/protocol/promotion/PROMOTION.md). The pin has one line for each struct, so the `Verdict` line is `stable`. This entry makes the new field experimental.
+- The field `Verdict.Measure` of the stable type `Verdict` in `lifecycle` (#152). Also the rest of [PROMOTION.md](../src/protocol/promotion/PROMOTION.md): the promotion read, the report field `measure`, the measure summary `entelos.measure/1` with its schema and vectors in `src/protocol/promotion/`, and the Host context field `promotion_collections`. The pin has one line for each struct, so the `Verdict` line is `stable`. This entry makes the new field experimental.
 - The typed profile `cel-typed/v1` and its vectors in `src/cel-lifecycle/conformance/typed/`.
 - The executor vectors in `src/cel-lifecycle/conformance/executor/`, the browser executor module and the WASM bridge. The edge executor line (the WASM build, the browser bridge, the IndexedDB log, `ingest` of executor logs and the planned gomobile package) is frozen until v1.0 ([#162](https://github.com/mohanraj00/entelos/issues/162)). It is not a stable surface. The names stay, and nothing is removed.
 - The commands and their flags: `cel-handoff`, the `lifecycle-core` JSONL host, `entelos-sidecar`, `entelos-migrate`, `entelos-verify` and `entelos-keygen`.
@@ -55,10 +57,13 @@ These surfaces are experimental:
 - Signed records ([SIGNED.md](../src/protocol/signed/SIGNED.md), [#155](https://github.com/mohanraj00/entelos/issues/155)): the signed record of the kind `signed`, the signature domain `entelos.signature/1`, the key set format `entelos.keyset/1`, the signing key file format `entelos.signing-key/1`, the state field `signatures`, the schemas and vectors in `src/protocol/signed/`, and the declarations `Signer`, `KeySet`, `ParseKeySet`, `VerifySigned`, `NewSigner`, `NewSigningKey` and `Host.SetSigner` in `lifecycle`.
 - The Python callers in `src/lifecycle-core/client/`, the tools, `verify.py` and the examples.
 - The text of diagnostic messages, and each diagnostic code that no pinned vector contains.
-- The content proposal `entelos.content/1` ([CONTENT.md](../src/protocol/content/CONTENT.md), [#153](https://github.com/mohanraj00/entelos/issues/153)) with its schemas and vectors in `src/protocol/content/`. It is a proposed spec, and no Host code implements it.
+- The content proposal `entelos.content/1` ([CONTENT.md](../src/protocol/content/CONTENT.md), [#153](https://github.com/mohanraj00/entelos/issues/153)) with its schemas and vectors in `src/protocol/content/`. The Go Host reads it through the Host field `candidate` of `propose` (#175). The item field `applicability` and the Host field `applicability` of `activate` (#106) are also experimental. The sidecar wire protocol does not accept these fields.
 - The policy verdict `entelos.policy/1` ([POLICY.md](../src/protocol/policy/POLICY.md), [#154](https://github.com/mohanraj00/entelos/issues/154)) with its schemas and vectors in `src/protocol/policy/`. It is a proposed spec, and no Host code implements it.
 - The HTTP binding of the approval API ([APPROVAL.md](../src/protocol/approval/APPROVAL.md#http-binding), [#156](https://github.com/mohanraj00/entelos/issues/156)): the `HTTP*` declarations, `ListenHTTP`, `HTTPPath`, `IssuerFormat` and `MaxClaim` in `protocol`, the path `/v1/request` and the issuer file format `entelos.issuer/1`.
-- The evidence format `entelos.evidence/1` ([#148](https://github.com/mohanraj00/entelos/issues/148)). When this statement was written, it was an open PR, not merged code.
+- The evidence format `entelos.evidence/1` ([#148](https://github.com/mohanraj00/entelos/issues/148)), and the Host-only read `evidence` that applies its rules (#104).
+- The activation record ([ACTIVATION.md](../src/protocol/activation/ACTIVATION.md), [#105](https://github.com/mohanraj00/entelos/issues/105)): the record kind `activation`, the state field `activations`, the codes `publish_refused`, `publish_unsigned` and `publish_unsupported`, and the declarations `VerifyActivation`, `Publisher` and `Host.SetPublisher` in `lifecycle`.
+- The verdict binding and the verdict kinds ([VERDICT.md](../src/protocol/verdict/VERDICT.md), [KINDS.md](../src/protocol/verdict/KINDS.md), #127 and #128): the Host read `approval`, the Host context fields `actor_kinds` and `verdict_policy`, and the decision record field `kind`. No pinned vector has the codes `stale_verdict` and `verdicts_required`, so the diagnostic code rule above makes them experimental.
+- The decision event export ([EVENTS.md](../src/protocol/events/EVENTS.md), #158): the state field `decision_stream`, the cursor contents and the declarations `CheckDecisionEvent` and `Host.StartDecisionEvents` in `lifecycle`. The 1.2 schemas of the read are stable, as the wire protocol section says.
 
 The pin does not read the prose of PROTOCOL.md, APPROVAL.md, the storage port spec or the other docs.
 
