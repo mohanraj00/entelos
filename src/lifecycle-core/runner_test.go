@@ -68,6 +68,8 @@ type world struct {
 	functions Array
 	// now is the clock value of each Host. Nil is the system clock.
 	now *string
+	// context has more Host context fields, such as actor_kinds.
+	context Object
 }
 
 func newWorld(t *testing.T, runner Runner) *world {
@@ -86,6 +88,9 @@ func (w *world) host(actor, role string, runner Runner) *Host {
 	}
 	context := Object{"actor": actor, "roles": Array{role}, "scope": scope, "runner_actor": "fixture-runner",
 		"worker": "worker-1", "functions": functions}
+	for k, x := range w.context {
+		context[k] = x
+	}
 	h, err := NewHostWithRunner(w.store, &fakeEngine{build: engineBuild}, runner, context)
 	if err != nil {
 		w.t.Fatal(err)

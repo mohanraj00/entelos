@@ -422,8 +422,16 @@ func (h *Host) decide(v *View, q Object) Object {
 	if _, head := h.headOf(v, snapshot); disposition == "accept" && (head == nil || !equal(candidateRef(head), candidateRef(snapshot))) {
 		fail("stale_verdict", "the head of this subject has other content than this snapshot", "admission")
 	}
+	// KINDS.md: check 8 for accept and check 5 for reject. The checks
+	// between them apply only to accept.
+	kind := h.kindOf(actor)
+	h.checkVerdictKinds(v, index, actor, kind, snapshot)
 	record := merge(pick(snapshot, interval4...), Object{"snapshot_ref": snapshotRef, "report_ref": q["report_ref"], "actor": actor,
 		"reason": q["reason"], "disposition": disposition, "runner_policy": h.ctx("runner_actor"), "decided_at": h.now()})
+	// A record of an actor without a kind has the bytes of an earlier Host.
+	if kind != "" {
+		record["kind"] = kind
+	}
 	ref := v.Put("decision", record)
 	appendEntry(entry, "decisions", ref)
 	return Object{"decision_ref": ref, "decision": record}

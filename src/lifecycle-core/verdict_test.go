@@ -24,12 +24,13 @@ type verdictRun struct {
 	snapshots map[string]string
 	reports   map[string]any
 	decisions map[string]string
+	records   map[string]Object
 	cursors   map[string]string
 }
 
 func newVerdictRun(t *testing.T) *verdictRun {
 	r := &verdictRun{t: t, verdicts: map[string]string{}, clock: time.Date(2026, 11, 17, 9, 0, 0, 0, time.UTC),
-		snapshots: map[string]string{}, reports: map[string]any{}, decisions: map[string]string{}, cursors: map[string]string{}}
+		snapshots: map[string]string{}, reports: map[string]any{}, decisions: map[string]string{}, records: map[string]Object{}, cursors: map[string]string{}}
 	r.now = r.clock.Format(time.RFC3339)
 	r.w = newWorld(t, &fixtureRunner{name: "fixture-a", verdicts: r.verdicts})
 	r.w.now = &r.now
@@ -69,13 +70,32 @@ func (r *verdictRun) step(step Object) Object {
 	case step["decide"] != nil:
 		actor := step["actor"].(string)
 		var out Object
-		out, err = w.do(actor, "reviewer", w.runner, "decide", Object{"report_ref": r.reports[step["proposal"].(string)],
-			"reason": "verdict " + step["decide"].(string), "disposition": lookup(step, "disposition", "accept")})
+		body := Object{"report_ref": r.reports[step["proposal"].(string)],
+			"reason": "verdict " + step["decide"].(string), "disposition": lookup(step, "disposition", "accept")}
+		// A vector can add fields that the decide schema does not have.
+		for k, x := range object(lookup(step, "body", Object{})) {
+			body[k] = x
+		}
+		out, err = w.do(actor, "reviewer", w.runner, "decide", body)
 		if err == nil {
 			r.decisions[step["decide"].(string)] = out["decision_ref"].(string)
+			r.records[step["decide"].(string)] = out["decision"].(Object)
 		}
 	case step["activate"] != nil:
 		_, err = w.do("reviewer", "reviewer", w.runner, "activate", Object{"decision_ref": r.decisions[step["activate"].(string)], "targets": Array{}})
+	case step["kinds"] != nil:
+		// The application changes the kind of an actor (KINDS.md, Separation).
+		w.context["actor_kinds"] = step["kinds"]
+	case step["host"] != nil:
+		context := Object{"actor": "reviewer", "roles": Array{"reviewer"}, "scope": "demo", "runner_actor": "fixture-runner",
+			"worker": "worker-1", "functions": Array{"record.visible"}}
+		for k, x := range step["host"].(Object) {
+			context[k] = x
+		}
+		_, err = NewHostWithRunner(w.store, &fakeEngine{build: engineBuild}, w.runner, context)
+	case step["record"] != nil:
+		// A missing kind field gives null.
+		return Object{"kind": r.records[step["record"].(string)]["kind"]}
 	case step["mark"] != nil:
 		root, readErr := w.store.Read(nil)
 		if readErr != nil {
@@ -91,7 +111,15 @@ func (r *verdictRun) step(step Object) Object {
 		var out any
 		out, err = w.host("reader", "reader", w.runner).Handle(q)
 		if err == nil {
-			return r.answer(out.(Object))
+			got := r.answer(out.(Object))
+			// The kind vectors also state the counts and the policy.
+			expect, _ := step["expect"].(Object)
+			for _, k := range []string{"counts", "required"} {
+				if _, has := expect[k]; has {
+					got[k] = out.(Object)[k]
+				}
+			}
+			return got
 		}
 	default:
 		r.t.Fatalf("unknown step %v", step)
@@ -169,6 +197,66 @@ func TestVerdictVectors(t *testing.T) {
 			}
 		})
 	}
+}
+
+// The kind vectors state each expected value from KINDS.md. The context of
+// a case gives the Host context fields actor_kinds and verdict_policy.
+func TestKindVectors(t *testing.T) {
+	raw, err := os.ReadFile(filepath.Join("..", "protocol", "verdict", "vectors", "kinds-cases.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Decode keeps each number as in a Host context file: an integer is an
+	// Int and 1.0 is a float.
+	doc, err := Decode(raw)
+	if err != nil {
+		t.Fatal(err)
+	}
+	cases := elements(item(doc, "cases"))
+	if len(cases) == 0 {
+		t.Fatal("no kind cases")
+	}
+	for _, x := range cases {
+		c := x.(Object)
+		t.Run(text(c["name"]), func(t *testing.T) {
+			r := newVerdictRun(t)
+			r.w.context = Object{}
+			for k, x := range object(c["context"]) {
+				r.w.context[k] = x
+			}
+			for i, step := range elements(c["steps"]) {
+				got := normal(t, r.step(step.(Object)))
+				want := normal(t, plain(step.(Object)["expect"]))
+				if !reflect.DeepEqual(got, want) {
+					t.Fatalf("step %d %s: got %v, want %v", i+1, Encode(step), got, want)
+				}
+			}
+		})
+	}
+}
+
+// plain gives a decoded value with each Int as a float64, the form that
+// normal gives.
+func plain(value any) any {
+	switch x := value.(type) {
+	case Int:
+		n, _ := number(x)
+		f, _ := n.Float64()
+		return f
+	case Object:
+		out := map[string]any{}
+		for k, v := range x {
+			out[k] = plain(v)
+		}
+		return out
+	case Array:
+		out := []any{}
+		for _, v := range x {
+			out = append(out, plain(v))
+		}
+		return out
+	}
+	return value
 }
 
 // After an edit, the history keeps each stale verdict.

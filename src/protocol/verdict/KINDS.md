@@ -2,7 +2,7 @@
 
 This file specifies how the Host keeps human, model and policy verdicts apart. Issue [#128](https://github.com/mohanraj00/entelos/issues/128) tracks it. Each verdict has a kind and the identity of its actor. A Host policy can require a count of each kind before `activate`. The `approval` read of [VERDICT.md](VERDICT.md) reports the count of each kind.
 
-Status: **proposed**. No Host applies these rules yet. This text is the contract. The vectors come with the Host code.
+Status: **implemented** in the Go lifecycle Host. The vectors are in [vectors/kinds-cases.json](vectors/kinds-cases.json), and `TestKindVectors` runs them. They cover each combination of the table in [Combinations](#combinations).
 
 ## Terms
 
@@ -126,7 +126,7 @@ More vectors cover a verdict without a kind, a body with a `kind` field, an inva
 
 ## Wire protocol
 
-The decision record gets one optional field. The approval schemas and the credentials file do not change. The refusal code `verdicts_required` is new. The sidecar has no setting for `actor_kinds` or `verdict_policy` yet. The JSONL Host and the Go API read them from the Host context.
+The decision record gets one optional field. The approval schemas and the credentials file do not change. The refusal code `verdicts_required` is new. The sidecar and the JSONL Host read the two fields from the `--context` file, and the Go API reads them from the Host context. The sidecar has no command-line setting for them, and its wire protocol has no `approval` read yet.
 
 ## Limits
 

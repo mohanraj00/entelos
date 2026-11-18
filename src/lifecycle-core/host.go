@@ -162,6 +162,9 @@ func NewHostWithRunner(store Store, rt Runtime, runner Runner, context any) (*Ho
 			return nil, NewFault("configuration_error", "host upload_inputs must be a boolean", "")
 		}
 	}
+	if err := checkKindContext(ctx); err != nil {
+		return nil, err
+	}
 	build, err := Implementation()
 	if err != nil {
 		return nil, err
@@ -1218,6 +1221,7 @@ func (h *Host) apply(v *View, op string, q Object) any {
 		case verdictStale:
 			fail("stale_verdict", "the head of this subject has other content than the verdict judged", "admission")
 		}
+		h.checkVerdictPolicy(v, index, snapshot)
 		confirmed := confirmApplicability(q, snapshot)
 		event := merge(pick(snapshot, interval4...), Object{"kind": "enable", "snapshot_ref": report["snapshot_ref"], "report_ref": decision["report_ref"],
 			"decision_ref": q["decision_ref"], "targets": lookup(q, "targets", Array{}), "actor": actor})
