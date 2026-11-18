@@ -1211,8 +1211,7 @@ func (h *Host) apply(v *View, op string, q Object) any {
 		index := reviews(v)
 		decision := h.scoped(v, item(q, "decision_ref"), "decision")
 		report, snapshot := h.reportValid(v, item(decision, "report_ref"))
-		if !equal(item(decision, "snapshot_ref"), item(report, "snapshot_ref")) || !equal(item(decision, "disposition"), "accept") ||
-			!equal(item(decision, "runner_policy"), h.ctx("runner_actor")) {
+		if !decisionBound(h, decision, report) {
 			fail("invalid_decision", "decision bindings differ from qualification", "")
 		}
 		switch h.verdictState(v, index, decision, snapshot) {

@@ -12,7 +12,7 @@ Status: **implemented** in the Go lifecycle Host. The vectors are in [vectors/ki
 | Kind | One value from the closed set `human`, `model` and `policy`. A `human` verdict comes from a person. A `model` verdict comes from a model. A `policy` verdict comes from an automatic policy check. |
 | Identity | The `actor` of the verdict: the name of the person, the model or the policy check. The credential of the request gives it, as in 1.0. |
 | Actor kinds | The Host context field `actor_kinds`. It maps an actor to its kind. |
-| Count | The number of distinct identities of one kind that have a `current` verdict on a candidate reference. |
+| Count | The number of distinct identities of one kind that have a `current` verdict on a candidate reference, with a qualification that `activate` accepts. |
 | Verdict policy | The Host context field `verdict_policy`. It gives the minimum count of each kind that `activate` requires. |
 
 ## Decision
@@ -54,7 +54,8 @@ The Host counts the verdicts of one candidate reference of one subject, at one r
 
 1. Take each `accept` verdict on a snapshot of the subject whose candidate reference is the stated reference.
 2. Keep each verdict whose state is `current` ([VERDICT.md](VERDICT.md#verdict-state)).
-3. For each kind, count the distinct `actor` values of the verdicts of that kind.
+3. Keep each verdict that `activate` accepts as its own verdict: its qualification report is still valid, and the decision bindings agree with the report. Thus a verdict with a stale qualification does not count.
+4. For each kind, count the distinct `actor` values of the verdicts of that kind.
 
 A `reject` verdict does not count. It makes the verdicts `rejected`, as in VERDICT.md. An actor with verdicts on two snapshots of the same content counts once.
 

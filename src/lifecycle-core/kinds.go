@@ -147,18 +147,41 @@ func countKinds(current []Object) Object {
 }
 
 // candidateCounts gives the counts of a candidate reference of a subject at
-// the view (KINDS.md, Counts).
+// the view (KINDS.md, Counts). A verdict counts only if it is current and
+// activate accepts its report and bindings.
 func (h *Host) candidateCounts(v *View, index Object, function any, candidate Object) Object {
 	var current []Object
 	for _, s := range h.sameCandidate(v, index, function, candidate) {
 		for _, decisionRef := range elements(reviewEntry(index, s.ref, false)["decisions"]) {
 			decision := get(v, decisionRef, "decision")
-			if h.verdictState(v, index, decision, s.snapshot) == verdictCurrent {
+			if h.verdictState(v, index, decision, s.snapshot) == verdictCurrent && h.activatable(v, decision) {
 				current = append(current, decision)
 			}
 		}
 	}
 	return countKinds(current)
+}
+
+// activatable reports if activate accepts the report and the bindings of a
+// decision. Thus a verdict with a stale qualification does not count.
+func (h *Host) activatable(v *View, decision Object) (ok bool) {
+	defer func() {
+		if r := recover(); r != nil {
+			if _, fault := r.(*Fault); !fault {
+				panic(r)
+			}
+			ok = false
+		}
+	}()
+	report, _ := h.reportValid(v, item(decision, "report_ref"))
+	return decisionBound(h, decision, report)
+}
+
+// decisionBound reports if a decision names the snapshot of its report, the
+// accept disposition and the installed runner.
+func decisionBound(h *Host, decision, report Object) bool {
+	return equal(item(decision, "snapshot_ref"), item(report, "snapshot_ref")) && equal(item(decision, "disposition"), "accept") &&
+		equal(item(decision, "runner_policy"), h.ctx("runner_actor"))
 }
 
 // checkVerdictKinds refuses a verdict when the actor has a verdict of

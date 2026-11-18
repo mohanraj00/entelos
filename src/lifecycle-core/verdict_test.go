@@ -83,6 +83,11 @@ func (r *verdictRun) step(step Object) Object {
 		}
 	case step["activate"] != nil:
 		_, err = w.do("reviewer", "reviewer", w.runner, "activate", Object{"decision_ref": r.decisions[step["activate"].(string)], "targets": Array{}})
+	case step["supersede"] != nil:
+		// A new source supersedes the source of the earlier proposals. Its
+		// new plan qualifies the later proposals.
+		r.source = w.must("reviewer", "reviewer", "source", with(window, Object{"text": "visible rule", "reason": "supersede", "supersedes": Array{r.source}}))["source_ref"].(string)
+		r.plan = w.must("reviewer", "reviewer", "plan", Object{"source_ref": r.source, "cases": Array{Object{"name": "one"}}, "origin": "independent", "supersedes": Array{}})["plan_ref"].(string)
 	case step["kinds"] != nil:
 		// The application changes the kind of an actor (KINDS.md, Separation).
 		w.context["actor_kinds"] = step["kinds"]

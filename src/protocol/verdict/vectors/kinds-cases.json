@@ -1,7 +1,7 @@
 {
   "format_version": 1,
   "spec": "src/protocol/verdict/KINDS.md",
-  "note": "Lifecycle steps for the Go Host test. A person wrote each expected value from KINDS.md. The steps are the steps of verdict-cases.json, and the subject, the producer and the runner are the same. The context of a case gives the Host context fields actor_kinds and verdict_policy. A kinds step changes actor_kinds. A host step starts a Host with more context fields. A record step gives the kind field of a decision record, or null. A decide step can have a body with more request fields. The policy of the KINDS.md table is human 1 and model 1.",
+  "note": "Lifecycle steps for the Go Host test. A person wrote each expected value from KINDS.md. The steps are the steps of verdict-cases.json, and the subject, the producer and the runner are the same. The context of a case gives the Host context fields actor_kinds and verdict_policy. A kinds step changes actor_kinds. A host step starts a Host with more context fields. A record step gives the kind field of a decision record, or null. A supersede step adds a source that supersedes the source of the earlier proposals, and a plan for it. A decide step can have a body with more request fields. The policy of the KINDS.md table is human 1 and model 1.",
   "cases": [
     {
       "name": "one-model",
@@ -190,6 +190,22 @@
         {"decide": "d3", "proposal": "p3", "actor": "model-a"},
         {"approval": "a", "expect": {"approved": false, "state": "current", "verdicts": [["d1", "rejected"], ["d2", "rejected"], ["d3", "current"]], "counts": {"human": 0, "model": 1, "policy": 0}, "required": {"human": 1, "model": 1, "policy": 0}}},
         {"activate": "d3", "expect": {"error": "verdicts_required"}}
+      ]
+    },
+    {
+      "name": "verdict-with-a-stale-qualification-does-not-count",
+      "context": {"actor_kinds": {"model-a": "model", "model-b": "model", "policy-a": "policy", "human-a": "human"}, "verdict_policy": {"human": 1, "model": 1}},
+      "steps": [
+        {"propose": "p1", "content": "a"},
+        {"qualify": "p1"},
+        {"decide": "d1", "proposal": "p1", "actor": "human-a"},
+        {"supersede": "source"},
+        {"propose": "p2", "content": "a"},
+        {"qualify": "p2"},
+        {"decide": "d2", "proposal": "p2", "actor": "model-a"},
+        {"approval": "a", "expect": {"approved": false, "state": "current", "verdicts": [["d1", "current"], ["d2", "current"]], "counts": {"human": 0, "model": 1, "policy": 0}, "required": {"human": 1, "model": 1, "policy": 0}}},
+        {"activate": "d1", "expect": {"error": "stale_qualification"}},
+        {"activate": "d2", "expect": {"error": "verdicts_required"}}
       ]
     },
     {

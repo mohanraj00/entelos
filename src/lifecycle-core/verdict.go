@@ -78,7 +78,7 @@ func (h *Host) approval(v *View, q Object) Object {
 			decision := get(v, decisionRef, "decision")
 			state := h.verdictState(v, index, decision, p.snapshot)
 			found[state] = true
-			if state == verdictCurrent {
+			if state == verdictCurrent && h.activatable(v, decision) {
 				current = append(current, decision)
 			}
 			items = append(items, Object{"decision_ref": decisionRef, "decision": decision, "state": state})
