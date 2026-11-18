@@ -34,8 +34,14 @@ type QualificationInput struct {
 //   - "implementation_ref": the runner identity that gave the verdict.
 //
 // Other fields are runner data. The Host does not read them.
+//
+// Measure is the optional measure summary of PROMOTION.md. If it is not
+// nil, the Host keeps it as the "measure" field of the qualification record.
+// The Host does not check it at qualification. The promotion read applies
+// the rules of PROMOTION.md to it.
 type Verdict struct {
 	Outcome any
+	Measure any
 }
 
 // Runner is a qualification runner.

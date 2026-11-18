@@ -2,7 +2,7 @@
 
 This file specifies a typed decision to promote a version of an extraction profile. Issue [#152](https://github.com/mohanraj00/entelos/issues/152) tracks it. A profile tells a document-extraction tool, for example groundgate, how to read one family of documents. A change to a profile is a knowledge change, so it gets the same approval, receipt and audit as a content update.
 
-Status: **proposed**. No Host reads the measure summary, and no Host writes a policy verdict yet. The schema and the vectors in this directory are the contract for the implementation. The vectors have expected values that a person wrote from this text. No candidate output made them. [`check_spec.py`](check_spec.py) applies the rules of this file to the vectors. It uses the checkers of [CONTENT.md](../content/CONTENT.md) and [POLICY.md](../policy/POLICY.md) for their rules. It does not run a Host or a CEL engine.
+Status: **proposed**. The Go lifecycle Host stores the measure summary of the runner and applies the rules of this file in the promotion read. No Host writes a policy verdict yet. The schema and the vectors in this directory are the contract for the implementation. The vectors have expected values that a person wrote from this text. No candidate output made them. [`check_spec.py`](check_spec.py) applies the rules of this file to the vectors. It uses the checkers of [CONTENT.md](../content/CONTENT.md) and [POLICY.md](../policy/POLICY.md) for their rules. It does not run a Host or a CEL engine.
 
 ## Terms
 
@@ -125,14 +125,29 @@ The activation record of [ACTIVATION.md](../activation/ACTIVATION.md) does not c
 
 The consumer then loads only the profile bytes with that digest.
 
-## Host behavior (proposal)
+## Host behavior
 
-This section is a proposal. No code implements it. The vectors in this directory do not test it.
+The Go lifecycle Host applies this section (#152). The wire protocol does not have the promotion read yet.
 
-- The Host context gets the optional field `promotion_collections`, a list of collection names.
-- The `qualify` request of the runner can give the report field `measure`. The Host stores it in the report.
-- The Host applies the rules of this file when it builds the policy inputs of POLICY.md.
+- The Host context gets the optional field `promotion_collections`, a list of nonempty collection names. A value of another type gives `configuration_error` when the Host starts.
+- The runner gives the measure summary in `Verdict.Measure` ([RUNNER.md](../../lifecycle-core/RUNNER.md#verdict)). If it is not nil, `qualify` stores it as the report field `measure`. `qualify` does not check it. A report without a summary keeps the bytes of an earlier Host.
+- The promotion read applies the rules of this file to the stored report and its snapshot.
 - The verdict requirement of a promotion head is `policy` only if the Host context gives that requirement for the head. Else a person decides each promotion.
+
+### The promotion read
+
+Role: `reviewer`, as `proposal`. Body: `{"report_ref": string, "cursor"?: string}`. The report and its snapshot must be in the host scope.
+
+Result: `{"cursor", "report_ref", "snapshot_ref", "promotion", "rule"?, "inputs"?}`.
+
+| `promotion` | Meaning | Other fields |
+|---|---|---|
+| `valid` | The candidate and the report pass all of the rules. | `inputs`: the two measure inputs. |
+| `invalid` | A rule fails. | `rule`: the result of the first rule that fails. |
+
+The candidate is the kind and the exact manifest text of the snapshot. A Host without `promotion_collections` gives `not_promotion` for each report. The read writes nothing. The rules apply also to a failed report: the policy reads `report_passed` separately.
+
+No Host builds the policy inputs of POLICY.md yet, because no Host writes a policy verdict. The promotion read gives the two inputs that a later policy evaluation will use.
 
 ## Versions
 
@@ -161,11 +176,12 @@ The expected manifest refs were calculated with `printf` and `shasum -a 256` on 
 6. It checks that each rule of the rules table has a check, and that the cases have an accept, a refuse, a route by the policy and a route before the call.
 7. A self-test changes a copy of the vectors and checks that the checker reports each change.
 
-The checker applies the same rules that a Host will apply. Agreement of the checker and the vectors shows that the two agree with each other. It does not show that a later Host agrees with them.
+The checker and the Host apply the same rules. Agreement of the checker and the vectors shows that the two agree with each other. `TestPromotionVectors` in `src/lifecycle-core` runs the checks against the Go rules, and it checks that the measure inputs are absent exactly for each case that routes with `missing_input`. `TestPromotionRead` runs the promotion read on reports that a fixture runner stored. A fixture runner is not the runner of an application.
 
 ## Limits
 
-- No Host reads the measure summary or writes a policy verdict yet. A passing check does not show that entelos accepts a promotion.
+- No Host writes a policy verdict yet. A valid promotion read does not show that entelos accepts a promotion.
+- The Host does not check the summary at `qualify`. A runner can store a summary that a rule refuses. The promotion read then gives the rule.
 - Entelos does not read the profile or the measure report. The summary is a statement of the qualification runner of the application. The runner policy of the Host decides which runner it trusts.
 - One limit applies to all routes. A limit for each route needs a new input.
 - The rules do not compare the profile version with the version of the base proposal. The `base` of CONTENT.md orders the proposals of a head.

@@ -55,6 +55,10 @@
    "routes": [{"field": "fee", "route": "checked", "bound_bp": "0.02"}]},
   "swapped-digests": {"format": "entelos.measure/1", "profile_digest": "sha256:2222222222222222222222222222222222222222222222222222222222222222", "measure_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111", "gold_digest": "sha256:9999999999999999999999999999999999999999999999999999999999999999", "labels_digest": "sha256:8888888888888888888888888888888888888888888888888888888888888888",
    "routes": [{"field": "fee", "route": "checked", "bound_bp": 200}]},
+  "other-profile-digest": {"format": "entelos.measure/1", "profile_digest": "sha256:3333333333333333333333333333333333333333333333333333333333333333", "measure_digest": "sha256:2222222222222222222222222222222222222222222222222222222222222222", "gold_digest": "sha256:9999999999999999999999999999999999999999999999999999999999999999", "labels_digest": "sha256:8888888888888888888888888888888888888888888888888888888888888888",
+   "routes": [{"field": "fee", "route": "checked", "bound_bp": 200}]},
+  "other-measure-digest": {"format": "entelos.measure/1", "profile_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111", "measure_digest": "sha256:4444444444444444444444444444444444444444444444444444444444444444", "gold_digest": "sha256:9999999999999999999999999999999999999999999999999999999999999999", "labels_digest": "sha256:8888888888888888888888888888888888888888888888888888888888888888",
+   "routes": [{"field": "fee", "route": "checked", "bound_bp": 200}]},
   "duplicate-route": {"format": "entelos.measure/1", "profile_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111", "measure_digest": "sha256:2222222222222222222222222222222222222222222222222222222222222222", "gold_digest": "sha256:9999999999999999999999999999999999999999999999999999999999999999", "labels_digest": "sha256:8888888888888888888888888888888888888888888888888888888888888888",
    "routes": [{"field": "fee", "route": "checked", "bound_bp": 200}, {"field": "fee", "route": "checked", "bound_bp": 100}]}
  },
@@ -84,6 +88,9 @@
   {"name": "collection-not-listed", "manifest": "other-collection", "summary": "v2.0.0", "expect": {"valid": false, "rule": "not_promotion"}},
   {"name": "cel-bundle-candidate", "candidate": {"kind": "cel-bundle", "bundle": {"manifest": "", "environment": "", "source": "", "fixed": ""}}, "summary": "v2.0.0",
    "expect": {"valid": false, "rule": "not_promotion"}},
+  {"name": "other-kind-before-content-rules", "candidate": {"kind": "cel-bundle"}, "summary": "v2.0.0",
+   "note": "Rule 1 comes before rule 2, so a candidate of another kind is not a promotion, also when the CONTENT.md rules refuse it.",
+   "expect": {"valid": false, "rule": "not_promotion"}},
   {"name": "content-rules-fail", "manifest": "item-order", "summary": "v2.0.0", "expect": {"valid": false, "rule": "content"}},
   {"name": "measure-item-missing", "manifest": "no-measure-item", "summary": "v2.0.0", "expect": {"valid": false, "rule": "items"}},
   {"name": "third-item", "manifest": "extra-item", "summary": "v2.0.0", "expect": {"valid": false, "rule": "items"}},
@@ -100,6 +107,8 @@
   {"name": "bound-as-decimal-string", "manifest": "v2.0.0", "summary": "decimal-bound", "expect": {"valid": false, "rule": "summary_schema"}},
   {"name": "summary-of-other-version", "manifest": "v2.0.0", "summary": "v2.1.0", "expect": {"valid": false, "rule": "digest_binding"}},
   {"name": "digests-swapped", "manifest": "v2.0.0", "summary": "swapped-digests", "expect": {"valid": false, "rule": "digest_binding"}},
+  {"name": "profile-digest-of-other-version", "manifest": "v2.0.0", "summary": "other-profile-digest", "expect": {"valid": false, "rule": "digest_binding"}},
+  {"name": "measure-digest-of-other-version", "manifest": "v2.0.0", "summary": "other-measure-digest", "expect": {"valid": false, "rule": "digest_binding"}},
   {"name": "route-twice", "manifest": "v2.0.0", "summary": "duplicate-route", "expect": {"valid": false, "rule": "duplicate_route"}}
  ],
  "cases": [

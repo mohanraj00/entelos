@@ -109,7 +109,7 @@ stable github.com/mohanraj00/entelos/src/lifecycle-core type Runtime interface {
 experimental github.com/mohanraj00/entelos/src/lifecycle-core type Signer struct { }
 stable github.com/mohanraj00/entelos/src/lifecycle-core type Store interface { Read(cursor any) (*View, error) Transact(expected, key, payload any, apply func(*View) (any, error)) (Object, error) History(cursor string) ([]string, error) }
 stable github.com/mohanraj00/entelos/src/lifecycle-core type SystemClock struct { }
-stable github.com/mohanraj00/entelos/src/lifecycle-core type Verdict struct { Outcome any }
+stable github.com/mohanraj00/entelos/src/lifecycle-core type Verdict struct { Outcome any Measure any }
 stable github.com/mohanraj00/entelos/src/lifecycle-core type View struct { Cursor string State Object Entries map[string]string }
 experimental github.com/mohanraj00/entelos/src/lifecycle-core var FileNames
 experimental github.com/mohanraj00/entelos/src/lifecycle-core var Mimes

@@ -52,7 +52,7 @@ var schema = map[string]struct {
 
 // Reads are the operations that publish no state.
 var Reads = map[string]bool{"describe": true, "resolve": true, "inspect": true, "record": true, "receipt": true,
-	"proposals": true, "proposal": true, "approval": true, "evidence": true, "decision_events": true}
+	"proposals": true, "proposal": true, "approval": true, "evidence": true, "decision_events": true, "promotion": true}
 
 //go:embed *.go
 var sources embed.FS
@@ -164,6 +164,9 @@ func NewHostWithRunner(store Store, rt Runtime, runner Runner, context any) (*Ho
 		}
 	}
 	if err := checkKindContext(ctx); err != nil {
+		return nil, err
+	}
+	if err := checkPromotionContext(ctx); err != nil {
 		return nil, err
 	}
 	build, err := Implementation()
@@ -723,6 +726,8 @@ func (h *Host) readOperation(op string, q Object) any {
 		return h.approval(v, q)
 	case "evidence":
 		return h.evidenceRead(v, q)
+	case "promotion":
+		return h.promotionRead(v, q)
 	}
 	selected := h.resolve(v, item(q, "function"), item(q, "date"))
 	if op == "resolve" {
@@ -1189,9 +1194,9 @@ func (h *Host) apply(v *View, op string, q Object) any {
 		applicable := h.sourceValid(v, item(snapshot, "source_ref"), snapshot) && h.planValid(v, q["plan_ref"], snapshot)
 		c := candidate(q["snapshot_ref"], snapshot)
 		expected := h.Runner.Expected(c)
-		var outcome, diagnostic any
+		var outcome, measure, diagnostic any
 		if applicable {
-			outcome, diagnostic = h.check(v, snapshot, c, item(plan, "cases"))
+			outcome, measure, diagnostic = h.check(v, snapshot, c, item(plan, "cases"))
 		}
 		// The Host sets the status from the verdict and the bindings. The
 		// runner cannot pass a candidate or a runner that it did not name.
@@ -1209,6 +1214,11 @@ func (h *Host) apply(v *View, op string, q Object) any {
 		// A CEL report keeps the bytes of an earlier Host.
 		if candidate, has := snapshot["candidate"]; has {
 			report["candidate"] = candidate
+		}
+		// A report without a measure summary keeps the bytes of an earlier
+		// Host. The promotion read applies the rules of PROMOTION.md to it.
+		if measure != nil {
+			report["measure"] = measure
 		}
 		ref := v.Put("qualification", report)
 		appendEntry(reviewEntry(index, text(q["snapshot_ref"]), true), "reports", ref)
@@ -1401,16 +1411,16 @@ func (h *Host) apply(v *View, op string, q Object) any {
 
 // check runs the qualification cases on the installed runner. A runner fault
 // is a diagnostic, not an error of the request.
-func (h *Host) check(v *View, snapshot Object, c Candidate, cases any) (outcome, diagnostic any) {
+func (h *Host) check(v *View, snapshot Object, c Candidate, cases any) (outcome, measure, diagnostic any) {
 	defer func() {
 		if r := recover(); r != nil {
 			fault, ok := r.(*Fault)
 			if !ok {
 				panic(r)
 			}
-			outcome, diagnostic = nil, fault.Record()
+			outcome, measure, diagnostic = nil, nil, fault.Record()
 		}
 	}()
 	verdict := must(h.Runner.Qualify(QualificationInput{Candidate: c, Files: h.files(v, snapshot), Cases: cases}))
-	return verdict.Outcome, nil
+	return verdict.Outcome, verdict.Measure, nil
 }
