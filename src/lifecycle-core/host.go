@@ -703,7 +703,10 @@ func (h *Host) readOperation(op string, q Object) any {
 			}
 		}
 		prepareIndex(v)
-		return Object{"cursor": v.Cursor, "state": v.State}
+		// Keep stream internals in storage. Read events through decision_events.
+		state := copyObject(v.State)
+		delete(state, "decision_stream")
+		return Object{"cursor": v.Cursor, "state": state}
 	case "proposal":
 		return h.proposal(v, q)
 	case "record":

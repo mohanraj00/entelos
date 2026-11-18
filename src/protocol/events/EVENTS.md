@@ -106,6 +106,10 @@ holds its random namespace seed, `after` (the prior revision), and an empty
 same transaction. The store compare-and-swap gives these appends one order.
 A verdict in the start commit is in the stream. Earlier verdicts are not.
 
+The Host omits `decision_stream` from the state copy that `inspect` returns.
+It keeps the stored state unchanged. Use `decision_events` to read the stream.
+Each read checks authorization.
+
 A revision cannot hold its own content hash. The saved `after` boundary names
 the parent of the start revision. The read finds that parent's next revision
 in the pinned history. It returns this revision as `stream_start`. It does

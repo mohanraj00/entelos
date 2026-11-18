@@ -159,6 +159,38 @@ func eventHost(t *testing.T, store Store) *Host {
 	return h
 }
 
+func TestInspectOmitsDecisionStream(t *testing.T) {
+	eachStore(t, func(t *testing.T, store Store) {
+		host := eventHost(t, store)
+		if err := host.StartDecisionEvents(); err != nil {
+			t.Fatal(err)
+		}
+		before := root(t, store)
+		if _, has := before.State["decision_stream"]; !has {
+			t.Fatal("store has no decision stream")
+		}
+		want := copyObject(before.State)
+		delete(want, "decision_stream")
+		for _, request := range []Object{{"op": "inspect"}, {"op": "inspect", "cursor": before.Cursor}} {
+			result, err := host.Handle(request)
+			if err != nil {
+				t.Fatal(err)
+			}
+			state := result.(Object)["state"].(Object)
+			if _, has := state["decision_stream"]; has {
+				t.Fatal("inspect returned decision_stream")
+			}
+			if result.(Object)["cursor"] != before.Cursor || !equal(state, want) {
+				t.Fatal("inspect changed the cursor or other state fields")
+			}
+			after := root(t, store)
+			if after.Cursor != before.Cursor || !equal(after.State, before.State) {
+				t.Fatal("inspect changed stored state")
+			}
+		}
+	})
+}
+
 func eventEvidence() Object {
 	facts := Array{}
 	for i := 1; i <= 3; i++ {
