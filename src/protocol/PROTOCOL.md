@@ -8,7 +8,7 @@ Versions 1.1 and 1.2 are defined in [approval/APPROVAL.md](approval/APPROVAL.md)
 
 Protocol 1.2 adds `decision_events` and optional `decide.fact_reviews` (#158).
 The [event spec](events/EVENTS.md) defines the read and its refusal order.
-The role is `reviewer`. The request has `cursor` (optional) and required
+The role is `event_reader`, which permits no other operation. The request has `cursor` (optional) and required
 `limit` from 1 to 256. The page has `events`, `next_cursor` and `stream_start`.
 The [read schema](approval/schema/1.2/decision_events.schema.json) and
 [decide schema](approval/schema/1.2/decide.schema.json) apply only to 1.2.

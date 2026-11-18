@@ -22,7 +22,8 @@ func TestDecisionEventsBindings(t *testing.T) {
 			if err := host.StartDecisionEvents(); err != nil {
 				t.Fatal(err)
 			}
-			principals := lifecycle.Object{"reviewer": lifecycle.Object{"actor": "reviewer", "roles": lifecycle.Array{"reviewer"}}, "reader": lifecycle.Object{"actor": "reader", "roles": lifecycle.Array{"reader"}}}
+			principals := lifecycle.Object{"reviewer": lifecycle.Object{"actor": "reviewer", "roles": lifecycle.Array{"reviewer"}}, "reader": lifecycle.Object{"actor": "reader", "roles": lifecycle.Array{"reader"}},
+				"events": lifecycle.Object{"actor": "events", "roles": lifecycle.Array{"event_reader"}}}
 			schemas := loadTestSchemas(t)
 			send := pageTransport(t, transport, host, schemas, principals, filepath.Join(dir, "events"))
 			// A failed report is enough for a reject. This tests the real wire
@@ -44,7 +45,7 @@ func TestDecisionEventsBindings(t *testing.T) {
 				return send(principal, lifecycle.Encode(q))
 			}
 			for _, version := range []string{"1.0", "1.1"} {
-				if got := request(version, "reviewer", "decision_events", lifecycle.Object{"limit": 1}); got["status"] != "invalid_request" {
+				if got := request(version, "events", "decision_events", lifecycle.Object{"limit": 1}); got["status"] != "invalid_request" {
 					t.Fatal("old version accepted read", got)
 				}
 				if got := request(version, "reviewer", "decide", lifecycle.Object{"report_ref": "sha256:" + tokenA, "reason": "review", "disposition": "reject", "fact_reviews": lifecycle.Array{}, "expected_revision": "", "request_key": "old"}); got["status"] != "invalid_request" || at(got, "diagnostic", "stage") != "protocol" {
@@ -73,7 +74,7 @@ func TestDecisionEventsBindings(t *testing.T) {
 				t.Fatal(got)
 			}
 			root, _ = store.Read(nil)
-			page := request("1.2", "reviewer", "decision_events", lifecycle.Object{"limit": 1})
+			page := request("1.2", "events", "decision_events", lifecycle.Object{"limit": 1})
 			if page["status"] != "ok" {
 				t.Fatal(page)
 			}
@@ -85,13 +86,13 @@ func TestDecisionEventsBindings(t *testing.T) {
 			if errs := shape(schemas, normal(t, page), "decision_events"); len(errs) > 0 {
 				t.Fatal(errs)
 			}
-			direct, err := host.HandleAs("reviewer", []string{"reviewer"}, lifecycle.Object{"op": "decision_events", "limit": 1})
+			direct, err := host.HandleAs("events", []string{"event_reader"}, lifecycle.Object{"op": "decision_events", "limit": 1})
 			if err != nil || !sameValue(direct, out) {
 				t.Fatal("transport differs from Host", err)
 			}
-			for _, principal := range []string{"reviewer", "reader"} {
+			for _, principal := range []string{"events", "reader", "reviewer"} {
 				got := request("1.2", principal, "decision_events", lifecycle.Object{"cursor": out["next_cursor"], "limit": 1})
-				if principal == "reader" {
+				if principal != "events" {
 					if got["status"] != "forbidden" {
 						t.Fatal("resume skipped authorization")
 					}

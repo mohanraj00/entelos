@@ -120,7 +120,7 @@ func TestJSONLEvidence(t *testing.T) {
 
 func TestJSONLDecisionEvents(t *testing.T) {
 	store := lifecycle.NewMemoryStore()
-	host, err := lifecycle.NewHost(store, nil, lifecycle.Object{"actor": "reviewer", "roles": lifecycle.Array{"reviewer"}, "scope": "demo", "runner_actor": "runner", "worker": "worker", "functions": lifecycle.Array{"record.visible"}})
+	host, err := lifecycle.NewHost(store, nil, lifecycle.Object{"actor": "events", "roles": lifecycle.Array{"event_reader"}, "scope": "demo", "runner_actor": "runner", "worker": "worker", "functions": lifecycle.Array{"record.visible"}})
 	if err != nil {
 		t.Fatal(err)
 	}

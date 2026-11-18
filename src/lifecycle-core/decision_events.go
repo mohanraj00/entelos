@@ -252,6 +252,10 @@ func projectDecision(ref string, decision, snapshot Object, offset int64, cursor
 	}
 	facts := citedFacts(snapshot)
 	marks, ok := decision["fact_reviews"].(Array)
+	if _, has := decision["fact_reviews"]; !has && len(facts) == 0 {
+		// A fact-free verdict uses no position, so it needs no marks.
+		marks, ok = Array{}, true
+	}
 	if !ok || len(marks) != len(facts) {
 		bad()
 	}

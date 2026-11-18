@@ -112,7 +112,7 @@ func consume(host *lifecycle.Host, path string, out io.Writer) (int, error) {
 	if state.NextCursor != "" {
 		request["cursor"] = state.NextCursor
 	}
-	result, err := host.HandleAs("producer-reader", []string{"reviewer"}, request)
+	result, err := host.HandleAs("producer-reader", []string{"event_reader"}, request)
 	if err != nil {
 		return 0, err
 	}

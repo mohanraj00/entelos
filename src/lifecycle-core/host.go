@@ -47,7 +47,7 @@ var schema = map[string]struct {
 	"ingest":          {"worker", []string{"entries"}},
 	"proposals":       {"reviewer", []string{"cursor", "limit"}},
 	"proposal":        {"reviewer", []string{"snapshot_ref", "cursor"}},
-	"decision_events": {"reviewer", []string{"cursor", "limit"}},
+	"decision_events": {"event_reader", []string{"cursor", "limit"}},
 }
 
 // Reads are the operations that publish no state.

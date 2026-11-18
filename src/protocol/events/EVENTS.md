@@ -76,7 +76,7 @@ A cursor binds the store, stream start, authorized scope, fixed selection and ev
 
 ## Read
 
-The operation is `decision_events`. It needs the `reviewer` role. Protocol
+The operation is `decision_events`. It needs the `event_reader` role. That role permits no other operation, and the `reviewer` role does not permit this read. Protocol
 1.2 exposes it through the socket and HTTP bindings. Versions 1.0 and 1.1
 refuse it. The JSONL request uses `op: "decision_events"`. Each read checks the
 role and selects only the Host scope and installed functions. A request

@@ -350,7 +350,7 @@ page. Result: `{"events", "next_cursor", "stream_start"}`.
 exclusive cursors and checks. The Host applies the request, cursor and source
 checks in that order. The refusals are `invalid_request`, `invalid_cursor`
 and `unexportable_decision`. The read returns no partial page on refusal.
-The Host checks the reviewer role and scope on every read, including resume.
+The Host checks the `event_reader` role and scope on every read, including resume. That role permits no other operation. A principal with only the `reviewer` role gets `forbidden`.
 
 ### `activate` (write)
 

@@ -15,7 +15,7 @@ This map points to executable reference contracts. It is not a separately versio
 | Evidence format `entelos.evidence/1` | [EVIDENCE.md](../src/protocol/evidence/EVIDENCE.md) | Proposed for [#104](https://github.com/mohanraj00/entelos/issues/104): the admission evidence of an external producer (identity, source, outcome, data and reviews), its refusal rules, its bool policy inputs and its extension point. `check_spec.py` checks the hand-written vectors. No Host reads it. |
 | Policy verdict `entelos.policy/1` | [POLICY.md](../src/protocol/policy/POLICY.md) | Proposed for [#154](https://github.com/mohanraj00/entelos/issues/154): a verdict kind `policy` with the outcomes accept, refuse and route, nine fail-closed route rules, a receipt of the policy call, an audit draw, replay checks and a verdict requirement that a policy verdict cannot satisfy for a human head. `check_spec.py` checks the hand-written vectors. No Host writes it. |
 | Activation record | [ACTIVATION.md](../src/protocol/activation/ACTIVATION.md) | Implemented in the Go Host for [#105](https://github.com/mohanraj00/entelos/issues/105), experimental: a signing Host writes one signed record of the kind `activation` with each `enable` event. It names the candidate, the base, the receipts, the actors, the partition, the interval and the applicability values. `VerifyActivation` checks it offline with 8 rules. The optional `Publisher` gets it before the commit, and a refusal stores nothing. `check_spec.py` and `TestActivationVectors` check the hand-written vectors. The wire protocol has no publisher setting. |
-| Decision events | [EVENTS.md](../src/protocol/events/EVENTS.md) | The Host exports one event per cited fact in each verdict after a saved stream start. Protocol 1.2 adds `decision_events` and optional `decide.fact_reviews`. The read checks the reviewer role, scope and installed functions on each page. It resumes after the cursor without duplicate or missing positions. |
+| Decision events | [EVENTS.md](../src/protocol/events/EVENTS.md) | The Host exports one event per cited fact in each verdict after a saved stream start. Protocol 1.2 adds `decision_events` and optional `decide.fact_reviews`. The read checks the dedicated `event_reader` role, scope and installed functions on each page. It resumes after the cursor without duplicate or missing positions. |
 | Local storage | [gitstore.go](../src/lifecycle-core/gitstore.go) | Immutable objects, captured historical roots, request-key recovery and single-root compare-and-swap. |
 | Application boundary | [adapter.py](../examples/ci-trigger/adapter.py) | Project a nested event, retain raw/projection audit links; no atomic webhook ingress or pipeline effect is implemented. |
 
@@ -63,7 +63,7 @@ The CLI reads one JSON object per line, in a loop, so one process can take many 
 | `propose` | author | `function`, `from`, `until`, `base_snapshot`, `source_ref`, `bundle`, `reason`, `stale_mode` |
 | `qualify` | runner | `snapshot_ref`, `plan_ref` |
 | `decide` | reviewer | `report_ref`, `reason`, `disposition`, `fact_reviews` |
-| `decision_events` | reviewer | `cursor`, `limit` |
+| `decision_events` | event_reader | `cursor`, `limit` |
 | `activate` | reviewer | `decision_ref`, `targets`, `supersedes` |
 | `suspend` | reviewer | `function`, `from`, `until`, `targets`, `reason` |
 | `load` | worker | `function`, `date` |

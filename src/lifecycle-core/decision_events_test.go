@@ -116,7 +116,7 @@ func TestDecisionExportVectors(t *testing.T) {
 				q["op"] = "decision_events"
 				request = q
 			}
-			result, err := host.Handle(request)
+			result, err := readAs(host, request)
 			got := Object{"ok": err == nil}
 			if err != nil {
 				got["code"] = faultCode(t, err)
@@ -215,9 +215,14 @@ func eventWorld(t *testing.T, store Store) (*world, string) {
 	return w, report["report_ref"].(string)
 }
 
+// readAs sends a request with only the event_reader role.
+func readAs(h *Host, request any) (any, error) {
+	return h.HandleAs("event-reader", []string{"event_reader"}, request)
+}
+
 func readEvents(t *testing.T, h *Host, q Object) Object {
 	t.Helper()
-	result, err := h.Handle(merge(Object{"op": "decision_events", "limit": 256}, q))
+	result, err := readAs(h, merge(Object{"op": "decision_events", "limit": 256}, q))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -294,21 +299,23 @@ func TestDecisionEventsHostCaptureAndResume(t *testing.T) {
 				t.Fatal("restart or read wrote state")
 			}
 			w.must("second", "reviewer", "decide", Object{"report_ref": report, "reason": "legacy caller without marks"})
-			value, err := h.Handle(Object{"op": "decision_events", "limit": 256, "cursor": policy["next_cursor"]})
+			value, err := readAs(h, Object{"op": "decision_events", "limit": 256, "cursor": policy["next_cursor"]})
 			if value != nil || faultCode(t, err) != "unexportable_decision" {
 				t.Fatal("missing blind mark was inferred")
 			}
-			_, err = h.Handle(Object{"op": "decision_events", "limit": 1, "cursor": "bad"})
+			_, err = readAs(h, Object{"op": "decision_events", "limit": 1, "cursor": "bad"})
 			if faultCode(t, err) != "invalid_cursor" {
 				t.Fatal("source check before cursor")
 			}
-			_, err = h.HandleAs("caller", []string{"reader"}, Object{"op": "decision_events", "limit": 1})
-			if faultCode(t, err) != "forbidden" {
-				t.Fatal("missing role was accepted")
+			for _, role := range []string{"reader", "reviewer"} {
+				_, err = h.HandleAs("caller", []string{role}, Object{"op": "decision_events", "limit": 1})
+				if faultCode(t, err) != "forbidden" {
+					t.Fatal("decision_events accepted the role", role)
+				}
 			}
 			changed := *h
 			changed.Context = merge(h.Context, Object{"scope": "other"})
-			_, err = changed.Handle(Object{"op": "decision_events", "limit": 1, "cursor": end})
+			_, err = readAs(&changed, Object{"op": "decision_events", "limit": 1, "cursor": end})
 			if faultCode(t, err) != "invalid_cursor" {
 				t.Fatal("cursor crossed scope")
 			}
@@ -432,6 +439,69 @@ func TestDecisionEventsPinsReadPrefix(t *testing.T) {
 		e := raw.(Object)
 		if e["actor_kind"] != "model" || e["blind"] != false {
 			t.Fatal("model kind was inferred from current actor")
+		}
+	}
+}
+
+// A fact-free decision between two decisions with facts uses no position.
+// A page that starts before it and ends after it reads across it.
+func TestDecisionEventsFactFreeDecisionInPage(t *testing.T) {
+	eachStore(t, func(t *testing.T, store Store) {
+		w, report := eventWorld(t, store)
+		h := w.host("reviewer", "reviewer", w.runner)
+		marks := Array{Object{"blind": false}, Object{"blind": true}, Object{"blind": false}}
+		first := w.must("human", "reviewer", "decide", Object{"report_ref": report, "reason": "with facts", "fact_reviews": marks})
+		source := w.must("reviewer", "reviewer", "source", with(window, Object{"text": "free-source", "reason": "fact-free", "supersedes": Array{}}))["source_ref"]
+		plan := w.must("reviewer", "reviewer", "plan", Object{"source_ref": source, "cases": Array{Object{"case": "one"}}, "origin": "independent"})["plan_ref"]
+		proposal := w.must("author", "author", "propose", with(window, Object{"source_ref": source, "base_snapshot": get(must(store.Read(nil)), report, "qualification")["snapshot_ref"], "bundle": bundle("free"), "reason": "no evidence"}))
+		w.runner.(*fixtureRunner).verdicts[proposal["bundle_ref"].(string)] = "passed"
+		free := w.must("fixture-runner", "runner", "qualify", Object{"snapshot_ref": proposal["snapshot_ref"], "plan_ref": plan})["report_ref"]
+		freeDecision := w.must("human", "reviewer", "decide", Object{"report_ref": free, "reason": "no marks"})
+		if _, has := get(must(store.Read(nil)), freeDecision["decision_ref"].(string), "decision")["fact_reviews"]; has {
+			t.Fatal("the fact-free decision has fact_reviews")
+		}
+		next := w.must("author", "author", "propose", with(window, Object{"source_ref": source, "base_snapshot": proposal["snapshot_ref"], "bundle": bundle("next"), "evidence": eventEvidence(), "reason": "with evidence"}))
+		w.runner.(*fixtureRunner).verdicts[next["bundle_ref"].(string)] = "passed"
+		nextReport := w.must("fixture-runner", "runner", "qualify", Object{"snapshot_ref": next["snapshot_ref"], "plan_ref": plan})["report_ref"]
+		last := w.must("policy", "reviewer", "decide", Object{"report_ref": nextReport, "reason": "policy approval"})
+		start := readEvents(t, h, Object{"limit": 2})
+		page := readEvents(t, h, Object{"cursor": start["next_cursor"], "limit": 2})
+		events := page["events"].(Array)
+		if len(events) != 2 || events[0].(Object)["decision_ref"] != first["decision_ref"] || events[1].(Object)["decision_ref"] != last["decision_ref"] {
+			t.Fatal("the page did not read across the fact-free decision:", Encode(page))
+		}
+		if all := readEvents(t, h, Object{}); len(all["events"].(Array)) != 6 {
+			t.Fatal("the full read lost events")
+		}
+	})
+}
+
+// The event_reader role permits decision_events and no other operation.
+func TestEventReaderRoleReadsOnlyEvents(t *testing.T) {
+	ops := []string{}
+	count := 0
+	for _, table := range []map[string]struct {
+		role   string
+		fields []string
+	}{schema, hostOnlyOps} {
+		for op, rule := range table {
+			count++
+			if op != "decision_events" {
+				ops = append(ops, op)
+			}
+			if rule.role == "event_reader" && op != "decision_events" {
+				t.Fatal("another operation uses the event_reader role:", op)
+			}
+		}
+	}
+	if len(ops) != count-1 || schema["decision_events"].role != "event_reader" {
+		t.Fatal("decision_events does not use the event_reader role")
+	}
+	h := eventHost(t, NewMemoryStore())
+	for _, op := range ops {
+		_, err := readAs(h, Object{"op": op})
+		if faultCode(t, err) != "forbidden" {
+			t.Fatal("the event_reader role reached", op, err)
 		}
 	}
 }

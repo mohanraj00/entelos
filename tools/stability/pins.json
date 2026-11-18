@@ -55,7 +55,7 @@
     "src/protocol/vectors/session-lifecycle.json": "ac6e4cb56caf68f0bc4b2406781d802ffc7af61e1c37091777a88a0256c30c9d",
     "src/protocol/vectors/session-stream.json": "044d13fe610428a80ed6a8ca518887cd9053dfd96e2510b96edd07ecc31dc38d",
     "src/protocol/vectors/session-supersession.json": "12d049c27880ca9c59308bc35cb12d4e41b355372d76e1a469eedf50e9f37261",
-    "src/protocol/approval/schema/credentials.schema.json": "273920fae758e7e70b44f9f169ab0898bf39fcfcdba9b7d3f3351c079e8ce746",
+    "src/protocol/approval/schema/credentials.schema.json": "0135c39d43d2e9533226fd509f87c6f35a185e71390d7e947d53cbedc760dc9f",
     "src/protocol/approval/schema/decide.schema.json": "330f5a1428397d065fe79a7566b47f4f47521b8022ab56b60a9d053fe77feb9b",
     "src/protocol/approval/schema/proposal.schema.json": "5fa9b9eaf57ab396d7cbf30a7fb180dbedf5eb281251532768a793edfc0477a8",
     "src/protocol/approval/schema/proposals.schema.json": "85caf80b488a4931acc6240f4973a319b58b7345ab8ff5cd276960abd2069cd0",
