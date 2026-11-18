@@ -58,7 +58,7 @@ The 47 vectors have expected values that a person wrote from the spec. `check_sp
 
 ### Activation record
 
-Issue [#105](https://github.com/mohanraj00/entelos/issues/105) proposes a generic activation record in [ACTIVATION.md](../src/protocol/activation/ACTIVATION.md). It is a new record kind `activation`, with the candidate, the base, the receipts, the actors, the partition, the half-open interval and the applicability values of one `enable` event. A table maps each field to the stored record that it comes from. The Host is to write and sign it with the event, and an optional publisher adapter is to give it to a consumer before the commit. No Host writes it yet. The 30 vector cases have expected values that a person wrote from the spec, and `check_spec.py` judges them without a Host.
+Issue [#105](https://github.com/mohanraj00/entelos/issues/105) adds a generic activation record in [ACTIVATION.md](../src/protocol/activation/ACTIVATION.md). It is a new record kind `activation`, with the candidate, the base, the receipts, the actors, the partition, the half-open interval and the applicability values of one `enable` event. A table maps each field to the stored record that it comes from. A Host with a signing key writes and signs it in the `activate` write. The optional `Publisher` gets the record before the commit, and a refusal stores nothing. `VerifyActivation` checks the signed record offline. The 30 vector cases have expected values that a person wrote from the spec. `check_spec.py` judges them without a Host, and `TestActivationVectors` runs them on the Go mapping and rules. `ExampleHost_SetPublisher` activates a synthetic update and publishes it to a consumer that verifies it. Limits: the wire protocol and the sidecar have no publisher setting, and the record has no trusted time.
 
 ### Supersession
 
@@ -81,6 +81,8 @@ On 2026-11-12, the policy verdict `entelos.policy/1` for [#154](https://github.c
 ### Decision event export
 
 On 2026-11-15, issue [#158](https://github.com/mohanraj00/entelos/issues/158), part 1, proposes [EVENTS.md](../src/protocol/events/EVENTS.md) and `entelos.decision-event/1`: one event per fact in each recorded verdict, actor kind, a per-fact blind mark and exclusive cursor resume. The schema and hand-written vectors have an offline checker in `make check`. No Host exports events. The later Host job must capture the missing provenance, implement the read and run the vectors on it; the synthetic source decisions do not test a store or transport.
+
+Issue [#127](https://github.com/mohanraj00/entelos/issues/127) proposes the verdict binding in [VERDICT.md](../src/protocol/verdict/VERDICT.md). A verdict judges the candidate reference of its snapshot, and the decision record does not change. A verdict is stale when the head of its subject has other content. `decide` and `activate` refuse a stale verdict with `stale_verdict`, and the history keeps it. The read operation `approval` answers if a candidate reference has a current approval. No Host applies these rules yet.
 
 ### M1 First contact
 

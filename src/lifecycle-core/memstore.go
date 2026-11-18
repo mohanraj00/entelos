@@ -89,6 +89,8 @@ func (s *MemoryStore) Read(cursor any) (*View, error) {
 	return newView(s, at, value.(Object), entries), nil
 }
 
+func (s *MemoryStore) runsCommitSteps() {}
+
 func (s *MemoryStore) Transact(expected, key, payload any, apply func(*View) (any, error)) (Object, error) {
 	k, err := checkKey(key)
 	if err != nil {
@@ -144,6 +146,10 @@ func (s *MemoryStore) Transact(expected, key, payload any, apply func(*View) (an
 	defer s.mu.Unlock()
 	if s.root != view.Cursor {
 		return nil, NewFault("stale_revision", "root CAS lost; no state/outbox was published", "")
+	}
+	// The lock is held, so no other write can replace this one.
+	if err := runSteps(view.steps); err != nil {
+		return nil, err
 	}
 	s.objects[entries["state.json"]] = state
 	for ref, body := range view.pending {

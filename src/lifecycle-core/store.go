@@ -61,6 +61,35 @@ type View struct {
 	Entries map[string]string // object name to store handle
 	pending map[string][]byte
 	source  objectSource
+	// steps run after the store owns the root update. See beforeCommit.
+	steps []func() error
+}
+
+// beforeCommit adds a step to the write of this view. The store runs each
+// step after it owns the root update and before it makes the update, so a
+// step runs only for a write that no other write can replace. An error
+// from a step stops the write, and the store keeps nothing. A step must not
+// call the store.
+func (v *View) beforeCommit(step func() error) { v.steps = append(v.steps, step) }
+
+// stepStore is a store that runs the steps of beforeCommit. The stores of
+// this package are stepStores. A Host does not publish through another
+// store.
+type stepStore interface{ runsCommitSteps() }
+
+// runSteps runs the steps in their order. A panic in a step is an error.
+func runSteps(steps []func() error) (err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			err = recovered(r)
+		}
+	}()
+	for _, step := range steps {
+		if err = step(); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 var refPattern = regexp.MustCompile(`^sha256:[0-9a-f]{64}$`)
