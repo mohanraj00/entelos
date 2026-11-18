@@ -2,8 +2,6 @@ package lifecycle
 
 // The verdict binding of src/protocol/verdict/VERDICT.md.
 
-import "sort"
-
 // hostOnlyOps are the operations of Handle that the wire protocol does not
 // have yet. The approval read of VERDICT.md and the evidence read of
 // EVIDENCE.md are two.
@@ -72,43 +70,22 @@ func (h *Host) approval(v *View, q Object) Object {
 		fail("invalid_request", "candidate must be an object with the strings kind and ref", "")
 	}
 	index := reviews(v)
-	type proposal struct {
-		ref, submitted string
-		snapshot       Object
-	}
-	var proposals []proposal
-	for snapshotRef := range index {
-		// The index covers the whole store. Skip the snapshots of other
-		// scopes and other subjects before the candidate check, as the
-		// proposals list does.
-		snapshot := get(v, snapshotRef, "snapshot")
-		if !equal(item(snapshot, "scope"), h.ctx("scope")) || !equal(snapshot["function"], function) {
-			continue
-		}
-		if equal(candidateRef(snapshot), asked) {
-			submitted, _ := snapshot["submitted_at"].(string)
-			proposals = append(proposals, proposal{snapshotRef, submitted, snapshot})
-		}
-	}
-	// The order of the proposals list of APPROVAL.md.
-	sort.Slice(proposals, func(i, j int) bool {
-		a, b := proposals[i], proposals[j]
-		if (a.submitted == "") != (b.submitted == "") {
-			return b.submitted == ""
-		}
-		if a.submitted != b.submitted {
-			return a.submitted < b.submitted
-		}
-		return a.ref < b.ref
-	})
 	items := Array{}
 	found := map[string]bool{}
-	for _, p := range proposals {
+	required := h.required()
+	// KINDS.md: the counts are of one snapshot. They are the counts of the
+	// first snapshot that meets the verdict policy, else of the last snapshot
+	// with a counted verdict.
+	counts, met := countKinds(nil), false
+	for _, p := range h.sameCandidate(v, index, function, asked) {
 		for _, decisionRef := range elements(reviewEntry(index, p.ref, false)["decisions"]) {
 			decision := get(v, decisionRef, "decision")
 			state := h.verdictState(v, index, decision, p.snapshot)
 			found[state] = true
 			items = append(items, Object{"decision_ref": decisionRef, "decision": decision, "state": state})
+		}
+		if c := h.snapshotCounts(v, index, p); !met && counted(c) {
+			counts, met = c, len(lacking(c, required)) == 0
 		}
 	}
 	state := verdictUnknown
@@ -118,5 +95,7 @@ func (h *Host) approval(v *View, q Object) Object {
 			break
 		}
 	}
-	return Object{"cursor": v.Cursor, "approved": state == verdictCurrent, "state": state, "verdicts": items}
+	// KINDS.md: approved needs each count of the verdict policy.
+	approved := state == verdictCurrent && len(lacking(counts, required)) == 0
+	return Object{"cursor": v.Cursor, "approved": approved, "state": state, "counts": counts, "required": required, "verdicts": items}
 }

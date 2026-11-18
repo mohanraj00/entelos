@@ -60,7 +60,7 @@ After the checks of 1.2, `activate` finds the state of the verdict at the curren
 
 Role: `reader`, as `resolve`. Body: `{"function": string, "candidate": {"kind", "ref"}, "cursor"?: string}`. The function is the subject in the host scope. A function that the Host does not have gives `out_of_scope`. A `candidate` that is not an object with the two string fields `kind` and `ref` gives `invalid_request`.
 
-Result: `{"cursor", "approved", "state", "verdicts"}`.
+Result: `{"cursor", "approved", "state", "counts", "required", "verdicts"}`. [KINDS.md](KINDS.md#changes-to-the-approval-read) gives `counts` and `required`, and the verdict policy that `approved` also needs.
 
 `verdicts` lists each verdict on a snapshot of the subject with the stated candidate reference. Each item is `{"decision_ref", "decision", "state"}`. The item `state` is the verdict state of an `accept`, or `rejected` for a `reject`. The order is the order of the `proposals` list: by `submitted_at` of the snapshot, the oldest first, then by `snapshot_ref`. A snapshot without `submitted_at` comes last. The verdicts of one snapshot are in write order.
 

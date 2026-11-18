@@ -1,0 +1,322 @@
+{
+  "format_version": 1,
+  "spec": "src/protocol/verdict/KINDS.md",
+  "note": "Lifecycle steps for the Go Host test. A person wrote each expected value from KINDS.md. The steps are the steps of verdict-cases.json, and the subject, the producer and the runner are the same. The context of a case gives the Host context fields actor_kinds and verdict_policy. A kinds step changes actor_kinds. A host step starts a Host with more context fields. A record step gives the kind field of a decision record, or null. A supersede step adds a source that supersedes the source of the earlier proposals, and a plan for it. A decide step can have a body with more request fields. A propose step can have a stale_mode. The policy of the KINDS.md table is human 1 and model 1.",
+  "cases": [
+    {
+      "name": "one-model",
+      "context": {"actor_kinds": {"model-a": "model", "model-b": "model", "policy-a": "policy", "human-a": "human"}, "verdict_policy": {"human": 1, "model": 1}},
+      "steps": [
+        {"propose": "p1", "content": "a"},
+        {"qualify": "p1"},
+        {"decide": "d1", "proposal": "p1", "actor": "model-a"},
+        {"approval": "a", "expect": {"approved": false, "state": "current", "verdicts": [["d1", "current"]], "counts": {"human": 0, "model": 1, "policy": 0}, "required": {"human": 1, "model": 1, "policy": 0}}},
+        {"activate": "d1", "expect": {"error": "verdicts_required"}}
+      ]
+    },
+    {
+      "name": "two-models-from-two-actors",
+      "context": {"actor_kinds": {"model-a": "model", "model-b": "model", "policy-a": "policy", "human-a": "human"}, "verdict_policy": {"human": 1, "model": 1}},
+      "steps": [
+        {"propose": "p1", "content": "a"},
+        {"qualify": "p1"},
+        {"decide": "d1", "proposal": "p1", "actor": "model-a"},
+        {"decide": "d2", "proposal": "p1", "actor": "model-b"},
+        {"approval": "a", "expect": {"approved": false, "state": "current", "verdicts": [["d1", "current"], ["d2", "current"]], "counts": {"human": 0, "model": 2, "policy": 0}, "required": {"human": 1, "model": 1, "policy": 0}}},
+        {"activate": "d1", "expect": {"error": "verdicts_required"}}
+      ]
+    },
+    {
+      "name": "one-policy",
+      "context": {"actor_kinds": {"model-a": "model", "model-b": "model", "policy-a": "policy", "human-a": "human"}, "verdict_policy": {"human": 1, "model": 1}},
+      "steps": [
+        {"propose": "p1", "content": "a"},
+        {"qualify": "p1"},
+        {"decide": "d1", "proposal": "p1", "actor": "policy-a"},
+        {"approval": "a", "expect": {"approved": false, "state": "current", "verdicts": [["d1", "current"]], "counts": {"human": 0, "model": 0, "policy": 1}, "required": {"human": 1, "model": 1, "policy": 0}}},
+        {"activate": "d1", "expect": {"error": "verdicts_required"}}
+      ]
+    },
+    {
+      "name": "one-model-and-one-policy",
+      "context": {"actor_kinds": {"model-a": "model", "model-b": "model", "policy-a": "policy", "human-a": "human"}, "verdict_policy": {"human": 1, "model": 1}},
+      "steps": [
+        {"propose": "p1", "content": "a"},
+        {"qualify": "p1"},
+        {"decide": "d1", "proposal": "p1", "actor": "model-a"},
+        {"decide": "d2", "proposal": "p1", "actor": "policy-a"},
+        {"approval": "a", "expect": {"approved": false, "state": "current", "verdicts": [["d1", "current"], ["d2", "current"]], "counts": {"human": 0, "model": 1, "policy": 1}, "required": {"human": 1, "model": 1, "policy": 0}}},
+        {"activate": "d2", "expect": {"error": "verdicts_required"}}
+      ]
+    },
+    {
+      "name": "one-human",
+      "context": {"actor_kinds": {"model-a": "model", "model-b": "model", "policy-a": "policy", "human-a": "human"}, "verdict_policy": {"human": 1, "model": 1}},
+      "steps": [
+        {"propose": "p1", "content": "a"},
+        {"qualify": "p1"},
+        {"decide": "d1", "proposal": "p1", "actor": "human-a"},
+        {"approval": "a", "expect": {"approved": false, "state": "current", "verdicts": [["d1", "current"]], "counts": {"human": 1, "model": 0, "policy": 0}, "required": {"human": 1, "model": 1, "policy": 0}}},
+        {"activate": "d1", "expect": {"error": "verdicts_required"}}
+      ]
+    },
+    {
+      "name": "one-human-and-one-model",
+      "context": {"actor_kinds": {"model-a": "model", "model-b": "model", "policy-a": "policy", "human-a": "human"}, "verdict_policy": {"human": 1, "model": 1}},
+      "steps": [
+        {"propose": "p1", "content": "a"},
+        {"qualify": "p1"},
+        {"decide": "d1", "proposal": "p1", "actor": "human-a"},
+        {"decide": "d2", "proposal": "p1", "actor": "model-a"},
+        {"approval": "a", "expect": {"approved": true, "state": "current", "verdicts": [["d1", "current"], ["d2", "current"]], "counts": {"human": 1, "model": 1, "policy": 0}, "required": {"human": 1, "model": 1, "policy": 0}}},
+        {"activate": "d1"}
+      ]
+    },
+    {
+      "name": "one-human-and-one-model-then-an-edit",
+      "context": {"actor_kinds": {"model-a": "model", "model-b": "model", "policy-a": "policy", "human-a": "human"}, "verdict_policy": {"human": 1, "model": 1}},
+      "steps": [
+        {"propose": "p1", "content": "a"},
+        {"qualify": "p1"},
+        {"decide": "d1", "proposal": "p1", "actor": "human-a"},
+        {"decide": "d2", "proposal": "p1", "actor": "model-a"},
+        {"propose": "p2", "content": "b"},
+        {"approval": "a", "expect": {"approved": false, "state": "stale", "verdicts": [["d1", "stale"], ["d2", "stale"]], "counts": {"human": 0, "model": 0, "policy": 0}, "required": {"human": 1, "model": 1, "policy": 0}}},
+        {"activate": "d1", "expect": {"error": "stale_verdict"}}
+      ]
+    },
+    {
+      "name": "one-actor-as-model-then-as-human",
+      "context": {"actor_kinds": {"model-a": "model", "model-b": "model", "policy-a": "policy", "human-a": "human", "actor-x": "model"}, "verdict_policy": {"human": 1, "model": 1}},
+      "steps": [
+        {"propose": "p1", "content": "a"},
+        {"qualify": "p1"},
+        {"decide": "d1", "proposal": "p1", "actor": "actor-x"},
+        {"propose": "p2", "content": "b"},
+        {"propose": "p3", "content": "a"},
+        {"qualify": "p3"},
+        {"kinds": {"model-a": "model", "model-b": "model", "policy-a": "policy", "human-a": "human", "actor-x": "human"}},
+        {"decide": "d2", "proposal": "p3", "actor": "actor-x", "expect": {"error": "separation_required"}},
+        {"approval": "a", "expect": {"approved": false, "state": "current", "verdicts": [["d1", "current"]], "counts": {"human": 0, "model": 1, "policy": 0}, "required": {"human": 1, "model": 1, "policy": 0}}}
+      ]
+    },
+    {
+      "name": "verdict-without-a-kind",
+      "context": {"actor_kinds": {"model-a": "model", "model-b": "model", "policy-a": "policy", "human-a": "human"}, "verdict_policy": {"human": 1, "model": 1}},
+      "steps": [
+        {"propose": "p1", "content": "a"},
+        {"qualify": "p1"},
+        {"decide": "d1", "proposal": "p1", "actor": "reviewer-z"},
+        {"record": "d1", "expect": {"kind": null}},
+        {"approval": "a", "expect": {"approved": false, "state": "current", "verdicts": [["d1", "current"]], "counts": {"human": 0, "model": 0, "policy": 0}, "required": {"human": 1, "model": 1, "policy": 0}}},
+        {"activate": "d1", "expect": {"error": "verdicts_required"}}
+      ]
+    },
+    {
+      "name": "verdict-without-a-kind-and-no-policy",
+      "context": {},
+      "steps": [
+        {"propose": "p1", "content": "a"},
+        {"qualify": "p1"},
+        {"decide": "d1", "proposal": "p1", "actor": "reviewer-z"},
+        {"record": "d1", "expect": {"kind": null}},
+        {"approval": "a", "expect": {"approved": true, "state": "current", "verdicts": [["d1", "current"]], "counts": {"human": 0, "model": 0, "policy": 0}, "required": {"human": 0, "model": 0, "policy": 0}}},
+        {"activate": "d1"}
+      ]
+    },
+    {
+      "name": "kind-in-the-decision-record",
+      "context": {"actor_kinds": {"model-a": "model", "model-b": "model", "policy-a": "policy", "human-a": "human"}, "verdict_policy": {"human": 1, "model": 1}},
+      "steps": [
+        {"propose": "p1", "content": "a"},
+        {"qualify": "p1"},
+        {"decide": "d1", "proposal": "p1", "actor": "human-a"},
+        {"decide": "d2", "proposal": "p1", "actor": "model-a"},
+        {"decide": "d3", "proposal": "p1", "actor": "policy-a"},
+        {"record": "d1", "expect": {"kind": "human"}},
+        {"record": "d2", "expect": {"kind": "model"}},
+        {"record": "d3", "expect": {"kind": "policy"}}
+      ]
+    },
+    {
+      "name": "policy-without-actor-kinds",
+      "context": {"verdict_policy": {"human": 1, "model": 1}},
+      "steps": [
+        {"propose": "p1", "content": "a"},
+        {"qualify": "p1"},
+        {"decide": "d1", "proposal": "p1", "actor": "model-a"},
+        {"record": "d1", "expect": {"kind": null}},
+        {"approval": "a", "expect": {"approved": false, "state": "current", "verdicts": [["d1", "current"]], "counts": {"human": 0, "model": 0, "policy": 0}, "required": {"human": 1, "model": 1, "policy": 0}}},
+        {"activate": "d1", "expect": {"error": "verdicts_required"}}
+      ]
+    },
+    {
+      "name": "body-with-a-kind",
+      "context": {"actor_kinds": {"model-a": "model", "model-b": "model", "policy-a": "policy", "human-a": "human"}, "verdict_policy": {"human": 1, "model": 1}},
+      "steps": [
+        {"propose": "p1", "content": "a"},
+        {"qualify": "p1"},
+        {"decide": "d1", "proposal": "p1", "actor": "model-a", "body": {"kind": "human"}, "expect": {"error": "invalid_request"}},
+        {"approval": "a", "expect": {"approved": false, "state": "unknown", "verdicts": [], "counts": {"human": 0, "model": 0, "policy": 0}, "required": {"human": 1, "model": 1, "policy": 0}}}
+      ]
+    },
+    {
+      "name": "one-actor-on-two-snapshots-of-the-same-content",
+      "context": {"actor_kinds": {"model-a": "model", "model-b": "model", "policy-a": "policy", "human-a": "human"}, "verdict_policy": {"human": 1, "model": 1}},
+      "steps": [
+        {"propose": "p1", "content": "a"},
+        {"qualify": "p1"},
+        {"decide": "d1", "proposal": "p1", "actor": "human-a"},
+        {"propose": "p2", "content": "b"},
+        {"propose": "p3", "content": "a"},
+        {"qualify": "p3"},
+        {"decide": "d2", "proposal": "p3", "actor": "human-a"},
+        {"decide": "d3", "proposal": "p3", "actor": "model-a"},
+        {"approval": "a", "expect": {"approved": true, "state": "current", "verdicts": [["d1", "current"], ["d2", "current"], ["d3", "current"]], "counts": {"human": 1, "model": 1, "policy": 0}, "required": {"human": 1, "model": 1, "policy": 0}}},
+        {"activate": "d3"}
+      ]
+    },
+    {
+      "name": "rejected-verdict-on-the-same-content-does-not-count",
+      "context": {"actor_kinds": {"model-a": "model", "model-b": "model", "policy-a": "policy", "human-a": "human"}, "verdict_policy": {"human": 1, "model": 1}},
+      "steps": [
+        {"propose": "p1", "content": "a"},
+        {"qualify": "p1"},
+        {"decide": "d1", "proposal": "p1", "actor": "human-a"},
+        {"decide": "d2", "proposal": "p1", "actor": "model-b", "disposition": "reject"},
+        {"propose": "p2", "content": "b"},
+        {"propose": "p3", "content": "a"},
+        {"qualify": "p3"},
+        {"decide": "d3", "proposal": "p3", "actor": "model-a"},
+        {"approval": "a", "expect": {"approved": false, "state": "current", "verdicts": [["d1", "rejected"], ["d2", "rejected"], ["d3", "current"]], "counts": {"human": 0, "model": 1, "policy": 0}, "required": {"human": 1, "model": 1, "policy": 0}}},
+        {"activate": "d3", "expect": {"error": "verdicts_required"}}
+      ]
+    },
+    {
+      "name": "verdict-with-a-stale-qualification-does-not-count",
+      "context": {"actor_kinds": {"model-a": "model", "model-b": "model", "policy-a": "policy", "human-a": "human"}, "verdict_policy": {"human": 1, "model": 1}},
+      "steps": [
+        {"propose": "p1", "content": "a"},
+        {"qualify": "p1"},
+        {"decide": "d1", "proposal": "p1", "actor": "human-a"},
+        {"supersede": "source"},
+        {"propose": "p2", "content": "a"},
+        {"qualify": "p2"},
+        {"decide": "d2", "proposal": "p2", "actor": "model-a"},
+        {"approval": "a", "expect": {"approved": false, "state": "current", "verdicts": [["d1", "current"], ["d2", "current"]], "counts": {"human": 0, "model": 1, "policy": 0}, "required": {"human": 1, "model": 1, "policy": 0}}},
+        {"activate": "d1", "expect": {"error": "stale_qualification"}},
+        {"activate": "d2", "expect": {"error": "verdicts_required"}}
+      ]
+    },
+    {
+      "name": "verdicts-on-two-snapshots-of-the-same-content-do-not-combine",
+      "context": {"actor_kinds": {"model-a": "model", "model-b": "model", "policy-a": "policy", "human-a": "human"}, "verdict_policy": {"human": 1, "model": 1}},
+      "steps": [
+        {"propose": "p1", "content": "a"},
+        {"qualify": "p1"},
+        {"decide": "d1", "proposal": "p1", "actor": "human-a"},
+        {"propose": "p2", "content": "b"},
+        {"propose": "p3", "content": "a", "stale_mode": "continue_stale"},
+        {"qualify": "p3"},
+        {"decide": "d2", "proposal": "p3", "actor": "model-a"},
+        {"approval": "a", "expect": {"approved": false, "state": "current", "verdicts": [["d1", "current"], ["d2", "current"]], "counts": {"human": 0, "model": 1, "policy": 0}, "required": {"human": 1, "model": 1, "policy": 0}}},
+        {"activate": "d2", "expect": {"error": "verdicts_required"}},
+        {"activate": "d1", "expect": {"error": "verdicts_required"}}
+      ]
+    },
+    {
+      "name": "no-kind-then-a-kind",
+      "context": {"actor_kinds": {"model-a": "model", "model-b": "model", "policy-a": "policy", "human-a": "human"}, "verdict_policy": {"human": 1, "model": 1}},
+      "steps": [
+        {"propose": "p1", "content": "a"},
+        {"qualify": "p1"},
+        {"decide": "d1", "proposal": "p1", "actor": "actor-y"},
+        {"propose": "p2", "content": "b"},
+        {"propose": "p3", "content": "a"},
+        {"qualify": "p3"},
+        {"kinds": {"model-a": "model", "model-b": "model", "policy-a": "policy", "human-a": "human", "actor-y": "human"}},
+        {"decide": "d2", "proposal": "p3", "actor": "actor-y", "expect": {"error": "separation_required"}}
+      ]
+    },
+    {
+      "name": "a-kind-then-no-kind",
+      "context": {"actor_kinds": {"model-a": "model", "model-b": "model", "policy-a": "policy", "human-a": "human", "actor-x": "model"}, "verdict_policy": {"human": 1, "model": 1}},
+      "steps": [
+        {"propose": "p1", "content": "a"},
+        {"qualify": "p1"},
+        {"decide": "d1", "proposal": "p1", "actor": "actor-x"},
+        {"propose": "p2", "content": "b"},
+        {"propose": "p3", "content": "a"},
+        {"qualify": "p3"},
+        {"kinds": {"model-a": "model", "model-b": "model", "policy-a": "policy", "human-a": "human"}},
+        {"decide": "d2", "proposal": "p3", "actor": "actor-x", "expect": {"error": "separation_required"}}
+      ]
+    },
+    {
+      "name": "reject-of-another-kind",
+      "context": {"actor_kinds": {"model-a": "model", "model-b": "model", "policy-a": "policy", "human-a": "human", "actor-x": "model"}, "verdict_policy": {"human": 1, "model": 1}},
+      "steps": [
+        {"propose": "p1", "content": "a"},
+        {"qualify": "p1"},
+        {"decide": "d1", "proposal": "p1", "actor": "actor-x"},
+        {"propose": "p2", "content": "b"},
+        {"propose": "p3", "content": "a"},
+        {"qualify": "p3"},
+        {"kinds": {"model-a": "model", "model-b": "model", "policy-a": "policy", "human-a": "human", "actor-x": "human"}},
+        {"decide": "d2", "proposal": "p3", "actor": "actor-x", "disposition": "reject", "expect": {"error": "separation_required"}}
+      ]
+    },
+    {
+      "name": "reject-does-not-count",
+      "context": {"actor_kinds": {"model-a": "model", "model-b": "model", "policy-a": "policy", "human-a": "human"}, "verdict_policy": {"human": 1, "model": 1}},
+      "steps": [
+        {"propose": "p1", "content": "a"},
+        {"qualify": "p1"},
+        {"decide": "d1", "proposal": "p1", "actor": "human-a"},
+        {"decide": "d2", "proposal": "p1", "actor": "model-a"},
+        {"decide": "d3", "proposal": "p1", "actor": "model-b", "disposition": "reject"},
+        {"approval": "a", "expect": {"approved": false, "state": "rejected", "verdicts": [["d1", "rejected"], ["d2", "rejected"], ["d3", "rejected"]], "counts": {"human": 0, "model": 0, "policy": 0}, "required": {"human": 1, "model": 1, "policy": 0}}},
+        {"activate": "d1", "expect": {"error": "proposal_rejected"}}
+      ]
+    },
+    {
+      "name": "model-producer-cannot-judge",
+      "context": {"actor_kinds": {"model-a": "model", "model-b": "model", "policy-a": "policy", "human-a": "human", "author": "model"}, "verdict_policy": {"human": 1, "model": 1}},
+      "steps": [
+        {"propose": "p1", "content": "a"},
+        {"qualify": "p1"},
+        {"decide": "d1", "proposal": "p1", "actor": "author", "expect": {"error": "separation_required"}}
+      ]
+    },
+    {
+      "name": "invalid-actor-kinds",
+      "context": {},
+      "steps": [
+        {"host": {"actor_kinds": ["model-a"]}, "expect": {"error": "configuration_error"}},
+        {"host": {"actor_kinds": {"model-a": "robot"}}, "expect": {"error": "configuration_error"}},
+        {"host": {"actor_kinds": {"model-a": "Human"}}, "expect": {"error": "configuration_error"}},
+        {"host": {"actor_kinds": {"": "human"}}, "expect": {"error": "configuration_error"}},
+        {"host": {"actor_kinds": {"model-a": null}}, "expect": {"error": "configuration_error"}},
+        {"host": {"actor_kinds": {}}},
+        {"host": {"actor_kinds": {"model-a": "model", "model-b": "model", "policy-a": "policy", "human-a": "human"}}}
+      ]
+    },
+    {
+      "name": "invalid-verdict-policy",
+      "context": {},
+      "steps": [
+        {"host": {"verdict_policy": [1]}, "expect": {"error": "configuration_error"}},
+        {"host": {"verdict_policy": {"person": 1}}, "expect": {"error": "configuration_error"}},
+        {"host": {"verdict_policy": {"human": 17}}, "expect": {"error": "configuration_error"}},
+        {"host": {"verdict_policy": {"human": -1}}, "expect": {"error": "configuration_error"}},
+        {"host": {"verdict_policy": {"human": 1.5}}, "expect": {"error": "configuration_error"}},
+        {"host": {"verdict_policy": {"human": 1.0}}, "expect": {"error": "configuration_error"}},
+        {"host": {"verdict_policy": {"human": "1"}}, "expect": {"error": "configuration_error"}},
+        {"host": {"verdict_policy": {"human": true}}, "expect": {"error": "configuration_error"}},
+        {"host": {"verdict_policy": {"human": null}}, "expect": {"error": "configuration_error"}},
+        {"host": {"verdict_policy": {}}},
+        {"host": {"verdict_policy": {"human": 0, "model": 16, "policy": 2}}}
+      ]
+    }
+  ]
+}
