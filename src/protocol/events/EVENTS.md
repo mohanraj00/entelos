@@ -101,10 +101,12 @@ Step 3 applies to the complete decisions contributing events to this page, even 
 ## Host storage and setup
 
 The first successful Host write adds `state.decision_stream`. The same commit
-holds its random namespace seed, `after` (the prior revision), and an empty
+holds its random namespace seed, `after` (the prior revision), and a
 `decisions` list. Each new verdict appends its reference to that list in the
 same transaction. The store compare-and-swap gives these appends one order.
-A verdict in the start commit is in the stream. Earlier verdicts are not.
+If the start commit records a verdict, the list holds that verdict. Else the
+list is empty. Earlier verdicts are not in the stream. In an empty store,
+`after` is the empty string.
 
 The Host omits `decision_stream` from the state copy that `inspect` returns.
 It keeps the stored state unchanged. Use `decision_events` to read the stream.
@@ -112,7 +114,8 @@ Each read checks authorization.
 
 A revision cannot hold its own content hash. The saved `after` boundary names
 the parent of the start revision. The read finds that parent's next revision
-in the pinned history. It returns this revision as `stream_start`. It does
+in the pinned history. It returns this revision as `stream_start`. If `after`
+is the empty string, the start is the first revision of the history. It does
 not inspect verdict validity to find the start. Later writes keep the boundary
 and seed. The namespace binds that seed, the start, event version, scope and
 sorted installed functions.

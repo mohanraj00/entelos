@@ -3,7 +3,9 @@ import os
 from pathlib import Path
 import re
 import shlex
+import shutil
 import subprocess
+import sys
 import tempfile
 import unittest
 
@@ -15,10 +17,15 @@ class DecisionEventsExample(unittest.TestCase):
         readme = (ROOT / 'examples/decision-events/README.md').read_text()
         blocks = re.findall(r'```sh\n(.*?)```', readme, re.S)
         self.assertEqual(len(blocks), 1)
-        with tempfile.TemporaryDirectory() as work:
+        # Keep the store of a failed run. Delete it only after a pass.
+        work = tempfile.mkdtemp(prefix='decision-events-')
+        try:
             outputs = []
             for line in blocks[0].strip().splitlines():
-                args = [arg.replace('$TASK_WORK', work) for arg in shlex.split(line)]
+                words = shlex.split(line)
+                if not words:
+                    continue
+                args = [arg.replace('$TASK_WORK', work) for arg in words]
                 result = subprocess.run(args, cwd=ROOT, capture_output=True, text=True,
                                         timeout=120, env=os.environ | {
                                             'GOPROXY': 'off', 'GOTOOLCHAIN': 'local'})
@@ -31,6 +38,10 @@ class DecisionEventsExample(unittest.TestCase):
             self.assertIn('Second fact: green.', outputs[0])
             self.assertNotIn('Event:', outputs[1])
             self.assertIn('Second fact: green.', outputs[1])
+        except BaseException:
+            print(f'The failed run is kept at {work}.', file=sys.stderr)
+            raise
+        shutil.rmtree(work)
 
 
 if __name__ == '__main__':
