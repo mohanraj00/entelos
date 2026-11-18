@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Check proposed decision-event vectors. No Host or transport runs."""
+"""Check decision-event vectors. No Host or transport runs."""
 import argparse
 import copy
 import json
@@ -322,7 +322,7 @@ def main():
     print(json.dumps({
         'passed': not errors, 'events': len(event_doc['cases']),
         'exports': len(export_doc['cases']), 'errors': errors,
-        'scope': 'Proposed event rules, stream start, projection, order and exclusive cursors on synthetic decisions. No Host or transport ran.',
+        'scope': 'Event rules, stream start, projection, order and exclusive cursors on synthetic decisions. This checker runs no Host or transport.',
     }, indent=2))
     return bool(errors)
 

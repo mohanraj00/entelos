@@ -205,6 +205,8 @@ try:
          'checks':[x['name'] for x in dashboard_results.get('checks',[]) if x.get('passed')],'failed':[x for x in dashboard_results.get('checks',[]) if not x.get('passed')]})
  content=run('content-update',[sys.executable,'-B','-m','unittest','tests/test_content_example.py'])
  check('content-update','Does the content example qualify files, refuse changed bytes, approve and read a dated update with the README commands?',content.returncode==0,{'stdout':content.stdout,'stderr':content.stderr})
+ events=run('decision-events',[sys.executable,'-B','-m','unittest','tests/test_decision_events_example.py'])
+ check('decision-events','Does the reader save a page of decision events and resume without duplicates across processes?',events.returncode==0,{'stdout':events.stdout,'stderr':events.stderr})
  # The seam test of #104: the groundgate release of the hash pins, in its own virtual environment.
  seam_env=w/'groundgate-seam/venv';seam_python=seam_env/'bin/python';pip_env={'PIP_CONFIG_FILE':os.devnull,'PIP_NO_INPUT':'1'}
  seam=[run('groundgate-venv',[sys.executable,'-m','venv',seam_env])]

@@ -6,6 +6,15 @@ This file defines the versioned wire protocol between an application module and 
 
 Versions 1.1 and 1.2 are defined in [approval/APPROVAL.md](approval/APPROVAL.md) for issues [#130](https://github.com/mohanraj00/entelos/issues/130) and [#161](https://github.com/mohanraj00/entelos/issues/161). This file defines the base 1.0 contract. Protocol 1.2 also adds the optional `activate.supersedes` array of event references, with the same shape as `targets` ([#180](https://github.com/mohanraj00/entelos/issues/180)). Its [schema](approval/schema/1.2/activate.schema.json) overrides the 1.0 `activate` schema only for 1.2 requests. Versions 1.0 and 1.1 keep the old schema and refuse the field with `invalid_request` at the protocol stage. [SUPERSESSION.md](supersession/SUPERSESSION.md) defines the unchanged Host rules. The Go Host and sidecar implement all three versions.
 
+Protocol 1.2 adds `decision_events` and optional `decide.fact_reviews` (#158).
+The [event spec](events/EVENTS.md) defines the read and its refusal order.
+The role is `event_reader`, which permits no other operation. The request has `cursor` (optional) and required
+`limit` from 1 to 256. The page has `events`, `next_cursor` and `stream_start`.
+The [read schema](approval/schema/1.2/decision_events.schema.json) and
+[decide schema](approval/schema/1.2/decide.schema.json) apply only to 1.2.
+Versions 1.0 and 1.1 refuse the operation and field with `invalid_request`.
+The socket and HTTP adapters call the same Host read as JSONL.
+
 ## Files
 
 | Path | Content |

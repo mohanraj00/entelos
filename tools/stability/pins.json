@@ -55,7 +55,7 @@
     "src/protocol/vectors/session-lifecycle.json": "ac6e4cb56caf68f0bc4b2406781d802ffc7af61e1c37091777a88a0256c30c9d",
     "src/protocol/vectors/session-stream.json": "044d13fe610428a80ed6a8ca518887cd9053dfd96e2510b96edd07ecc31dc38d",
     "src/protocol/vectors/session-supersession.json": "12d049c27880ca9c59308bc35cb12d4e41b355372d76e1a469eedf50e9f37261",
-    "src/protocol/approval/schema/credentials.schema.json": "273920fae758e7e70b44f9f169ab0898bf39fcfcdba9b7d3f3351c079e8ce746",
+    "src/protocol/approval/schema/credentials.schema.json": "0135c39d43d2e9533226fd509f87c6f35a185e71390d7e947d53cbedc760dc9f",
     "src/protocol/approval/schema/decide.schema.json": "330f5a1428397d065fe79a7566b47f4f47521b8022ab56b60a9d053fe77feb9b",
     "src/protocol/approval/schema/proposal.schema.json": "5fa9b9eaf57ab396d7cbf30a7fb180dbedf5eb281251532768a793edfc0477a8",
     "src/protocol/approval/schema/proposals.schema.json": "85caf80b488a4931acc6240f4973a319b58b7345ab8ff5cd276960abd2069cd0",
@@ -83,6 +83,8 @@
     "src/cel-lifecycle/conformance/ingest/repeat-ingest.json": "2d3e24809bf47293e3e08adc4b51e013c5de47c73064fc3200b63c28cf109886",
     "src/cel-lifecycle/conformance/ingest/upload-policy.json": "5702239043a94230b53ac0e07910b891605f89c65132971b11bbc34df6d1d25c",
     "src/protocol/approval/schema/1.2/activate.schema.json": "c7c6558b2da6913f65134ae839aa1d8dd74304757b4b9d5107ad1f7a863b14d7",
+    "src/protocol/approval/schema/1.2/decide.schema.json": "124db8d327eca494ff162de41d5d9135f19f20a1bc1e9b73ca4dcc9e5ed29496",
+    "src/protocol/approval/schema/1.2/decision_events.schema.json": "6c6c65794add87d71f3f2d85890f8d4460ff38c71a70ed37b7dff408d8daa2e5",
     "src/protocol/approval/schema/1.2/proposal.schema.json": "8c09ce6d1a940705343aba3a9535f0f66372e5b2529d4e0f51b63aa8e98e494e",
     "src/protocol/approval/schema/1.2/proposals.schema.json": "db02f9dec7f046478eedf1765ad156cbd31968a5191eed776a71983613555f3a",
     "src/protocol/approval/schema/1.2/propose.schema.json": "3f7bb7191cc5e929233e484d65d4c011d9fab302e4d451ad214aeccfefdeed4f"

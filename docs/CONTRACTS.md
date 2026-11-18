@@ -15,6 +15,7 @@ This map points to executable reference contracts. It is not a separately versio
 | Evidence format `entelos.evidence/1` | [EVIDENCE.md](../src/protocol/evidence/EVIDENCE.md) | Proposed for [#104](https://github.com/mohanraj00/entelos/issues/104): the admission evidence of an external producer (identity, source, outcome, data and reviews), its refusal rules, its bool policy inputs and its extension point. `check_spec.py` checks the hand-written vectors. No Host reads it. |
 | Policy verdict `entelos.policy/1` | [POLICY.md](../src/protocol/policy/POLICY.md) | Proposed for [#154](https://github.com/mohanraj00/entelos/issues/154): a verdict kind `policy` with the outcomes accept, refuse and route, nine fail-closed route rules, a receipt of the policy call, an audit draw, replay checks and a verdict requirement that a policy verdict cannot satisfy for a human head. `check_spec.py` checks the hand-written vectors. No Host writes it. |
 | Activation record | [ACTIVATION.md](../src/protocol/activation/ACTIVATION.md) | Implemented in the Go Host for [#105](https://github.com/mohanraj00/entelos/issues/105), experimental: a signing Host writes one signed record of the kind `activation` with each `enable` event. It names the candidate, the base, the receipts, the actors, the partition, the interval and the applicability values. `VerifyActivation` checks it offline with 8 rules. The optional `Publisher` gets it before the commit, and a refusal stores nothing. `check_spec.py` and `TestActivationVectors` check the hand-written vectors. The wire protocol has no publisher setting. |
+| Decision events | [EVENTS.md](../src/protocol/events/EVENTS.md) | The Host exports one event per cited fact in each verdict after a saved stream start. Protocol 1.2 adds `decision_events` and optional `decide.fact_reviews`. The read checks the dedicated `event_reader` role, scope and installed functions on each page. It resumes after the cursor without duplicate or missing positions. |
 | Local storage | [gitstore.go](../src/lifecycle-core/gitstore.go) | Immutable objects, captured historical roots, request-key recovery and single-root compare-and-swap. |
 | Application boundary | [adapter.py](../examples/ci-trigger/adapter.py) | Project a nested event, retain raw/projection audit links; no atomic webhook ingress or pipeline effect is implemented. |
 
@@ -61,7 +62,8 @@ The CLI reads one JSON object per line, in a loop, so one process can take many 
 | `plan` | reviewer | `source_ref`, `cases`, `origin`, `supersedes` |
 | `propose` | author | `function`, `from`, `until`, `base_snapshot`, `source_ref`, `bundle`, `reason`, `stale_mode` |
 | `qualify` | runner | `snapshot_ref`, `plan_ref` |
-| `decide` | reviewer | `report_ref`, `reason` |
+| `decide` | reviewer | `report_ref`, `reason`, `disposition`, `fact_reviews` |
+| `decision_events` | event_reader | `cursor`, `limit` |
 | `activate` | reviewer | `decision_ref`, `targets`, `supersedes` |
 | `suspend` | reviewer | `function`, `from`, `until`, `targets`, `reason` |
 | `load` | worker | `function`, `date` |
@@ -83,6 +85,17 @@ The CLI reads one JSON object per line, in a loop, so one process can take many 
 `source.supersedes` and `plan.supersedes` default to an empty list. `activate.targets` and `activate.supersedes` default to an empty list. `propose.stale_mode` defaults to `fail_closed`. `checkpoint.correction_snapshot` defaults to an empty string. A log entry in `ingest.entries` has no default fields except `stale_reason`, which defaults to an empty string. `describe`, `resolve`, `inspect`, `record` and `receipt` are read operations; the other operations are writes.
 
 `record` gives `scope_mismatch` for a record of another scope or with no scope. `inspect` gives `scope_mismatch` if the store at the cursor holds such a record. An unknown reference stays `artifact_unavailable`. See [APPROVAL.md](../src/protocol/approval/APPROVAL.md#scope-of-record-and-inspect-read) for the rule and its limits.
+
+`decision_events` is a read. The JSONL Host and protocol 1.2 share the request
+`{"cursor"?: string, "limit": integer}` and page
+`{"events", "next_cursor", "stream_start"}`. The limit is from 1 to 256.
+The refusals, in order, are `invalid_request`, `invalid_cursor` and
+`unexportable_decision`. [EVENTS.md](../src/protocol/events/EVENTS.md) defines
+the saved start, event fields and cursor rules. `decide.fact_reviews` is an
+optional human review array in evidence order. Each object records `blind`
+and an optional `corrected_value`. Protocol 1.0 and 1.1 refuse both additions.
+The [reader example](../examples/decision-events/README.md) saves its cursor
+and effects together and resumes with the real Host.
 
 ## Proposal base rule
 

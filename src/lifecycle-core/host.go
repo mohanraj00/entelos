@@ -23,35 +23,36 @@ var schema = map[string]struct {
 	role   string
 	fields []string
 }{
-	"source":     {"reviewer", []string{"function", "from", "until", "text", "supersedes", "reason"}},
-	"plan":       {"reviewer", []string{"source_ref", "cases", "origin", "supersedes"}},
-	"propose":    {"author", []string{"function", "from", "until", "base_snapshot", "source_ref", "bundle", "reason", "stale_mode", "evidence"}},
-	"qualify":    {"runner", []string{"snapshot_ref", "plan_ref"}},
-	"decide":     {"reviewer", []string{"report_ref", "reason", "disposition"}},
-	"activate":   {"reviewer", []string{"decision_ref", "targets", "supersedes"}},
-	"suspend":    {"reviewer", []string{"function", "from", "until", "targets", "reason"}},
-	"load":       {"worker", []string{"function", "date"}},
-	"invoke":     {"caller", []string{"function", "date", "expected_bundle_ref", "inputs"}},
-	"replay":     {"reader", []string{"receipt_ref", "inputs_json", "reason"}},
-	"restate":    {"reader", []string{"receipt_ref", "cursor", "reason"}},
-	"observe":    {"observer", []string{"receipt_ref", "route", "message"}},
-	"claim":      {"maintainer", []string{"task_id", "checkpoint"}},
-	"checkpoint": {"maintainer", []string{"task_id", "checkpoint", "token", "status", "note", "correction_snapshot"}},
-	"takeover":   {"reviewer", []string{"task_id", "checkpoint", "owner", "reason"}},
-	"ack":        {"worker", []string{"event_ref"}},
-	"describe":   {"caller", []string{"function", "date"}},
-	"resolve":    {"reader", []string{"function", "date", "cursor"}},
-	"inspect":    {"reviewer", []string{"cursor"}},
-	"record":     {"reviewer", []string{"ref", "kind", "cursor"}},
-	"receipt":    {"reader", []string{"receipt_ref"}},
-	"ingest":     {"worker", []string{"entries"}},
-	"proposals":  {"reviewer", []string{"cursor", "limit"}},
-	"proposal":   {"reviewer", []string{"snapshot_ref", "cursor"}},
+	"source":          {"reviewer", []string{"function", "from", "until", "text", "supersedes", "reason"}},
+	"plan":            {"reviewer", []string{"source_ref", "cases", "origin", "supersedes"}},
+	"propose":         {"author", []string{"function", "from", "until", "base_snapshot", "source_ref", "bundle", "reason", "stale_mode", "evidence"}},
+	"qualify":         {"runner", []string{"snapshot_ref", "plan_ref"}},
+	"decide":          {"reviewer", []string{"report_ref", "reason", "disposition", "fact_reviews"}},
+	"activate":        {"reviewer", []string{"decision_ref", "targets", "supersedes"}},
+	"suspend":         {"reviewer", []string{"function", "from", "until", "targets", "reason"}},
+	"load":            {"worker", []string{"function", "date"}},
+	"invoke":          {"caller", []string{"function", "date", "expected_bundle_ref", "inputs"}},
+	"replay":          {"reader", []string{"receipt_ref", "inputs_json", "reason"}},
+	"restate":         {"reader", []string{"receipt_ref", "cursor", "reason"}},
+	"observe":         {"observer", []string{"receipt_ref", "route", "message"}},
+	"claim":           {"maintainer", []string{"task_id", "checkpoint"}},
+	"checkpoint":      {"maintainer", []string{"task_id", "checkpoint", "token", "status", "note", "correction_snapshot"}},
+	"takeover":        {"reviewer", []string{"task_id", "checkpoint", "owner", "reason"}},
+	"ack":             {"worker", []string{"event_ref"}},
+	"describe":        {"caller", []string{"function", "date"}},
+	"resolve":         {"reader", []string{"function", "date", "cursor"}},
+	"inspect":         {"reviewer", []string{"cursor"}},
+	"record":          {"reviewer", []string{"ref", "kind", "cursor"}},
+	"receipt":         {"reader", []string{"receipt_ref"}},
+	"ingest":          {"worker", []string{"entries"}},
+	"proposals":       {"reviewer", []string{"cursor", "limit"}},
+	"proposal":        {"reviewer", []string{"snapshot_ref", "cursor"}},
+	"decision_events": {"event_reader", []string{"cursor", "limit"}},
 }
 
 // Reads are the operations that publish no state.
 var Reads = map[string]bool{"describe": true, "resolve": true, "inspect": true, "record": true, "receipt": true,
-	"proposals": true, "proposal": true, "approval": true, "evidence": true}
+	"proposals": true, "proposal": true, "approval": true, "evidence": true, "decision_events": true}
 
 //go:embed *.go
 var sources embed.FS
@@ -294,6 +295,7 @@ func (h *Host) Handle(request any) (result any, err error) {
 				value, err = nil, recovered(r)
 			}
 		}()
+		prepareDecisionStream(v)
 		value = h.apply(v, op, q)
 		h.signStaged(v)
 		if op == "activate" {
@@ -687,6 +689,9 @@ func (h *Host) readOperation(op string, q Object) any {
 	if op == "proposals" {
 		return h.proposals(q)
 	}
+	if op == "decision_events" {
+		return h.decisionEvents(q)
+	}
 	v := must(h.Store.Read(lookup(q, "cursor", nil)))
 	switch op {
 	case "inspect":
@@ -698,7 +703,10 @@ func (h *Host) readOperation(op string, q Object) any {
 			}
 		}
 		prepareIndex(v)
-		return Object{"cursor": v.Cursor, "state": v.State}
+		// Keep stream internals in storage. Read events through decision_events.
+		state := copyObject(v.State)
+		delete(state, "decision_stream")
+		return Object{"cursor": v.Cursor, "state": state}
 	case "proposal":
 		return h.proposal(v, q)
 	case "record":

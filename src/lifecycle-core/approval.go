@@ -432,7 +432,10 @@ func (h *Host) decide(v *View, q Object) Object {
 	if kind != "" {
 		record["kind"] = kind
 	}
+	h.recordFactReviews(snapshot, record, q)
 	ref := v.Put("decision", record)
+	stream := object(v.State["decision_stream"])
+	appendEntry(stream, "decisions", ref)
 	appendEntry(entry, "decisions", ref)
 	return Object{"decision_ref": ref, "decision": record}
 }

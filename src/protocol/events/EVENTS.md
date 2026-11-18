@@ -1,8 +1,13 @@
-# Decision events `entelos.decision-event/1` (proposed)
+# Decision events `entelos.decision-event/1`
 
 This file specifies a read-only export of decisions for an outside producer. Issue [#158](https://github.com/mohanraj00/entelos/issues/158) tracks it. One recorded verdict gives one event for each fact in its proposal.
 
-Status: **proposed**. No Host exports these events. This part adds the spec, schema and hand-written vectors only. The expected values are stated from this text, not captured from code output. [`check_spec.py`](check_spec.py) applies these rules without a Host. A later job adds the Host export and runs the vectors against it.
+Status: **implemented** in the Go Host. Protocol 1.2 exposes the read on the
+socket and HTTP bindings. The JSONL Host calls the same implementation.
+The schema and hand-written vectors state the contract. Their expected values
+come from this text. [`check_spec.py`](check_spec.py) checks them without a Host.
+`TestDecisionEventVectors` and `TestDecisionExportVectors` run them on the Go
+checker and the real Host read. They do not change the vector expectations.
 
 ## Terms
 
@@ -71,7 +76,11 @@ A cursor binds the store, stream start, authorized scope, fixed selection and ev
 
 ## Read
 
-This is a logical read contract, not a new operation in wire protocol 1.0 or 1.1. A later Host job supplies the transport and access checks.
+The operation is `decision_events`. It needs the `event_reader` role. That role permits no other operation, and the `reviewer` role does not permit this read. Protocol
+1.2 exposes it through the socket and HTTP bindings. Versions 1.0 and 1.1
+refuse it. The JSONL request uses `op: "decision_events"`. Each read checks the
+role and selects only the Host scope and installed functions. A request
+cannot change that selection.
 
 Request: `{"cursor"?: string, "limit": integer}`. `limit` is 1 to 256. No field selects an actor, scope or filter. Omit `cursor` to start before position 1 of the authorized stream.
 
@@ -88,6 +97,47 @@ Apply these checks in order before returning any event or cursor:
 | 3 | Each decision at or after the stream start that contributes an event to this page has complete recorded fact identities, actor kind and per-fact blind marks, and valid corrections under the event rules. | `unexportable_decision` |
 
 Step 3 applies to the complete decisions contributing events to this page, even if a page boundary cuts a decision. On refusal return no partial page and no next cursor. Decisions before the stream start do not contribute events. Missing provenance at or after the stream start is a refusal, not a default of `human` or `false`. Never infer blind from the absence of an original value in this export. This contract does not change the format of existing verdict records or invent provenance for them.
+
+## Host storage and setup
+
+The first successful Host write adds `state.decision_stream`. The same commit
+holds its random namespace seed, `after` (the prior revision), and a
+`decisions` list. Each new verdict appends its reference to that list in the
+same transaction. The store compare-and-swap gives these appends one order.
+If the start commit records a verdict, the list holds that verdict. Else the
+list is empty. Earlier verdicts are not in the stream. In an empty store,
+`after` is the empty string.
+
+The Host omits `decision_stream` from the state copy that `inspect` returns.
+It keeps the stored state unchanged. Use `decision_events` to read the stream.
+Each read checks authorization.
+
+A revision cannot hold its own content hash. The saved `after` boundary names
+the parent of the start revision. The read finds that parent's next revision
+in the pinned history. It returns this revision as `stream_start`. If `after`
+is the empty string, the start is the first revision of the history. It does
+not inspect verdict validity to find the start. Later writes keep the boundary
+and seed. The namespace binds that seed, the start, event version, scope and
+sorted installed functions.
+
+The embedding application can call `Host.StartDecisionEvents` before a read.
+This setup commits the boundary if it is absent. It changes no verdict.
+A second call writes nothing. Use it to start an empty store or to set the
+boundary of an older store before its next Host write. A store with no saved
+boundary has no stream. A read of it gives `invalid_cursor`. Reads never
+initialize a stream. A new store saves the boundary in its first Host revision.
+
+`decide` reuses the recorded `kind` from `actor_kinds` ([KINDS.md](../verdict/KINDS.md)).
+A human request can supply `fact_reviews`, one object per cited fact in evidence
+order. Each object has `blind` and optional `corrected_value`. The decision
+record retains this array. Only a human accept can have a correction. A model
+or policy verdict records false marks for each fact. These marks come from
+the deciding actor's kind. They do not come from incoming evidence reviews.
+
+Old requests can omit `fact_reviews`, and an actor can still have no kind.
+This preserves the old approval contract. If such a verdict contributes facts
+after the start, the export gives `unexportable_decision`. It does not supply
+missing human marks or kinds. A fact-free verdict consumes no position.
 
 ## Consumer
 
@@ -115,8 +165,9 @@ Each export case names a `stream`, gives a `request` and states the exact `expec
 
 ## Limits
 
-- No Host or transport implements the export. The synthetic decisions do not test authentication, authorization, durable ordering, retention, concurrent writes or provenance capture. Those checks belong to the Host job.
-- Existing approval records do not record what the reviewer saw. Decisions before the stream start stay outside the export. The later Host job must record the start and require new provenance at or after it. This spec adds neither. Model verdict capture and fact corrections also need later Host work.
-- A blind mark is a recorded statement of the review interface. The export cannot prove what a person saw outside that interface.
-- Digests can identify sensitive facts, and a corrected value is content. The application's access and retention policy must cover the export. This spec exports no source material beyond that corrected value.
-- Agreement of the checker and hand-written vectors shows their agreement only. A later Host must run these vectors on its actual export without replacing the expected values with its own output.
+- Decisions before the saved start stay outside the stream. The Host does not invent their provenance. Old requests can still record a human verdict without marks. Such a verdict with facts stops an export page that includes it.
+- The read scans the saved decision list and retained history at one revision. The page limit bounds the event count, not the scan cost or response bytes. The transport can give `response_too_large`. The Host has no stream compaction or retirement tool. Keep the prefix and the start history while accepting cursors.
+- A policy actor can call `decide`. The Host does not yet write the automatic policy verdict of POLICY.md. A policy route has no decision event.
+- The application states actor kinds and blind marks. The Host cannot prove what a person saw outside the review interface.
+- Digests can identify sensitive facts. A corrected value is content. The application must apply its access and retention policy to both.
+- The vectors use synthetic records. Go tests check both stores, resume, append, closed event fields and the shared transport path. They do not prove consumer effects, power-failure recovery or a retention policy.

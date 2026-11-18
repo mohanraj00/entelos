@@ -30,9 +30,13 @@ Items 6 and 7 make the approval stricter. They do not remove a refusal or a chec
 
 ## Contract notes for 1.2 (#161)
 
-Version 1.2 adds `limit` to `proposals`, a page token in its request `cursor`, and `next_cursor` in a paged result. It also adds an optional `evidence` document to `propose` and exposes that document in `proposal`. Version 1.2 also adds the optional `activate.supersedes` array of event references with the same shape as `targets` (#180). [SUPERSESSION.md](../supersession/SUPERSESSION.md) defines the Host rules. The [1.2 schemas](schema/1.2/) override these four operations. Versions 1.0 and 1.1 refuse `activate.supersedes` with `invalid_request` at the protocol stage. The [1.1 schemas](schema/) stay in use for 1.1 clients. The JSONL Host, socket and HTTP all call the same Host implementation.
+Version 1.2 adds `limit` to `proposals`, a page token in its request `cursor`, and `next_cursor` in a paged result. It also adds an optional `evidence` document to `propose` and exposes that document in `proposal`. Version 1.2 also adds the optional `activate.supersedes` array of event references with the same shape as `targets` (#180). [SUPERSESSION.md](../supersession/SUPERSESSION.md) defines the Host rules. The [1.2 schemas](schema/1.2/) define six operations. Versions 1.0 and 1.1 refuse `activate.supersedes` with `invalid_request` at the protocol stage. The [1.1 schemas](schema/) stay in use for 1.1 clients. The JSONL Host, socket and HTTP all call the same Host implementation.
 
 An old `proposals` request without `limit` keeps its exact result fields, including the existing store-revision `cursor`. The dashboard continues to send protocol 1.1 and needs no client change. The envelope now accepts response version `1.2`; the unsupported-minor cases move to `1.3`. The earlier 1.0 and 1.1 successful expectations stay unchanged.
+
+Version 1.2 also adds `decide.fact_reviews` and the `decision_events` read
+for #158. Versions 1.0 and 1.1 refuse the field and the operation at the
+protocol stage. Their schemas do not change.
 
 ## Principals and authentication
 
@@ -219,7 +223,7 @@ The proposal item has `refusal`. For `not_approvable`, it is the report refusal 
 
 ## Operations
 
-All three operations need the `reviewer` role. A principal without it gets `forbidden`. A request with protocol `1.0` for `proposals` or `proposal` gets `invalid_request`, because 1.0 has no such operation.
+All operations in this section need the `reviewer` role, except `decision_events`, which needs the `event_reader` role. A principal without the needed role gets `forbidden`. A request with protocol `1.0` for `proposals` or `proposal` gets `invalid_request`, because 1.0 has no such operation. A request with protocol `1.0` or `1.1` for `decision_events` gets `invalid_request` at the protocol stage, because only 1.2 has that operation.
 
 ### `proposals` (read)
 
@@ -318,6 +322,36 @@ The record has no field that names the transport. The JSONL host and the sidecar
 
 Two verdicts with `accept` from different actors are permitted. Both stay in the history. This keeps space for the verdict counts of issue [#128](https://github.com/mohanraj00/entelos/issues/128).
 
+### Fact reviews in 1.2
+
+The [1.2 decide schema](schema/1.2/decide.schema.json) permits optional
+`fact_reviews`. It is an array of at most 256 objects, in the order of the
+proposal's cited evidence facts. Each object has required `blind` (bool) and
+optional `corrected_value` (string or null, at most 65536 characters). No other
+field is permitted. Empty strings and null are valid corrections.
+
+After the existing verdict checks, the Host checks the array. The actor must
+have recorded kind `human`. The array must have one object for each cited
+fact. A `reject` cannot have corrections. An error gives `invalid_request`
+and commits nothing. A valid array is retained as `decision.fact_reviews`.
+The snapshot and the evidence document do not change. Model and policy actors
+cannot supply this array. The Host records their per-fact marks as false.
+
+The field stays optional. A human verdict without it has no recorded blind
+marks. The event read refuses such a verdict when it contributes facts after
+the stream start. The Host never infers a human mark from absent content.
+
+### `decision_events` (read, 1.2)
+
+Body: `{"cursor"?: string, "limit": integer}`. The limit is from 1 to 256.
+The [schema](schema/1.2/decision_events.schema.json) defines the request and
+page. Result: `{"events", "next_cursor", "stream_start"}`.
+[EVENTS.md](../events/EVENTS.md) defines the event fields, saved start,
+exclusive cursors and checks. The Host applies the request, cursor and source
+checks in that order. The refusals are `invalid_request`, `invalid_cursor`
+and `unexportable_decision`. The read returns no partial page on refusal.
+The Host checks the `event_reader` role and scope on every read, including resume. That role permits no other operation. A principal with only the `reviewer` role gets `forbidden`.
+
 ### `activate` (write)
 
 `activate` keeps its 1.0 body and checks. Before those checks, it refuses with `index_unavailable` if the store has no `state.reviews`. After those checks, it refuses with `proposal_rejected` if a verdict on the snapshot is a `reject`.
@@ -330,7 +364,7 @@ The scope of a request is the `scope` of the Host context. A request body cannot
 
 `record` reads the record as before. An unknown reference is `artifact_unavailable`, and a record of another kind is `invalid_record`. Then, if the `scope` field of the record is not equal to the Host scope, the result is `scope_mismatch`. A record without a `scope` field also gets `scope_mismatch`, because the Host cannot show that the record is in its scope. The diagnostic message is fixed text. The refusal has no record content, no reference and no other field of the record.
 
-`inspect` gives the full state, and the state names the records of each scope in the store. Thus the Host gives the state only if each record object at that cursor has the Host scope. A record object is an object with a `application/vnd.cel-lifecycle.<kind>+json` media type. If one record has another scope, or no scope, the result is `scope_mismatch`. The Host does not give a filtered state, because the request results in `state.requests` do not name their scope. On a shared store, `inspect` is refused in each scope. Use one store for each scope if a reviewer needs `inspect`.
+`inspect` gives a copy of the stored state without `decision_stream`. The Host keeps the stored state unchanged. Use `decision_events` to read the stream. The state names the records of each scope in the store. Thus the Host gives the state only if each record object at that cursor has the Host scope. A record object is an object with a `application/vnd.cel-lifecycle.<kind>+json` media type. If one record has another scope, or no scope, the result is `scope_mismatch`. The Host does not filter the state by scope, because the request results in `state.requests` do not name their scope. On a shared store, `inspect` is refused in each scope. Use one store for each scope if a reviewer needs `inspect`.
 
 The scope check of `inspect` reads each object at the cursor. The Git store reads the objects with one `git cat-file --batch` process and keeps one object body in memory at a time. An object larger than 16 MiB, or more than 256 MiB of objects in total, gives `store_error` with stage `store`, and `inspect` gives no state. Both stores have these limits. Use one store for each scope, and keep the store below these limits.
 
@@ -356,7 +390,8 @@ The codes in **bold** are new in 1.1, except `invalid_cursor`, which is new in 1
 | `unsupported_version` | `protocol` | all | The major version is not 1, or the minor version is more than 2. |
 | `artifact_unavailable` | `store` | `proposal`, `decide` | The reference is not in the store. |
 | `invalid_record` | `store` | `proposal`, `decide` | The reference is a record of another kind. |
-| **`invalid_cursor`** | `store` | `proposals` with `limit` | A page token is not valid, is not available or is for another query context. |
+| **`invalid_cursor`** | `store` | `proposals` with `limit`, `decision_events` | A page token is not valid, is not available or is for another query context. |
+| `unexportable_decision` | `admission` | `decision_events` | A contributing verdict has incomplete or invalid event provenance. |
 | `out_of_scope` | Host | `proposal`, `decide` | The record has another scope or a function that is not installed. |
 | **`scope_mismatch`** | `admission` | `record`, `inspect` | The record has another scope or no scope, or the store at the cursor holds such a record. |
 | **`index_unavailable`** | `store` | `proposals`, `proposal`, `qualify`, `decide`, `activate` | The store has no `state.reviews`. |
@@ -445,4 +480,4 @@ The current 1.2 state adds these changes after the 1.1 changes above:
 - `proposals` shows only the head snapshot of each function and scope. An older snapshot without a verdict is `superseded`. `decide` can still accept it, as in 1.0, if it has the content of the head. [VERDICT.md](../verdict/VERDICT.md) (#127) adds the refusal `stale_verdict` for other content. `proposal` shows its state.
 - `record` and `inspect` show if a reference is in the store, as the section on their scope says. `inspect` reads each record object of the store at the cursor, in one Git process.
 - Issue [#127](https://github.com/mohanraj00/entelos/issues/127) (a verdict stale after an edit) and issue [#128](https://github.com/mohanraj00/entelos/issues/128) (human and model verdicts) are in v0.5. This version adds no verdict kind and no digest rule. A later minor version can add fields to the decision record.
-- A verdict records who decided and when. It does not record what the reviewer looked at.
+- A verdict records who decided and when. With `fact_reviews`, it also records the per-fact blind marks. These marks are statements of the review interface.
