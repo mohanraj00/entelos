@@ -162,6 +162,8 @@ The policy inputs do not read `outcome` codes, `data` or an attached object. A l
 
 This table shows how a mapping can give one fact from groundgate 0.14.0 (spec v0.12, commit `ca88ff7`). It uses the receipt (SPEC section 5), the `facts@1` export (section 5.1), the digests (section 6) and the review records `resolution@1` and `answer@2`. No code in this repository implements the map. The vector `valid-full-data` uses each field, with invented values.
 
+The seam test [`tests/test_groundgate_seam.py`](../../../tests/test_groundgate_seam.py) implements a part of this map for groundgate 0.16.0, in the test only. It reads the `facts@2` export (section 5.2) and the store records of its packet: `resolution@1` for the slot, `receipt@1` for the decision, and the answer log for `time` and `ms`. It maps the statuses `admitted`, `confirmed` and `chosen`. It does not map `corrected`, `packs`, `judgments`, `pins` or attached objects. It states that the reviewer of the test is `human`.
+
 | entelos field | groundgate value |
 |---|---|
 | `producer.id`, `producer.version` | `groundgate`, the package version. |
@@ -246,6 +248,6 @@ The checker applies the same rules as the Host. Agreement of the checker and the
 - The format has no signature and no producer authentication. The caller of `propose` is responsible for the source of the document.
 - The rules do not check that a span is in its text, that a span starts on a character boundary, or that a page exists.
 - The rules do not check that a review time is a real calendar time or that the answers agree with the status.
-- The map from groundgate is a table only. This repository has no mapping code and no groundgate receipt. A check outside this repository mapped one groundgate receipt with 48 decisions to the schema of commit c4997ef, with 0 schema errors.
+- The map from groundgate is a table. Only the seam test implements a part of it, for one invented document and groundgate 0.16.0. The repository has no other mapping code and no stored groundgate receipt. A check outside this repository mapped one groundgate receipt with 48 decisions to the schema of commit c4997ef, with 0 schema errors.
 - A value longer than 65536 characters does not fit in `data.value`.
 - Wire protocol 1.0 refuses a number that is not an integer ([PROTOCOL.md](../PROTOCOL.md)). `data.judgments[].p` and the box coordinates can be fractions. Thus a document with a fractional value cannot go in a `propose` request of wire protocol 1.0. Until the wire protocol accepts these numbers, the #104 implementation must send them in one stated encoding: a decimal string, or an integer with a stated scale, for example `p` in millionths. That choice changes this schema.

@@ -205,6 +205,14 @@ try:
          'checks':[x['name'] for x in dashboard_results.get('checks',[]) if x.get('passed')],'failed':[x for x in dashboard_results.get('checks',[]) if not x.get('passed')]})
  content=run('content-update',[sys.executable,'-B','-m','unittest','tests/test_content_example.py'])
  check('content-update','Does the content example qualify files, refuse changed bytes, approve and read a dated update with the README commands?',content.returncode==0,{'stdout':content.stdout,'stderr':content.stderr})
+ # The seam test of #104: the groundgate release of the hash pins, in its own virtual environment.
+ seam_env=w/'groundgate-seam/venv';seam_python=seam_env/'bin/python';pip_env={'PIP_CONFIG_FILE':os.devnull,'PIP_NO_INPUT':'1'}
+ seam=[run('groundgate-venv',[sys.executable,'-m','venv',seam_env])]
+ seam.append(run('groundgate-install',[seam_python,'-m','pip','install','--disable-pip-version-check','--no-cache-dir','--require-hashes',
+                 '--only-binary',':all:','--no-deps','-r',ROOT/'tests/groundgate-seam/requirements.txt'],extra=pip_env))
+ if seam[-1].returncode==0:seam.append(run('groundgate-seam',[seam_python,'-B','-m','unittest','-v','tests/test_groundgate_seam.py']))
+ check('groundgate-seam','Does a groundgate 0.16.0 export, mapped to entelos.evidence/1, pass the evidence checker and the Host evidence read with the hand-written policy inputs?',
+       len(seam)==3 and all(x.returncode==0 for x in seam),{'exit_codes':[x.returncode for x in seam],'stderr':seam[-1].stderr[-4000:]})
  demo=run('consumer-reuse',[sys.executable,'-B',ROOT/'examples/ci-trigger/run.py','--work',w/'reuse','--cel-binary',w/'bin/cel-handoff','--author-binary',w/'bin/cel-expr','--record-bundle',w/'record-bundle','--host',w/'bin/lifecycle-core'])
  reuse=json.loads((w/'reuse/results.json').read_text())
  check('two-consumers-and-baseline','Do both consumer loops and the ordinary-code comparison pass?',demo.returncode==0 and reuse['status']=='passed',{'status':reuse['status'],'checks':reuse['checks'],'measurements':reuse['measurements'],'errors':reuse['errors']})
