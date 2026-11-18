@@ -2,7 +2,7 @@
 
 This file specifies how a verdict binds to the content that it judged. Issue [#127](https://github.com/mohanraj00/entelos/issues/127) tracks it. A verdict judged the candidate reference of its snapshot. When a later proposal of the same subject has other content, the verdict is stale. A stale verdict cannot approve, and it stays in the history.
 
-Status: **proposed**. No Host applies these rules yet. This text is the contract. The vectors come with the Host code.
+Status: **implemented** in the Go lifecycle Host. The minimum vectors are in [vectors/verdict-cases.json](vectors/verdict-cases.json), and `TestVerdictVectors` runs them. A later job adds the full conformance vectors.
 
 ## Terms
 
