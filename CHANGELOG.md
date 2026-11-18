@@ -39,10 +39,10 @@ These steps upgrade a Host and a store from v0.4.0.
 3. To read decision events, give a principal the role `event_reader` in the credentials file. This role permits no other operation, and the `reviewer` role does not permit the read. The credentials schema of v0.5.0 accepts the role.
 4. Configure the decision event export before the first write of a v0.5.0 Host, because each Host write saves the stream start if it is absent. Earlier verdicts are not in the stream, and the start does not move.
    1. Give each actor that decides a kind in the Host context field `actor_kinds`.
-   2. Change each human client to send `fact_reviews` in each `decide` that cites facts.
+   2. Change each human client to send `fact_reviews` in each `decide` that cites facts. A `model` or `policy` verdict needs no `fact_reviews`, because the Host records false marks from the kind of its actor.
    3. Optionally, call `Host.StartDecisionEvents` to save the start before the first write.
 
-   If a verdict after the start has no actor kind or no `fact_reviews` for its facts, the read refuses it with `unexportable_decision`.
+   Caution: Do not record a verdict without an actor kind, or a human verdict without `fact_reviews` for its facts, after the start. The read refuses each page that has such a verdict with `unexportable_decision` and gives no next cursor. Thus the read cannot go past that verdict, and v0.5.0 has no recovery step for it.
 5. To sign records, install a key with `Host.SetSigner` or `--signing-key`. With a key, the Host refuses a `decision` or `event` record of more than 512 KiB with `record_too_large`. Keep the public key set for offline checks with `entelos-verify`.
 6. If a Go runner writes a `Verdict` literal without field names, name the fields. `Verdict` has the new experimental field `Measure`.
 7. `make verify` runs the groundgate seam test. It installs groundgate 0.16.0 from PyPI by the hashes in `tests/groundgate-seam/requirements.txt`, so it needs network access to PyPI. A mapping of an export of another groundgate version needs a new seam test and new hashes.
