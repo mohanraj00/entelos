@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "entelos.measure/1",
+  "title": "Measure summary of a profile promotion",
+  "type": "object",
+  "required": ["format", "profile_digest", "measure_digest", "gold_digest", "labels_digest", "routes"],
+  "additionalProperties": false,
+  "properties": {
+    "format": {"type": "string", "const": "entelos.measure/1"},
+    "profile_digest": {"$ref": "#/$defs/digest"},
+    "measure_digest": {"$ref": "#/$defs/digest"},
+    "gold_digest": {"$ref": "#/$defs/digest"},
+    "labels_digest": {"$ref": "#/$defs/digest"},
+    "routes": {"type": "array", "minItems": 1, "maxItems": 2000, "items": {"$ref": "#/$defs/route"}}
+  },
+  "$defs": {
+    "digest": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "route": {
+      "type": "object",
+      "required": ["field", "route", "bound_bp"],
+      "additionalProperties": false,
+      "properties": {
+        "field": {"type": "string", "minLength": 1, "maxLength": 256},
+        "route": {"type": "string", "minLength": 1, "maxLength": 64},
+        "bound_bp": {"type": "integer", "minimum": 0, "maximum": 10000}
+      }
+    }
+  }
+}
