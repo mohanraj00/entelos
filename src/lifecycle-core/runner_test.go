@@ -66,6 +66,8 @@ type world struct {
 	scope string
 	// functions are the installed subjects. Nil is record.visible.
 	functions Array
+	// now is the clock value of each Host. Nil is the system clock.
+	now *string
 }
 
 func newWorld(t *testing.T, runner Runner) *world {
@@ -89,6 +91,9 @@ func (w *world) host(actor, role string, runner Runner) *Host {
 		w.t.Fatal(err)
 	}
 	h.SetSigner(w.signer)
+	if w.now != nil {
+		h.Clock = fixedClock{w.now}
+	}
 	h.SetPublisher(w.publisher)
 	return h
 }
@@ -321,6 +326,12 @@ func TestAdmissionRefusesAPassedFlagOnChangedBytes(t *testing.T) {
 	if _, err := w.do("reviewer", "reviewer", w.runner, "decide", Object{"report_ref": movedRef, "reason": "moved flag"}); faultCode(t, err) != "qualification_failed" {
 		t.Fatalf("decide gave %v", err)
 	}
+	// The head has other bytes, so a verdict on the old bytes is stale
+	// (VERDICT.md). A proposal of the old bytes makes it possible again.
+	if _, err := w.do("reviewer", "reviewer", w.runner, "decide", Object{"report_ref": reportRef, "reason": "old bytes"}); faultCode(t, err) != "stale_verdict" {
+		t.Fatalf("decide on the old bytes gave %v", err)
+	}
+	w.must("author", "author", "propose", with(window, Object{"base_snapshot": changed["snapshot_ref"], "source_ref": source, "bundle": bundle("pass"), "reason": "old bytes again"}))
 	// The honest report still binds the old bytes only.
 	decision := w.must("reviewer", "reviewer", "decide", Object{"report_ref": reportRef, "reason": "old bytes"})["decision_ref"]
 	w.must("reviewer", "reviewer", "activate", Object{"decision_ref": decision, "targets": Array{}})
