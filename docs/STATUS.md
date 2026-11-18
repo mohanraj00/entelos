@@ -8,6 +8,8 @@ The project name is Entelos, with the tagline "Entelos: grow toward the goal." O
 
 The source reference contains a primitive typed CEL callable, a local qualified Git lifecycle in Go, record-filter and PR CI examples, and an ordinary-function comparison. APIs and record formats are unstable. See [SUPPORT.md](SUPPORT.md) for the tested environment and operating limits.
 
+Issue [#163](https://github.com/mohanraj00/entelos/issues/163) puts the approval workflow for versioned content first in the README. The [content-update example](../examples/content-update/README.md) embeds the Host with an application runner. It checks files against reviewer plan cases and the candidate manifest. It reads back a failed qualification, records human approval and checks item bytes at the dated read. The example uses an in-memory store. The shipped commands still install the CEL runner.
+
 ## Licence
 
 Project source uses [Apache-2.0](../LICENSE); [NOTICE](../NOTICE) retains project attribution. The [licence decision](LICENSING.md) records the maintainer choice and earlier MIT publication. Runtime/example/dependency bytes are unchanged by that change.
@@ -56,7 +58,7 @@ The 47 vectors have expected values that a person wrote from the spec. `check_sp
 
 ### Activation record
 
-Issue [#105](https://github.com/mohanraj00/entelos/issues/105) proposes a generic activation record in [ACTIVATION.md](../src/protocol/activation/ACTIVATION.md). It is a new record kind `activation`, with the candidate, the base, the receipts, the actors, the partition, the half-open interval and the applicability values of one `enable` event. A table maps each field to the stored record that it comes from. The Host is to write and sign it with the event, and an optional publisher adapter is to give it to a consumer before the commit. No Host writes it yet. The 30 vector cases have expected values that a person wrote from the spec, and `check_spec.py` judges them without a Host.
+Issue [#105](https://github.com/mohanraj00/entelos/issues/105) adds a generic activation record in [ACTIVATION.md](../src/protocol/activation/ACTIVATION.md). It is a new record kind `activation`, with the candidate, the base, the receipts, the actors, the partition, the half-open interval and the applicability values of one `enable` event. A table maps each field to the stored record that it comes from. A Host with a signing key writes and signs it in the `activate` write. The optional `Publisher` gets the record before the commit, and a refusal stores nothing. `VerifyActivation` checks the signed record offline. The 30 vector cases have expected values that a person wrote from the spec. `check_spec.py` judges them without a Host, and `TestActivationVectors` runs them on the Go mapping and rules. `ExampleHost_SetPublisher` activates a synthetic update and publishes it to a consumer that verifies it. Limits: the wire protocol and the sidecar have no publisher setting, and the record has no trusted time.
 
 ### Supersession
 

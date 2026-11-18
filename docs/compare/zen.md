@@ -2,6 +2,8 @@
 
 This page compares the [GoRules ZEN Engine](https://github.com/gorules/zen) and the commercial GoRules BRMS with the Entelos decision path. It uses the `record.visible` record filter from the [quickstart demo](../../examples/quickstart/README.md). It writes the same rule, the correction and the replay question as ZEN decision graphs. It covers decision graphs, versions and the simulator.
 
+Scope: This page compares rule hosting. Entelos also provides an approval workflow for versioned content, with an application runner and dated activation. The [content example](../../examples/content-update/README.md) uses a manifest without a rule engine. The rule comparison below keeps its stated versions and test limits.
+
 ## Version and sources
 
 - ZEN Engine: the Python binding `zen-engine` 2.1.3 from PyPI, uploaded on 2026-10-09. I ran this version. The Rust crate release [zen-engine-v2.1.6](https://github.com/gorules/zen/releases/tag/zen-engine-v2.1.6) is from 2026-10-21. The engine is MIT-licensed.

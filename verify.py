@@ -203,6 +203,8 @@ try:
        dashboard.returncode==0 and dashboard_results['status']=='passed',{k:dashboard_results.get(k) for k in ['status','error']}
        |{'mugham':dashboard_results.get('record',{}).get('mugham'),'browser':dashboard_results.get('record',{}).get('browser'),
          'checks':[x['name'] for x in dashboard_results.get('checks',[]) if x.get('passed')],'failed':[x for x in dashboard_results.get('checks',[]) if not x.get('passed')]})
+ content=run('content-update',[sys.executable,'-B','-m','unittest','tests/test_content_example.py'])
+ check('content-update','Does the content example qualify files, refuse changed bytes, approve and read a dated update with the README commands?',content.returncode==0,{'stdout':content.stdout,'stderr':content.stderr})
  demo=run('consumer-reuse',[sys.executable,'-B',ROOT/'examples/ci-trigger/run.py','--work',w/'reuse','--cel-binary',w/'bin/cel-handoff','--author-binary',w/'bin/cel-expr','--record-bundle',w/'record-bundle','--host',w/'bin/lifecycle-core'])
  reuse=json.loads((w/'reuse/results.json').read_text())
  check('two-consumers-and-baseline','Do both consumer loops and the ordinary-code comparison pass?',demo.returncode==0 and reuse['status']=='passed',{'status':reuse['status'],'checks':reuse['checks'],'measurements':reuse['measurements'],'errors':reuse['errors']})

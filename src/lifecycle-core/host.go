@@ -99,6 +99,9 @@ type Host struct {
 	// signer signs each decision and event record that the Host writes.
 	// Nil writes no signed record. SetSigner installs it.
 	signer *Signer
+	// publisher gives each signed activation record to a consumer before
+	// the commit. Nil publishes nothing. SetPublisher installs it.
+	publisher Publisher
 }
 
 // NewHost checks the trusted host context. The CEL runner of rt qualifies
@@ -256,6 +259,14 @@ func (h *Host) Handle(request any) (result any, err error) {
 	if Reads[op] {
 		return h.readOperation(op, q), nil
 	}
+	// A consumer cannot verify an activation record without a signature.
+	if op == "activate" && h.publisher != nil && h.signer == nil {
+		return nil, NewFault("publish_unsigned", "the Host has a publisher and no signing key", "publish")
+	}
+	// Only a store that runs the commit steps publishes after it owns the root.
+	if _, ok := h.Store.(stepStore); op == "activate" && h.publisher != nil && !ok {
+		return nil, NewFault("publish_unsupported", "the store does not run a step before the commit", "publish")
+	}
 	_, hasRevision := q["expected_revision"]
 	_, hasKey := q["request_key"]
 	if !hasRevision || !hasKey {
@@ -282,6 +293,9 @@ func (h *Host) Handle(request any) (result any, err error) {
 		}()
 		value = h.apply(v, op, q)
 		h.signStaged(v)
+		if op == "activate" {
+			h.publish(v, value)
+		}
 		return value, nil
 	})
 	if err != nil {
@@ -1217,7 +1231,9 @@ func (h *Host) apply(v *View, op string, q Object) any {
 		if list := lookup(q, "supersedes", Array{}); truthy(list) {
 			event["supersedes"] = list
 		}
-		return h.appendEvent(v, event, key)
+		out := h.appendEvent(v, event, key)
+		h.putActivation(v, event, text(out["event_ref"]), snapshot, report, decision, key)
+		return out
 	case "suspend":
 		target := h.target(q)
 		event := merge(target, Object{"kind": "suspend", "targets": item(q, "targets"), "actor": actor, "reason": item(q, "reason")})

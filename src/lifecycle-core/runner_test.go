@@ -60,6 +60,8 @@ type world struct {
 	runner Runner
 	keys   int
 	signer *Signer
+	// publisher is the publisher of each Host. Nil publishes nothing.
+	publisher Publisher
 	// scope is the Host scope. An empty value is "demo".
 	scope string
 	// functions are the installed subjects. Nil is record.visible.
@@ -92,6 +94,7 @@ func (w *world) host(actor, role string, runner Runner) *Host {
 	if w.now != nil {
 		h.Clock = fixedClock{w.now}
 	}
+	h.SetPublisher(w.publisher)
 	return h
 }
 

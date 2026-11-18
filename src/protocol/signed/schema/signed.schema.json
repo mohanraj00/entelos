@@ -9,7 +9,7 @@
     "format": {"type": "string"},
     "scope": {"type": "string", "minLength": 1},
     "function": {"type": "string", "minLength": 1},
-    "record_kind": {"type": "string", "enum": ["decision", "event"]},
+    "record_kind": {"type": "string", "enum": ["decision", "event", "activation"]},
     "record_ref": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
     "record": {"type": "string", "minLength": 1, "maxLength": 699052},
     "algorithm": {"$ref": "#/$defs/algorithm"},

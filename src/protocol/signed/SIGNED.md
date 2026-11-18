@@ -45,7 +45,7 @@ A signed record is one JSON object. [`schema/signed.schema.json`](schema/signed.
 | `format` | string | `entelos.record/1`. The record format rule applies. |
 | `scope` | string | The scope of the record. 1 character or more. |
 | `function` | string | The function of the record. 1 character or more. |
-| `record_kind` | string | `decision` or `event`. |
+| `record_kind` | string | `decision`, `event` or `activation`. The kind `activation` is the self-contained record of [ACTIVATION.md](../activation/ACTIVATION.md). |
 | `record_ref` | string | The record reference of the record bytes. |
 | `record` | string | The record bytes in base64. The text has 699,052 characters maximum, which is the text of 512 KiB. |
 | `algorithm` | string | `ed25519`. |
@@ -146,9 +146,9 @@ On success, the verifier gives `record_kind`, `record_ref`, `scope`, `function`,
 
 The embedding host installs one signing key in the Host. A request cannot select or change the key. Without a signing key, the Host writes no signed record, and its behavior does not change.
 
-With a signing key, each write that stores a `decision` record or an `event` record also stores one signed record of that record, in the same transaction. The state field `signatures` maps the record reference to the reference of the signed record. A record that has a signed record keeps it.
+With a signing key, each write that stores a `decision`, `event` or `activation` record also stores one signed record of that record, in the same transaction. The state field `signatures` maps the record reference to the reference of the signed record. A record that has a signed record keeps it.
 
-A Host with a signing key refuses a write that makes a `decision` record or an `event` record of more than 512 KiB. It also refuses the write if the signed record has more than 1,000,000 bytes in its stored form, which a very long scope or function can cause. The refusal is `record_too_large` with the stage `signature`, and the write stores nothing. Thus each signed record fits in one protocol frame of 1 MiB, and the `record` operation can give it on each transport. A Host without a signing key has no such limit.
+A Host with a signing key refuses a write that makes a `decision`, `event` or `activation` record of more than 512 KiB. It also refuses the write if the signed record has more than 1,000,000 bytes in its stored form, which a very long scope or function can cause. The refusal is `record_too_large` with the stage `signature`, and the write stores nothing. Thus each signed record fits in one protocol frame of 1 MiB, and the `record` operation can give it on each transport. A Host without a signing key has no such limit.
 
 Before the Host stores a signed record, it does the checks of the Verification section on it, with its own public key. If a check fails, the result is `unsignable_record` with the stage `signature`, and the write stores nothing. Thus the Host never stores a signed record that the verifier refuses.
 
@@ -186,7 +186,7 @@ A valid signature shows that the holder of the private key signed these record b
 - The signature has no trusted time. Thus a revocation applies to each record of the key.
 - The key set has no signature and no expiry. Its integrity comes from the channel that gives it to the consumer.
 - The Host signs only records that it writes after the embedding host installs a signing key. An earlier record has no signed record.
-- The Host signs only `decision` and `event` records. A receipt, a snapshot and a qualification report have no signature.
+- The Host signs only `decision`, `event` and `activation` records. A receipt, a snapshot and a qualification report have no signature.
 - The vectors do not cover the size limit of `record`. `TestSignedRecordFitsInOneFrame` covers it on the Go Host and the Go verifier.
 - The Python Ed25519 code in [`ref_ed25519.py`](ref_ed25519.py) is for the public vectors only. It is slow and not constant-time.
 - The test keys of the vectors are public. Never use them outside the vectors.
