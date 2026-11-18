@@ -761,6 +761,16 @@
     "code": "invalid_activation",
     "rule": "interval"
    }
+  },
+  {
+   "name": "interval-year-zero",
+   "record_kind": "activation",
+   "record": "{\"format\":\"entelos.record/1\",\"scope\":\"lending\",\"function\":\"content:loan-rules/region-a\",\"event_ref\":\"sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee\",\"request_key\":\"activate-1\",\"candidate\":{\"kind\":\"content\",\"ref\":\"sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc\"},\"base\":\"\",\"collection\":\"loan-rules\",\"partition\":\"region-a\",\"from\":\"0000-12-31\",\"until\":\"2027-01-01\",\"source_ref\":\"sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"snapshot_ref\":\"sha256:5555555555555555555555555555555555555555555555555555555555555555\",\"report_ref\":\"sha256:7777777777777777777777777777777777777777777777777777777777777777\",\"decision_ref\":\"sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd\",\"producer\":\"author-1\",\"runner\":\"runner-1\",\"approver\":\"approver-1\",\"activator\":\"reviewer-1\",\"targets\":[],\"supersedes\":[],\"applicability\":{\"rules-de\":{\"region\":[\"eu\",\"de\"]},\"rules-fr\":{\"region\":[\"eu\",\"fr\"]}}}",
+   "expect": {
+    "valid": false,
+    "code": "invalid_activation",
+    "rule": "interval"
+   }
   }
  ]
 }
