@@ -4,6 +4,8 @@ This file lists the changes for each snapshot tag. A tag is a stable snapshot to
 
 ## Unreleased
 
+- Added: Host decision event export, saved stream start, per-fact blind marks and corrections, protocol 1.2 `decision_events`, and a reader that saves and resumes its cursor (#158). Added experimental Go APIs `CheckDecisionEvent` and `Host.StartDecisionEvents`.
+
 ### Reference code
 
 - The Go lifecycle Host applies the evidence admission rules (#104). The Host-only read `evidence` applies the 14 rules of [EVIDENCE.md](src/protocol/evidence/EVIDENCE.md) to the retained document of a snapshot. It gives the result and the four policy inputs `evidence_human_reviewed`, `evidence_model_reviewed`, `evidence_all_automatic` and `evidence_corrected`. It writes nothing. `propose` does not refuse a document that a rule refuses, so approval API 1.2 does not change. The 97 evidence vectors run against the Host rules. A seam test maps a groundgate 0.16.0 `facts@2` export and its store records to the evidence format. `verify.py` installs the release by its hashes, and the evidence checker and the Host evidence read accept the mapped document with the expected policy inputs.

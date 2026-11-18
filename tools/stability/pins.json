@@ -83,6 +83,8 @@
     "src/cel-lifecycle/conformance/ingest/repeat-ingest.json": "2d3e24809bf47293e3e08adc4b51e013c5de47c73064fc3200b63c28cf109886",
     "src/cel-lifecycle/conformance/ingest/upload-policy.json": "5702239043a94230b53ac0e07910b891605f89c65132971b11bbc34df6d1d25c",
     "src/protocol/approval/schema/1.2/activate.schema.json": "c7c6558b2da6913f65134ae839aa1d8dd74304757b4b9d5107ad1f7a863b14d7",
+    "src/protocol/approval/schema/1.2/decide.schema.json": "124db8d327eca494ff162de41d5d9135f19f20a1bc1e9b73ca4dcc9e5ed29496",
+    "src/protocol/approval/schema/1.2/decision_events.schema.json": "33f4c120ca46a77171ae53fad595c48e4327b0047421d9aead56209c04c45cd3",
     "src/protocol/approval/schema/1.2/proposal.schema.json": "8c09ce6d1a940705343aba3a9535f0f66372e5b2529d4e0f51b63aa8e98e494e",
     "src/protocol/approval/schema/1.2/proposals.schema.json": "db02f9dec7f046478eedf1765ad156cbd31968a5191eed776a71983613555f3a",
     "src/protocol/approval/schema/1.2/propose.schema.json": "3f7bb7191cc5e929233e484d65d4c011d9fab302e4d451ad214aeccfefdeed4f"

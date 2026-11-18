@@ -52,6 +52,7 @@ stable github.com/mohanraj00/entelos/src/lifecycle-core func (*Host) Handle(requ
 stable github.com/mohanraj00/entelos/src/lifecycle-core func (*Host) HandleAs(actor string, roles []string, request any) (any, error)
 experimental github.com/mohanraj00/entelos/src/lifecycle-core func (*Host) SetPublisher(p Publisher)
 experimental github.com/mohanraj00/entelos/src/lifecycle-core func (*Host) SetSigner(s *Signer)
+experimental github.com/mohanraj00/entelos/src/lifecycle-core func (*Host) StartDecisionEvents() error
 experimental github.com/mohanraj00/entelos/src/lifecycle-core func (*KeySet) Signer() string
 stable github.com/mohanraj00/entelos/src/lifecycle-core func (*MemoryStore) History(cursor string) ([]string, error)
 stable github.com/mohanraj00/entelos/src/lifecycle-core func (*MemoryStore) Read(cursor any) (*View, error)
@@ -64,6 +65,7 @@ stable github.com/mohanraj00/entelos/src/lifecycle-core func (*View) Put(kind st
 stable github.com/mohanraj00/entelos/src/lifecycle-core func (*View) PutRaw(mime string, raw []byte) string
 experimental github.com/mohanraj00/entelos/src/lifecycle-core func (FileClock) Now() (string, error)
 stable github.com/mohanraj00/entelos/src/lifecycle-core func (SystemClock) Now() (string, error)
+experimental github.com/mohanraj00/entelos/src/lifecycle-core func CheckDecisionEvent(value any) Object
 stable github.com/mohanraj00/entelos/src/lifecycle-core func CheckTime(value string) error
 stable github.com/mohanraj00/entelos/src/lifecycle-core func ContentRef(envelope []byte) string
 stable github.com/mohanraj00/entelos/src/lifecycle-core func Decode(raw []byte) (any, error)

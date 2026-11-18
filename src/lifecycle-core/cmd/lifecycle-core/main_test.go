@@ -117,3 +117,30 @@ func TestJSONLEvidence(t *testing.T) {
 		})
 	}
 }
+
+func TestJSONLDecisionEvents(t *testing.T) {
+	store := lifecycle.NewMemoryStore()
+	host, err := lifecycle.NewHost(store, nil, lifecycle.Object{"actor": "reviewer", "roles": lifecycle.Array{"reviewer"}, "scope": "demo", "runner_actor": "runner", "worker": "worker", "functions": lifecycle.Array{"record.visible"}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := host.StartDecisionEvents(); err != nil {
+		t.Fatal(err)
+	}
+	request := lifecycle.Object{"op": "decision_events", "limit": 1}
+	expected, err := host.Handle(request)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var out bytes.Buffer
+	if exit := serve(host, bytes.NewReader(lifecycle.Encode(request)), &out); exit != 0 {
+		t.Fatal(exit)
+	}
+	response, err := lifecycle.Decode(out.Bytes())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Equal(lifecycle.Encode(response.(lifecycle.Object)["data"]), lifecycle.Encode(expected)) {
+		t.Fatal("JSONL changed the Host page")
+	}
+}

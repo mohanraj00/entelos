@@ -67,7 +67,7 @@ func requestID(request lifecycle.Object) string {
 
 // maxMinor is the highest minor version with loaded schemas.
 func (a *Adapter) maxMinor() int {
-	if len(a.Schemas.approval12) == 4 {
+	if len(a.Schemas.approval12) == 6 {
 		return 2
 	}
 	if a.Schemas.Approval != nil {
