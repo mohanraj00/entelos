@@ -2,6 +2,8 @@
 
 This page compares the Entelos decision path with a plain function in a service, its Git history and its tests. It uses the `record.visible` record filter from the [quickstart demo](../../examples/quickstart/README.md). The facts on this page are from 2026-10-30.
 
+Scope: This page compares rule hosting. Entelos also provides an approval workflow for versioned content, with an application runner and dated activation. The [content example](../../examples/content-update/README.md) uses a manifest without a rule engine. The rule comparison below keeps its stated versions and test limits.
+
 ## Sources and versions
 
 | Source | Version or date | Used for |

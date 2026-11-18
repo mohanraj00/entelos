@@ -19,7 +19,7 @@ To add a neutral example, follow [Add a consumer example](docs/ADD_CONSUMER.md).
    - Keep the change to the issue. Keep application-specific source authority, policy and payloads separate from reusable mechanics.
    - Keep intended failure cases beside the successful cases.
 3. Run the local checks.
-   - Install the tools in the [tools table](README.md#1-install-the-tools).
+   - Install the tools in the [tools table](README.md#run-a-rule-update).
    - After you change a source file, record the new bytes: `python3 -B tools/check_project.py --write-checksums`. Read the diff of `checksums.json`. It must show only the files that you changed.
    - Run the project check: `python3 -B tools/check_project.py`. It must print no error.
    - If you change `src/`, `examples/`, `tests/`, `tools/`, `verify.py`, a fixture or a dependency, also run the full suite. Use a new work directory outside the checkout, for example `python3 -B verify.py --work "$(mktemp -d)/run"`. One run on a Mac took about 10 minutes.

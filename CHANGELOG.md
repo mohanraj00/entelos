@@ -18,6 +18,7 @@ This file lists the changes for each snapshot tag. A tag is a stable snapshot to
 
 ### Docs
 
+- The README starts with the approval workflow for versioned content (#163). The new [content-update example](examples/content-update/README.md) embeds the Host with file digest and size checks, a failed qualification, human approval and a dated read. The rule demo follows it.
 - [EVENTS.md](src/protocol/events/EVENTS.md) proposes `entelos.decision-event/1`, with a schema, hand-written vectors and an offline checker (#158, part 1). The export has one event per fact, actor kinds, a blind mark and resumable cursors. No Host exports it yet.
 
 ## v0.4.0 (2026-11-14)

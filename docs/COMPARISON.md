@@ -8,9 +8,11 @@ An engineer who reads this project for the first time often asks three questions
 - [GoRules ZEN](compare/zen.md)
 - [Feature-flag services](compare/flags.md)
 
+These pages compare rule hosting. Entelos has a wider scope: an approval workflow for versioned content. The [content example](../examples/content-update/README.md) qualifies a manifest and activates an approved update without a rule engine. The rule comparisons keep their stated versions and test limits.
+
 ## 1. How does a service call a rule?
 
-The reference has three local call paths. It has no network server and no sidecar.
+The table shows three local rule call paths. The reference also has a [sidecar with socket and HTTP bindings](../src/protocol/approval/APPROVAL.md). Content proposals require an embedding Host with an application runner.
 
 | Path | How the service calls it | What it records | Source |
 |---|---|---|---|
@@ -26,7 +28,7 @@ The cost of each call is not measured. This page makes no speed claim. The sourc
 - The rule process runs one bundle for its full life. A new bundle needs a new process.
 - For each `invoke`, the lifecycle starts a new `cel-handoff` process, with a 15 second timeout ([runtime.go](../src/lifecycle-core/runtime.go)). It also writes the receipt to the Git store with a compare-and-swap on one root ref ([gitstore.go](../src/lifecycle-core/gitstore.go)).
 
-If you need a network service, the application must supply it. It must also supply authentication. See [INTEGRATION.md](INTEGRATION.md) and [SECURITY.md](../SECURITY.md).
+For remote HTTP access, the application must supply a TLS front proxy and credentials. See [INTEGRATION.md](INTEGRATION.md) and [SECURITY.md](../SECURITY.md).
 
 ## 2. Why not a plain function, a decision log table and Git history?
 
