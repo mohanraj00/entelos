@@ -24,7 +24,10 @@ var files embed.FS
 type manifestRunner struct{}
 
 func (manifestRunner) Identity() (string, error) {
-	source, _ := files.ReadFile("main.go")
+	source, err := files.ReadFile("main.go")
+	if err != nil {
+		return "", err
+	}
 	return lifecycle.ContentRef(append(source, []byte(runtime.Version())...)), nil
 }
 func (r manifestRunner) Expected(lifecycle.Candidate) string { ref, _ := r.Identity(); return ref }
@@ -66,7 +69,10 @@ func setup(host *lifecycle.Host) error {
 	if err != nil {
 		return err
 	}
-	expected, _ := files.ReadFile("expected.json")
+	expected, err := files.ReadFile("expected.json")
+	if err != nil {
+		return err
+	}
 	cases, err := lifecycle.Decode(expected)
 	if err != nil {
 		return err
@@ -75,7 +81,10 @@ func setup(host *lifecycle.Host) error {
 	if err != nil {
 		return err
 	}
-	manifest, _ := files.ReadFile("manifest.json")
+	manifest, err := files.ReadFile("manifest.json")
+	if err != nil {
+		return err
+	}
 	proposal, err := write("producer", "author", "propose", lifecycle.Object{"candidate": lifecycle.Object{"kind": "content", "manifest": string(manifest)}, "source_ref": source["source_ref"], "from": "2026-11-01", "until": "2026-12-01", "reason": "three facts", "evidence": evidence()})
 	if err != nil {
 		return err
@@ -84,7 +93,7 @@ func setup(host *lifecycle.Host) error {
 	if err != nil {
 		return err
 	}
-	_, err = write("reviewer", "reviewer", "decide", lifecycle.Object{"report_ref": report["report_ref"], "reason": "Correct the second fact to green.", "fact_reviews": lifecycle.Array{lifecycle.Object{"blind": false}, lifecycle.Object{"blind": true, "corrected_value": "green"}, lifecycle.Object{"blind": true}}})
+	_, err = write("reviewer", "reviewer", "decide", lifecycle.Object{"report_ref": report["report_ref"], "reason": "Correct the second fact to green.", "disposition": "accept", "fact_reviews": lifecycle.Array{lifecycle.Object{"blind": false}, lifecycle.Object{"blind": true, "corrected_value": "green"}, lifecycle.Object{"blind": true}}})
 	return err
 }
 
@@ -120,8 +129,8 @@ func consume(host *lifecycle.Host, path string, out io.Writer) (int, error) {
 	events := page["events"].(lifecycle.Array)
 	for _, raw := range events {
 		event := raw.(lifecycle.Object)
-		if lifecycle.CheckDecisionEvent(event)["valid"] != true {
-			return 0, fmt.Errorf("invalid event")
+		if check := lifecycle.CheckDecisionEvent(event); check["valid"] != true {
+			return 0, fmt.Errorf("invalid event: code %v, rule %v", check["code"], check["rule"])
 		}
 		if _, known := state.Values[event["fact_digest"].(string)]; !known || event["evidence_receipt_digest"] != "sha256:"+strings.Repeat("9", 64) {
 			return 0, fmt.Errorf("unknown fact or receipt")
