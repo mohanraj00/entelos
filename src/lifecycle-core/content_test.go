@@ -180,6 +180,22 @@ func (r *contentRun) recorded(name string) {
 			r.t.Errorf("the %s of %s records applicability %s, want %s", kind, name, Encode(got), Encode(want))
 		}
 	}
+	// The activation record of ACTIVATION.md names the candidate, the head
+	// and the same values, with an empty object for no values.
+	if want == nil {
+		want = Object{}
+	}
+	manifest := must(Decode([]byte(r.manifests[name].(Object)["text"].(string)))).(Object)
+	ref := lookup(root.State["activations"], r.events[name], "")
+	record, err := root.Get(ref, "activation")
+	if err != nil {
+		r.t.Fatalf("activation record of %s: %v", name, err)
+	}
+	if _, err := checkActivation("activation", Encode(record)); err != nil || !equal(record["applicability"], want) ||
+		!equal(record["candidate"], Object{"kind": "content", "ref": r.ref(name)}) || record["collection"] != manifest["collection"] ||
+		record["partition"] != manifest["partition"] || record["base"] != manifest["base"] || record["event_ref"] != r.events[name] {
+		r.t.Errorf("activation record of %s: %s %v", name, Encode(record), err)
+	}
 }
 
 func (r *contentRun) step(step Object) any {

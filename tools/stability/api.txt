@@ -50,6 +50,7 @@ stable github.com/mohanraj00/entelos/src/lifecycle-core func (*GitStore) Transac
 stable github.com/mohanraj00/entelos/src/lifecycle-core func (*Host) As(actor string, roles []string) *Host
 stable github.com/mohanraj00/entelos/src/lifecycle-core func (*Host) Handle(request any) (result any, err error)
 stable github.com/mohanraj00/entelos/src/lifecycle-core func (*Host) HandleAs(actor string, roles []string, request any) (any, error)
+experimental github.com/mohanraj00/entelos/src/lifecycle-core func (*Host) SetPublisher(p Publisher)
 experimental github.com/mohanraj00/entelos/src/lifecycle-core func (*Host) SetSigner(s *Signer)
 experimental github.com/mohanraj00/entelos/src/lifecycle-core func (*KeySet) Signer() string
 stable github.com/mohanraj00/entelos/src/lifecycle-core func (*MemoryStore) History(cursor string) ([]string, error)
@@ -83,6 +84,7 @@ experimental github.com/mohanraj00/entelos/src/lifecycle-core func NewSigningKey
 stable github.com/mohanraj00/entelos/src/lifecycle-core func OpenGitStore(path string) (*GitStore, error)
 experimental github.com/mohanraj00/entelos/src/lifecycle-core func ParseKeySet(raw []byte) (*KeySet, error)
 stable github.com/mohanraj00/entelos/src/lifecycle-core func RoleNames() []string
+experimental github.com/mohanraj00/entelos/src/lifecycle-core func VerifyActivation(signed []byte, keys *KeySet) (Object, error)
 experimental github.com/mohanraj00/entelos/src/lifecycle-core func VerifySigned(raw []byte, keys *KeySet) (Object, error)
 stable github.com/mohanraj00/entelos/src/lifecycle-core type Array = []any
 stable github.com/mohanraj00/entelos/src/lifecycle-core type CELRunner struct { Runtime Runtime }
@@ -98,6 +100,7 @@ stable github.com/mohanraj00/entelos/src/lifecycle-core type Int struct { Text s
 experimental github.com/mohanraj00/entelos/src/lifecycle-core type KeySet struct { }
 stable github.com/mohanraj00/entelos/src/lifecycle-core type MemoryStore struct { BeforePublish func() error }
 stable github.com/mohanraj00/entelos/src/lifecycle-core type Object = map[string]any
+experimental github.com/mohanraj00/entelos/src/lifecycle-core type Publisher interface { Publish(record, signed []byte) error }
 stable github.com/mohanraj00/entelos/src/lifecycle-core type QualificationInput struct { Candidate Candidate Files map[string][]byte Cases any }
 stable github.com/mohanraj00/entelos/src/lifecycle-core type Runner interface { Identity() (string, error) Expected(c Candidate) string Qualify(in QualificationInput) (Verdict, error) }
 stable github.com/mohanraj00/entelos/src/lifecycle-core type Runtime interface { Build() (string, error) Execute(files map[string][]byte, command string, inputs []byte, cases any) (any, error) }
