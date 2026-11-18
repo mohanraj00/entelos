@@ -36,7 +36,7 @@ def table_reasons():
 
 def table_inputs():
     """The Host input names in the inputs table of POLICY.md."""
-    return set(re.findall(r'^\| `([a-z_]+)` \| (?:bool|string) \|',section('Policy inputs'),re.M))
+    return set(re.findall(r'^\| `([a-z_]+)` \| (?:bool|string|int) \|',section('Policy inputs'),re.M))
 
 def table_codes(title):
     return set(re.findall(r'^\| [0-9]+ \|.*\| `([a-z_]+)` \|$',section(title),re.M))
@@ -58,6 +58,8 @@ def host_inputs(sources):
     if report is not None:
         out['report_passed']=report['passed']
         if report['change_class'] is not None:out['change_class']=report['change_class']
+    # The measure inputs of PROMOTION.md. The promotion checker gives them only when its rules pass.
+    if sources.get('measure') is not None:out.update(sources['measure'])
     return out
 
 def requirement(ctx,head):

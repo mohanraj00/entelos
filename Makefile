@@ -10,6 +10,7 @@ check:
 	python3 -B src/protocol/evidence/check_spec.py
 	python3 -B src/protocol/events/check_spec.py
 	python3 -B src/protocol/policy/check_spec.py
+	python3 -B src/protocol/promotion/check_spec.py
 	python3 -B src/protocol/signed/check_spec.py
 	python3 -B src/protocol/supersession/check_spec.py
 
