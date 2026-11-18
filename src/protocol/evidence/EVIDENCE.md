@@ -2,7 +2,7 @@
 
 This file specifies the admission evidence that an external producer gives for a proposal. It is the first part of issue [#104](https://github.com/mohanraj00/entelos/issues/104), and issue [#148](https://github.com/mohanraj00/entelos/issues/148) tracks it.
 
-Status: **proposed admission rules**. Approval API 1.2 retains and returns the producer document; no Host applies these admission rules. The schema and the vectors in this directory are the contract for a later implementation in #104. The vectors have expected values that a person wrote from this text. No candidate output made them. [`check_spec.py`](check_spec.py) checks the vectors against the schema and the rules of this file. It does not run a Host.
+Status: **implemented in the evidence read**. Approval API 1.2 retains and returns the producer document. The Go lifecycle Host applies these admission rules in the Host-only `evidence` read ([below](#the-evidence-read)). `propose` does not apply them yet. The schema and the vectors in this directory are the contract. The vectors have expected values that a person wrote from this text. No candidate output made them. [`check_spec.py`](check_spec.py) checks the vectors against the schema and the rules of this file. It does not run a Host.
 
 ## Terms
 
@@ -162,6 +162,8 @@ The policy inputs do not read `outcome` codes, `data` or an attached object. A l
 
 This table shows how a mapping can give one fact from groundgate 0.14.0 (spec v0.12, commit `ca88ff7`). It uses the receipt (SPEC section 5), the `facts@1` export (section 5.1), the digests (section 6) and the review records `resolution@1` and `answer@2`. No code in this repository implements the map. The vector `valid-full-data` uses each field, with invented values.
 
+The seam test [`tests/test_groundgate_seam.py`](../../../tests/test_groundgate_seam.py) implements a part of this map for groundgate 0.16.0, in the test only. It reads the `facts@2` export (section 5.2) and the store records of its packet: `resolution@1` for the slot, `receipt@1` for the decision, and the answer log for `time` and `ms`. It maps the statuses `admitted`, `confirmed` and `chosen`. It does not map `corrected`, `packs`, `judgments`, `pins` or attached objects. It states that the reviewer of the test is `human`.
+
 | entelos field | groundgate value |
 |---|---|
 | `producer.id`, `producer.version` | `groundgate`, the package version. |
@@ -188,12 +190,28 @@ This table shows how a mapping can give one fact from groundgate 0.14.0 (spec v0
 
 ## Citation in a proposal
 
-Approval API [1.2](../approval/APPROVAL.md#evidence-attachment-in-12) (#161) implements attachment and retrieval of the producer document. It checks the object and format and retains it in the snapshot. The admission rules and policy inputs below remain a proposal for #104.
+Approval API [1.2](../approval/APPROVAL.md#evidence-attachment-in-12) (#161) implements attachment and retrieval of the producer document. It checks the object and format and retains it in the snapshot. The evidence read applies the admission rules and gives the policy inputs ([below](#the-evidence-read)). The first two items of this list are still a proposal.
 
 - The `propose` request gets an optional field `evidence`, with one evidence document.
 - The Host applies the rules of this file before it writes the snapshot. A refusal stops the write, and the root does not change.
 - The snapshot records the document. Entelos stores the digests, the spans, the outcomes, the data, the reviews, the attached objects and the policy inputs. It does not copy the receipts or the sources.
 - The approval policy reads the policy inputs.
+
+### The evidence read
+
+The Go lifecycle Host has the Host-only read `evidence` (#104). The wire protocol does not have it yet.
+
+Role: `reviewer`, as `proposal`. Body: `{"snapshot_ref": string, "cursor"?: string}`. The snapshot must be in the host scope, as for `proposal`.
+
+Result: `{"cursor", "snapshot_ref", "admission", "code"?, "rule"?, "inputs"?}`.
+
+| `admission` | Meaning | Other fields |
+|---|---|---|
+| `absent` | The snapshot has no evidence document. | None. |
+| `valid` | The document passes all of the rules. | `inputs`: the four policy inputs. |
+| `invalid` | A rule refuses the document. | `code`, and `rule` for `invalid_evidence`. |
+
+The read applies the rules to the document that the snapshot retains, at the read cursor. It writes nothing. The snapshot bytes and the 1.2 `propose` and `proposal` results do not change, so the stable approval vectors keep their bytes. A document that a rule refuses stays in the snapshot. `propose` 1.2 does not refuse it, because that would change which 1.2 requests are valid ([STABILITY.md](../../../docs/STABILITY.md)). A later wire version can refuse it at `propose`.
 
 ## Versions
 
@@ -219,16 +237,17 @@ The attached objects are the extension point. A producer can put a new field in 
 2. It checks that each rule and each code in the tables has one or more cases.
 3. A self-test changes a copy of the cases and checks that the checker reports each change.
 
-The checker applies the same rules that a Host will apply. Agreement of the checker and the vectors shows that the two agree with each other. It does not show that a later Host agrees with them. The implementation in #104 must run the vectors against the Host.
+The checker applies the same rules as the Host. Agreement of the checker and the vectors shows that the two agree with each other. `TestEvidenceAdmissionVectors` in `src/lifecycle-core` runs the same vectors against the Go Host rules. `TestEvidenceRead` checks the evidence read on retained documents.
 
 ## Limits
 
-- The Host retains and returns an attachment through approval API 1.2. It does not yet apply the admission rules or derive policy inputs. A passing format check does not show Host admission of evidence.
+- The Host retains and returns an attachment through approval API 1.2. Only the Host-only `evidence` read applies the admission rules and gives the policy inputs. `propose` does not refuse a document that a rule refuses, and the wire protocol has no evidence read. A passing format check does not show Host admission of evidence.
+- No approval policy of the Host reads the policy inputs yet. The policy verdict of [POLICY.md](../policy/POLICY.md) (proposed) is the place for that.
 - Entelos cannot check a digest, a span, an outcome, a code or a review, because it does not read the receipts or the sources. The policy inputs are statements of the producer.
 - Entelos does not check that an attached object agrees with its digest.
 - The format has no signature and no producer authentication. The caller of `propose` is responsible for the source of the document.
 - The rules do not check that a span is in its text, that a span starts on a character boundary, or that a page exists.
 - The rules do not check that a review time is a real calendar time or that the answers agree with the status.
-- The map from groundgate is a table only. This repository has no mapping code and no groundgate receipt. A check outside this repository mapped one groundgate receipt with 48 decisions to the schema of commit c4997ef, with 0 schema errors.
+- The map from groundgate is a table. Only the seam test implements a part of it, for one invented document and groundgate 0.16.0. The repository has no other mapping code and no stored groundgate receipt. A check outside this repository mapped one groundgate receipt with 48 decisions to the schema of commit c4997ef, with 0 schema errors.
 - A value longer than 65536 characters does not fit in `data.value`.
 - Wire protocol 1.0 refuses a number that is not an integer ([PROTOCOL.md](../PROTOCOL.md)). `data.judgments[].p` and the box coordinates can be fractions. Thus a document with a fractional value cannot go in a `propose` request of wire protocol 1.0. Until the wire protocol accepts these numbers, the #104 implementation must send them in one stated encoding: a decimal string, or an integer with a stated scale, for example `p` in millionths. That choice changes this schema.

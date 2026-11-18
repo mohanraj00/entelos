@@ -20,6 +20,8 @@ The author CLI is fetched separately from its pinned public repository, which re
 
 The optional approval dashboard uses the mugham UI kit, tag `v0.2.1` (commit `33678f8c80ad7d5e0237f6aee049b8cb13953966`), licence Apache-2.0. The kit has no runtime dependency. `examples/approval-dashboard/run.py` fetches it from its public repository into the work directory and copies its `LICENSE` with it into the served site. Its source is not in this tree.
 
+The groundgate seam test uses groundgate 0.16.0, licence Apache-2.0, from PyPI. [`tests/groundgate-seam/requirements.txt`](../tests/groundgate-seam/requirements.txt) pins the wheel and the sdist by hash. `verify.py` installs the wheel in a virtual environment in the work directory, with no dependencies. The package is not in this tree, and this project does not distribute it.
+
 ## CI tools
 
 The [Claude review](../.github/workflows/claude-review.yml) and [CI](../.github/workflows/ci.yml) workflows each download one tool on the GitHub runner. The tools are not in this tree, and this project does not distribute them.

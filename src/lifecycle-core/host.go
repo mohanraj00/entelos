@@ -51,7 +51,7 @@ var schema = map[string]struct {
 
 // Reads are the operations that publish no state.
 var Reads = map[string]bool{"describe": true, "resolve": true, "inspect": true, "record": true, "receipt": true,
-	"proposals": true, "proposal": true, "approval": true}
+	"proposals": true, "proposal": true, "approval": true, "evidence": true}
 
 //go:embed *.go
 var sources embed.FS
@@ -710,6 +710,8 @@ func (h *Host) readOperation(op string, q Object) any {
 		return h.scoped(v, item(q, "receipt_ref"), "receipt")
 	case "approval":
 		return h.approval(v, q)
+	case "evidence":
+		return h.evidenceRead(v, q)
 	}
 	selected := h.resolve(v, item(q, "function"), item(q, "date"))
 	if op == "resolve" {

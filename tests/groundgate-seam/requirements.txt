@@ -1,0 +1,6 @@
+# The seam test of #104 (tests/test_groundgate_seam.py) installs only this release.
+# verify.py installs it with --require-hashes --only-binary :all: --no-deps.
+# The hashes are the wheel and the sdist of PyPI and of the GitHub release v0.16.0 (tag commit a3f8265).
+groundgate==0.16.0 \
+    --hash=sha256:2bb98b411ad0fa6e0defebe9917284b5ffc6834e5dd6167b91cea18036d755df \
+    --hash=sha256:fec6f356beabe338e6f54d84d6df9119cc1148b0f48610361cb71bddaae9d5b1
