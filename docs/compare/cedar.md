@@ -2,6 +2,8 @@
 
 This page compares Cedar with the Entelos decision path. It uses the record filter `record.visible` from the [quickstart demo](../../examples/quickstart/README.md). It writes the same rule, the correction and the replay question in Cedar where Cedar can express them.
 
+Scope: This page compares rule hosting. Entelos also provides an approval workflow for versioned content, with an application runner and dated activation. The [content example](../../examples/content-update/README.md) uses a manifest without a rule engine. The rule comparison below keeps its stated versions and test limits.
+
 ## Version and sources
 
 The comparison uses Cedar SDK and CLI 4.14.0, released on 2026-10-17. Cedar language version 4.6 goes with this release. I read each source below on 2026-10-30. The docs pages do not show a last-updated date.

@@ -1,0 +1,12 @@
+[
+  {
+    "item_id": "charging",
+    "digest": "sha256:3ee72560388dfc9b584f37a728bdc6aa58e54fdb04d316d7b9f500b1c8634e62",
+    "size": 50
+  },
+  {
+    "item_id": "returns",
+    "digest": "sha256:3fc8de1ac8480b76b4481897128ffbc681e0c56de049c237e61757f3741c83da",
+    "size": 41
+  }
+]
