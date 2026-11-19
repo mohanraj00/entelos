@@ -18,7 +18,16 @@ type fakeCluster struct {
 	reads    int
 	log      []byte
 	logError error
+	// clock and readTime make a read take time on the fake clock.
+	clock    *fakeClock
+	readTime time.Duration
 }
+
+// fakeClock is the time of a test. Only a sleep or a slow read moves it.
+type fakeClock struct{ now time.Time }
+
+func (c *fakeClock) Now() time.Time        { return c.now }
+func (c *fakeClock) Sleep(d time.Duration) { c.now = c.now.Add(d) }
 
 const uid = "6f1c2a9e-3d0b-4c56-9a41-0e7d5b8c2f13"
 
@@ -33,6 +42,9 @@ func (c *fakeCluster) Agent(namespace, name string) ([]byte, error) {
 	}
 	state := c.states[min(c.reads, len(c.states)-1)]
 	c.reads++
+	if c.clock != nil {
+		c.clock.Sleep(c.readTime)
+	}
 	return []byte(`{"apiVersion":"core.koodam.dev/v1alpha1","kind":"Agent","metadata":{"name":"step-abc-x7k2p","namespace":"steps","uid":"` + uid + `","resourceVersion":"9"},"spec":{"budget":"2"},"status":` + state + `}`), nil
 }
 
@@ -53,9 +65,13 @@ const (
 )
 
 func adapter(c Cluster) *Adapter {
-	return &Adapter{Cluster: c, Namespace: "steps", Image: "registry.example.com/summary:v1", Command: []string{"summarize"}, Model: "mock-1",
+	clock := &fakeClock{now: time.Date(2026, 11, 19, 6, 0, 0, 0, time.UTC)}
+	if fake, ok := c.(*fakeCluster); ok {
+		fake.clock = clock
+	}
+	return &Adapter{Now: clock.Now, Sleep: clock.Sleep, Cluster: c, Namespace: "steps", Image: "registry.example.com/summary:v1", Command: []string{"summarize"}, Model: "mock-1",
 		Budget: "2", DeadlineSeconds: 120, OutputPath: "/out/summary.txt", Inputs: map[string][]byte{"notice": []byte(notice)},
-		Wait: 10 * time.Second, Settle: 3 * time.Second, Poll: time.Second, Sleep: func(time.Duration) {}}
+		Wait: 10 * time.Second, Settle: 3 * time.Second, Poll: time.Second}
 }
 
 // A completed run gives the bound receipt, and the replay makes no Agent.
@@ -162,6 +178,8 @@ func TestInputsMustHaveTheRequestDigests(t *testing.T) {
 		"no bytes":    func(a *Adapter) { a.Inputs = nil },
 		"bad budget":  func(a *Adapter) { a.Budget = "500m" },
 		"bad path":    func(a *Adapter) { a.OutputPath = "/out/../etc/summary.txt" },
+		"no poll":     func(a *Adapter) { a.Poll = 0 },
+		"no wait":     func(a *Adapter) { a.Wait = 0 },
 	} {
 		c := &fakeCluster{states: []string{good}, log: []byte(summary)}
 		a := adapter(c)
@@ -201,4 +219,48 @@ func TestStandIn296(t *testing.T) {
 		t.Fatal(err)
 	}
 	w.refuse(bad, lifecycle.StepFailed, "step_failed")
+}
+
+// Two inputs cannot give the same env variable. Without this check, the
+// digest variable of "notice" replaces the text of "notice_sha256", and the
+// run uses other bytes than the request names.
+func TestInputsCannotShareAnEnvVariable(t *testing.T) {
+	other := []byte("Notice 15: The reading room opens at 09:00.\n")
+	for name, second := range map[string]string{"digest variable": "notice_sha256", "same variable": "notice.v1"} {
+		first := "notice"
+		if name == "same variable" {
+			first = "notice-v1"
+		}
+		req := lifecycle.StepRequest{Step: "notice.summary", Inputs: map[string]string{first: noticeDigest, second: lifecycle.ByteDigest(other)}}
+		c := &fakeCluster{states: []string{good}, log: []byte(summary)}
+		a := adapter(c)
+		a.Inputs = map[string][]byte{first: []byte(notice), second: other}
+		if _, err := a.RunStep(req); err == nil || len(c.creates) != 0 {
+			t.Fatalf("%s: error %v, %d Agents", name, err, len(c.creates))
+		}
+	}
+}
+
+// The wait time and the settle time are elapsed time. A slow read of the
+// Agent uses them also.
+func TestWaitLimitsAreElapsedTime(t *testing.T) {
+	// Each read takes 4 seconds. The wait time is 10 seconds and the poll
+	// time is 1 second, so the third read ends after the limit.
+	c := &fakeCluster{states: []string{running}, readTime: 4 * time.Second}
+	res, err := adapter(c).RunStep(request)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if res.Outcome.Status != lifecycle.StepFailed || c.reads != 3 {
+		t.Fatalf("outcome %+v after %d reads, want failed after 3", res.Outcome, c.reads)
+	}
+	// The run ended and has no revoke. The settle time is 3 seconds.
+	c = &fakeCluster{states: []string{ended}, readTime: 2 * time.Second}
+	res, err = adapter(c).RunStep(request)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if res.Outcome.Status != lifecycle.StepFailed || c.reads != 2 {
+		t.Fatalf("outcome %+v after %d reads, want failed after 2", res.Outcome, c.reads)
+	}
 }

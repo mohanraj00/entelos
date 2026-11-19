@@ -30,7 +30,7 @@ Each input goes to the agent container in `spec.env`:
 | `ENTELOS_INPUT_<NAME>` | The text of the input. |
 | `ENTELOS_INPUT_<NAME>_SHA256` | The SHA-256 of the input, as 64 hex characters. |
 
-`<NAME>` is the input name in upper case, with `_` for `.` and `-`. An input must be UTF-8 text with no NUL byte. The sum of the inputs is 32 KiB at most.
+`<NAME>` is the input name in upper case, with `_` for `.` and `-`. If two inputs give the same variable, `RunStep` gives an error and creates no Agent. For example, the inputs `notice` and `notice_sha256` both give `ENTELOS_INPUT_NOTICE_SHA256`. Thus no input can replace the bytes or the digest of another input. An input must be UTF-8 text with no NUL byte. The sum of the inputs is 32 KiB at most.
 
 ### K4. Limits of the run
 
@@ -38,7 +38,7 @@ The adapter sets `spec.model`, `spec.budget` and `spec.deadlineSeconds` from its
 
 ### K5. End of the run
 
-The adapter reads the Agent until `status.phase` is `Succeeded` or `Failed` and `status.revokedAt` has a value. Koodam writes `status.usage` before `status.revokedAt`, so the spend record is final at that time. The adapter stops after the wait time for the run, or after the settle time from the end of the run to the revoke.
+The adapter reads the Agent until `status.phase` is `Succeeded` or `Failed` and `status.revokedAt` has a value. Koodam writes `status.usage` before `status.revokedAt`, so the spend record is final at that time. The adapter stops after the wait time for the run, or after the settle time from the end of the run to the revoke. The two limits are elapsed time, so the time of each read counts. The poll time and the wait time must be more than zero, or `RunStep` gives an error and creates no Agent.
 
 ### K6. Status map
 

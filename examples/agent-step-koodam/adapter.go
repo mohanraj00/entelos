@@ -10,6 +10,7 @@ import (
 	"math/big"
 	"path"
 	"regexp"
+	"sort"
 	"strings"
 	"time"
 	"unicode/utf8"
@@ -52,8 +53,9 @@ type Adapter struct {
 	Wait, Settle time.Duration
 	// Poll is the time between two reads of the Agent.
 	Poll time.Duration
-	// Sleep is time.Sleep if it is nil.
+	// Sleep is time.Sleep if it is nil, and Now is time.Now if it is nil.
 	Sleep func(time.Duration)
+	Now   func() time.Time
 }
 
 // The limits of the env transport of clause K3.
@@ -79,9 +81,18 @@ func (a *Adapter) manifest(req lifecycle.StepRequest, requestRef string) ([]byte
 	if !budgetPattern.MatchString(a.Budget) || !path.IsAbs(a.OutputPath) || path.Clean(a.OutputPath) != a.OutputPath || path.Dir(a.OutputPath) == "/" {
 		return nil, errors.New("the adapter needs a decimal budget and an absolute output path in a directory")
 	}
+	if a.Poll <= 0 || a.Wait <= 0 || a.Settle < 0 {
+		return nil, errors.New("the adapter needs a poll time and a wait time that are more than zero")
+	}
 	env := map[string]string{"ENTELOS_STEP": req.Step, "ENTELOS_STEP_REQUEST_REF": requestRef, "ENTELOS_OUTPUT_PATH": a.OutputPath}
+	names := make([]string, 0, len(req.Inputs))
+	for name := range req.Inputs {
+		names = append(names, name)
+	}
+	sort.Strings(names)
 	total := 0
-	for name, digest := range req.Inputs {
+	for _, name := range names {
+		digest := req.Inputs[name]
 		raw, ok := a.Inputs[name]
 		if !ok || lifecycle.ByteDigest(raw) != digest {
 			return nil, fmt.Errorf("the bytes of input %s do not have the digest of the request", name)
@@ -89,9 +100,13 @@ func (a *Adapter) manifest(req lifecycle.StepRequest, requestRef string) ([]byte
 		if !utf8.Valid(raw) || bytes.IndexByte(raw, 0) >= 0 {
 			return nil, fmt.Errorf("input %s is not text", name)
 		}
+		// Each input has two variables. No variable can have two sources:
+		// the inputs "a" and "a_sha256" are refused, and also "a.b" and "a-b".
 		key := envName(name)
-		if _, used := env[key]; used {
-			return nil, fmt.Errorf("two inputs have the env variable %s", key)
+		for _, variable := range []string{key, key + "_SHA256"} {
+			if _, used := env[variable]; used {
+				return nil, fmt.Errorf("two inputs give the env variable %s", variable)
+			}
 		}
 		total += len(raw)
 		env[key], env[key+"_SHA256"] = string(raw), strings.TrimPrefix(digest, "sha256:")
@@ -178,13 +193,17 @@ func (a *Adapter) RunStep(req lifecycle.StepRequest) (lifecycle.StepResult, erro
 	if err := json.Unmarshal(created, &g); err != nil || g.Metadata.Name == "" {
 		return none, errors.New("the API server gave no Agent name")
 	}
-	name, sleep := g.Metadata.Name, a.Sleep
+	name, sleep, now := g.Metadata.Name, a.Sleep, a.Now
 	if sleep == nil {
 		sleep = time.Sleep
 	}
-	// Clause K5: wait for the end of the run, then for the revoke.
+	if now == nil {
+		now = time.Now
+	}
+	// Clause K5: wait for the end of the run, then for the revoke. The
+	// two limits are elapsed time, so a slow read also uses them.
 	var raw []byte
-	limit, waited, settling := a.Wait, time.Duration(0), false
+	deadline, settling := now().Add(a.Wait), false
 	for {
 		if raw, err = a.Cluster.Agent(a.Namespace, name); err != nil {
 			return none, fmt.Errorf("read the Agent %s: %w", name, err)
@@ -194,13 +213,12 @@ func (a *Adapter) RunStep(req lifecycle.StepRequest) (lifecycle.StepResult, erro
 			return none, fmt.Errorf("decode the Agent %s: %w", name, err)
 		}
 		if g.ended() && !settling {
-			limit, settling = waited+a.Settle, true
+			deadline, settling = now().Add(a.Settle), true
 		}
-		if (g.ended() && g.Status.RevokedAt != "") || waited >= limit {
+		if (g.ended() && g.Status.RevokedAt != "") || !now().Before(deadline) {
 			break
 		}
 		sleep(a.Poll)
-		waited += a.Poll
 	}
 	traceBytes, err := trace(raw)
 	if err != nil {
