@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Give a local estimate of code, security-relevant and docs paths for cross_review.py and contributors. The gates use .github/gates.json."""
+"""Give a local estimate of code, security-relevant and docs paths for the shared gates/cross_review.py and contributors. The gates use .github/gates.json."""
 import argparse
 from fnmatch import fnmatch
 import json
