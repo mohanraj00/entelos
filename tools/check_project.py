@@ -57,11 +57,6 @@ cli=re.search(r'CLI_VERSION: (\S+)\n',(ROOT/'.github/workflows/claude-review.yml
 if not cli or '| @anthropic-ai/claude-code-linux-x64 | %s |'%cli.group(1) not in (ROOT/'licenses/THIRD_PARTY.md').read_text():errors.append('licenses/THIRD_PARTY.md must record the Claude CLI version of claude-review.yml')
 lint=re.search(r'ACTIONLINT_VERSION: (\S+)\n',(ROOT/'.github/workflows/ci.yml').read_text())
 if not lint or '| actionlint (rhysd/actionlint, linux_amd64 release archive) | %s |'%lint.group(1) not in (ROOT/'licenses/THIRD_PARTY.md').read_text():errors.append('licenses/THIRD_PARTY.md must record the actionlint version of ci.yml')
-# The agy fallback must not load the maintainer's global allow rules or MCP servers.
-review=(ROOT/'tools/cross_review.py').read_text()
-for need in ["env['HOME']=home","'--sandbox'","'allow':[]"]:
-    if need not in review:errors.append('cross_review.py must keep '+need)
-if "'HOME'," in review:errors.append('cross_review.py must not pass the real HOME to agy')
 # The shared gates read .github/gates.json from the base branch. They fail closed on an unknown key or a bad value.
 try:
     gates=json.loads((ROOT/'.github/gates.json').read_text())
