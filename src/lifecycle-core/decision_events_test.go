@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"sync"
 	"testing"
@@ -74,6 +75,15 @@ func TestDecisionExportVectors(t *testing.T) {
 						disposition = "accept"
 					}
 					decision := Object{"scope": "demo", "function": "record.visible", "snapshot_ref": snapshot, "disposition": disposition, "fact_reviews": marks}
+					// A vector decision with facts and no mark on any fact
+					// stands for a record with no fact_reviews field.
+					unmarked := len(marks) > 0
+					for _, mark := range marks {
+						unmarked = unmarked && len(mark.(Object)) == 0
+					}
+					if unmarked {
+						delete(decision, "fact_reviews")
+					}
 					if kind, has := d["actor_kind"]; has {
 						decision["kind"] = kind
 					}
@@ -298,11 +308,47 @@ func TestDecisionEventsHostCaptureAndResume(t *testing.T) {
 			if must(store.Read(nil)).Cursor != root {
 				t.Fatal("restart or read wrote state")
 			}
-			w.must("second", "reviewer", "decide", Object{"report_ref": report, "reason": "legacy caller without marks"})
-			value, err := readAs(h, Object{"op": "decision_events", "limit": 256, "cursor": policy["next_cursor"]})
-			if value != nil || faultCode(t, err) != "unexportable_decision" {
-				t.Fatal("missing blind mark was inferred")
+			// A verdict with 3 facts and no marks keeps its positions 7 to 9
+			// and gives no events. The read does not stop, and it supplies
+			// no mark. The gap is at the stream end, so the cursor goes
+			// through it.
+			legacy := w.must("second", "reviewer", "decide", Object{"report_ref": report, "reason": "legacy caller without marks"})
+			if _, marked := legacy["decision"].(Object)["fact_reviews"]; marked {
+				t.Fatal("a decision without marks got marks")
 			}
+			at := func(p int) string { return strings.TrimSuffix(policy["next_cursor"].(string), "6") + strconv.Itoa(p) }
+			gap := readEvents(t, h, Object{"limit": 256, "cursor": policy["next_cursor"]})
+			if len(gap["events"].(Array)) != 0 || gap["next_cursor"] != at(9) {
+				t.Fatal("an unmarked verdict gave events or lost its positions: ", string(Encode(gap)))
+			}
+			if inside := readEvents(t, h, Object{"limit": 1, "cursor": at(7)}); len(inside["events"].(Array)) != 0 || inside["next_cursor"] != at(9) {
+				t.Fatal("wrong page inside the last gap: ", string(Encode(inside)))
+			}
+			// A full page before the gap ends at its last event.
+			if full := readEvents(t, h, Object{"limit": 1, "cursor": at(5)}); len(full["events"].(Array)) != 1 || full["next_cursor"] != at(6) {
+				t.Fatal("wrong full page before the gap: ", string(Encode(full)))
+			}
+			w.must("model", "reviewer", "decide", Object{"report_ref": report, "reason": "model verdict after the unmarked verdict"})
+			past := readEvents(t, h, Object{"limit": 256, "cursor": policy["next_cursor"]})
+			if len(past["events"].(Array)) != 3 || past["next_cursor"] != at(12) {
+				t.Fatal("the read did not continue past the unmarked verdict")
+			}
+			for i, raw := range past["events"].(Array) {
+				e := raw.(Object)
+				if e["actor_kind"] != "model" || e["blind"] != false || e["decision_ref"] == legacy["decision_ref"] || e["cursor"] != at(10+i) {
+					t.Fatal("wrong event after the unmarked verdict: ", string(Encode(e)))
+				}
+			}
+			// The limit counts events and not gap positions: no page in the
+			// middle of the stream is empty. Then a page from inside the gap.
+			if across := readEvents(t, h, Object{"limit": 3, "cursor": at(5)}); len(across["events"].(Array)) != 3 || across["next_cursor"] != at(11) ||
+				across["events"].(Array)[0].(Object)["cursor"] != at(6) || across["events"].(Array)[1].(Object)["cursor"] != at(10) {
+				t.Fatal("wrong page across the gap: ", string(Encode(across)))
+			}
+			if resumed := readEvents(t, h, Object{"limit": 2, "cursor": at(8)}); len(resumed["events"].(Array)) != 2 || resumed["next_cursor"] != at(11) {
+				t.Fatal("wrong resume from inside the gap: ", string(Encode(resumed)))
+			}
+			var err error
 			_, err = readAs(h, Object{"op": "decision_events", "limit": 1, "cursor": "bad"})
 			if faultCode(t, err) != "invalid_cursor" {
 				t.Fatal("source check before cursor")

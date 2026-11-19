@@ -631,6 +631,268 @@
           "before_stream_start": false
         }
       ]
+    },
+    "unmarked-last": {
+      "namespace": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "decisions": [
+        {
+          "decision_ref": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+          "actor_kind": "human",
+          "disposition": "approve",
+          "facts": [
+            {
+              "fact_digest": "sha256:3333333333333333333333333333333333333333333333333333333333333333",
+              "evidence_receipt_digest": "sha256:9999999999999999999999999999999999999999999999999999999999999999",
+              "blind": false
+            },
+            {
+              "fact_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+              "evidence_receipt_digest": "sha256:9999999999999999999999999999999999999999999999999999999999999999",
+              "blind": true,
+              "corrected_value": "green"
+            },
+            {
+              "fact_digest": "sha256:2222222222222222222222222222222222222222222222222222222222222222",
+              "evidence_receipt_digest": "sha256:8888888888888888888888888888888888888888888888888888888888888888",
+              "blind": true
+            }
+          ],
+          "before_stream_start": false
+        },
+        {
+          "decision_ref": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+          "actor_kind": "human",
+          "disposition": "approve",
+          "facts": [
+            {
+              "fact_digest": "sha256:3333333333333333333333333333333333333333333333333333333333333333",
+              "evidence_receipt_digest": "sha256:9999999999999999999999999999999999999999999999999999999999999999"
+            },
+            {
+              "fact_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+              "evidence_receipt_digest": "sha256:9999999999999999999999999999999999999999999999999999999999999999"
+            },
+            {
+              "fact_digest": "sha256:2222222222222222222222222222222222222222222222222222222222222222",
+              "evidence_receipt_digest": "sha256:9999999999999999999999999999999999999999999999999999999999999999"
+            }
+          ],
+          "before_stream_start": false
+        }
+      ],
+      "stream_start": "store-revision-1"
+    },
+    "unmarked-between": {
+      "namespace": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "decisions": [
+        {
+          "decision_ref": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+          "actor_kind": "human",
+          "disposition": "approve",
+          "facts": [
+            {
+              "fact_digest": "sha256:3333333333333333333333333333333333333333333333333333333333333333",
+              "evidence_receipt_digest": "sha256:9999999999999999999999999999999999999999999999999999999999999999",
+              "blind": false
+            },
+            {
+              "fact_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+              "evidence_receipt_digest": "sha256:9999999999999999999999999999999999999999999999999999999999999999",
+              "blind": true,
+              "corrected_value": "green"
+            },
+            {
+              "fact_digest": "sha256:2222222222222222222222222222222222222222222222222222222222222222",
+              "evidence_receipt_digest": "sha256:8888888888888888888888888888888888888888888888888888888888888888",
+              "blind": true
+            }
+          ],
+          "before_stream_start": false
+        },
+        {
+          "decision_ref": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+          "actor_kind": "human",
+          "disposition": "approve",
+          "facts": [
+            {
+              "fact_digest": "sha256:3333333333333333333333333333333333333333333333333333333333333333",
+              "evidence_receipt_digest": "sha256:9999999999999999999999999999999999999999999999999999999999999999"
+            },
+            {
+              "fact_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+              "evidence_receipt_digest": "sha256:9999999999999999999999999999999999999999999999999999999999999999"
+            },
+            {
+              "fact_digest": "sha256:2222222222222222222222222222222222222222222222222222222222222222",
+              "evidence_receipt_digest": "sha256:9999999999999999999999999999999999999999999999999999999999999999"
+            }
+          ],
+          "before_stream_start": false
+        },
+        {
+          "decision_ref": "sha256:2222222222222222222222222222222222222222222222222222222222222222",
+          "actor_kind": "policy",
+          "disposition": "approve",
+          "facts": [
+            {
+              "fact_digest": "sha256:3333333333333333333333333333333333333333333333333333333333333333",
+              "evidence_receipt_digest": "sha256:9999999999999999999999999999999999999999999999999999999999999999",
+              "blind": false
+            }
+          ],
+          "before_stream_start": false
+        }
+      ],
+      "stream_start": "store-revision-1"
+    },
+    "unmarked-first": {
+      "namespace": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "decisions": [
+        {
+          "decision_ref": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+          "actor_kind": "human",
+          "disposition": "reject",
+          "facts": [
+            {
+              "fact_digest": "sha256:3333333333333333333333333333333333333333333333333333333333333333",
+              "evidence_receipt_digest": "sha256:9999999999999999999999999999999999999999999999999999999999999999"
+            },
+            {
+              "fact_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+              "evidence_receipt_digest": "sha256:9999999999999999999999999999999999999999999999999999999999999999"
+            }
+          ],
+          "before_stream_start": false
+        },
+        {
+          "decision_ref": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+          "actor_kind": "human",
+          "disposition": "approve",
+          "facts": [
+            {
+              "fact_digest": "sha256:3333333333333333333333333333333333333333333333333333333333333333",
+              "evidence_receipt_digest": "sha256:9999999999999999999999999999999999999999999999999999999999999999",
+              "blind": false
+            },
+            {
+              "fact_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+              "evidence_receipt_digest": "sha256:9999999999999999999999999999999999999999999999999999999999999999",
+              "blind": true,
+              "corrected_value": "green"
+            },
+            {
+              "fact_digest": "sha256:2222222222222222222222222222222222222222222222222222222222222222",
+              "evidence_receipt_digest": "sha256:8888888888888888888888888888888888888888888888888888888888888888",
+              "blind": true
+            }
+          ],
+          "before_stream_start": false
+        }
+      ],
+      "stream_start": "store-revision-1"
+    },
+    "unmarked-no-kind": {
+      "namespace": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "decisions": [
+        {
+          "decision_ref": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+          "disposition": "approve",
+          "facts": [
+            {
+              "fact_digest": "sha256:3333333333333333333333333333333333333333333333333333333333333333",
+              "evidence_receipt_digest": "sha256:9999999999999999999999999999999999999999999999999999999999999999"
+            }
+          ],
+          "before_stream_start": false
+        },
+        {
+          "decision_ref": "sha256:6666666666666666666666666666666666666666666666666666666666666666",
+          "actor_kind": "model",
+          "disposition": "reject",
+          "facts": [
+            {
+              "fact_digest": "sha256:3333333333333333333333333333333333333333333333333333333333333333",
+              "evidence_receipt_digest": "sha256:9999999999999999999999999999999999999999999999999999999999999999",
+              "blind": false
+            }
+          ],
+          "before_stream_start": false
+        }
+      ],
+      "stream_start": "store-revision-1"
+    },
+    "partial-marks": {
+      "namespace": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "decisions": [
+        {
+          "decision_ref": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+          "actor_kind": "human",
+          "disposition": "approve",
+          "facts": [
+            {
+              "fact_digest": "sha256:3333333333333333333333333333333333333333333333333333333333333333",
+              "evidence_receipt_digest": "sha256:9999999999999999999999999999999999999999999999999999999999999999",
+              "blind": false
+            },
+            {
+              "fact_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+              "evidence_receipt_digest": "sha256:9999999999999999999999999999999999999999999999999999999999999999"
+            }
+          ],
+          "before_stream_start": false
+        }
+      ],
+      "stream_start": "store-revision-1"
+    },
+    "correction-without-blind": {
+      "namespace": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "decisions": [
+        {
+          "decision_ref": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+          "actor_kind": "human",
+          "disposition": "approve",
+          "facts": [
+            {
+              "fact_digest": "sha256:3333333333333333333333333333333333333333333333333333333333333333",
+              "evidence_receipt_digest": "sha256:9999999999999999999999999999999999999999999999999999999999999999",
+              "corrected_value": "green"
+            }
+          ],
+          "before_stream_start": false
+        }
+      ],
+      "stream_start": "store-revision-1"
+    },
+    "unmarked-then-invalid": {
+      "namespace": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "decisions": [
+        {
+          "decision_ref": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+          "actor_kind": "human",
+          "disposition": "approve",
+          "facts": [
+            {
+              "fact_digest": "sha256:3333333333333333333333333333333333333333333333333333333333333333",
+              "evidence_receipt_digest": "sha256:9999999999999999999999999999999999999999999999999999999999999999"
+            }
+          ],
+          "before_stream_start": false
+        },
+        {
+          "decision_ref": "sha256:2222222222222222222222222222222222222222222222222222222222222222",
+          "actor_kind": "policy",
+          "disposition": "approve",
+          "facts": [
+            {
+              "fact_digest": "sha256:3333333333333333333333333333333333333333333333333333333333333333",
+              "evidence_receipt_digest": "sha256:9999999999999999999999999999999999999999999999999999999999999999",
+              "blind": true
+            }
+          ],
+          "before_stream_start": false
+        }
+      ],
+      "stream_start": "store-revision-1"
     }
   },
   "cases": [
@@ -1413,15 +1675,32 @@
       }
     },
     {
-      "name": "missing-recorded-blind",
+      "name": "unmarked-verdict-alone-gap-page",
       "stream": "missing-blind",
       "request": {
         "limit": 1
       },
       "expect": {
-        "ok": false,
-        "code": "unexportable_decision"
+        "ok": true,
+        "events": [],
+        "next_cursor": "ev1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:1",
+        "stream_start": "store-revision-1"
       }
+    },
+    {
+      "name": "end-after-gap",
+      "stream": "missing-blind",
+      "request": {
+        "limit": 1,
+        "cursor": "ev1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:1"
+      },
+      "expect": {
+        "ok": true,
+        "events": [],
+        "next_cursor": "ev1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:1",
+        "stream_start": "store-revision-1"
+      },
+      "after": "unmarked-verdict-alone-gap-page"
     },
     {
       "name": "bad-recorded-kind",
@@ -1674,6 +1953,438 @@
       "stream": "old-then-invalid",
       "request": {
         "limit": 4
+      },
+      "expect": {
+        "ok": false,
+        "code": "unexportable_decision"
+      }
+    },
+    {
+      "name": "missing-one-recorded-blind",
+      "stream": "partial-marks",
+      "request": {
+        "limit": 1
+      },
+      "expect": {
+        "ok": false,
+        "code": "unexportable_decision"
+      }
+    },
+    {
+      "name": "correction-without-recorded-blind",
+      "stream": "correction-without-blind",
+      "request": {
+        "limit": 1
+      },
+      "expect": {
+        "ok": false,
+        "code": "unexportable_decision"
+      }
+    },
+    {
+      "name": "page-ends-in-gap",
+      "stream": "unmarked-last",
+      "request": {
+        "limit": 256
+      },
+      "expect": {
+        "ok": true,
+        "events": [
+          {
+            "format": "entelos.decision-event/1",
+            "cursor": "ev1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:1",
+            "decision_ref": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+            "disposition": "approve",
+            "fact_digest": "sha256:3333333333333333333333333333333333333333333333333333333333333333",
+            "evidence_receipt_digest": "sha256:9999999999999999999999999999999999999999999999999999999999999999",
+            "actor_kind": "human",
+            "blind": false
+          },
+          {
+            "format": "entelos.decision-event/1",
+            "cursor": "ev1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:2",
+            "decision_ref": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+            "disposition": "correct",
+            "fact_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+            "evidence_receipt_digest": "sha256:9999999999999999999999999999999999999999999999999999999999999999",
+            "actor_kind": "human",
+            "blind": true,
+            "corrected_value": "green"
+          },
+          {
+            "format": "entelos.decision-event/1",
+            "cursor": "ev1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:3",
+            "decision_ref": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+            "disposition": "approve",
+            "fact_digest": "sha256:2222222222222222222222222222222222222222222222222222222222222222",
+            "evidence_receipt_digest": "sha256:8888888888888888888888888888888888888888888888888888888888888888",
+            "actor_kind": "human",
+            "blind": true
+          }
+        ],
+        "next_cursor": "ev1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:6",
+        "stream_start": "store-revision-1"
+      }
+    },
+    {
+      "name": "full-page-before-gap",
+      "stream": "unmarked-last",
+      "request": {
+        "limit": 3
+      },
+      "expect": {
+        "ok": true,
+        "events": [
+          {
+            "format": "entelos.decision-event/1",
+            "cursor": "ev1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:1",
+            "decision_ref": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+            "disposition": "approve",
+            "fact_digest": "sha256:3333333333333333333333333333333333333333333333333333333333333333",
+            "evidence_receipt_digest": "sha256:9999999999999999999999999999999999999999999999999999999999999999",
+            "actor_kind": "human",
+            "blind": false
+          },
+          {
+            "format": "entelos.decision-event/1",
+            "cursor": "ev1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:2",
+            "decision_ref": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+            "disposition": "correct",
+            "fact_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+            "evidence_receipt_digest": "sha256:9999999999999999999999999999999999999999999999999999999999999999",
+            "actor_kind": "human",
+            "blind": true,
+            "corrected_value": "green"
+          },
+          {
+            "format": "entelos.decision-event/1",
+            "cursor": "ev1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:3",
+            "decision_ref": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+            "disposition": "approve",
+            "fact_digest": "sha256:2222222222222222222222222222222222222222222222222222222222222222",
+            "evidence_receipt_digest": "sha256:8888888888888888888888888888888888888888888888888888888888888888",
+            "actor_kind": "human",
+            "blind": true
+          }
+        ],
+        "next_cursor": "ev1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:3",
+        "stream_start": "store-revision-1"
+      }
+    },
+    {
+      "name": "page-holds-only-gap",
+      "stream": "unmarked-last",
+      "request": {
+        "limit": 2,
+        "cursor": "ev1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:3"
+      },
+      "after": "full-page-before-gap",
+      "expect": {
+        "ok": true,
+        "events": [],
+        "next_cursor": "ev1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:6",
+        "stream_start": "store-revision-1"
+      }
+    },
+    {
+      "name": "resume-inside-last-gap",
+      "stream": "unmarked-last",
+      "request": {
+        "limit": 1,
+        "cursor": "ev1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:5"
+      },
+      "expect": {
+        "ok": true,
+        "events": [],
+        "next_cursor": "ev1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:6",
+        "stream_start": "store-revision-1"
+      }
+    },
+    {
+      "name": "end-after-last-gap",
+      "stream": "unmarked-last",
+      "request": {
+        "limit": 1,
+        "cursor": "ev1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:6"
+      },
+      "after": "page-holds-only-gap",
+      "expect": {
+        "ok": true,
+        "events": [],
+        "next_cursor": "ev1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:6",
+        "stream_start": "store-revision-1"
+      }
+    },
+    {
+      "name": "gap-inside-page",
+      "stream": "unmarked-between",
+      "request": {
+        "limit": 256
+      },
+      "expect": {
+        "ok": true,
+        "events": [
+          {
+            "format": "entelos.decision-event/1",
+            "cursor": "ev1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:1",
+            "decision_ref": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+            "disposition": "approve",
+            "fact_digest": "sha256:3333333333333333333333333333333333333333333333333333333333333333",
+            "evidence_receipt_digest": "sha256:9999999999999999999999999999999999999999999999999999999999999999",
+            "actor_kind": "human",
+            "blind": false
+          },
+          {
+            "format": "entelos.decision-event/1",
+            "cursor": "ev1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:2",
+            "decision_ref": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+            "disposition": "correct",
+            "fact_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+            "evidence_receipt_digest": "sha256:9999999999999999999999999999999999999999999999999999999999999999",
+            "actor_kind": "human",
+            "blind": true,
+            "corrected_value": "green"
+          },
+          {
+            "format": "entelos.decision-event/1",
+            "cursor": "ev1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:3",
+            "decision_ref": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+            "disposition": "approve",
+            "fact_digest": "sha256:2222222222222222222222222222222222222222222222222222222222222222",
+            "evidence_receipt_digest": "sha256:8888888888888888888888888888888888888888888888888888888888888888",
+            "actor_kind": "human",
+            "blind": true
+          },
+          {
+            "format": "entelos.decision-event/1",
+            "cursor": "ev1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:7",
+            "decision_ref": "sha256:2222222222222222222222222222222222222222222222222222222222222222",
+            "disposition": "approve",
+            "fact_digest": "sha256:3333333333333333333333333333333333333333333333333333333333333333",
+            "evidence_receipt_digest": "sha256:9999999999999999999999999999999999999999999999999999999999999999",
+            "actor_kind": "policy",
+            "blind": false
+          }
+        ],
+        "next_cursor": "ev1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:7",
+        "stream_start": "store-revision-1"
+      }
+    },
+    {
+      "name": "limit-does-not-count-gap",
+      "stream": "unmarked-between",
+      "request": {
+        "limit": 2,
+        "cursor": "ev1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:2"
+      },
+      "after": "three-facts-first-page",
+      "expect": {
+        "ok": true,
+        "events": [
+          {
+            "format": "entelos.decision-event/1",
+            "cursor": "ev1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:3",
+            "decision_ref": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+            "disposition": "approve",
+            "fact_digest": "sha256:2222222222222222222222222222222222222222222222222222222222222222",
+            "evidence_receipt_digest": "sha256:8888888888888888888888888888888888888888888888888888888888888888",
+            "actor_kind": "human",
+            "blind": true
+          },
+          {
+            "format": "entelos.decision-event/1",
+            "cursor": "ev1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:7",
+            "decision_ref": "sha256:2222222222222222222222222222222222222222222222222222222222222222",
+            "disposition": "approve",
+            "fact_digest": "sha256:3333333333333333333333333333333333333333333333333333333333333333",
+            "evidence_receipt_digest": "sha256:9999999999999999999999999999999999999999999999999999999999999999",
+            "actor_kind": "policy",
+            "blind": false
+          }
+        ],
+        "next_cursor": "ev1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:7",
+        "stream_start": "store-revision-1"
+      }
+    },
+    {
+      "name": "resume-before-gap",
+      "stream": "unmarked-between",
+      "request": {
+        "limit": 256,
+        "cursor": "ev1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:3"
+      },
+      "expect": {
+        "ok": true,
+        "events": [
+          {
+            "format": "entelos.decision-event/1",
+            "cursor": "ev1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:7",
+            "decision_ref": "sha256:2222222222222222222222222222222222222222222222222222222222222222",
+            "disposition": "approve",
+            "fact_digest": "sha256:3333333333333333333333333333333333333333333333333333333333333333",
+            "evidence_receipt_digest": "sha256:9999999999999999999999999999999999999999999999999999999999999999",
+            "actor_kind": "policy",
+            "blind": false
+          }
+        ],
+        "next_cursor": "ev1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:7",
+        "stream_start": "store-revision-1"
+      },
+      "after": "resume-end"
+    },
+    {
+      "name": "resume-inside-gap",
+      "stream": "unmarked-between",
+      "request": {
+        "limit": 2,
+        "cursor": "ev1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:5"
+      },
+      "expect": {
+        "ok": true,
+        "events": [
+          {
+            "format": "entelos.decision-event/1",
+            "cursor": "ev1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:7",
+            "decision_ref": "sha256:2222222222222222222222222222222222222222222222222222222222222222",
+            "disposition": "approve",
+            "fact_digest": "sha256:3333333333333333333333333333333333333333333333333333333333333333",
+            "evidence_receipt_digest": "sha256:9999999999999999999999999999999999999999999999999999999999999999",
+            "actor_kind": "policy",
+            "blind": false
+          }
+        ],
+        "next_cursor": "ev1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:7",
+        "stream_start": "store-revision-1"
+      }
+    },
+    {
+      "name": "resume-after-gap",
+      "stream": "unmarked-between",
+      "request": {
+        "limit": 1,
+        "cursor": "ev1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:6"
+      },
+      "after": "page-holds-only-gap",
+      "expect": {
+        "ok": true,
+        "events": [
+          {
+            "format": "entelos.decision-event/1",
+            "cursor": "ev1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:7",
+            "decision_ref": "sha256:2222222222222222222222222222222222222222222222222222222222222222",
+            "disposition": "approve",
+            "fact_digest": "sha256:3333333333333333333333333333333333333333333333333333333333333333",
+            "evidence_receipt_digest": "sha256:9999999999999999999999999999999999999999999999999999999999999999",
+            "actor_kind": "policy",
+            "blind": false
+          }
+        ],
+        "next_cursor": "ev1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:7",
+        "stream_start": "store-revision-1"
+      }
+    },
+    {
+      "name": "cursor-after-end-with-gap",
+      "stream": "unmarked-between",
+      "request": {
+        "limit": 1,
+        "cursor": "ev1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:8"
+      },
+      "expect": {
+        "ok": false,
+        "code": "invalid_cursor"
+      }
+    },
+    {
+      "name": "gap-at-stream-start",
+      "stream": "unmarked-first",
+      "request": {
+        "limit": 2
+      },
+      "expect": {
+        "ok": true,
+        "events": [
+          {
+            "format": "entelos.decision-event/1",
+            "cursor": "ev1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:3",
+            "decision_ref": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+            "disposition": "approve",
+            "fact_digest": "sha256:3333333333333333333333333333333333333333333333333333333333333333",
+            "evidence_receipt_digest": "sha256:9999999999999999999999999999999999999999999999999999999999999999",
+            "actor_kind": "human",
+            "blind": false
+          },
+          {
+            "format": "entelos.decision-event/1",
+            "cursor": "ev1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:4",
+            "decision_ref": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+            "disposition": "correct",
+            "fact_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+            "evidence_receipt_digest": "sha256:9999999999999999999999999999999999999999999999999999999999999999",
+            "actor_kind": "human",
+            "blind": true,
+            "corrected_value": "green"
+          }
+        ],
+        "next_cursor": "ev1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:4",
+        "stream_start": "store-revision-1"
+      }
+    },
+    {
+      "name": "resume-after-leading-gap",
+      "stream": "unmarked-first",
+      "request": {
+        "limit": 2,
+        "cursor": "ev1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:4"
+      },
+      "expect": {
+        "ok": true,
+        "events": [
+          {
+            "format": "entelos.decision-event/1",
+            "cursor": "ev1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:5",
+            "decision_ref": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+            "disposition": "approve",
+            "fact_digest": "sha256:2222222222222222222222222222222222222222222222222222222222222222",
+            "evidence_receipt_digest": "sha256:8888888888888888888888888888888888888888888888888888888888888888",
+            "actor_kind": "human",
+            "blind": true
+          }
+        ],
+        "next_cursor": "ev1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:5",
+        "stream_start": "store-revision-1"
+      },
+      "after": "gap-at-stream-start"
+    },
+    {
+      "name": "unmarked-verdict-without-kind",
+      "stream": "unmarked-no-kind",
+      "request": {
+        "limit": 2
+      },
+      "expect": {
+        "ok": true,
+        "events": [
+          {
+            "format": "entelos.decision-event/1",
+            "cursor": "ev1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:2",
+            "decision_ref": "sha256:6666666666666666666666666666666666666666666666666666666666666666",
+            "disposition": "reject",
+            "fact_digest": "sha256:3333333333333333333333333333333333333333333333333333333333333333",
+            "evidence_receipt_digest": "sha256:9999999999999999999999999999999999999999999999999999999999999999",
+            "actor_kind": "model",
+            "blind": false
+          }
+        ],
+        "next_cursor": "ev1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:2",
+        "stream_start": "store-revision-1"
+      }
+    },
+    {
+      "name": "source-error-after-unmarked-verdict",
+      "stream": "unmarked-then-invalid",
+      "request": {
+        "limit": 1
       },
       "expect": {
         "ok": false,

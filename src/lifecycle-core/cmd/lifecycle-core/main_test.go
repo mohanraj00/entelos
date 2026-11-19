@@ -144,3 +144,70 @@ func TestJSONLDecisionEvents(t *testing.T) {
 		t.Fatal("JSONL changed the Host page")
 	}
 }
+
+// Issue #197 on the JSONL Host. A verdict with a cited fact and no marks is
+// in the stream. Its position 1 is a gap, and the read continues past it.
+func TestJSONLDecisionEventsReadPastUnmarkedVerdict(t *testing.T) {
+	store := lifecycle.NewMemoryStore()
+	base, err := lifecycle.NewHost(store, nil, lifecycle.Object{"scope": "demo", "runner_actor": "runner", "worker": "worker", "functions": lifecycle.Array{"record.visible"},
+		"actor_kinds": lifecycle.Object{"legacy": "human", "model": "model"}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := base.StartDecisionEvents(); err != nil {
+		t.Fatal(err)
+	}
+	digest := func(c string) string { return "sha256:" + strings.Repeat(c, 64) }
+	root, _ := store.Read(nil)
+	var report string
+	_, err = store.Transact(root.Cursor, "fixture", lifecycle.Object{}, func(v *lifecycle.View) (any, error) {
+		snapshot := v.Put("snapshot", lifecycle.Object{"scope": "demo", "function": "record.visible", "from": "2026-11-01", "until": "2026-12-01", "producer": "author", "bundle_ref": digest("a"),
+			"evidence": lifecycle.Object{"facts": lifecycle.Array{lifecycle.Object{"decision_digest": digest("a"), "receipt_digest": digest("b")}}}})
+		report = v.Put("qualification", lifecycle.Object{"scope": "demo", "function": "record.visible", "snapshot_ref": snapshot, "runner": "runner"})
+		v.State["reviews"] = lifecycle.Object{}
+		return lifecycle.Object{}, nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	// line sends one JSONL request as an actor and gives the response data.
+	line := func(actor, role string, request lifecycle.Object) lifecycle.Object {
+		t.Helper()
+		var out bytes.Buffer
+		if exit := serve(base.As(actor, []string{role}), bytes.NewReader(lifecycle.Encode(request)), &out); exit != 0 {
+			t.Fatal(exit, out.String())
+		}
+		response, err := lifecycle.Decode(out.Bytes())
+		if err != nil || response.(lifecycle.Object)["status"] != "ok" {
+			t.Fatalf("%s: %s (%v)", actor, out.Bytes(), err)
+		}
+		return response.(lifecycle.Object)["data"].(lifecycle.Object)
+	}
+	decide := func(actor string) {
+		root, _ := store.Read(nil)
+		line(actor, "reviewer", lifecycle.Object{"op": "decide", "report_ref": report, "reason": "reject synthetic facts", "disposition": "reject",
+			"expected_revision": root.Cursor, "request_key": actor})
+	}
+	decide("legacy")
+	// The gap is at the stream end: the page has no events, and the cursor
+	// goes through the gap.
+	gap := line("events", "event_reader", lifecycle.Object{"op": "decision_events", "limit": 1})
+	if len(gap["events"].(lifecycle.Array)) != 0 || !strings.HasSuffix(gap["next_cursor"].(string), ":1") {
+		t.Fatalf("gap page %s", lifecycle.Encode(gap))
+	}
+	decide("model")
+	page := line("events", "event_reader", lifecycle.Object{"op": "decision_events", "limit": 256})
+	events := page["events"].(lifecycle.Array)
+	if len(events) != 1 {
+		t.Fatalf("%d events, want the 1 event of the model verdict: %s", len(events), lifecycle.Encode(page))
+	}
+	event := events[0].(lifecycle.Object)
+	if event["actor_kind"] != "model" || event["blind"] != false || !strings.HasSuffix(event["cursor"].(string), ":2") || page["next_cursor"] != event["cursor"] {
+		t.Fatalf("event %s", lifecycle.Encode(event))
+	}
+	// The limit counts events: a page of 1 event goes past the gap.
+	small := line("events", "event_reader", lifecycle.Object{"op": "decision_events", "limit": 1})
+	if string(lifecycle.Encode(small)) != string(lifecycle.Encode(page)) {
+		t.Fatalf("page of 1 event %s", lifecycle.Encode(small))
+	}
+}

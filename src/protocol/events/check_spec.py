@@ -92,8 +92,15 @@ def project(decision, stream, start):
     return events
 
 
+def unmarked(decision):
+    """A decision with facts and no mark on any fact: its positions are a gap."""
+    facts = decision.get('facts') if isinstance(decision, dict) else None
+    return (isinstance(facts, list) and len(facts) > 0 and all(isinstance(f, dict) for f in facts)
+            and not any('blind' in f or 'corrected_value' in f for f in facts))
+
+
 def read(stream, request):
-    """Read checks, exclusive resume and exact page size from EVENTS.md."""
+    """Read checks, exclusive resume and the exact page rule from EVENTS.md."""
     def refuse(code):
         return {'ok': False, 'code': code}
 
@@ -107,12 +114,24 @@ def read(stream, request):
     start = position(request['cursor'], namespace) if 'cursor' in request else 0
     if start is None or start > total:
         return refuse('invalid_cursor')
-    end = min(start + request['limit'], total)
+    # The limit counts events. A gap position has no event and does not count.
+    # A full page ends at its last event. A page with fewer events ends at N.
+    end, room, offset = total, request['limit'], 0
+    for decision in decisions:
+        count = len(decision['facts'])
+        first = max(offset, start)
+        have = offset + count - first
+        if have > 0 and not unmarked(decision):
+            if have >= room:
+                end = first + room
+                break
+            room -= have
+        offset += count
     events = []
     offset = 0
     for decision in decisions:
         count = len(decision['facts'])
-        if offset < end and offset + count > start:
+        if offset < end and offset + count > start and not unmarked(decision):
             projected = project(decision, namespace, offset)
             if projected is None:
                 return refuse('unexportable_decision')
@@ -220,6 +239,12 @@ def run(event_doc, export_doc):
         'old-decisions-excluded-read-continues', 'resume-after-old-decisions',
         'only-old-decisions-empty-page', 'append-after-only-old-decisions',
         'old-decisions-consume-no-positions', 'source-error-after-old-decisions',
+        'unmarked-verdict-alone-gap-page', 'end-after-gap', 'gap-inside-page', 'resume-before-gap', 'page-ends-in-gap',
+        'full-page-before-gap', 'page-holds-only-gap', 'resume-inside-last-gap', 'end-after-last-gap',
+        'limit-does-not-count-gap', 'resume-inside-gap', 'resume-after-gap',
+        'cursor-after-end-with-gap', 'gap-at-stream-start', 'resume-after-leading-gap', 'unmarked-verdict-without-kind',
+        'missing-one-recorded-blind', 'correction-without-recorded-blind',
+        'source-error-after-unmarked-verdict',
     }
     errors += ['missing export boundary case: ' + n for n in sorted(required_cases - names)]
     for name, stream in export_doc['streams'].items():
@@ -304,9 +329,46 @@ def self_test(event_doc, export_doc):
             if case['stream'] == 'with-old' and case['expect']['ok']:
                 case['expect']['stream_start'] = 'other-revision'
 
+    def unmarked_gets_events(e, x):
+        # A Host that supplies false marks gives events for the unmarked verdict.
+        for fact in x['streams']['unmarked-between']['decisions'][1]['facts']:
+            fact['blind'] = False
+
+    def gap_closed(e, x):
+        # A Host that gives the unmarked verdict no positions moves the later event.
+        expect = named(x, 'resume-before-gap')['expect']
+        expect['events'][0]['cursor'] = expect['next_cursor'] = 'ev1:' + 'a' * 64 + ':4'
+
+    def last_gap_holds_cursor(e, x):
+        # A gap at the stream end must show in the cursor.
+        named(x, 'page-holds-only-gap')['expect']['next_cursor'] = 'ev1:' + 'a' * 64 + ':3'
+
+    def gap_counted(e, x):
+        # The limit counts events only: a page in the middle must not stop at a gap.
+        expect = named(x, 'limit-does-not-count-gap')['expect']
+        del expect['events'][1]
+        expect['next_cursor'] = 'ev1:' + 'a' * 64 + ':4'
+
+    def empty_page_before_events(e, x):
+        # An empty page means that the stream has no later event.
+        expect = named(x, 'gap-at-stream-start')['expect']
+        expect['events'], expect['next_cursor'] = [], 'ev1:' + 'a' * 64 + ':2'
+
+    def full_page_goes_through_gap(e, x):
+        # A full page ends at its last event, as on v0.5.0.
+        named(x, 'full-page-before-gap')['expect']['next_cursor'] = 'ev1:' + 'a' * 64 + ':6'
+
+    def unmarked_refuses(e, x):
+        named(x, 'gap-inside-page')['expect'] = {'ok': False, 'code': 'unexportable_decision'}
+
+    def partial_marks_pass(e, x):
+        named(x, 'missing-one-recorded-blind')['expect'] = named(x, 'unmarked-verdict-alone-gap-page')['expect']
+
     errors = []
     for mutate in (wrong_digest, content, policy_as_human, blind, reorder, duplicate, gap, cursor, version, correction, source_receipt, schema_type,
-                   missing_stream_start, wrong_stream_start, include_old_decision, exclude_new_decision, changed_stream_start):
+                   missing_stream_start, wrong_stream_start, include_old_decision, exclude_new_decision, changed_stream_start,
+                   unmarked_gets_events, gap_closed, last_gap_holds_cursor, gap_counted, empty_page_before_events,
+                   full_page_goes_through_gap, unmarked_refuses, partial_marks_pass):
         e, x = copy.deepcopy(event_doc), copy.deepcopy(export_doc)
         mutate(e, x)
         if not run(e, x):
