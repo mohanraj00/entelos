@@ -89,11 +89,11 @@ These rules are normative:
 2. A gap has one meaning only: the stream has a verdict with cited facts and no blind marks, and the export omits one fact for each gap position. A gap never means a lost event. Each position that is not a gap position has exactly one event, and a reader gets it exactly one time when it resumes from each `next_cursor`.
 3. Only the record decides. A decision is unmarked if it cites one fact or more and its record has no `fact_reviews` field. A record that has the field is never unmarked. If its marks are not complete or not valid, or if it has marks and no actor kind, the read gives `unexportable_decision`.
 4. The export never supplies a mark or a kind. It does not give `human` for a missing kind or `false` for a missing mark. A gap does not tell the disposition, the fact digests or the actor of the verdict.
-5. An unmarked verdict cannot stop a read. The page rule of [Read](#read) tells how a page counts the gap positions.
+5. An unmarked verdict cannot stop a read. It also cannot make a page before the stream end empty. The page rule of [Read](#read) is exact: the limit counts events, and a gap position does not count.
 6. The verdict stays in the store, and it keeps its place in the saved decision list. The approval, the verdict counts and the activation rules do not change. The reviewer reads `record` and `proposal` show the verdict.
 7. The event format, the read schemas, the cursor format and the stream namespace do not change. The position of each event is the position that v0.5.0 gave it.
 
-A reader finds a gap from the cursors. For a page, the count of omitted facts is the position of `next_cursor`, minus the position of the request cursor, minus the count of the events of the page. A reader can also compare the positions of two events that follow one another. A reader that needs each human verdict can stop or raise an alarm when this count is not 0.
+A reader finds a gap from the cursors. For a page, the count of omitted facts is the position of `next_cursor`, minus the position of the request cursor, minus the count of the events of the page. The sum of these counts is correct when each request uses the `next_cursor` of the page before it. A gap at the stream end shows in the cursor of the last page. A reader can also compare the positions of two events that follow one another. A reader that needs each human verdict can stop or raise an alarm when this count is not 0.
 
 The other methods were not selected, for these reasons:
 
@@ -101,17 +101,19 @@ The other methods were not selected, for these reasons:
 - An event with an "unknown" blind state needs a new value or a new field. A reader of version 1 refuses that event, so it needs a new major version. The cursor binds the major version, so each reader must start a new stream.
 - A permanent refusal, which v0.5.0 gave, lets one verdict from an old client stop each reader of the stream.
 - An unmarked verdict with no positions gives a reader no signal. A reviewer can then keep a verdict out of the export, and the reader cannot detect it or count it. This method also gives the later events other positions than v0.5.0 gave.
+- A limit that counts gap positions gives an empty page before the stream end, with a later cursor. v0.5.0 states that an empty page keeps the request cursor and that a consumer can save the cursor of each event. Such a consumer then stops at a gap that is as large as its limit, and it loses the later events with no error.
 
 ### Upgrade from v0.5.0
 
 The Host of v0.5.0 gave the same positions, and it refused each page that had a gap position. Thus a reader that stopped at an unmarked verdict has a saved cursor before the gap.
 
-After the upgrade, the reader sends its saved cursor again. The page starts after that cursor and goes through the gap. The stream is the same, and each event has the position that v0.5.0 counted for it. The reader gets no duplicate, and it loses no event. A cursor from a later Host names the same position on a v0.5.0 Host.
+After the upgrade, the reader sends its saved cursor again. The page starts with the first event after the gap. If the stream ends in the gap, the page has no events, and `next_cursor` is the cursor at the gap end. The stream is the same, and each event has the position that v0.5.0 counted for it. The reader gets no duplicate, and it loses no event. A cursor from a later Host names the same position on a v0.5.0 Host.
 
 ### Effect on a consumer
 
 - A consumer that checks for contiguous event positions must accept a jump. The jump is the gap, and its size is the count of the omitted facts.
-- A consumer must not use an empty page as the end of the stream. A page can have no events and a later `next_cursor`. The reader is at the end only when `next_cursor` equals the request cursor.
+- An empty page still means that the stream has no later event at this time, as on v0.5.0. Its `next_cursor` can be after the request cursor, if the stream ends in a gap. A consumer can save that cursor or keep its old cursor: the next read gives the same events for each of the two.
+- A consumer that saves the cursor of each event, and not `next_cursor`, loses no event. It finds a gap at the stream end only from `next_cursor`.
 - A consumer gets no event for the facts of an unmarked verdict. A consumer that needs an event for each human verdict must make sure that each client sends `fact_reviews` through protocol 1.2.
 - The events have the same fields and the same rules as before.
 
@@ -127,18 +129,20 @@ Request: `{"cursor"?: string, "limit": integer}`. `limit` is 1 to 256. No field 
 
 Success: `{"events": [event, ...], "next_cursor": string, "stream_start": string}`. Every page has `stream_start`, including the first page and an empty page. An empty stream returns its position 0 cursor. There is no separate end flag: a later read may see newly appended events.
 
-The page rule is exact. For input position P and a stream of N positions, the page covers the positions P+1 through E, where E is min(P+limit, N).
+The page rule is exact. The input position is P, and the stream has N positions.
 
-1. `limit` counts positions. A gap position counts as each other position.
-2. `events` has the event of each covered position that is not a gap position, in position order. It has no entry for a gap position.
-3. `next_cursor` is always the cursor at E. If position E is a gap position, the page ends in a gap, and `next_cursor` is a cursor in the gap or at its end.
-4. A page that covers only gap positions has no events, and its `next_cursor` is the cursor at E, which is after P.
-5. A page at the end of the stream, where P equals N, has no events, and its `next_cursor` is the cursor at P.
-6. A request cursor before a gap, in a gap or after a gap is valid. The page starts at the next position in each case.
+1. `limit` counts events. A gap position has no event, and it does not count.
+2. `events` has the events of the first `limit` positions after P that are not gap positions, in position order. If the stream has fewer such positions after P, `events` has the event of each one.
+3. If the page has `limit` events, the page is full. `next_cursor` is the cursor of its last event.
+4. If the page has fewer events than `limit`, the page reached the stream end. `next_cursor` is the cursor at N. Thus `next_cursor` is after the last event only if the stream ends in a gap.
+5. An empty page means that the stream has no event after P. Its `next_cursor` is the cursor at N. It equals the request cursor if P equals N. It is after the request cursor only if the positions P+1 through N are all gap positions.
+6. A request cursor before a gap, in a gap or after a gap is valid. The page starts at the next position that is not a gap position.
 
-With no gap in the covered positions, the page has the events of exactly the positions P+1 through E, and `next_cursor` is the cursor of the last event.
+For a stream with no unmarked verdict, this rule gives the page that v0.5.0 gave: the events of exactly the positions P+1 through min(P+limit, N), and `next_cursor` is the last returned event cursor, or the cursor at P for an empty page. The rule differs only for a stream with an unmarked verdict, where v0.5.0 refused each page with a gap position.
 
-The read pins one committed prefix for its entire page. Appends after that prefix are visible on a later read. A retry with the same cursor sees the same events up to that prefix, and may see further events if there was room in the page. No previously exported position changes. A page may stop in the middle of one proposal. Resuming from its `next_cursor` returns the next position, with no duplicate and no lost event. Reading at the end returns an empty page with the same cursor until an append.
+No page before the stream end is empty, and a gap never uses the room of a page. Thus a reader that stops at an empty page, or that saves only the cursor of each event, gets each later event on its next read.
+
+The read pins one committed prefix for its entire page. Appends after that prefix are visible on a later read. A retry with the same cursor sees the same events up to that prefix, and may see further events if there was room in the page. No previously exported position changes. A page may stop in the middle of one proposal. Resuming from its `next_cursor` returns the next event, with no duplicate and no lost event. Reading at the end returns an empty page until an append.
 
 Apply these checks in order before returning any event or cursor:
 
@@ -212,7 +216,7 @@ A reader of version 1 refuses an unknown major version with `unsupported_event_f
 
 A decision also has `decision_ref`, `actor_kind`, `disposition` (`approve` or `reject`) and `facts` in evidence order. Each fact has `fact_digest`, `evidence_receipt_digest`, `blind` and optional `corrected_value`. Presence of that value on an approval means a correction; presence on a rejection is invalid. A decision with one fact or more, where no fact has `blind` or `corrected_value`, is an unmarked verdict. It stands for a record with no `fact_reviews` field, and it can also have no `actor_kind`. Its facts are gap positions. A kind or mark can also be missing in an earlier decision or a refusal case. If some facts of a decision have a mark and others do not, or if a decision has marks and no kind, the read gives a refusal at or after the start. An invalid kind or mark also gives a refusal there. A decision reference occurs only once in a stream.
 
-Each export case names a `stream`, gives a `request` and states the exact `expect`: `{"ok": true, "events": [...], "next_cursor": ..., "stream_start": ...}` or `{"ok": false, "code": ...}`. Optional `after` names an earlier successful case in the same stream or a retained prefix of it; the request cursor must equal that case's expected `next_cursor`. The streams include a retained prefix followed by an append, a second verdict on the same fact, proposals without facts, decisions before the stream start and unmarked verdicts before, between and after marked decisions. The cases have a gap inside a page, a page that ends in a gap, a page that holds only a gap, and a resume from a cursor before, inside and after a gap.
+Each export case names a `stream`, gives a `request` and states the exact `expect`: `{"ok": true, "events": [...], "next_cursor": ..., "stream_start": ...}` or `{"ok": false, "code": ...}`. Optional `after` names an earlier successful case in the same stream or a retained prefix of it; the request cursor must equal that case's expected `next_cursor`. The streams include a retained prefix followed by an append, a second verdict on the same fact, proposals without facts, decisions before the stream start and unmarked verdicts before, between and after marked decisions. The cases have a gap inside a page, a full page before a gap, a page that ends in a gap at the stream end, a page that holds only a gap, and a resume from a cursor before, inside and after a gap.
 
 `check_spec.py` checks the event rules, exact projection and read rules, coverage of every refusal rule, all dispositions and actor kinds, both marks, middle and end cursors, retries and appends. It also checks the stream start marker, the exclusion of earlier decisions and the gap of each unmarked verdict. Its self-test mutates copies of the inputs and expectations. It checks for wrong digests, content, provenance, ordering, duplicates, gaps, cursors and stream starts. It also checks that an unmarked verdict cannot get events, cannot lose its positions, cannot hold the cursor and cannot give a refusal. It uses the Python standard library and the existing local schema validator. It does not write files or derive expected values from its projection.
 

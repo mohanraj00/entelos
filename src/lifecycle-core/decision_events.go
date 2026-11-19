@@ -222,9 +222,22 @@ func (h *Host) decisionEvents(q Object) Object {
 	if position > total {
 		fail("invalid_cursor", "cursor is after the stream end", "store")
 	}
-	// The limit counts positions. A gap position counts and has no event,
-	// and next_cursor is always the cursor at the end of the covered range.
-	end := min(position+n.Num().Int64(), total)
+	// The limit counts events. A gap position has no event and does not
+	// count. A full page ends at its last event. A page with fewer events
+	// reached the stream end, and its cursor also goes through a last gap.
+	end, room := total, n.Num().Int64()
+	for _, s := range sources {
+		first := max(s.offset, position)
+		have := s.offset + s.count - first
+		if s.gap || have <= 0 {
+			continue
+		}
+		if have >= room {
+			end = first + room
+			break
+		}
+		room -= have
+	}
 	events := Array{}
 	for _, s := range sources {
 		if s.gap || s.offset >= end || s.offset+s.count <= position {

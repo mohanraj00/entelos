@@ -204,13 +204,17 @@ func TestDecisionEventsReadPastUnmarkedVerdict(t *testing.T) {
 				t.Fatal("wrong first cursor", saved)
 			}
 			// The reader that stopped here on v0.5.0 sends its saved cursor.
-			// The page holds only the gap, and the cursor goes through it.
+			// The gap is at the stream end. The page has no events, and the
+			// cursor goes through the gap.
 			stopped := read(lifecycle.Object{"cursor": saved, "limit": 256})
 			if len(stopped["events"].(lifecycle.Array)) != 0 || stopped["next_cursor"] != namespace+"3" || stopped["stream_start"] != first["stream_start"] {
 				t.Fatal("an unmarked verdict gave events, lost its positions or changed the stream", stopped)
 			}
-			if inside := read(lifecycle.Object{"cursor": saved, "limit": 1}); len(inside["events"].(lifecycle.Array)) != 0 || inside["next_cursor"] != namespace+"2" {
-				t.Fatal("wrong page inside the gap", inside)
+			if small := read(lifecycle.Object{"cursor": saved, "limit": 1}); !sameValue(small, stopped) {
+				t.Fatal("the limit counted a gap position", small)
+			}
+			if inside := read(lifecycle.Object{"cursor": namespace + "2", "limit": 1}); len(inside["events"].(lifecycle.Array)) != 0 || inside["next_cursor"] != namespace+"3" {
+				t.Fatal("wrong page inside the last gap", inside)
 			}
 
 			if marks, ok := decide("1.1", "model", nil)["fact_reviews"].(lifecycle.Array); !ok || len(marks) != 1 {
@@ -234,9 +238,13 @@ func TestDecisionEventsReadPastUnmarkedVerdict(t *testing.T) {
 			if len(all["events"].(lifecycle.Array)) != 2 || !sameValue(all["events"].(lifecycle.Array)[1], after) || !sameValue(all["events"].(lifecycle.Array)[0], first["events"].(lifecycle.Array)[0]) || all["next_cursor"] != namespace+"4" {
 				t.Fatal("the first read and the resumed read differ", all)
 			}
-			// A page that ends in the gap.
-			if ends := read(lifecycle.Object{"limit": 2}); len(ends["events"].(lifecycle.Array)) != 1 || ends["next_cursor"] != namespace+"2" {
-				t.Fatal("wrong page that ends in the gap", ends)
+			// The limit counts events. A full page before the gap ends at its
+			// last event, and a page across the gap is not empty.
+			if full := read(lifecycle.Object{"limit": 1}); len(full["events"].(lifecycle.Array)) != 1 || full["next_cursor"] != namespace+"1" {
+				t.Fatal("wrong full page before the gap", full)
+			}
+			if next := read(lifecycle.Object{"cursor": namespace + "1", "limit": 1}); len(next["events"].(lifecycle.Array)) != 1 || next["next_cursor"] != namespace+"4" {
+				t.Fatal("a page in the middle of the stream stopped at the gap", next)
 			}
 			if got := request("1.2", "events", "decision_events", lifecycle.Object{"cursor": namespace + "5", "limit": 1}); got["status"] != "invalid_cursor" {
 				t.Fatal("a cursor after the end was accepted", got)

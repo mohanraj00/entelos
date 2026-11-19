@@ -310,7 +310,8 @@ func TestDecisionEventsHostCaptureAndResume(t *testing.T) {
 			}
 			// A verdict with 3 facts and no marks keeps its positions 7 to 9
 			// and gives no events. The read does not stop, and it supplies
-			// no mark. The cursor goes through the gap.
+			// no mark. The gap is at the stream end, so the cursor goes
+			// through it.
 			legacy := w.must("second", "reviewer", "decide", Object{"report_ref": report, "reason": "legacy caller without marks"})
 			if _, marked := legacy["decision"].(Object)["fact_reviews"]; marked {
 				t.Fatal("a decision without marks got marks")
@@ -320,8 +321,12 @@ func TestDecisionEventsHostCaptureAndResume(t *testing.T) {
 			if len(gap["events"].(Array)) != 0 || gap["next_cursor"] != at(9) {
 				t.Fatal("an unmarked verdict gave events or lost its positions: ", string(Encode(gap)))
 			}
-			if inside := readEvents(t, h, Object{"limit": 1, "cursor": at(7)}); len(inside["events"].(Array)) != 0 || inside["next_cursor"] != at(8) {
-				t.Fatal("wrong page inside the gap: ", string(Encode(inside)))
+			if inside := readEvents(t, h, Object{"limit": 1, "cursor": at(7)}); len(inside["events"].(Array)) != 0 || inside["next_cursor"] != at(9) {
+				t.Fatal("wrong page inside the last gap: ", string(Encode(inside)))
+			}
+			// A full page before the gap ends at its last event.
+			if full := readEvents(t, h, Object{"limit": 1, "cursor": at(5)}); len(full["events"].(Array)) != 1 || full["next_cursor"] != at(6) {
+				t.Fatal("wrong full page before the gap: ", string(Encode(full)))
 			}
 			w.must("model", "reviewer", "decide", Object{"report_ref": report, "reason": "model verdict after the unmarked verdict"})
 			past := readEvents(t, h, Object{"limit": 256, "cursor": policy["next_cursor"]})
@@ -334,11 +339,13 @@ func TestDecisionEventsHostCaptureAndResume(t *testing.T) {
 					t.Fatal("wrong event after the unmarked verdict: ", string(Encode(e)))
 				}
 			}
-			// A page that ends in the gap, then a page from inside the gap.
-			if ends := readEvents(t, h, Object{"limit": 3, "cursor": at(5)}); len(ends["events"].(Array)) != 1 || ends["next_cursor"] != at(8) {
-				t.Fatal("wrong page that ends in the gap: ", string(Encode(ends)))
+			// The limit counts events and not gap positions: no page in the
+			// middle of the stream is empty. Then a page from inside the gap.
+			if across := readEvents(t, h, Object{"limit": 3, "cursor": at(5)}); len(across["events"].(Array)) != 3 || across["next_cursor"] != at(11) ||
+				across["events"].(Array)[0].(Object)["cursor"] != at(6) || across["events"].(Array)[1].(Object)["cursor"] != at(10) {
+				t.Fatal("wrong page across the gap: ", string(Encode(across)))
 			}
-			if resumed := readEvents(t, h, Object{"limit": 2, "cursor": at(8)}); len(resumed["events"].(Array)) != 1 || resumed["next_cursor"] != at(10) {
+			if resumed := readEvents(t, h, Object{"limit": 2, "cursor": at(8)}); len(resumed["events"].(Array)) != 2 || resumed["next_cursor"] != at(11) {
 				t.Fatal("wrong resume from inside the gap: ", string(Encode(resumed)))
 			}
 			var err error

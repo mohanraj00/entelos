@@ -92,7 +92,7 @@ The CLI reads one JSON object per line, in a loop, so one process can take many 
 The refusals, in order, are `invalid_request`, `invalid_cursor` and
 `unexportable_decision`. [EVENTS.md](../src/protocol/events/EVENTS.md) defines
 the saved start, event fields and cursor rules. A verdict with cited facts and
-no `fact_reviews` gives a gap in the positions and no events, and it does not stop the read. The limit counts positions. `decide.fact_reviews` is an
+no `fact_reviews` gives a gap in the positions and no events, and it does not stop the read. The limit counts events. `decide.fact_reviews` is an
 optional human review array in evidence order. Each object records `blind`
 and an optional `corrected_value`. Protocol 1.0 and 1.1 refuse both additions.
 The [reader example](../examples/decision-events/README.md) saves its cursor

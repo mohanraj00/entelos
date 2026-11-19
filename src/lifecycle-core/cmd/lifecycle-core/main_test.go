@@ -183,11 +183,19 @@ func TestJSONLDecisionEventsReadPastUnmarkedVerdict(t *testing.T) {
 		}
 		return response.(lifecycle.Object)["data"].(lifecycle.Object)
 	}
-	for _, actor := range []string{"legacy", "model"} {
+	decide := func(actor string) {
 		root, _ := store.Read(nil)
 		line(actor, "reviewer", lifecycle.Object{"op": "decide", "report_ref": report, "reason": "reject synthetic facts", "disposition": "reject",
 			"expected_revision": root.Cursor, "request_key": actor})
 	}
+	decide("legacy")
+	// The gap is at the stream end: the page has no events, and the cursor
+	// goes through the gap.
+	gap := line("events", "event_reader", lifecycle.Object{"op": "decision_events", "limit": 1})
+	if len(gap["events"].(lifecycle.Array)) != 0 || !strings.HasSuffix(gap["next_cursor"].(string), ":1") {
+		t.Fatalf("gap page %s", lifecycle.Encode(gap))
+	}
+	decide("model")
 	page := line("events", "event_reader", lifecycle.Object{"op": "decision_events", "limit": 256})
 	events := page["events"].(lifecycle.Array)
 	if len(events) != 1 {
@@ -197,9 +205,9 @@ func TestJSONLDecisionEventsReadPastUnmarkedVerdict(t *testing.T) {
 	if event["actor_kind"] != "model" || event["blind"] != false || !strings.HasSuffix(event["cursor"].(string), ":2") || page["next_cursor"] != event["cursor"] {
 		t.Fatalf("event %s", lifecycle.Encode(event))
 	}
-	// A page that holds only the gap has no events and a later cursor.
-	gap := line("events", "event_reader", lifecycle.Object{"op": "decision_events", "limit": 1})
-	if len(gap["events"].(lifecycle.Array)) != 0 || !strings.HasSuffix(gap["next_cursor"].(string), ":1") {
-		t.Fatalf("gap page %s", lifecycle.Encode(gap))
+	// The limit counts events: a page of 1 event goes past the gap.
+	small := line("events", "event_reader", lifecycle.Object{"op": "decision_events", "limit": 1})
+	if string(lifecycle.Encode(small)) != string(lifecycle.Encode(page)) {
+		t.Fatalf("page of 1 event %s", lifecycle.Encode(small))
 	}
 }
