@@ -70,6 +70,8 @@ type world struct {
 	now *string
 	// context has more Host context fields, such as actor_kinds.
 	context Object
+	// engine is the runtime of each Host. Nil is the fake engine.
+	engine Runtime
 }
 
 func newWorld(t *testing.T, runner Runner) *world {
@@ -91,7 +93,11 @@ func (w *world) host(actor, role string, runner Runner) *Host {
 	for k, x := range w.context {
 		context[k] = x
 	}
-	h, err := NewHostWithRunner(w.store, &fakeEngine{build: engineBuild}, runner, context)
+	var engine Runtime = &fakeEngine{build: engineBuild}
+	if w.engine != nil {
+		engine = w.engine
+	}
+	h, err := NewHostWithRunner(w.store, engine, runner, context)
 	if err != nil {
 		w.t.Fatal(err)
 	}

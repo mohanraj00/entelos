@@ -33,6 +33,9 @@ stable github.com/mohanraj00/entelos/src/lifecycle-core const RecordFormat = "en
 stable github.com/mohanraj00/entelos/src/lifecycle-core const RootRef = "refs/lifecycle/state"
 experimental github.com/mohanraj00/entelos/src/lifecycle-core const SignatureDomain = "entelos.signature/1"
 experimental github.com/mohanraj00/entelos/src/lifecycle-core const SigningKeyFormat = "entelos.signing-key/1"
+experimental github.com/mohanraj00/entelos/src/lifecycle-core const StepBudgetStopped = "budget_stopped"
+experimental github.com/mohanraj00/entelos/src/lifecycle-core const StepCompleted = "completed"
+experimental github.com/mohanraj00/entelos/src/lifecycle-core const StepFailed = "failed"
 stable github.com/mohanraj00/entelos/src/lifecycle-core const TimeLayout = "2006-01-02T15:04:05Z"
 stable github.com/mohanraj00/entelos/src/lifecycle-core func (*CELRunner) Expected(c Candidate) string
 stable github.com/mohanraj00/entelos/src/lifecycle-core func (*CELRunner) Identity() (string, error)
@@ -65,7 +68,9 @@ stable github.com/mohanraj00/entelos/src/lifecycle-core func (*View) Put(kind st
 stable github.com/mohanraj00/entelos/src/lifecycle-core func (*View) PutRaw(mime string, raw []byte) string
 experimental github.com/mohanraj00/entelos/src/lifecycle-core func (FileClock) Now() (string, error)
 stable github.com/mohanraj00/entelos/src/lifecycle-core func (SystemClock) Now() (string, error)
+experimental github.com/mohanraj00/entelos/src/lifecycle-core func ByteDigest(raw []byte) string
 experimental github.com/mohanraj00/entelos/src/lifecycle-core func CheckDecisionEvent(value any) Object
+experimental github.com/mohanraj00/entelos/src/lifecycle-core func CheckStepResult(req StepRequest, res StepResult) error
 stable github.com/mohanraj00/entelos/src/lifecycle-core func CheckTime(value string) error
 stable github.com/mohanraj00/entelos/src/lifecycle-core func ContentRef(envelope []byte) string
 stable github.com/mohanraj00/entelos/src/lifecycle-core func Decode(raw []byte) (any, error)
@@ -86,6 +91,8 @@ experimental github.com/mohanraj00/entelos/src/lifecycle-core func NewSigningKey
 stable github.com/mohanraj00/entelos/src/lifecycle-core func OpenGitStore(path string) (*GitStore, error)
 experimental github.com/mohanraj00/entelos/src/lifecycle-core func ParseKeySet(raw []byte) (*KeySet, error)
 stable github.com/mohanraj00/entelos/src/lifecycle-core func RoleNames() []string
+experimental github.com/mohanraj00/entelos/src/lifecycle-core func StepDecisionInputs(req StepRequest, res StepResult) (Object, error)
+experimental github.com/mohanraj00/entelos/src/lifecycle-core func StepRequestRef(req StepRequest) (string, error)
 experimental github.com/mohanraj00/entelos/src/lifecycle-core func VerifyActivation(signed []byte, keys *KeySet) (Object, error)
 experimental github.com/mohanraj00/entelos/src/lifecycle-core func VerifySigned(raw []byte, keys *KeySet) (Object, error)
 stable github.com/mohanraj00/entelos/src/lifecycle-core type Array = []any
@@ -107,6 +114,10 @@ stable github.com/mohanraj00/entelos/src/lifecycle-core type QualificationInput 
 stable github.com/mohanraj00/entelos/src/lifecycle-core type Runner interface { Identity() (string, error) Expected(c Candidate) string Qualify(in QualificationInput) (Verdict, error) }
 stable github.com/mohanraj00/entelos/src/lifecycle-core type Runtime interface { Build() (string, error) Execute(files map[string][]byte, command string, inputs []byte, cases any) (any, error) }
 experimental github.com/mohanraj00/entelos/src/lifecycle-core type Signer struct { }
+experimental github.com/mohanraj00/entelos/src/lifecycle-core type StepOutcome struct { Status string RequestRef string RunID string OutputDigest string OutputSize int64 TraceDigest string Reason string }
+experimental github.com/mohanraj00/entelos/src/lifecycle-core type StepRequest struct { Step string Inputs map[string]string }
+experimental github.com/mohanraj00/entelos/src/lifecycle-core type StepResult struct { Outcome StepOutcome Output []byte Trace []byte }
+experimental github.com/mohanraj00/entelos/src/lifecycle-core type StepRunner interface { RunStep(StepRequest) (StepResult, error) }
 stable github.com/mohanraj00/entelos/src/lifecycle-core type Store interface { Read(cursor any) (*View, error) Transact(expected, key, payload any, apply func(*View) (any, error)) (Object, error) History(cursor string) ([]string, error) }
 stable github.com/mohanraj00/entelos/src/lifecycle-core type SystemClock struct { }
 stable github.com/mohanraj00/entelos/src/lifecycle-core type Verdict struct { Outcome any Measure any }

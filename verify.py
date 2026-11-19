@@ -207,6 +207,9 @@ try:
  check('content-update','Does the content example qualify files, refuse changed bytes, approve and read a dated update with the README commands?',content.returncode==0,{'stdout':content.stdout,'stderr':content.stderr})
  events=run('decision-events',[sys.executable,'-B','-m','unittest','tests/test_decision_events_example.py'])
  check('decision-events','Does the reader save a page of decision events and resume without duplicates across processes?',events.returncode==0,{'stdout':events.stdout,'stderr':events.stderr})
+ # The koodam adapter of #113 with a fake cluster. The kind seam test is examples/agent-step-koodam/kind/seam.sh.
+ step=[run('agent-step-tests',['go','test','-mod=readonly','-count=1','./...'],ROOT/'examples/agent-step-koodam'),run('agent-step-vet',['go','vet','-mod=readonly','./...'],ROOT/'examples/agent-step-koodam')]
+ check('agent-step-koodam','Does the koodam adapter give a bound receipt for a completed Agent status and no gate inputs for each other status, with a fake cluster?',all(r.returncode==0 for r in step),{'stdout':step[0].stdout,'stderr':step[0].stderr+step[1].stderr})
  # The seam test of #104: the groundgate release of the hash pins, in its own virtual environment.
  seam_env=w/'groundgate-seam/venv';seam_python=seam_env/'bin/python';pip_env={'PIP_CONFIG_FILE':os.devnull,'PIP_NO_INPUT':'1'}
  seam=[run('groundgate-venv',[sys.executable,'-m','venv',seam_env])]
