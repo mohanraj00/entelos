@@ -104,7 +104,7 @@ var factReviewRule = evObject([]string{"blind"}, map[string]*evRule{
 
 // Keep the caller's statement in the decision, never in producer evidence.
 // Old requests may omit it. A decision with facts and no fact_reviews field
-// is then an unmarked verdict, which the export leaves out.
+// is then an unmarked verdict: the export gives a gap for its facts.
 func (h *Host) recordFactReviews(snapshot, decision, q Object) {
 	facts := citedFacts(snapshot)
 	kind := decision["kind"]
@@ -200,6 +200,8 @@ func (h *Host) decisionEvents(q Object) Object {
 		ref                string
 		decision, snapshot Object
 		offset, count      int64
+		// gap is true for an unmarked verdict: positions and no events.
+		gap bool
 	}
 	sources := []source{}
 	total := int64(0)
@@ -211,22 +213,21 @@ func (h *Host) decisionEvents(q Object) Object {
 		}
 		snapshot := h.scoped(v, d["snapshot_ref"], "snapshot")
 		count := int64(len(citedFacts(snapshot)))
-		if unmarkedVerdict(d, count) {
-			continue
-		}
 		if count > maxEventPosition-total {
 			fail("invalid_cursor", "stream position exceeds the event range", "store")
 		}
-		sources = append(sources, source{ref, d, snapshot, total, count})
+		sources = append(sources, source{ref, d, snapshot, total, count, unmarkedVerdict(d, count)})
 		total += count
 	}
 	if position > total {
 		fail("invalid_cursor", "cursor is after the stream end", "store")
 	}
+	// The limit counts positions. A gap position counts and has no event,
+	// and next_cursor is always the cursor at the end of the covered range.
 	end := min(position+n.Num().Int64(), total)
 	events := Array{}
 	for _, s := range sources {
-		if s.offset >= end || s.offset+s.count <= position {
+		if s.gap || s.offset >= end || s.offset+s.count <= position {
 			continue
 		}
 		// Check the whole contributing decision before slicing the page.
@@ -242,9 +243,10 @@ func (h *Host) decisionEvents(q Object) Object {
 }
 
 // unmarkedVerdict tells if a decision cites facts and has no fact_reviews
-// field (EVENTS.md, Unmarked verdicts). Such a decision gives no events and
-// uses no position. The read never supplies its marks or its kind. A record
-// that has the field is never unmarked: projectDecision checks it.
+// field (EVENTS.md, Unmarked verdicts). Such a decision keeps its positions
+// and gives no events, so a reader sees a gap. The read never supplies its
+// marks or its kind. A record that has the field is never unmarked:
+// projectDecision checks it.
 func unmarkedVerdict(decision Object, facts int64) bool {
 	_, marked := decision["fact_reviews"]
 	return facts > 0 && !marked

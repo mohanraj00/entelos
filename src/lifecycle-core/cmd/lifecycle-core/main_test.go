@@ -146,7 +146,7 @@ func TestJSONLDecisionEvents(t *testing.T) {
 }
 
 // Issue #197 on the JSONL Host. A verdict with a cited fact and no marks is
-// in the stream, and the read continues past it.
+// in the stream. Its position 1 is a gap, and the read continues past it.
 func TestJSONLDecisionEventsReadPastUnmarkedVerdict(t *testing.T) {
 	store := lifecycle.NewMemoryStore()
 	base, err := lifecycle.NewHost(store, nil, lifecycle.Object{"scope": "demo", "runner_actor": "runner", "worker": "worker", "functions": lifecycle.Array{"record.visible"},
@@ -194,7 +194,12 @@ func TestJSONLDecisionEventsReadPastUnmarkedVerdict(t *testing.T) {
 		t.Fatalf("%d events, want the 1 event of the model verdict: %s", len(events), lifecycle.Encode(page))
 	}
 	event := events[0].(lifecycle.Object)
-	if event["actor_kind"] != "model" || event["blind"] != false || !strings.HasSuffix(event["cursor"].(string), ":1") || page["next_cursor"] != event["cursor"] {
+	if event["actor_kind"] != "model" || event["blind"] != false || !strings.HasSuffix(event["cursor"].(string), ":2") || page["next_cursor"] != event["cursor"] {
 		t.Fatalf("event %s", lifecycle.Encode(event))
+	}
+	// A page that holds only the gap has no events and a later cursor.
+	gap := line("events", "event_reader", lifecycle.Object{"op": "decision_events", "limit": 1})
+	if len(gap["events"].(lifecycle.Array)) != 0 || !strings.HasSuffix(gap["next_cursor"].(string), ":1") {
+		t.Fatalf("gap page %s", lifecycle.Encode(gap))
 	}
 }

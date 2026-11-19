@@ -350,8 +350,9 @@ page. Result: `{"events", "next_cursor", "stream_start"}`.
 exclusive cursors and checks. The Host applies the request, cursor and source
 checks in that order. The refusals are `invalid_request`, `invalid_cursor`
 and `unexportable_decision`. The read returns no partial page on refusal.
-A verdict that cites facts and has no `fact_reviews` gives no events and stops
-no read: see [Unmarked verdicts](../events/EVENTS.md#unmarked-verdicts).
+The facts of a verdict that has no `fact_reviews` keep their positions and give
+no events. The limit counts these positions, and `next_cursor` goes through
+them: see [Unmarked verdicts](../events/EVENTS.md#unmarked-verdicts).
 The Host checks the `event_reader` role and scope on every read, including resume. That role permits no other operation. A principal with only the `reviewer` role gets `forbidden`.
 
 ### `activate` (write)

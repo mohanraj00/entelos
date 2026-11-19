@@ -111,7 +111,7 @@ func TestDecisionEventsBindings(t *testing.T) {
 // Issue #197. A reviewer records a verdict with one cited fact and no blind
 // marks through protocol 1.1, after the stream start. The v0.5.0 read then
 // gave unexportable_decision for each page with this verdict. The read now
-// leaves the unmarked verdict out and continues from the saved cursor.
+// gives a gap for the unmarked verdict and continues from the saved cursor.
 func TestDecisionEventsReadPastUnmarkedVerdict(t *testing.T) {
 	for _, transport := range transports {
 		t.Run(transport, func(t *testing.T) {
@@ -197,31 +197,49 @@ func TestDecisionEventsReadPastUnmarkedVerdict(t *testing.T) {
 					t.Fatal("the Host supplied a kind:", kind)
 				}
 			}
+			// Position 1 has the event of the marked verdict. Positions 2 and
+			// 3 are the gap of the two unmarked verdicts.
+			namespace := saved.(string)[:len(saved.(string))-1]
+			if saved != namespace+"1" {
+				t.Fatal("wrong first cursor", saved)
+			}
 			// The reader that stopped here on v0.5.0 sends its saved cursor.
+			// The page holds only the gap, and the cursor goes through it.
 			stopped := read(lifecycle.Object{"cursor": saved, "limit": 256})
-			if len(stopped["events"].(lifecycle.Array)) != 0 || stopped["next_cursor"] != saved || stopped["stream_start"] != first["stream_start"] {
-				t.Fatal("an unmarked verdict gave events, consumed positions or changed the stream", stopped)
+			if len(stopped["events"].(lifecycle.Array)) != 0 || stopped["next_cursor"] != namespace+"3" || stopped["stream_start"] != first["stream_start"] {
+				t.Fatal("an unmarked verdict gave events, lost its positions or changed the stream", stopped)
+			}
+			if inside := read(lifecycle.Object{"cursor": saved, "limit": 1}); len(inside["events"].(lifecycle.Array)) != 0 || inside["next_cursor"] != namespace+"2" {
+				t.Fatal("wrong page inside the gap", inside)
 			}
 
 			if marks, ok := decide("1.1", "model", nil)["fact_reviews"].(lifecycle.Array); !ok || len(marks) != 1 {
 				t.Fatal("the model verdict has no marks")
 			}
-			past := read(lifecycle.Object{"cursor": saved, "limit": 256})
-			events := past["events"].(lifecycle.Array)
-			if len(events) != 1 || at(events[0], "actor_kind") != "model" || at(events[0], "blind") != false || at(events[0], "disposition") != "reject" {
-				t.Fatal("the read did not continue past the unmarked verdicts", past)
+			// A resume from a cursor before, inside and after the gap gives
+			// the event of the model verdict at position 4.
+			var after lifecycle.Object
+			for _, from := range []string{"1", "2", "3"} {
+				past := read(lifecycle.Object{"cursor": namespace + from, "limit": 256})
+				events := past["events"].(lifecycle.Array)
+				if len(events) != 1 || at(events[0], "actor_kind") != "model" || at(events[0], "blind") != false || at(events[0], "disposition") != "reject" ||
+					at(events[0], "cursor") != namespace+"4" || past["next_cursor"] != namespace+"4" {
+					t.Fatal("the read did not continue past the gap from position", from, past)
+				}
+				after = events[0].(lifecycle.Object)
 			}
-			namespace := saved.(string)[:len(saved.(string))-1]
-			if saved != namespace+"1" || at(events[0], "cursor") != namespace+"2" || past["next_cursor"] != namespace+"2" {
-				t.Fatal("the positions have a gap or a duplicate", saved, past)
-			}
-			// A whole read from the start gives the same two events.
+			// A whole read from the start gives the same two events, with
+			// the jump from position 1 to position 4.
 			all := read(lifecycle.Object{"limit": 256})
-			if len(all["events"].(lifecycle.Array)) != 2 || !sameValue(all["events"].(lifecycle.Array)[1], events[0]) || !sameValue(all["events"].(lifecycle.Array)[0], first["events"].(lifecycle.Array)[0]) {
+			if len(all["events"].(lifecycle.Array)) != 2 || !sameValue(all["events"].(lifecycle.Array)[1], after) || !sameValue(all["events"].(lifecycle.Array)[0], first["events"].(lifecycle.Array)[0]) || all["next_cursor"] != namespace+"4" {
 				t.Fatal("the first read and the resumed read differ", all)
 			}
-			if got := request("1.2", "events", "decision_events", lifecycle.Object{"cursor": namespace + "3", "limit": 1}); got["status"] != "invalid_cursor" {
-				t.Fatal("an unmarked verdict consumed a position", got)
+			// A page that ends in the gap.
+			if ends := read(lifecycle.Object{"limit": 2}); len(ends["events"].(lifecycle.Array)) != 1 || ends["next_cursor"] != namespace+"2" {
+				t.Fatal("wrong page that ends in the gap", ends)
+			}
+			if got := request("1.2", "events", "decision_events", lifecycle.Object{"cursor": namespace + "5", "limit": 1}); got["status"] != "invalid_cursor" {
+				t.Fatal("a cursor after the end was accepted", got)
 			}
 		})
 	}

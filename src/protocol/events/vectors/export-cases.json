@@ -1625,7 +1625,7 @@
       }
     },
     {
-      "name": "unmarked-verdict-alone-empty-page",
+      "name": "unmarked-verdict-alone-gap-page",
       "stream": "missing-blind",
       "request": {
         "limit": 1
@@ -1633,9 +1633,24 @@
       "expect": {
         "ok": true,
         "events": [],
-        "next_cursor": "ev1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:0",
+        "next_cursor": "ev1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:1",
         "stream_start": "store-revision-1"
       }
+    },
+    {
+      "name": "end-after-gap",
+      "stream": "missing-blind",
+      "request": {
+        "limit": 1,
+        "cursor": "ev1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:1"
+      },
+      "expect": {
+        "ok": true,
+        "events": [],
+        "next_cursor": "ev1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:1",
+        "stream_start": "store-revision-1"
+      },
+      "after": "unmarked-verdict-alone-gap-page"
     },
     {
       "name": "bad-recorded-kind",
@@ -1895,7 +1910,29 @@
       }
     },
     {
-      "name": "unmarked-verdict-stops-no-read",
+      "name": "missing-one-recorded-blind",
+      "stream": "partial-marks",
+      "request": {
+        "limit": 1
+      },
+      "expect": {
+        "ok": false,
+        "code": "unexportable_decision"
+      }
+    },
+    {
+      "name": "correction-without-recorded-blind",
+      "stream": "correction-without-blind",
+      "request": {
+        "limit": 1
+      },
+      "expect": {
+        "ok": false,
+        "code": "unexportable_decision"
+      }
+    },
+    {
+      "name": "gap-inside-page",
       "stream": "unmarked-between",
       "request": {
         "limit": 256
@@ -1936,7 +1973,7 @@
           },
           {
             "format": "entelos.decision-event/1",
-            "cursor": "ev1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:4",
+            "cursor": "ev1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:7",
             "decision_ref": "sha256:2222222222222222222222222222222222222222222222222222222222222222",
             "disposition": "approve",
             "fact_digest": "sha256:3333333333333333333333333333333333333333333333333333333333333333",
@@ -1945,15 +1982,15 @@
             "blind": false
           }
         ],
-        "next_cursor": "ev1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:4",
+        "next_cursor": "ev1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:7",
         "stream_start": "store-revision-1"
       }
     },
     {
-      "name": "resume-past-unmarked-verdict",
+      "name": "resume-before-gap",
       "stream": "unmarked-between",
       "request": {
-        "limit": 2,
+        "limit": 256,
         "cursor": "ev1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:3"
       },
       "expect": {
@@ -1961,7 +1998,7 @@
         "events": [
           {
             "format": "entelos.decision-event/1",
-            "cursor": "ev1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:4",
+            "cursor": "ev1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:7",
             "decision_ref": "sha256:2222222222222222222222222222222222222222222222222222222222222222",
             "disposition": "approve",
             "fact_digest": "sha256:3333333333333333333333333333333333333333333333333333333333333333",
@@ -1970,17 +2007,125 @@
             "blind": false
           }
         ],
-        "next_cursor": "ev1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:4",
+        "next_cursor": "ev1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:7",
         "stream_start": "store-revision-1"
       },
       "after": "resume-end"
     },
     {
-      "name": "unmarked-verdict-consumes-no-positions",
+      "name": "page-ends-in-gap",
+      "stream": "unmarked-between",
+      "request": {
+        "limit": 3,
+        "cursor": "ev1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:2"
+      },
+      "expect": {
+        "ok": true,
+        "events": [
+          {
+            "format": "entelos.decision-event/1",
+            "cursor": "ev1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:3",
+            "decision_ref": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+            "disposition": "approve",
+            "fact_digest": "sha256:2222222222222222222222222222222222222222222222222222222222222222",
+            "evidence_receipt_digest": "sha256:8888888888888888888888888888888888888888888888888888888888888888",
+            "actor_kind": "human",
+            "blind": true
+          }
+        ],
+        "next_cursor": "ev1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:5",
+        "stream_start": "store-revision-1"
+      },
+      "after": "three-facts-first-page"
+    },
+    {
+      "name": "page-holds-only-gap",
+      "stream": "unmarked-between",
+      "request": {
+        "limit": 2,
+        "cursor": "ev1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:3"
+      },
+      "expect": {
+        "ok": true,
+        "events": [],
+        "next_cursor": "ev1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:5",
+        "stream_start": "store-revision-1"
+      },
+      "after": "resume-end"
+    },
+    {
+      "name": "resume-inside-gap",
+      "stream": "unmarked-between",
+      "request": {
+        "limit": 2,
+        "cursor": "ev1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:5"
+      },
+      "expect": {
+        "ok": true,
+        "events": [
+          {
+            "format": "entelos.decision-event/1",
+            "cursor": "ev1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:7",
+            "decision_ref": "sha256:2222222222222222222222222222222222222222222222222222222222222222",
+            "disposition": "approve",
+            "fact_digest": "sha256:3333333333333333333333333333333333333333333333333333333333333333",
+            "evidence_receipt_digest": "sha256:9999999999999999999999999999999999999999999999999999999999999999",
+            "actor_kind": "policy",
+            "blind": false
+          }
+        ],
+        "next_cursor": "ev1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:7",
+        "stream_start": "store-revision-1"
+      },
+      "after": "page-holds-only-gap"
+    },
+    {
+      "name": "resume-inside-gap-to-gap-end",
       "stream": "unmarked-between",
       "request": {
         "limit": 1,
         "cursor": "ev1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:5"
+      },
+      "expect": {
+        "ok": true,
+        "events": [],
+        "next_cursor": "ev1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:6",
+        "stream_start": "store-revision-1"
+      },
+      "after": "page-ends-in-gap"
+    },
+    {
+      "name": "resume-after-gap",
+      "stream": "unmarked-between",
+      "request": {
+        "limit": 1,
+        "cursor": "ev1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:6"
+      },
+      "expect": {
+        "ok": true,
+        "events": [
+          {
+            "format": "entelos.decision-event/1",
+            "cursor": "ev1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:7",
+            "decision_ref": "sha256:2222222222222222222222222222222222222222222222222222222222222222",
+            "disposition": "approve",
+            "fact_digest": "sha256:3333333333333333333333333333333333333333333333333333333333333333",
+            "evidence_receipt_digest": "sha256:9999999999999999999999999999999999999999999999999999999999999999",
+            "actor_kind": "policy",
+            "blind": false
+          }
+        ],
+        "next_cursor": "ev1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:7",
+        "stream_start": "store-revision-1"
+      },
+      "after": "resume-inside-gap-to-gap-end"
+    },
+    {
+      "name": "cursor-after-end-with-gap",
+      "stream": "unmarked-between",
+      "request": {
+        "limit": 1,
+        "cursor": "ev1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:8"
       },
       "expect": {
         "ok": false,
@@ -1988,17 +2133,31 @@
       }
     },
     {
-      "name": "unmarked-verdict-before-marked",
+      "name": "gap-at-stream-start",
       "stream": "unmarked-first",
       "request": {
         "limit": 2
       },
       "expect": {
         "ok": true,
+        "events": [],
+        "next_cursor": "ev1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:2",
+        "stream_start": "store-revision-1"
+      }
+    },
+    {
+      "name": "resume-after-leading-gap",
+      "stream": "unmarked-first",
+      "request": {
+        "limit": 2,
+        "cursor": "ev1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:2"
+      },
+      "expect": {
+        "ok": true,
         "events": [
           {
             "format": "entelos.decision-event/1",
-            "cursor": "ev1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:1",
+            "cursor": "ev1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:3",
             "decision_ref": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
             "disposition": "approve",
             "fact_digest": "sha256:3333333333333333333333333333333333333333333333333333333333333333",
@@ -2008,7 +2167,7 @@
           },
           {
             "format": "entelos.decision-event/1",
-            "cursor": "ev1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:2",
+            "cursor": "ev1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:4",
             "decision_ref": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
             "disposition": "correct",
             "fact_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
@@ -2018,22 +2177,23 @@
             "corrected_value": "green"
           }
         ],
-        "next_cursor": "ev1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:2",
+        "next_cursor": "ev1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:4",
         "stream_start": "store-revision-1"
-      }
+      },
+      "after": "gap-at-stream-start"
     },
     {
       "name": "unmarked-verdict-without-kind",
       "stream": "unmarked-no-kind",
       "request": {
-        "limit": 1
+        "limit": 2
       },
       "expect": {
         "ok": true,
         "events": [
           {
             "format": "entelos.decision-event/1",
-            "cursor": "ev1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:1",
+            "cursor": "ev1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:2",
             "decision_ref": "sha256:6666666666666666666666666666666666666666666666666666666666666666",
             "disposition": "reject",
             "fact_digest": "sha256:3333333333333333333333333333333333333333333333333333333333333333",
@@ -2042,37 +2202,28 @@
             "blind": false
           }
         ],
-        "next_cursor": "ev1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:1",
+        "next_cursor": "ev1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:2",
         "stream_start": "store-revision-1"
       }
     },
     {
-      "name": "missing-one-recorded-blind",
-      "stream": "partial-marks",
+      "name": "gap-page-before-source-error",
+      "stream": "unmarked-then-invalid",
       "request": {
         "limit": 1
       },
       "expect": {
-        "ok": false,
-        "code": "unexportable_decision"
-      }
-    },
-    {
-      "name": "correction-without-recorded-blind",
-      "stream": "correction-without-blind",
-      "request": {
-        "limit": 1
-      },
-      "expect": {
-        "ok": false,
-        "code": "unexportable_decision"
+        "ok": true,
+        "events": [],
+        "next_cursor": "ev1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:1",
+        "stream_start": "store-revision-1"
       }
     },
     {
       "name": "source-error-after-unmarked-verdict",
       "stream": "unmarked-then-invalid",
       "request": {
-        "limit": 1
+        "limit": 2
       },
       "expect": {
         "ok": false,
