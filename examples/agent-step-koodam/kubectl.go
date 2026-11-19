@@ -22,6 +22,26 @@ type Kubectl struct {
 
 var objectName = regexp.MustCompile(`^[a-z0-9]([-a-z0-9.]{0,251}[a-z0-9])?$`)
 
+// capped keeps the first limit bytes of a stream and drops the rest. It
+// records that it dropped bytes. Thus a large stream does not use memory, and
+// the command can still end.
+type capped struct {
+	buf   bytes.Buffer
+	limit int
+	over  bool
+}
+
+func (c *capped) Write(p []byte) (int, error) {
+	n := len(p)
+	if room := c.limit - c.buf.Len(); n > room {
+		c.over = true
+		p = p[:room]
+	}
+	c.buf.Write(p)
+	// The full length keeps the copy of the command output in progress.
+	return n, nil
+}
+
 func (k Kubectl) run(stdin []byte, limit int, args ...string) ([]byte, error) {
 	if k.Kubeconfig == "" {
 		return nil, errors.New("kubectl needs an explicit kubeconfig")
@@ -33,19 +53,15 @@ func (k Kubectl) run(stdin []byte, limit int, args ...string) ([]byte, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 	cmd := exec.CommandContext(ctx, "kubectl", append([]string{"--kubeconfig", k.Kubeconfig}, args...)...)
-	var stdout, stderr bytes.Buffer
-	cmd.Stdin, cmd.Stdout, cmd.Stderr = bytes.NewReader(stdin), &stdout, &stderr
+	stdout, stderr := &capped{limit: limit}, &capped{limit: 400}
+	cmd.Stdin, cmd.Stdout, cmd.Stderr = bytes.NewReader(stdin), stdout, stderr
 	if err := cmd.Run(); err != nil {
-		message := strings.TrimSpace(stderr.String())
-		if len(message) > 400 {
-			message = message[:400]
-		}
-		return nil, errors.New("kubectl " + args[0] + ": " + err.Error() + ": " + message)
+		return nil, errors.New("kubectl " + args[0] + ": " + err.Error() + ": " + strings.TrimSpace(stderr.buf.String()))
 	}
-	if stdout.Len() > limit {
+	if stdout.over {
 		return nil, errors.New("kubectl " + args[0] + ": the output is too large")
 	}
-	return stdout.Bytes(), nil
+	return stdout.buf.Bytes(), nil
 }
 
 // Create runs "kubectl create". The API server validates the manifest.

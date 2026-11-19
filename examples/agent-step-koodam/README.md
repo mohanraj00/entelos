@@ -12,9 +12,10 @@ The synthetic step asks an agent to summarize an invented library notice. The ga
 | File | Contents |
 |---|---|
 | `adapter.go` | The adapter: the Agent manifest, the wait and the status map. |
-| `kubectl.go` | The cluster access through the `kubectl` executable. |
+| `kubectl.go` | The cluster access through the `kubectl` executable, with a limit for each output. |
 | `standin.go` | The stand-in for the Agent fields of koodam#296. |
 | `adapter_test.go` | Tests with a fake cluster. They need no cluster. |
+| `kubectl_test.go` | Tests of the output limits with a shell script in place of `kubectl`. |
 | `workflow_test.go` | The Host with the gate, the receipt check and the replay check. |
 | `kind_test.go` | The same checks on a kind cluster. `kind/seam.sh` runs them. |
 | `kind/pins.env` | The pins: kind, the node image, the koodam chart and the agent image. |
