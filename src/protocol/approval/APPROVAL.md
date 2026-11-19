@@ -350,6 +350,8 @@ page. Result: `{"events", "next_cursor", "stream_start"}`.
 exclusive cursors and checks. The Host applies the request, cursor and source
 checks in that order. The refusals are `invalid_request`, `invalid_cursor`
 and `unexportable_decision`. The read returns no partial page on refusal.
+A verdict that cites facts and has no `fact_reviews` gives no events and stops
+no read: see [Unmarked verdicts](../events/EVENTS.md#unmarked-verdicts).
 The Host checks the `event_reader` role and scope on every read, including resume. That role permits no other operation. A principal with only the `reviewer` role gets `forbidden`.
 
 ### `activate` (write)
@@ -391,7 +393,7 @@ The codes in **bold** are new in 1.1, except `invalid_cursor`, which is new in 1
 | `artifact_unavailable` | `store` | `proposal`, `decide` | The reference is not in the store. |
 | `invalid_record` | `store` | `proposal`, `decide` | The reference is a record of another kind. |
 | **`invalid_cursor`** | `store` | `proposals` with `limit`, `decision_events` | A page token is not valid, is not available or is for another query context. |
-| `unexportable_decision` | `admission` | `decision_events` | A contributing verdict has incomplete or invalid event provenance. |
+| `unexportable_decision` | `admission` | `decision_events` | A contributing verdict has incomplete or invalid event provenance. A verdict with cited facts and no `fact_reviews` does not contribute. |
 | `out_of_scope` | Host | `proposal`, `decide` | The record has another scope or a function that is not installed. |
 | **`scope_mismatch`** | `admission` | `record`, `inspect` | The record has another scope or no scope, or the store at the cursor holds such a record. |
 | **`index_unavailable`** | `store` | `proposals`, `proposal`, `qualify`, `decide`, `activate` | The store has no `state.reviews`. |

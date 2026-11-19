@@ -74,6 +74,15 @@ func TestDecisionExportVectors(t *testing.T) {
 						disposition = "accept"
 					}
 					decision := Object{"scope": "demo", "function": "record.visible", "snapshot_ref": snapshot, "disposition": disposition, "fact_reviews": marks}
+					// A vector decision with facts and no mark on any fact
+					// stands for a record with no fact_reviews field.
+					unmarked := len(marks) > 0
+					for _, mark := range marks {
+						unmarked = unmarked && len(mark.(Object)) == 0
+					}
+					if unmarked {
+						delete(decision, "fact_reviews")
+					}
 					if kind, has := d["actor_kind"]; has {
 						decision["kind"] = kind
 					}
@@ -298,11 +307,29 @@ func TestDecisionEventsHostCaptureAndResume(t *testing.T) {
 			if must(store.Read(nil)).Cursor != root {
 				t.Fatal("restart or read wrote state")
 			}
-			w.must("second", "reviewer", "decide", Object{"report_ref": report, "reason": "legacy caller without marks"})
-			value, err := readAs(h, Object{"op": "decision_events", "limit": 256, "cursor": policy["next_cursor"]})
-			if value != nil || faultCode(t, err) != "unexportable_decision" {
-				t.Fatal("missing blind mark was inferred")
+			// A verdict with facts and no marks is outside the export. The
+			// read does not stop, and it supplies no mark.
+			legacy := w.must("second", "reviewer", "decide", Object{"report_ref": report, "reason": "legacy caller without marks"})
+			if _, marked := legacy["decision"].(Object)["fact_reviews"]; marked {
+				t.Fatal("a decision without marks got marks")
 			}
+			after := readEvents(t, h, Object{"limit": 256, "cursor": policy["next_cursor"]})
+			if len(after["events"].(Array)) != 0 || after["next_cursor"] != policy["next_cursor"] {
+				t.Fatal("an unmarked verdict gave events or consumed positions")
+			}
+			w.must("model", "reviewer", "decide", Object{"report_ref": report, "reason": "model verdict after the unmarked verdict"})
+			past := readEvents(t, h, Object{"limit": 256, "cursor": policy["next_cursor"]})
+			if len(past["events"].(Array)) != 3 {
+				t.Fatal("the read did not continue past the unmarked verdict")
+			}
+			for i, raw := range past["events"].(Array) {
+				e := raw.(Object)
+				if e["actor_kind"] != "model" || e["blind"] != false || e["decision_ref"] == legacy["decision_ref"] ||
+					e["cursor"] != fmt.Sprintf("%s%d", strings.TrimSuffix(policy["next_cursor"].(string), "6"), 7+i) {
+					t.Fatal("wrong event after the unmarked verdict: ", string(Encode(e)))
+				}
+			}
+			var err error
 			_, err = readAs(h, Object{"op": "decision_events", "limit": 1, "cursor": "bad"})
 			if faultCode(t, err) != "invalid_cursor" {
 				t.Fatal("source check before cursor")

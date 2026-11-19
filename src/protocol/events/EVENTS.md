@@ -1,6 +1,6 @@
 # Decision events `entelos.decision-event/1`
 
-This file specifies a read-only export of decisions for an outside producer. Issue [#158](https://github.com/mohanraj00/entelos/issues/158) tracks it. One recorded verdict gives one event for each fact in its proposal.
+This file specifies a read-only export of decisions for an outside producer. Issue [#158](https://github.com/mohanraj00/entelos/issues/158) tracks it. One recorded verdict gives one event for each fact in its proposal. Issue [#197](https://github.com/mohanraj00/entelos/issues/197) adds the rule for a verdict with no per-fact marks: see [Unmarked verdicts](#unmarked-verdicts).
 
 Status: **implemented** in the Go Host. Protocol 1.2 exposes the read on the
 socket and HTTP bindings. The JSONL Host calls the same implementation.
@@ -8,6 +8,9 @@ The schema and hand-written vectors state the contract. Their expected values
 come from this text. [`check_spec.py`](check_spec.py) checks them without a Host.
 `TestDecisionEventVectors` and `TestDecisionExportVectors` run them on the Go
 checker and the real Host read. They do not change the vector expectations.
+`TestDecisionEventsReadPastUnmarkedVerdict` records a verdict with no marks
+through protocol 1.1 and reads past it on the socket and HTTP bindings.
+`TestJSONLDecisionEventsReadPastUnmarkedVerdict` does the same on the JSONL Host.
 
 ## Terms
 
@@ -19,11 +22,12 @@ checker and the real Host read. They do not change the vector expectations.
 | Stream start | The fixed store revision at which the Host starts to require recorded actor kinds and per-fact blind marks. Earlier decisions are outside the stream. |
 | Position | The number of events before or at a cursor. Position 0 precedes the first event. |
 | Blind | A person gave the verdict without seeing the proposed value of this fact beforehand. |
+| Unmarked verdict | A decision in the stream that cites facts and has no recorded per-fact marks. Its record has no `fact_reviews` field. |
 
 ## Decision
 
 1. Export each recorded decision at or after the stream start separately. Do not merge reviewers, replace an earlier verdict or export only the latest verdict. A later correction appends a new decision's events and preserves the earlier events.
-2. For a decided proposal, export exactly one event per cited fact, including facts that the reviewer left unchanged. A proposal without cited facts gives no events. A pending proposal or a policy `route` gives no events.
+2. For a decided proposal, export exactly one event per cited fact, including facts that the reviewer left unchanged. A proposal without cited facts gives no events. A pending proposal or a policy `route` gives no events. An unmarked verdict gives no events.
 3. Map an approval API `accept` to `approve` and `reject` to `reject` ([APPROVAL.md](../approval/APPROVAL.md)). Map a policy `accept` to `approve` and `refuse` to `reject` ([POLICY.md](../policy/POLICY.md)). For a human approval with fact corrections, replace `approve` with `correct` only for the corrected facts. A rejection has no corrections.
 4. The actor kind is the kind of the recorded deciding actor, not the producer or a reviewer cited in the incoming evidence. The closed set is `human`, `model`, `policy`. A policy verdict always exports `policy` and never counts as `human`.
 5. Record the blind mark per fact. Only a human verdict can have `blind: true`. A human who saw the proposed value has `blind: false`. Model and policy verdicts have `blind: false`; the human blind condition does not apply to them.
@@ -64,15 +68,43 @@ A reader applies these rules in order. The first failing rule refuses the event.
 
 ## Order and cursors
 
-The Host enables required actor kinds and per-fact blind marks in one committed store revision. It records that revision once as the stream start. The exporter reads this saved revision. It does not search for the first valid decision. A decision recorded before this revision is outside the stream, even if it has provenance. Such decisions consume no event positions and cannot stop a read. A decision recorded at or after this revision is subject to the read checks. Missing provenance never moves the stream start. A new store records the start in its first revision.
+The Host enables required actor kinds and per-fact blind marks in one committed store revision. It records that revision once as the stream start. The exporter reads this saved revision. It does not search for the first valid decision. A decision recorded before this revision is outside the stream, even if it has provenance. Such decisions consume no event positions and cannot stop a read. A decision recorded at or after this revision is subject to the read checks. An unmarked verdict is the one exception: it is outside the export, as the section [Unmarked verdicts](#unmarked-verdicts) says. Missing provenance never moves the stream start. A new store records the start in its first revision.
 
 Each page gives this revision as `stream_start`, an opaque string of 1 to 256 characters. The value states that the stream excludes earlier decisions. It is fixed for the stream namespace. It is not an event cursor or an authority. The Host must preserve the start and its order relative to decisions when it rebuilds the export.
 
-Decisions in the stream are in durable store append order, not timestamp order or digest order. Concurrent writes must have one durable order before export. The events of a decision are contiguous and follow the original evidence `facts` array order. The export does not sort by fact digest or group by receipt. Each stream position starts at 1 and increases by one per event. Non-decision writes and decisions without facts consume no event position.
+Decisions in the stream are in durable store append order, not timestamp order or digest order. Concurrent writes must have one durable order before export. The events of a decision are contiguous and follow the original evidence `facts` array order. The export does not sort by fact digest or group by receipt. Each stream position starts at 1 and increases by one per event. Non-decision writes, decisions without facts and unmarked verdicts consume no event position.
 
 A version 1 cursor is `ev1:<stream>:<position>`. `stream` is 64 lowercase hex digits, an immutable namespace assigned by the exporter to this stream. It is not a content hash or an authority. `position` is a decimal integer from 0 to 9007199254740991, with no leading zero except 0 itself. A consumer stores and returns the whole cursor without editing it. The event at position N has cursor `ev1:<stream>:N`.
 
 A cursor binds the store, stream start, authorized scope, fixed selection and event version. A cursor of another stream, a malformed cursor, an unknown position or a position after the current end is `invalid_cursor`. An implementation must never silently restart at 0. The stream must retain its prefix while it accepts its cursors. If retention, a rebuild or a selection change cannot preserve that prefix and namespace, retire the stream and refuse its old cursors. Authorization still applies on every read; a cursor grants no access.
+
+## Unmarked verdicts
+
+A verdict can cite facts and have no per-fact marks. A client on protocol 1.0 or 1.1 cannot send `fact_reviews`, and a client on protocol 1.2 can omit it. If the actor is human or has no recorded kind, the decision record then has no `fact_reviews` field. This is an unmarked verdict.
+
+1. An unmarked verdict in the stream is outside the export. It gives no events and consumes no event position, as a decision before the stream start. It cannot stop a read.
+2. Only the record decides. A decision is unmarked if it cites one fact or more and its record has no `fact_reviews` field. A record that has the field is never unmarked. If its marks are not complete or not valid, or if it has marks and no actor kind, the read gives `unexportable_decision`.
+3. The export never supplies a mark or a kind. It does not give `human` for a missing kind or `false` for a missing mark.
+4. The verdict stays in the store, and it keeps its place in the saved decision list. The approval, the verdict counts and the activation rules do not change. The reviewer reads `record` and `proposal` show the verdict.
+5. The event format, the read schemas and the stream namespace do not change. A cursor stays valid. The position of each event before an unmarked verdict does not change.
+
+The other methods were not selected, for these reasons:
+
+- A refusal of the verdict at `decide` gives a new refusal to each client on protocol 1.0 and 1.1. It also does not help a store that already has an unmarked verdict.
+- An event with an "unknown" blind state needs a new value or a new field. A reader of version 1 refuses that event, so it needs a new major version. The cursor binds the major version, so each reader must start a new stream.
+- A permanent refusal, which v0.5.0 gave, lets one verdict from an old client stop each reader of the stream.
+
+### Upgrade from v0.5.0
+
+The Host of v0.5.0 counted the facts of an unmarked verdict as positions, and it refused each page that had one of those positions. Thus it gave out no cursor after such a verdict. A reader that stopped there has a saved cursor before the verdict.
+
+After the upgrade, the reader sends its saved cursor again. The page starts with the first event after the unmarked verdict. The stream is the same, and the reader gets no duplicate and no gap in the positions.
+
+Do not read one store with a v0.5.0 Host and a later Host at the same time. Do not go back to a v0.5.0 Host with a cursor from a later Host. The two Hosts count the positions after an unmarked verdict differently, so a cursor from one can name a different event on the other.
+
+### Effect on a consumer
+
+A consumer gets no event for the facts of an unmarked verdict. The export does not say how many unmarked verdicts a stream has. A consumer that needs an event for each human verdict must make sure that each client sends `fact_reviews` through protocol 1.2. A consumer of version 1 needs no change to read the events.
 
 ## Read
 
@@ -94,9 +126,9 @@ Apply these checks in order before returning any event or cursor:
 |---|---|---|
 | 1 | The request agrees with the request schema. | `invalid_request` |
 | 2 | The supplied cursor, if any, is valid for this stream and prefix. | `invalid_cursor` |
-| 3 | Each decision at or after the stream start that contributes an event to this page has complete recorded fact identities, actor kind and per-fact blind marks, and valid corrections under the event rules. | `unexportable_decision` |
+| 3 | Each decision at or after the stream start that contributes an event to this page has complete recorded fact identities, an actor kind, one valid blind mark for each fact, and valid corrections under the event rules. An unmarked verdict contributes no event, so this step does not apply to it. | `unexportable_decision` |
 
-Step 3 applies to the complete decisions contributing events to this page, even if a page boundary cuts a decision. On refusal return no partial page and no next cursor. Decisions before the stream start do not contribute events. Missing provenance at or after the stream start is a refusal, not a default of `human` or `false`. Never infer blind from the absence of an original value in this export. This contract does not change the format of existing verdict records or invent provenance for them.
+Step 3 applies to the complete decisions contributing events to this page, even if a page boundary cuts a decision. On refusal return no partial page and no next cursor. Decisions before the stream start and unmarked verdicts do not contribute events. For a decision with marks, an incomplete provenance at or after the stream start is a refusal, not a default of `human` or `false`. Never infer blind from the absence of an original value in this export. This contract does not change the format of existing verdict records or invent provenance for them.
 
 ## Host storage and setup
 
@@ -135,9 +167,10 @@ or policy verdict records false marks for each fact. These marks come from
 the deciding actor's kind. They do not come from incoming evidence reviews.
 
 Old requests can omit `fact_reviews`, and an actor can still have no kind.
-This preserves the old approval contract. If such a verdict contributes facts
-after the start, the export gives `unexportable_decision`. It does not supply
-missing human marks or kinds. A fact-free verdict consumes no position.
+This preserves the old approval contract. Such a verdict with cited facts is an
+unmarked verdict. The Host appends it to the `decisions` list as each other
+verdict, and the read leaves it out. The read does not supply missing human
+marks or kinds. A fact-free verdict consumes no position.
 
 ## Consumer
 
@@ -157,17 +190,18 @@ A reader of version 1 refuses an unknown major version with `unsupported_event_f
 
 [`vectors/export-cases.json`](vectors/export-cases.json) contains `streams` and named `cases`. Each stream has its namespace, saved `stream_start` revision and a list of synthetic `decisions` in append order. These are normalized test inputs, not a new stored record format. Each decision has a boolean `before_stream_start` that states its position relative to the saved revision. The true values form a prefix. The exporter must use store order to determine this relation.
 
-A decision also has `decision_ref`, `actor_kind`, `disposition` (`approve` or `reject`) and `facts` in evidence order. Each fact has `fact_digest`, `evidence_receipt_digest`, `blind` and optional `corrected_value`. Presence of that value on an approval means a correction; presence on a rejection is invalid. A kind or mark can be missing in an earlier decision or a refusal case. An invalid kind or mark gives a refusal at or after the start. A decision reference occurs only once in a stream.
+A decision also has `decision_ref`, `actor_kind`, `disposition` (`approve` or `reject`) and `facts` in evidence order. Each fact has `fact_digest`, `evidence_receipt_digest`, `blind` and optional `corrected_value`. Presence of that value on an approval means a correction; presence on a rejection is invalid. A decision with one fact or more, where no fact has `blind` or `corrected_value`, is an unmarked verdict. It stands for a record with no `fact_reviews` field, and it can also have no `actor_kind`. A kind or mark can also be missing in an earlier decision or a refusal case. If some facts of a decision have a mark and others do not, or if a decision has marks and no kind, the read gives a refusal at or after the start. An invalid kind or mark also gives a refusal there. A decision reference occurs only once in a stream.
 
-Each export case names a `stream`, gives a `request` and states the exact `expect`: `{"ok": true, "events": [...], "next_cursor": ..., "stream_start": ...}` or `{"ok": false, "code": ...}`. Optional `after` names an earlier successful case in the same stream or a retained prefix of it; the request cursor must equal that case's expected `next_cursor`. The streams include a retained prefix followed by an append, a second verdict on the same fact, proposals without facts and decisions before the stream start.
+Each export case names a `stream`, gives a `request` and states the exact `expect`: `{"ok": true, "events": [...], "next_cursor": ..., "stream_start": ...}` or `{"ok": false, "code": ...}`. Optional `after` names an earlier successful case in the same stream or a retained prefix of it; the request cursor must equal that case's expected `next_cursor`. The streams include a retained prefix followed by an append, a second verdict on the same fact, proposals without facts, decisions before the stream start and unmarked verdicts before, between and after marked decisions.
 
-`check_spec.py` checks the event rules, exact projection and read rules, coverage of every refusal rule, all dispositions and actor kinds, both marks, middle and end cursors, retries and appends. It also checks the stream start marker and the exclusion of earlier decisions. Its self-test mutates copies of the inputs and expectations. It checks for wrong digests, content, provenance, ordering, duplicates, gaps, cursors and stream starts. It uses the Python standard library and the existing local schema validator. It does not write files or derive expected values from its projection.
+`check_spec.py` checks the event rules, exact projection and read rules, coverage of every refusal rule, all dispositions and actor kinds, both marks, middle and end cursors, retries and appends. It also checks the stream start marker, the exclusion of earlier decisions and the exclusion of unmarked verdicts. Its self-test mutates copies of the inputs and expectations. It checks for wrong digests, content, provenance, ordering, duplicates, gaps, cursors and stream starts. It also checks that an unmarked verdict cannot get events, cannot consume positions and cannot give a refusal. It uses the Python standard library and the existing local schema validator. It does not write files or derive expected values from its projection.
 
 ## Limits
 
-- Decisions before the saved start stay outside the stream. The Host does not invent their provenance. Old requests can still record a human verdict without marks. Such a verdict with facts stops an export page that includes it.
+- Decisions before the saved start stay outside the stream. The Host does not invent their provenance. Old requests can still record a verdict without marks. Such a verdict with facts is an unmarked verdict, and the export leaves it out. The export gives no count of the unmarked verdicts, and no Host setting refuses them at `decide`.
+- A v0.5.0 Host and a later Host count the positions after an unmarked verdict differently. See [Upgrade from v0.5.0](#upgrade-from-v050).
 - The read scans the saved decision list and retained history at one revision. The page limit bounds the event count, not the scan cost or response bytes. The transport can give `response_too_large`. The Host has no stream compaction or retirement tool. Keep the prefix and the start history while accepting cursors.
 - A policy actor can call `decide`. The Host does not yet write the automatic policy verdict of POLICY.md. A policy route has no decision event.
 - The application states actor kinds and blind marks. The Host cannot prove what a person saw outside the review interface.
 - Digests can identify sensitive facts. A corrected value is content. The application must apply its access and retention policy to both.
-- The vectors use synthetic records. Go tests check both stores, resume, append, closed event fields and the shared transport path. They do not prove consumer effects, power-failure recovery or a retention policy.
+- The vectors use synthetic records. Go tests check both stores, resume, append, closed event fields, the read past an unmarked verdict and the shared transport path. No test starts a v0.5.0 Host, so the upgrade rule comes from the v0.5.0 read rules and not from a run of that Host. They do not prove consumer effects, power-failure recovery or a retention policy.

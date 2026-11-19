@@ -103,7 +103,8 @@ var factReviewRule = evObject([]string{"blind"}, map[string]*evRule{
 })
 
 // Keep the caller's statement in the decision, never in producer evidence.
-// Old requests may omit it; export then refuses a human decision with facts.
+// Old requests may omit it. A decision with facts and no fact_reviews field
+// is then an unmarked verdict, which the export leaves out.
 func (h *Host) recordFactReviews(snapshot, decision, q Object) {
 	facts := citedFacts(snapshot)
 	kind := decision["kind"]
@@ -210,6 +211,9 @@ func (h *Host) decisionEvents(q Object) Object {
 		}
 		snapshot := h.scoped(v, d["snapshot_ref"], "snapshot")
 		count := int64(len(citedFacts(snapshot)))
+		if unmarkedVerdict(d, count) {
+			continue
+		}
 		if count > maxEventPosition-total {
 			fail("invalid_cursor", "stream position exceeds the event range", "store")
 		}
@@ -235,6 +239,15 @@ func (h *Host) decisionEvents(q Object) Object {
 		}
 	}
 	return Object{"events": events, "next_cursor": cursor(end), "stream_start": start}
+}
+
+// unmarkedVerdict tells if a decision cites facts and has no fact_reviews
+// field (EVENTS.md, Unmarked verdicts). Such a decision gives no events and
+// uses no position. The read never supplies its marks or its kind. A record
+// that has the field is never unmarked: projectDecision checks it.
+func unmarkedVerdict(decision Object, facts int64) bool {
+	_, marked := decision["fact_reviews"]
+	return facts > 0 && !marked
 }
 
 func projectDecision(ref string, decision, snapshot Object, offset int64, cursor func(int64) string) Array {

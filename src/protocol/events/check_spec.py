@@ -92,6 +92,13 @@ def project(decision, stream, start):
     return events
 
 
+def unmarked(decision):
+    """A decision with facts and no mark on any fact: outside the export."""
+    facts = decision.get('facts') if isinstance(decision, dict) else None
+    return (isinstance(facts, list) and len(facts) > 0 and all(isinstance(f, dict) for f in facts)
+            and not any('blind' in f or 'corrected_value' in f for f in facts))
+
+
 def read(stream, request):
     """Read checks, exclusive resume and exact page size from EVENTS.md."""
     def refuse(code):
@@ -102,7 +109,7 @@ def read(stream, request):
     except SchemaError:
         return refuse('invalid_request')
     namespace = stream['namespace']
-    decisions = [d for d in stream['decisions'] if not d['before_stream_start']]
+    decisions = [d for d in stream['decisions'] if not d['before_stream_start'] and not unmarked(d)]
     total = sum(len(d['facts']) for d in decisions)
     start = position(request['cursor'], namespace) if 'cursor' in request else 0
     if start is None or start > total:
@@ -220,6 +227,9 @@ def run(event_doc, export_doc):
         'old-decisions-excluded-read-continues', 'resume-after-old-decisions',
         'only-old-decisions-empty-page', 'append-after-only-old-decisions',
         'old-decisions-consume-no-positions', 'source-error-after-old-decisions',
+        'unmarked-verdict-alone-empty-page', 'unmarked-verdict-stops-no-read', 'resume-past-unmarked-verdict',
+        'unmarked-verdict-consumes-no-positions', 'unmarked-verdict-before-marked', 'unmarked-verdict-without-kind',
+        'missing-one-recorded-blind', 'correction-without-recorded-blind', 'source-error-after-unmarked-verdict',
     }
     errors += ['missing export boundary case: ' + n for n in sorted(required_cases - names)]
     for name, stream in export_doc['streams'].items():
@@ -304,9 +314,25 @@ def self_test(event_doc, export_doc):
             if case['stream'] == 'with-old' and case['expect']['ok']:
                 case['expect']['stream_start'] = 'other-revision'
 
+    def unmarked_gets_events(e, x):
+        # A Host that supplies false marks gives events for the unmarked verdict.
+        for fact in x['streams']['unmarked-between']['decisions'][1]['facts']:
+            fact['blind'] = False
+
+    def unmarked_consumes_positions(e, x):
+        expect = named(x, 'resume-past-unmarked-verdict')['expect']
+        expect['events'][0]['cursor'] = expect['next_cursor'] = 'ev1:' + 'a' * 64 + ':7'
+
+    def unmarked_refuses(e, x):
+        named(x, 'unmarked-verdict-stops-no-read')['expect'] = {'ok': False, 'code': 'unexportable_decision'}
+
+    def partial_marks_pass(e, x):
+        named(x, 'missing-one-recorded-blind')['expect'] = named(x, 'unmarked-verdict-alone-empty-page')['expect']
+
     errors = []
     for mutate in (wrong_digest, content, policy_as_human, blind, reorder, duplicate, gap, cursor, version, correction, source_receipt, schema_type,
-                   missing_stream_start, wrong_stream_start, include_old_decision, exclude_new_decision, changed_stream_start):
+                   missing_stream_start, wrong_stream_start, include_old_decision, exclude_new_decision, changed_stream_start,
+                   unmarked_gets_events, unmarked_consumes_positions, unmarked_refuses, partial_marks_pass):
         e, x = copy.deepcopy(event_doc), copy.deepcopy(export_doc)
         mutate(e, x)
         if not run(e, x):
