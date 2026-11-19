@@ -4,6 +4,11 @@ This file lists the changes for each snapshot tag. A tag is a stable snapshot to
 
 ## Unreleased
 
+### Reference code
+
+- The step outcome contract (#113): [STEP.md](src/lifecycle-core/STEP.md) and `step.go` in the Go lifecycle core. A workflow agent step gives its inputs by digest. The result has a run identity, the digests of the output and the trace, and one of the statuses `completed`, `failed` and `budget_stopped`. `StepDecisionInputs` gives `invoke` inputs only for a completed result, so the receipt binds the run, and a `replay` uses the bound output with no new run. A failed run or a budget stop gives the fault `step_failed` or `step_budget_stopped` and no inputs. The Host and the wire protocol do not change. Each declaration is experimental.
+- The optional adapter [examples/agent-step-koodam](examples/agent-step-koodam/README.md) (#113) runs a step as one koodam Agent run through `kubectl`. [CONTRACT.md](examples/agent-step-koodam/CONTRACT.md) gives its clauses. The core has no Kubernetes dependency, and the adapter module has no Kubernetes library. A seam test runs on a local kind cluster with the released koodam chart 0.3.0. That release has no run identity and no output digest, so the test uses a stand-in for those fields until the next koodam release. No CI job runs the kind test.
+
 ### Contents
 
 - The approval dashboard (#198) moves from the mugham UI kit `v0.2.1` to `v0.3.0`

@@ -11,6 +11,7 @@ This module is the lifecycle core. It is the only lifecycle Host. The specs, the
 - `canon.go`: the record codec. Content references depend on its bytes.
 - `runtime.go`: the CEL adapter. It calls the pinned `cel-handoff` executable.
 - `runner.go`: the qualification runner contract. [RUNNER.md](RUNNER.md) is the spec. `CELRunner` is the first runner.
+- `step.go`: the step outcome contract of a workflow agent step ([#113](https://github.com/mohanraj00/entelos/issues/113)). [STEP.md](STEP.md) is the spec. A step result becomes the inputs of an `invoke`, and the Host has no step operation. The core has no step runner. [examples/agent-step-koodam](../../examples/agent-step-koodam/README.md) is one optional adapter.
 - `cmd/lifecycle-core`: the JSONL host. It reads one request record on each stdin line and writes one response record on each stdout line. The arguments are `--repo`, `--context`, `--runtime` and `--work`.
 - `protocol/`: the wire protocol 1.0 of [PROTOCOL.md](../protocol/PROTOCOL.md) in front of the Host: frames, the RFC 8785 encoder, the schema validator and the Unix socket listener.
 - `cmd/entelos-sidecar`: the local sidecar ([#84](https://github.com/mohanraj00/entelos/issues/84)). It serves the protocol on a Unix domain socket.

@@ -98,6 +98,14 @@ Issue [#127](https://github.com/mohanraj00/entelos/issues/127) proposes the verd
 
 Issue [#128](https://github.com/mohanraj00/entelos/issues/128) proposes verdict kinds in [KINDS.md](../src/protocol/verdict/KINDS.md). The kinds are `human`, `model` and `policy`. The Host context field `actor_kinds` gives the kind of each actor, and the decision record gets the field `kind`. A `policy` or `model` verdict never counts as a `human` verdict. The Host context field `verdict_policy` gives the count of each kind that `activate` requires, with the new code `verdicts_required`. `separation_required` also refuses an actor with a verdict of another kind on the same content. A count is of one snapshot, so verdicts on two snapshots of the same content do not combine. The `approval` read reports the counts. The Go lifecycle Host applies these rules. The 24 vector cases of [kinds-cases.json](../src/protocol/verdict/vectors/kinds-cases.json) cover each combination of the KINDS.md table, a verdict without a kind, a request with a `kind` field and invalid Host context fields. A policy verdict of POLICY.md does not count yet, because no Host writes it.
 
+### Agent step
+
+Issue [#113](https://github.com/mohanraj00/entelos/issues/113) adds the step outcome contract [STEP.md](../src/lifecycle-core/STEP.md) to the Go lifecycle core. A workflow agent step gives a result with a run identity and the digests of the output and the trace. Only a completed result becomes `invoke` inputs, and the receipt binds them. A replay of the receipt runs no step. A failed run or a budget stop gives a fault and no inputs. The Host has no step operation, and the core has no Kubernetes dependency.
+
+The optional adapter [examples/agent-step-koodam](../examples/agent-step-koodam/README.md) runs a step as one koodam Agent run through `kubectl`. Its [contract](../examples/agent-step-koodam/CONTRACT.md) has a core clause for each rule. On 2026-11-19, the seam test passed on a local kind cluster with the released koodam chart 0.3.0: a completed run, a failed run and a budget stop. Koodam 0.3.0 has no run identity and no output digest. The test uses a stand-in for those fields, so it does not show that koodam computes the digest.
+
+The next task is the repin of the seam test to the first koodam release with the fields of koodam#296. That repin removes the stand-in. No CI job runs the kind test, and no test runs a step result through the CEL runtime.
+
 ### M1 First contact
 
 On 2026-10-30, the M1 work was complete in `main` (merge commit `e844246`):

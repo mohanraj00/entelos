@@ -1,0 +1,13 @@
+# The bundled gateway of the koodam chart, with its mock model. These are the
+# values of the file values-bundled.yaml of the koodam chart.
+gateway:
+  mode: bundled
+  masterKeySecret:
+    name: koodam-gateway
+    key: master-key
+  bundled:
+    mock:
+      enabled: true
+    postgres:
+      persistence:
+        enabled: false
