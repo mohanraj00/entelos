@@ -4,6 +4,13 @@ This file lists the changes for each snapshot tag. A tag is a stable snapshot to
 
 ## Unreleased
 
+### Contents
+
+- The approval dashboard (#198) moves from the mugham UI kit `v0.2.1` to `v0.3.0`
+  (commit `f61f5d4`). The contract format stays 2 and the catalog contracts stay
+  at 0.1.0, so the page code does not change. The page does not use the new
+  components of the kit. `run.py` accepts only the pinned commit.
+
 ## v0.5.0 (2026-11-18)
 
 This snapshot adds content proposals, signed approval and activation records, supersession, verdict binding and verdict kinds, the evidence read, the decision event export and approval API 1.2. It adds the Host part of the profile promotion. The policy verdict is still a proposed spec that no Host writes.

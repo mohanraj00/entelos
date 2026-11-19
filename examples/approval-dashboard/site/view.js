@@ -1,7 +1,7 @@
 // Pure functions that turn API results into mugham fills. They make no DOM node and no API call.
 // The kit shows each value as text, never as markup.
 
-// The version of each catalog contract that the page fills. The kit v0.2.1 keeps the contracts at 0.1.0.
+// The version of each catalog contract that the page fills. The kit v0.3.0 keeps the contracts at 0.1.0.
 export const CONTRACT_VERSION = '0.1.0';
 
 // A fill of contract format 2. Only an outer fill has slots. A fill has no actions key: the page binds

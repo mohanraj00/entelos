@@ -1,7 +1,7 @@
 {
   "repository": "https://github.com/mohanraj00/mugham.git",
-  "tag": "v0.2.1",
-  "commit": "33678f8c80ad7d5e0237f6aee049b8cb13953966",
+  "tag": "v0.3.0",
+  "commit": "f61f5d4e0b5e8345d6449761b833e5ff575fcb9b",
   "license": "Apache-2.0",
   "paths": ["src", "catalog", "LICENSE"]
 }
