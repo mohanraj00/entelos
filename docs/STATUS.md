@@ -104,9 +104,9 @@ Issue [#128](https://github.com/mohanraj00/entelos/issues/128) proposes verdict 
 
 Issue [#113](https://github.com/mohanraj00/entelos/issues/113) adds the step outcome contract [STEP.md](../src/lifecycle-core/STEP.md) to the Go lifecycle core. A workflow agent step gives a result with a run identity and the digests of the output and the trace. Only a completed result becomes `invoke` inputs, and the receipt binds them. A replay of the receipt runs no step. A failed run or a budget stop gives a fault and no inputs. The Host has no step operation, and the core has no Kubernetes dependency.
 
-The optional adapter [examples/agent-step-koodam](../examples/agent-step-koodam/README.md) runs a step as one koodam Agent run through `kubectl`. Its [contract](../examples/agent-step-koodam/CONTRACT.md) has a core clause for each rule. On 2026-11-19, the seam test passed on a local kind cluster with the released koodam chart 0.3.0: a completed run, a failed run and a budget stop. Koodam 0.3.0 has no run identity and no output digest. The test uses a stand-in for those fields, so it does not show that koodam computes the digest.
+The optional adapter [examples/agent-step-koodam](../examples/agent-step-koodam/README.md) runs a step as one koodam Agent run through `kubectl`. Its [contract](../examples/agent-step-koodam/CONTRACT.md) has a core clause for each rule. On 2026-11-20, the seam test passed on a local kind cluster with the koodam release v0.4.0: a completed run, a failed run and a budget stop. The test pins the tag, the chart and the koodam image by digest. Koodam gives the run identity and computes the output digest, and the test has no stand-in for a koodam field.
 
-The next task is the repin of the seam test to the first koodam release with the fields of koodam#296. That repin removes the stand-in. No CI job runs the kind test, and no test runs a step result through the CEL runtime.
+No CI job runs the kind test, and no test runs a step result through the CEL runtime.
 
 ### M1 First contact
 

@@ -190,35 +190,25 @@ func TestInputsMustHaveTheRequestDigests(t *testing.T) {
 	}
 }
 
-// v030Cluster has the Agent of koodam v0.3.0: the CRD refuses spec.output,
-// and the status has no runID and no output.
-type v030Cluster struct{ fakeCluster }
+// oldCluster has the Agent API of a koodam release before v0.4.0: the CRD
+// refuses spec.output.
+type oldCluster struct{ fakeCluster }
 
-func (c *v030Cluster) Create(manifest []byte) ([]byte, error) {
+func (c *oldCluster) Create(manifest []byte) ([]byte, error) {
 	if strings.Contains(string(manifest), `"output"`) {
 		return nil, errors.New(`strict decoding error: unknown field "spec.output"`)
 	}
 	return c.fakeCluster.Create(manifest)
 }
 
-// The stand-in gives the fields of koodam#296 on a v0.3.0 status.
-func TestStandIn296(t *testing.T) {
-	old := `{"phase":"Succeeded","job":"step-abc-x7k2p-run"` + revoked
-	c := &v030Cluster{fakeCluster{states: []string{`{"phase":"Running","job":"step-abc-x7k2p-run"}`, old}, log: []byte(summary)}}
-	if _, err := adapter(c).RunStep(request); err == nil {
-		t.Fatal("the v0.3.0 CRD accepted spec.output")
+// A koodam release with no output digest gives an error and no result. The
+// adapter does not run the step without spec.output.
+func TestOldKoodamGivesNoResult(t *testing.T) {
+	c := &oldCluster{}
+	res, err := adapter(c).RunStep(request)
+	if err == nil || len(c.creates) != 0 || res.Outcome.Status != "" {
+		t.Fatalf("error %v, %d Agents, result %v", err, len(c.creates), res.Outcome)
 	}
-	w := newWorkflow(t)
-	res := w.seam(adapter(&StandIn296{Cluster: c}))
-	if res.Outcome.RunID != uid || len(c.creates) != 1 {
-		t.Fatalf("run %q, %d Agents", res.Outcome.RunID, len(c.creates))
-	}
-	failed := &v030Cluster{fakeCluster{states: []string{`{"phase":"Failed","job":"step-abc-x7k2p-run"` + revoked}}}
-	bad, err := adapter(&StandIn296{Cluster: failed}).RunStep(request)
-	if err != nil {
-		t.Fatal(err)
-	}
-	w.refuse(bad, lifecycle.StepFailed, "step_failed")
 }
 
 // Two inputs cannot give the same env variable. Without this check, the

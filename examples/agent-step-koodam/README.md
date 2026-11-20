@@ -13,12 +13,11 @@ The synthetic step asks an agent to summarize an invented library notice. The ga
 |---|---|
 | `adapter.go` | The adapter: the Agent manifest, the wait and the status map. |
 | `kubectl.go` | The cluster access through the `kubectl` executable, with a limit for each output. |
-| `standin.go` | The stand-in for the Agent fields of koodam#296. |
 | `adapter_test.go` | Tests with a fake cluster. They need no cluster. |
 | `kubectl_test.go` | Tests of the output limits with a shell script in place of `kubectl`. |
 | `workflow_test.go` | The Host with the gate, the receipt check and the replay check. |
 | `kind_test.go` | The same checks on a kind cluster. `kind/seam.sh` runs them. |
-| `kind/pins.env` | The pins: kind, the node image, the koodam chart and the agent image. |
+| `kind/pins.env` | The pins: kind, the node image, the koodam release with its chart and its image, and the agent image. |
 
 ## Run the tests without a cluster
 
@@ -39,7 +38,7 @@ sh examples/agent-step-koodam/kind/seam.sh "$TASK_WORK"
 The script does these steps:
 
 1. It makes the kind cluster `entelos-agent-step` with a kubeconfig in the work directory. It does not change your kubeconfig.
-2. It installs the koodam chart of `kind/pins.env` by its digest, with the bundled gateway and the mock model.
+2. It installs the koodam chart of `kind/pins.env` by its digest, with the koodam image by its digest, the bundled gateway and the mock model. It stops if the controller does not run the pinned image.
 3. It runs `TestKindSeam`, `TestKindFailedRun` and `TestKindBudgetStop`. Each test creates one Agent.
 4. It writes `seam.log` and `agents.json` to the work directory, and it deletes the cluster.
 
@@ -47,7 +46,8 @@ The agent of the test is a shell script, not a model. It checks the digest of th
 
 ## Limits
 
-- The seam test pins the released koodam chart 0.3.0. That release does not have the run identity and the output digest, so the test uses a stand-in for those fields. See [CONTRACT.md](CONTRACT.md#stand-in).
+- The seam test pins the koodam release v0.4.0. A koodam release before v0.4.0 has no run identity and no output digest, and the adapter gives an error for it. See [CONTRACT.md](CONTRACT.md#koodam-release).
+- The chart installs the images of LiteLLM and PostgreSQL that it pins by digest. `kind/pins.env` does not repeat those pins.
 - The gate is a frozen Go function, and the qualification runner is a fixture that runs no rule. The example does not use the CEL runtime.
 - The Host uses the memory store. The example keeps no store after the test.
 - No CI job runs the kind test. The evidence is a run from a clean checkout on a local kind cluster.

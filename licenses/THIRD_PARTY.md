@@ -22,7 +22,7 @@ The optional approval dashboard uses the mugham UI kit, tag `v0.3.0` (commit `f6
 
 The groundgate seam test uses groundgate 0.16.0, licence Apache-2.0, from PyPI. [`tests/groundgate-seam/requirements.txt`](../tests/groundgate-seam/requirements.txt) pins the wheel and the sdist by hash. `verify.py` installs the wheel in a virtual environment in the work directory, with no dependencies. The package is not in this tree, and this project does not distribute it.
 
-The optional kind seam test of the agent step adapter uses the koodam chart 0.3.0, licence Apache-2.0, from its public OCI registry. [`examples/agent-step-koodam/kind/pins.env`](../examples/agent-step-koodam/kind/pins.env) pins the chart, the kind node image and the image of the test agent (curl, licence curl) by digest. The chart installs its own images of the koodam controller, LiteLLM and PostgreSQL in the test cluster. `verify.py` and CI do not run this test. None of these files is in this tree, and this project does not distribute them.
+The optional kind seam test of the agent step adapter uses the koodam release v0.4.0, licence Apache-2.0, from its public OCI registry. [`examples/agent-step-koodam/kind/pins.env`](../examples/agent-step-koodam/kind/pins.env) pins the chart, the koodam image, the kind node image and the image of the test agent (curl, licence curl) by digest. The chart installs the koodam controller and its own pinned images of LiteLLM and PostgreSQL in the test cluster. `verify.py` and CI do not run this test. None of these files is in this tree, and this project does not distribute them.
 
 ## CI tools
 

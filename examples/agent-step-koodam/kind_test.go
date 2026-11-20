@@ -30,11 +30,7 @@ func kindAdapter(t *testing.T, script, budget string) *Adapter {
 	if kubeconfig == "" || image == "" || namespace == "" {
 		t.Skip("kind/seam.sh runs this test on a kind cluster")
 	}
-	var cluster Cluster = Kubectl{Kubeconfig: kubeconfig}
-	if os.Getenv("ENTELOS_KOODAM_STANDIN_296") == "1" {
-		cluster = &StandIn296{Cluster: cluster}
-	}
-	return &Adapter{Cluster: cluster, Namespace: namespace, Image: image, Command: []string{"sh", "-c", script}, Model: "mock-1",
+	return &Adapter{Cluster: Kubectl{Kubeconfig: kubeconfig}, Namespace: namespace, Image: image, Command: []string{"sh", "-c", script}, Model: "mock-1",
 		Budget: budget, DeadlineSeconds: 120, OutputPath: "/out/summary.txt", Inputs: map[string][]byte{"notice": []byte(notice)},
 		Wait: 5 * time.Minute, Settle: 2 * time.Minute, Poll: 2 * time.Second}
 }
