@@ -37,6 +37,8 @@ The sidecar wire protocol has the versions 1.0 ([PROTOCOL.md](../src/protocol/PR
 
 Version 1.2 is first in the v0.5.0 snapshot. Its schemas include the read `decision_events` and the field `decide.fact_reviews` (#158), so the pin checks them.
 
+In the v0.6.0 snapshot, the read `decision_events` of version 1.2 gives a page with a jump in the positions for a verdict that cites facts and has no per-fact marks (#197), where v0.5.0 refused the page. The schemas, the cursor and the event format do not change. A reader that checks for contiguous positions must accept a jump.
+
 The pin records the SHA-256 of each of these files. An added, removed or changed file fails the pin. The pin also checks that the envelope schema accepts exactly the protocol versions `1.0`, `1.1` and `1.2`, and that the Go constant `protocol.Version` is `1.0`.
 
 ### Record format

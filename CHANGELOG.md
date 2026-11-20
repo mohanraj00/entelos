@@ -4,6 +4,12 @@ This file lists the changes for each snapshot tag. A tag is a stable snapshot to
 
 ## Unreleased
 
+No change yet.
+
+## v0.6.0 (2026-11-20)
+
+This snapshot adds the step outcome contract and an optional adapter that runs an agent step as a koodam Agent run. The decision event export now continues past a verdict with no per-fact marks. The approval dashboard uses mugham v0.3.0, and the project uses the shared gates at a new pin. The wire protocol, the record format and the stable Go API do not change.
+
 ### Reference code
 
 - The decision event export continues past a verdict with no blind marks (#197). A verdict that cites facts and has no `fact_reviews` in its record is an unmarked verdict: a human verdict from a client on protocol 1.0 or 1.1, or a verdict of an actor with no kind. v0.5.0 refused each `decision_events` page with such a verdict. Now the facts of an unmarked verdict keep their positions and give no events, so the positions have a gap. The Host supplies no mark and no kind. [EVENTS.md](src/protocol/events/EVENTS.md#unmarked-verdicts) has the rule and the reasons. The format `entelos.decision-event/1`, the 1.2 schemas, the cursor and the stream namespace do not change. A decision with marks that are not complete or not valid still gives `unexportable_decision`.
@@ -20,6 +26,35 @@ This file lists the changes for each snapshot tag. A tag is a stable snapshot to
   (commit `f61f5d4`). The contract format stays 2 and the catalog contracts stay
   at 0.1.0, so the page code does not change. The page does not use the new
   components of the kit. `run.py` accepts only the pinned commit.
+
+### Project checks
+
+- The project moves the shared gates to `mohanraj00/.github` commit `4d0656c141e5a5969bd72a5fe10636cc8dd9d524` (#201). `docs/STANDARD.md`, the Dependabot file and `tools/claude_review.py` are copies of that release, and the Claude review workflow is the release template with the project pin. A Claude review request now needs the request text on the first line only, so a later line such as `Head: <short SHA>` is allowed. The local `tools/cross_review.py` is removed. The agy fallback is now `gates/cross_review.py` of the shared repository, run from a checkout at the pin. [REVIEW.md](docs/REVIEW.md) has the command. These files are for contributors. A consumer of the reference does not need them.
+
+### Upgrade steps
+
+These steps upgrade a Host and a store from v0.5.0.
+
+1. The record format stays `entelos.record/1`, and the wire protocol versions 1.0, 1.1 and 1.2 do not change. A v0.5.0 store needs no migration command. No test runs a v0.5.0 store on the v0.6.0 Host, so make a copy of the bare repository before the first write.
+2. If a reader of `decision_events` checks that the positions are contiguous, change it to accept a jump (#197). A jump means the omitted facts of an unmarked verdict. It never means a lost event. A reader that stopped with `unexportable_decision` on v0.5.0 sends its saved cursor to the v0.6.0 Host and continues. To get an event for each human verdict, send `fact_reviews` through protocol 1.2.
+3. The Go lifecycle core has 11 new experimental declarations for the step contract (#113). The new file `step.go` changes the lifecycle build identity, as each core change does. Keep the v0.5.0 build with a store for exact replay. No Host path calls the new code.
+4. To use the koodam adapter, build `examples/agent-step-koodam`. It is a Go module of its own with the standard library only. It needs `kubectl` and a koodam cluster at release v0.4.0 or later. The core needs neither.
+5. A contributor who runs the agy fallback checks out `mohanraj00/.github` at the pin and runs its `gates/cross_review.py` from the root of this project. `tools/cross_review.py` no longer exists.
+6. The approval dashboard accepts only the mugham commit in `mugham.json`. `run.py` refuses another commit.
+
+### Compatibility and limits
+
+- [STABILITY.md](docs/STABILITY.md) gives the promise of v0.4.0, and v0.6.0 keeps it. The pinned surfaces do not change. The 11 new Go declarations are experimental.
+- #197 changes the output of a stable read. The read `decision_events` of protocol 1.2 now gives a page with a jump in the positions for an unmarked verdict, where v0.5.0 refused the page. The format `entelos.decision-event/1`, the 1.2 schemas, the cursor and the stream namespace are the same. A stream with no unmarked verdict gives the same pages as v0.5.0. The owner merged #204 as a level 1 change.
+- A gap gives the count of the omitted facts. It does not give the count of the verdicts, the actor or the disposition. No Host setting refuses an unmarked verdict at `decide`. The Host supplies no mark and no kind.
+- No test starts a v0.5.0 Host. The resume rule for a reader comes from the v0.5.0 read rules, not from a run of that Host.
+- The kind evidence for #113 is one local run from a clean clone of `49a6000`, on a local kind cluster, on 2026-11-20. It is not a CI run, and no CI job runs the kind test. The comment on #113 has the record. The run used kind v0.33.0 and the node image v1.37.0, so the three koodam fields are shown on one node image only. The three tests passed: a completed run, a failed run and a budget stop. Three earlier runs of the same commit failed before a koodam step: two `kubeadm init` timeouts under a high host load, and one name lookup error for the container registry. They show nothing about the change.
+- The first `make verify` run of that commit failed 2 checks under the same host load. The record of the two names is lost, because the work folder was removed before they were read. A second run passed 33 checks with 0 failures.
+- The step contract trusts the step runner for the status and the run identity. The gate of the tests is a frozen Go function, and the qualification runner is a fixture. No test runs a step result through the CEL runtime. The Host has no step operation, so a workflow that sends other inputs to `invoke` gets no check from the contract. The trace of the adapter is the Agent spec and status, without the model calls.
+- The CI run of the merge commit of #204 (`d4eb165`, run 44520665146) failed on `ubuntu-24.04` with 21 checks passed and 2 failed. The names of the 2 checks were not read for this note. The run of the same PR head before the merge passed on both runners, and run 44662780478 on `ca81eee` passed on both runners.
+- No new full security review of the Go path covers v0.6.0. Each PR had a review of its own diff. Two security reviews of #204 found one defect each in earlier methods, and the merged head has no finding. The Codex security review of #203 found no issues.
+- The limits of v0.5.0 that this list does not change stay: the policy verdict is a proposed spec that no Host writes, the sidecar wire protocol does not accept `candidate` and `applicability`, and the callable profile is string and bool input and bool output.
+
 
 ## v0.5.0 (2026-11-18)
 
