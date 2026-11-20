@@ -4,7 +4,7 @@ This adapter runs a workflow agent step as one [koodam](https://github.com/mohan
 
 The adapter is optional. It is a Go module of its own, and the lifecycle core does not import it. It has no Kubernetes library: it runs the `kubectl` executable.
 
-The koodam fields are the fields of the Agent API `core.koodam.dev/v1alpha1`. The fields `spec.output`, `status.runID` and `status.output` are from [koodam#296](https://github.com/mohanraj00/koodam/issues/296) and the koodam document `docs/agent-output.md`, sections "Run identity" and "Output digest". No koodam release has them yet. See [Stand-in](#stand-in).
+The koodam fields are the fields of the Agent API `core.koodam.dev/v1alpha1`. The fields `spec.output`, `status.runID` and `status.output` are from [koodam#296](https://github.com/mohanraj00/koodam/issues/296) and the koodam document `docs/agent-output.md`, sections "Run identity" and "Output digest". Koodam v0.4.0 is the first release with them. See [Koodam release](#koodam-release).
 
 ## Clauses
 
@@ -79,17 +79,19 @@ A workflow with a durable volume can read the file there. The check against the 
 
 A `completed` result has the run identity, the output, the two digests and the trace (S5). Each other result has no output (S6), and `StepDecisionInputs` refuses it (S7). `RunStep` gives an error, and no result, if `kubectl` fails before the adapter can read an ended Agent or if the configuration is not valid.
 
-## Stand-in
+## Koodam release
 
-Koodam v0.3.0 is the latest koodam release that is not a prerelease. Its CRD refuses `spec.output`, and its status has no `runID` and no `output`. Until a koodam release has the fields of koodam#296, the seam test uses `StandIn296` (`standin.go`) between the adapter and `kubectl`:
+The seam test uses koodam v0.4.0, the first koodam release with `spec.output`, `status.runID` and `status.output`. [`kind/pins.env`](kind/pins.env) pins the tag and its commit, the chart by the digest of its OCI manifest, and the koodam image by the digest of its image index.
 
-- It removes `spec.output` from the manifest.
-- It adds `status.runID` with the UID of the Agent, as koodam#296 defines it.
-- For a `Succeeded` run, it adds `status.output` with the SHA-256 and the size of the standard output of the agent container. For a `Failed` run, it adds the reason `NoResult`.
+In the seam test, koodam does all the work of the run:
 
-With the stand-in, clause K9 compares the standard output with a digest of the same bytes. Thus the seam test does not show that koodam computes the digest. The released koodam controller does all other work of the run: the Job, the gateway key, the budget, the phase, the revoke and the usage.
+- The controller makes the Job, the gateway key and the budget, and it writes the phase, the revoke and the usage.
+- `status.runID` is the UID of the Agent.
+- A digest container of the run pod, from the koodam image, reads the file of `spec.output.path` after the agent container ends. The controller writes its SHA-256 and its size to `status.output`.
 
-[`kind/pins.env`](kind/pins.env) sets `KOODAM_STANDIN_296=1`. The repin to the first koodam release with the fields sets it to 0 and removes `standin.go`.
+Thus clause K9 compares the standard output of the agent container with a digest that koodam computed from the output file. The seam test has no stand-in for a koodam field.
+
+A koodam release before v0.4.0 refuses `spec.output`. The adapter then gives an error and no result (K10).
 
 ## Limits
 

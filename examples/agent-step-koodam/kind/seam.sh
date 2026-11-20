@@ -46,19 +46,24 @@ kubectl wait --for=condition=Ready node --all --timeout=120s >>"$work/kind.log"
 
 kubectl create namespace koodam-system >>"$work/install.log"
 printf 'sk-%s' "$(openssl rand -hex 32)" | kubectl -n koodam-system create secret generic koodam-gateway --from-file=master-key=/dev/stdin >>"$work/install.log"
-# The digest selects the chart. The version is in the name of the release note only.
-helm install koodam "$KOODAM_CHART@$KOODAM_CHART_DIGEST" -n koodam-system -f "$here/values.yaml" --wait --timeout 10m >>"$work/install.log" 2>&1
+# The digests select the chart and the koodam image. The version is a check only.
+koodam_image="$KOODAM_IMAGE:$KOODAM_VERSION@$KOODAM_IMAGE_DIGEST"
+helm install koodam "$KOODAM_CHART@$KOODAM_CHART_DIGEST" -n koodam-system -f "$here/values.yaml" \
+  --set-string image.tag="$KOODAM_VERSION@$KOODAM_IMAGE_DIGEST" --wait --timeout 10m >>"$work/install.log" 2>&1
 helm list -n koodam-system -o json >"$work/helm-release.json"
 grep -q "\"app_version\":\"$KOODAM_VERSION\"" "$work/helm-release.json" || { echo "The chart is not koodam $KOODAM_VERSION." >&2; exit 1; }
 kubectl -n koodam-system rollout status deployment --timeout=5m >>"$work/install.log"
+# The controller must run the pinned image, and the Agent CRD must have the run identity.
+kubectl -n koodam-system get deployment -o jsonpath='{range .items[*]}{range .spec.template.spec.containers[*]}{.image}{"\n"}{end}{end}' >"$work/images.txt"
+grep -qx "$koodam_image" "$work/images.txt" || { echo "No deployment runs $koodam_image." >&2; exit 1; }
+kubectl get crd agents.core.koodam.dev -o json | grep -q '"runID"' || { echo "The Agent CRD has no status.runID." >&2; exit 1; }
 kubectl create namespace entelos-steps >>"$work/install.log"
 
 cd "$here/.."
 ENTELOS_KIND_KUBECONFIG="$KUBECONFIG" ENTELOS_KIND_NAMESPACE=entelos-steps ENTELOS_AGENT_IMAGE="$AGENT_IMAGE" \
-  ENTELOS_KOODAM_STANDIN_296="$KOODAM_STANDIN_296" \
   go test -mod=readonly -count=1 -v -run '^TestKind' . 2>&1 | tee "$work/seam.log"
 grep -q '^--- PASS: TestKindSeam ' "$work/seam.log" && grep -q '^--- PASS: TestKindFailedRun ' "$work/seam.log" &&
   grep -q '^--- PASS: TestKindBudgetStop ' "$work/seam.log" && grep -q '^ok ' "$work/seam.log" ||
   { echo "The seam test failed. The log is $work/seam.log." >&2; exit 1; }
 kubectl -n entelos-steps get agents.core.koodam.dev -o json >"$work/agents.json"
-echo "The seam test passed with koodam $KOODAM_VERSION (stand-in for koodam#296: $KOODAM_STANDIN_296). The log is $work/seam.log."
+echo "The seam test passed with koodam $KOODAM_VERSION ($KOODAM_COMMIT). The log is $work/seam.log."
