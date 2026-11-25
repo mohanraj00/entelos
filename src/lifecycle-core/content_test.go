@@ -568,12 +568,19 @@ func TestEarlierContentSnapshotEvidenceIsRefused(t *testing.T) {
 			s["evidence_reference"] = Object{"format": "entelos.evidence/1", "digest": evidence["open-review"].(Object)["digest"]}
 			s["evidence"] = documentOf("open-review")
 		},
+		"legacy-fraction": func(s Object) {
+			s["evidence_reference"] = Object{"format": "entelos.evidence/1", "digest": evidence["legacy-fraction"].(Object)["digest"]}
+			s["evidence"] = documentOf("legacy-fraction")
+		},
 	}
 	for code, change := range changes {
 		t.Run(code, func(t *testing.T) {
 			want := Object{"error": code}
 			if code == "invalid_evidence" {
 				want["rule"] = "open_review"
+			}
+			if code == "legacy-fraction" {
+				want = Object{"error": "invalid_evidence", "rule": "schema"}
 			}
 			r := newContentRun(t, doc)
 			window := Object{"from": "2026-01-01", "until": "2027-01-01"}

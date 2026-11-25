@@ -55,6 +55,10 @@ def judge(doc):
     try:validate(SCHEMA,doc,'evidence',SCHEMA['$defs'])
     except SchemaError:return bad('schema')
     facts=doc['facts']
+    if any(f['data'].get('judgments') or any('box' in s for s in f['spans']) for f in facts):
+        units = doc['producer'].get('producer_data', {}).get('value', {}).get('number_units')
+        if units != 'ppm-milli':
+            return bad('schema')
     def review(f):return f.get('review')
     def status(f):return f['review']['status'] if 'review' in f else None
     if len(facts)>MAX_FACTS:return bad('too_many_facts')

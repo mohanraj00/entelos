@@ -165,6 +165,8 @@ A content proposal can attach one evidence document in the `propose` field `evid
 
 The digest of an evidence document is `sha256:` and the lowercase hex SHA-256 digest of the UTF-8 bytes of its canonical text. The canonical text is the record text of the Host codec without its final newline. It has the members of each object in ascending order of their names, no white space between tokens and raw UTF-8 characters. Python gives the same text with `json.dumps(document, sort_keys=True, ensure_ascii=False, separators=(",", ":"))`. The digest identifies the decoded document, not the bytes of the request. Thus the member order and the white space of the request do not change it. The digest is an identity of bytes, not a signature.
 
+Apply the [evidence number rules](../evidence/EVIDENCE.md#numbers) before computing the digest. A producer who converts an earlier document must compute the digest again and put it in the new manifest.
+
 The Host applies these checks to a content proposal in this order, after the source check. The first check that fails gives the result. Each refusal has the stage `admission`. A refusal stops the write, and the root does not change.
 
 | Step | Check | Result |

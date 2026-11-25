@@ -82,6 +82,8 @@ The receiver rejects these payloads with `invalid_request`:
 - an unknown top-level field, a missing field or a field of the wrong type;
 - a string that does not match its schema pattern.
 
+The number rule applies at every depth, including in evidence attachments in 1.2 over the socket and HTTP. A number with a decimal point or exponent is refused, even if its value is a whole number. [EVIDENCE.md](evidence/EVIDENCE.md#numbers) defines the integer units that evidence producers use.
+
 Each schema `pattern` starts with `^` and ends with `$`. The pattern must match the full string, as in ECMA-262. A trailing newline does not match `$`. For example, `"2026-11-15\n"` and `"1.0\n"` are invalid.
 
 A write operation also needs `expected_revision` and `request_key` in its body. A read operation must not have them. The `x-entelos-access` value in each schema file shows the access type. The host context (actor, roles, scope) never comes from a request.
