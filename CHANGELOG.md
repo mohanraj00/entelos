@@ -10,6 +10,7 @@ This file lists the changes for each snapshot tag. A tag is a stable snapshot to
   - Effect on a store with old snapshots: the records keep their bytes, and no migration is necessary. A content snapshot of an earlier Host can have a reference with no document, a document with another digest, or a document that the rules refuse. For such a snapshot, an accept `decide` and `activate` now refuse with the same codes. A reject `decide` still works. An existing decision or activation event does not change, and `resolve` and a replay give the same answers. To continue, propose a new snapshot with the named document.
   - The approval `state` of such a snapshot can still be `awaiting_verdict`, because the `refusal` values of approval API 1.2 are fixed.
   - The lifecycle vectors of the content format change: the manifest `second` names the digest of a vector document, so its `ref` changes. The new case `evidence-at-propose` covers each new code.
+- A lifecycle test qualifies and invokes a typed CEL gate on step results, covering acceptance, refusal and a failed run with no decision inputs (#209).
 
 ## v0.6.0 (2026-11-20)
 

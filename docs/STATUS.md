@@ -110,7 +110,7 @@ Issue [#113](https://github.com/mohanraj00/entelos/issues/113) adds the step out
 
 The optional adapter [examples/agent-step-koodam](../examples/agent-step-koodam/README.md) runs a step as one koodam Agent run through `kubectl`. Its [contract](../examples/agent-step-koodam/CONTRACT.md) has a core clause for each rule. On 2026-11-20, the seam test passed on a local kind cluster with the koodam release v0.4.0: a completed run, a failed run and a budget stop. The test pins the tag, the chart and the koodam image by digest. Koodam gives the run identity and computes the output digest, and the test has no stand-in for a koodam field.
 
-No CI job runs the kind test, and no test runs a step result through the CEL runtime.
+On 2026-11-25, issue [#209](https://github.com/mohanraj00/entelos/issues/209) added `TestStepGateCEL`. This closes the CEL runtime item of the v0.6.0 list above. It qualifies and invokes a typed gate with the step inputs and a decoded JSON record. Two completed results give opposite answers, and a failed result gives no inputs. The test uses a fixture step runner. No CI job runs the kind test.
 
 ### M1 First contact
 
