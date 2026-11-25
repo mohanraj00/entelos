@@ -7,6 +7,7 @@ the vectors, the schemas and the rules agree. It does not show that a Host agree
 import argparse
 import copy
 import hashlib
+import importlib.util
 import json
 import os
 from pathlib import Path
@@ -23,6 +24,8 @@ from test_protocol import SchemaError, validate  # noqa: E402
 CANDIDATE=json.loads((HERE/'schema'/'candidate.schema.json').read_text())
 MANIFEST=json.loads((HERE/'schema'/'manifest.schema.json').read_text())
 SPEC=(HERE/'CONTENT.md').read_text()
+_EVIDENCE=importlib.util.spec_from_file_location('evidence_check_spec',HERE.parent/'evidence'/'check_spec.py')
+EVIDENCE=importlib.util.module_from_spec(_EVIDENCE);_EVIDENCE.loader.exec_module(EVIDENCE)
 FORMAT=re.compile(r'entelos\.content/(0|[1-9][0-9]*)')
 NAME=re.compile(r'[A-Za-z0-9._-]{1,128}')
 KINDS=('cel-bundle','content')
@@ -36,6 +39,30 @@ def table_terms(text):
     section=text.split('\n## Rules\n',1)[1].split('\n## ',1)[0]
     rows=re.findall(r'^\| [0-9]+ \|.*\| `([a-z_]+)`(?:, rule `([a-z_]+)`)? \|$',section,re.M)
     return {r for _,r in rows if r},{c for c,_ in rows}
+
+def evidence_codes(text):
+    """The codes in the evidence table of CONTENT.md."""
+    section=text.split('\n### Evidence\n',1)[1].split('\n### ',1)[0]
+    return set(re.findall(r'^\| [0-9]+ \|.*\| `([a-z_]+)`(?:, rule `[a-z_]+`)? \|$',section,re.M))
+
+def canonical(doc):
+    """The canonical text of an evidence document, as CONTENT.md defines it."""
+    return json.dumps(doc,sort_keys=True,ensure_ascii=False,separators=(',',':'),allow_nan=False)
+
+def admission(doc):
+    """The result of the EVIDENCE.md rules, in the shape of the lifecycle vectors."""
+    got=EVIDENCE.judge(doc)
+    return 'valid' if got['valid'] else {k:got[k] for k in ('code','rule') if k in got}
+
+def evidence_check(text,doc):
+    """The evidence checks of CONTENT.md for a valid manifest and an optional document."""
+    reference=json.loads(text).get('evidence')
+    if reference is not None and doc is None:return {'error':'evidence_missing'}
+    if reference is not None and reference['digest']!='sha256:'+hashlib.sha256(canonical(doc).encode('utf-8')).hexdigest():
+        return {'error':'evidence_mismatch'}
+    result=admission(doc) if doc is not None else 'valid'
+    if result!='valid':return {('error' if k=='code' else k):v for k,v in result.items()}
+    return None
 
 class Duplicate(Exception):
     pass
@@ -144,6 +171,7 @@ def run(doc):
     errors+=['rule not in CONTENT.md: '+r for r in sorted(rules_seen-rules)]
     return errors
 
+EVIDENCE_CODES=evidence_codes(SPEC)
 STEPS={'propose','qualify','decide','activate','state','mark','resolve','load','invoke','describe'}
 
 def check_lifecycle(life):
@@ -161,6 +189,12 @@ def check_lifecycle(life):
             errors.append('manifest '+name+': head is not an installed subject')
         if result['valid'] and m.get('applicability')!=(recorded(m['text']) or None):
             errors.append('manifest '+name+': applicability is not the values of its items')
+    evidence=life.get('evidence',{})
+    for name,entry in evidence.items():
+        if entry['digest']!='sha256:'+hashlib.sha256(canonical(entry['document']).encode('utf-8')).hexdigest():
+            errors.append('evidence '+name+': digest is not the SHA-256 of its canonical text')
+        if entry['admission']!=admission(entry['document']):errors.append('evidence '+name+': admission is not the result of the EVIDENCE.md rules')
+    seen=set()
     for case in life['cases']:
         if case['name'] in names:errors.append(case['name']+': duplicate lifecycle case name')
         names.add(case['name'])
@@ -171,10 +205,21 @@ def check_lifecycle(life):
             if op in ('propose','qualify','decide','activate','state') and step[op] not in manifests:
                 errors.append(case['name']+': unknown manifest '+str(step[op]))
             if op=='propose' and not ('from' in step and 'until' in step):errors.append(case['name']+': propose needs from and until')
+            if op=='propose' and 'evidence' in step and step['evidence'] not in evidence:
+                errors.append(case['name']+': unknown evidence '+str(step['evidence']));continue
+            expect=step.get('expect')
+            if op=='propose' and step[op] in manifests and (expect==step[op] or (isinstance(expect,dict) and expect.get('error') in EVIDENCE_CODES)):
+                # The evidence checks come after the other propose checks, so only a write or an evidence refusal shows them.
+                doc=evidence[step['evidence']]['document'] if 'evidence' in step else None
+                got=evidence_check(manifests[step[op]]['text'],doc)
+                if got!=(None if expect==step[op] else expect):
+                    errors.append(case['name']+': propose '+step[op]+' expects the wrong evidence result')
+                if got:seen.add(got['error'])
             if op=='activate' and step.get('expect') in (step['activate'],{'error':'applicability_mismatch'}):
                 # The Host confirms an activation only if its values equal the values of the snapshot items.
                 equal=step.get('applicability',{})==manifests[step['activate']].get('applicability',{})
                 if equal!=(step['expect']==step['activate']):errors.append(case['name']+': activate '+step['activate']+' expects the wrong applicability result')
+    errors+=['evidence code without a lifecycle case: '+c for c in sorted(EVIDENCE_CODES-seen)]
     return errors
 
 def recorded(text):
@@ -200,7 +245,10 @@ def self_test(doc,life):
     def two_ops(d):d['cases'][0]['steps'][0]['resolve']='2026-01-01'
     def drop_value(d):del d['manifests']['regions']['applicability']['rules-fr']
     def confirm_mismatch(d):next(s for c in d['cases'] for s in c['steps'] if s.get('expect')=={'error':'applicability_mismatch'})['expect']='regions'
-    for f in (change_manifest,two_ops,drop_value,confirm_mismatch):
+    def change_digest(d):e=d['evidence']['accepted'];e['digest']=e['digest'][:-1]+('0' if e['digest'][-1]!='0' else '1')
+    def accept_mismatch(d):next(s for c in d['cases'] for s in c['steps'] if s.get('expect')=={'error':'evidence_mismatch'})['expect']='second'
+    def drop_attachment(d):del next(s for c in d['cases'] for s in c['steps'] if s.get('propose')=='second' and s.get('expect')=='second')['evidence']
+    for f in (change_manifest,two_ops,drop_value,confirm_mismatch,change_digest,accept_mismatch,drop_attachment):
         d=copy.deepcopy(life);f(d)
         if not check_lifecycle(d):missed.append(f.__name__)
     return ['self-test: no error for '+m for m in missed]

@@ -531,14 +531,64 @@ func (h *Host) proposeContent(v *View, q Object, result candidateResult) Object 
 	if values := itemApplicability(result.Manifest); len(values) > 0 {
 		snapshot["applicability"] = values
 	}
-	// The evidence document of the request is kept as for a CEL bundle.
-	// The Host does not compare it with the evidence reference of the
-	// manifest.
-	if evidence, has := q["evidence"]; has {
+	// The evidence document of the request is kept as for a CEL bundle,
+	// after the evidence checks of CONTENT.md.
+	evidence, hasEvidence := q["evidence"]
+	checkContentEvidence(result.Manifest, evidence, hasEvidence)
+	if hasEvidence {
 		snapshot["evidence"] = evidence
 	}
 	ref := v.Put("snapshot", snapshot)
 	heads[key] = ref
 	return Object{"snapshot_ref": ref, "candidate": copyObject(candidate),
 		"head": Object{"kind": contentKind, "collection": result.Collection, "partition": result.Partition}}
+}
+
+// evidenceDigest is the digest that a manifest evidence reference names:
+// SHA-256 of the canonical record text of the document, without the final
+// newline of a record. It is an identity of bytes, not a signature.
+func evidenceDigest(doc any) string {
+	raw := Encode(doc)
+	sum := sha256.Sum256(raw[:len(raw)-1])
+	return "sha256:" + hex.EncodeToString(sum[:])
+}
+
+// checkContentEvidence applies the evidence checks of CONTENT.md in their
+// order. A manifest with an evidence reference needs the document that the
+// reference names, and each attached document must pass the admission rules
+// of EVIDENCE.md. A document without a reference is permitted.
+func checkContentEvidence(manifest Object, doc any, hasDoc bool) {
+	reference, hasReference := manifest["evidence"]
+	if hasReference && !hasDoc {
+		fail("evidence_missing", "the manifest names an evidence document and none is attached", "admission")
+	}
+	if hasReference && !equal(item(reference, "digest"), evidenceDigest(doc)) {
+		fail("evidence_mismatch", "the attached evidence document is not the document that the manifest names", "admission")
+	}
+	if !hasDoc {
+		return
+	}
+	if _, code, rule := admitEvidence(doc); code != "" {
+		message := "the evidence document is not admitted"
+		if rule != "" {
+			message = "rule " + rule
+		}
+		fail(code, message, "admission")
+	}
+}
+
+// checkSnapshotEvidence applies the evidence checks to the evidence that a
+// content snapshot retains. A snapshot of an earlier Host can hold evidence
+// that the checks refuse. Thus an accept and an activation refuse it. A CEL
+// snapshot keeps the 1.2 behavior.
+func checkSnapshotEvidence(snapshot Object) {
+	if snapshotKind(snapshot) != contentKind {
+		return
+	}
+	manifest := Object{}
+	if reference, has := snapshot["evidence_reference"]; has {
+		manifest["evidence"] = reference
+	}
+	doc, hasDoc := snapshot["evidence"]
+	checkContentEvidence(manifest, doc, hasDoc)
 }

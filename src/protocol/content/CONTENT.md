@@ -61,7 +61,7 @@ The content manifest is a JSON text. It is one object. [`schema/manifest.schema.
 
 A field that is not in this table is not permitted. The names in `metadata` and in `applicability` are data, not fields.
 
-The `evidence` reference names an evidence document of format `entelos.evidence/1` ([#148](https://github.com/mohanraj00/entelos/issues/148)) by its digest. This file does not specify how the Host gets or checks that document.
+The `evidence` reference names an evidence document of format `entelos.evidence/1` ([#148](https://github.com/mohanraj00/entelos/issues/148)) by its digest. The [evidence checks](#evidence) give the bytes that the digest identifies, and the checks of `propose`, `decide` and `activate`.
 
 A digest is an identity of bytes. It is not a signature. Entelos does not read the items, so it cannot check an item digest or an item size. The qualification runner of the application must check them.
 
@@ -156,7 +156,33 @@ The Host keeps one record model for each kind. A record of the lifecycle has the
 - The Host applies the rules of this file before it writes the snapshot. A refusal stops the write, and the root does not change. The message of a rule refusal is `rule <rule>`. For rule `unknown_field`, it is `rule unknown_field: unknown field <path>`.
 - The `base` of the manifest must be the candidate `ref` of the current head, or an empty string if the head has no proposal. Else `propose` refuses with `stale_base`.
 - The source must cover the subject and the interval of the proposal. Else `propose` refuses with `source_not_applicable`.
+- The Host applies the [evidence checks](#evidence) after the source check.
 - The `propose` result has `snapshot_ref`, `candidate` and `head`.
+
+### Evidence
+
+A content proposal can attach one evidence document in the `propose` field `evidence`, as a CEL bundle proposal can. The manifest field `evidence` names one document by its digest.
+
+The digest of an evidence document is `sha256:` and the lowercase hex SHA-256 digest of the UTF-8 bytes of its canonical text. The canonical text is the record text of the Host codec without its final newline. It has the members of each object in ascending order of their names, no white space between tokens and raw UTF-8 characters. Python gives the same text with `json.dumps(document, sort_keys=True, ensure_ascii=False, separators=(",", ":"))`. The digest identifies the decoded document, not the bytes of the request. Thus the member order and the white space of the request do not change it. The digest is an identity of bytes, not a signature.
+
+The Host applies these checks to a content proposal in this order, after the source check. The first check that fails gives the result. Each refusal has the stage `admission`. A refusal stops the write, and the root does not change.
+
+| Step | Check | Result |
+|---|---|---|
+| 1 | If the manifest has `evidence`, the request attaches a document. | `evidence_missing` |
+| 2 | If the manifest has `evidence`, its `digest` is the digest of the attached document. | `evidence_mismatch` |
+| 3 | If the request attaches a document, the document passes the rules of [EVIDENCE.md](../evidence/EVIDENCE.md#rules). The message is `rule <rule>`, with the first rule that fails. | `invalid_evidence` |
+
+These rules apply to the two cases with one side only:
+
+- If the manifest names evidence and the request attaches none, `propose` refuses with `evidence_missing`. Else a reviewer sees a reference to a document that the Host cannot show, and the `evidence` read gives `absent`.
+- If the request attaches a document and the manifest has no `evidence`, `propose` accepts the document, as for a CEL bundle. Step 3 still applies. The snapshot binds the document, and a report and a verdict bind the snapshot. The document is not a part of the candidate `ref`.
+
+The Host shape check of the `evidence` field comes before these checks. It refuses a document with another `format`, a document that is too large and a document with the wrong structure, with `invalid_request`. Thus step 3 cannot give `unsupported_evidence_format`.
+
+Step 3 applies the admission rules at `propose` only for a content candidate. The field `candidate` is a Host field, and this format is unstable. A CEL bundle proposal keeps the behavior of approval API 1.2. Its admission rules stay in the `evidence` read, because a refusal at `propose` or `decide` changes which 1.2 requests are valid ([STABILITY.md](../../../docs/STABILITY.md)).
+
+A content snapshot of an earlier Host can hold evidence that these checks refuse. Thus an accept `decide` and `activate` apply the same three checks to the fields `evidence_reference` and `evidence` of the snapshot, after the report checks. They give the same codes and write no record. A reject `decide` does not apply them, so a reviewer can still reject the proposal. An existing decision or activation event does not change, and `resolve` and a replay give the same answers.
 
 ### Records
 
@@ -171,7 +197,7 @@ A content snapshot has these fields in addition to `function`, `scope`, `from`, 
 | `bundle_ref` | The candidate `ref`. Thus the qualification bindings of a CEL bundle apply: a passed verdict must name this `ref`. |
 | `evidence_reference` | The `evidence` object of the manifest, if the manifest has one. |
 | `applicability` | An object with the `applicability` of each item that has one, by `item_id`. A snapshot whose items have no values has no field. |
-| `evidence` | The evidence document of the `propose` request, if the request has one. The Host keeps it as for a CEL bundle, and `proposal` gives it. The Host does not compare it with `evidence_reference`. |
+| `evidence` | The evidence document of the `propose` request, if the request has one. The Host keeps it after the [evidence checks](#evidence), and `proposal` gives it. |
 
 A content snapshot has no `files`, no `engine_build` and no `base_snapshot`. A CEL snapshot has no `candidate` field and keeps the bytes of an earlier Host.
 
@@ -192,6 +218,9 @@ A content snapshot has no `files`, no `engine_build` and no `base_snapshot`. A C
 | Code | Use |
 |---|---|
 | `stale_base` | The `base` of the manifest is not the `ref` of the current head. |
+| `evidence_missing` | The manifest names an evidence document, and the request or the snapshot has none. |
+| `evidence_mismatch` | The digest of the manifest reference is not the digest of the attached document. |
+| `invalid_evidence` | Also from `propose`, an accept `decide` and `activate` of a content proposal with a document that the EVIDENCE.md rules refuse. |
 | `applicability_mismatch` | The `applicability` of an `activate` request is not equal to the values of the snapshot items. |
 | `unsupported_candidate_kind` | Also from `load`, `invoke`, `describe` and `ingest` of a content snapshot, and from the CEL runner. |
 | `stale_qualification` | Also for a report whose candidate differs from the candidate of its snapshot. |
@@ -237,20 +266,26 @@ The checker applies the same rules that the Host applies. Agreement of the check
 
 [`vectors/lifecycle-cases.json`](vectors/lifecycle-cases.json) has the lifecycle vectors. Each case starts with an empty store, a source and a plan for the subject `content:loan-rules/region-a`. `manifests` gives each manifest text and its `ref`, calculated with `shasum -a 256`. A manifest with item values also has `applicability`: the values that the snapshot, the event and the selection record. Each step has one operation and an optional `expect`:
 
-- `propose`: the manifest name, with `from` and `until`. The result is the name, or `{"error": <code>}`.
+- `propose`: the manifest name, with `from` and `until`, and an optional `evidence` name. The request attaches the document of that name. The result is the name, or `{"error": <code>}`, with `rule` for a rule refusal.
 - `qualify`: the manifest name and the `verdict` of the fixture runner. `runner_names` is the manifest that the verdict names, if it is not the same. The result is the report status.
 - `decide`: an accept verdict on the last report. `activate`: an activation of the last decision, with the optional `applicability` of the request. The result is `accept` or the name, or `{"error": <code>}`.
 - `state`: the `state` of the proposal in the approval API.
 - `mark`: keep the current root as a named cursor. `resolve`: the date, and an optional `cursor` name. The result is the manifest name of the selected candidate.
 - `load`, `invoke`, `describe`: the date. The result is the error.
 
-The Go test `TestContentLifecycleVectors` runs them on the Host with a fixture runner. The fixture runner checks that it got the exact manifest bytes. The test also checks the `applicability` of each snapshot, each event and each selection against the manifest entry. `check_spec.py` checks each `ref`, each manifest against the rules, the `applicability` of each manifest entry against its items, the result of each `activate` against the confirmation rule and each step name.
+`evidence` gives each evidence document by name, with its `digest`, calculated with `shasum -a 256` on its canonical text, and its `admission`: `valid`, or the code and the rule of the EVIDENCE.md rules.
+
+The Go test `TestContentLifecycleVectors` runs them on the Host with a fixture runner. After each refused `propose`, it checks that the root did not change. The fixture runner checks that it got the exact manifest bytes. The test also checks the `applicability` of each snapshot, each event and each selection against the manifest entry. `check_spec.py` checks each `ref`, each manifest against the rules, the `applicability` of each manifest entry against its items, the result of each `activate` against the confirmation rule and each step name. It also checks each evidence `digest` and `admission`, with the rules of `../evidence/check_spec.py`, and the result of each `propose` that writes or gives an evidence code against the evidence checks. Each code of the evidence table needs a case.
+
+The Go test `TestEarlierContentSnapshotEvidenceIsRefused` writes content snapshots and an accept decision as an earlier Host did. It checks the codes of an accept `decide` and of `activate`, and that a reject `decide` stays possible. `TestEvidenceDigestIsTheCanonicalText` checks each vector digest against the Host, also for a request text with other white space.
 
 ## Limits
 
 - The wire protocol has no `candidate` field and no `activate` field `applicability` yet. Only a Host request (the Go API or the JSONL Host) can give a content candidate or confirm its values.
 - `proposals` gives no separate `candidate` or `evidence_reference` field in its list item. A reader gets them from `proposal`.
-- The Host does not get or check the evidence document that the manifest `evidence` names. A `propose` request can attach an evidence document, and the Host keeps it, but the Host does not compare it with the reference.
+- The Host does not fetch the evidence document that the manifest `evidence` names. The request must attach it. The digest shows only that the attached document is the named document. It does not show that the producer statements in the document are true.
+- The `state` of the approval API does not give the evidence codes, because the `refusal` values of approval API 1.2 are fixed. A content proposal with refused evidence of an earlier Host can show `awaiting_verdict`, and its accept `decide` gives the code.
+- A canonical text with a fraction uses the Python form of a 64-bit float. A change of the number domain of the evidence format changes this text.
 - Entelos cannot check an item digest, an item size or a media type. The qualification runner of the application is responsible for them.
 - The manifest has no signature and no author authentication. The caller of `propose` is responsible for the source of the manifest. A signed activation record of the Host names the subject, not the manifest text.
 - The manifest does not record when an item was written or by whom.
