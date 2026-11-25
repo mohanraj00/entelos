@@ -397,6 +397,7 @@ func (h *Host) decide(v *View, q Object) Object {
 	var report, snapshot Object
 	if disposition == "accept" {
 		report, snapshot = h.reportValid(v, item(q, "report_ref"))
+		checkSnapshotEvidence(snapshot)
 	} else {
 		report = h.scoped(v, item(q, "report_ref"), "qualification")
 		snapshot = h.scoped(v, item(report, "snapshot_ref"), "snapshot")
