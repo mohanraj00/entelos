@@ -1,8 +1,8 @@
 package lifecycle
 
 import (
-	"math/big"
 	"regexp"
+	"strconv"
 	"unicode"
 	"unicode/utf8"
 )
@@ -11,20 +11,24 @@ import (
 // src/protocol/evidence/EVIDENCE.md. checkEvidence stays the shape check of
 // the approval API 1.2 attachment. These rules do not change it.
 
-const maxEvidenceFacts = 256
+const (
+	maxEvidenceFacts = 256
+	maxEvidenceInt   = 1<<53 - 1
+	evidenceUnits    = "ppm-milli"
+)
 
 var evidenceFormat = regexp.MustCompile(`^entelos\.evidence/(0|[1-9][0-9]*)$`)
 
 // evRule is one schema of evidence.schema.json. A nil list of fields permits
 // each object. Else a member that is not in fields is refused.
 type evRule struct {
-	kind      string // object, array, string, integer, number or boolean
+	kind      string // object, array, string, integer, boolean or attached_value
 	null      bool   // null also agrees
 	pattern   *regexp.Regexp
 	text      bool // no control character and one character that is not white space
 	maxLen    int  // code points; 0 is no limit
 	enum      []string
-	low, high *big.Rat // nil is no bound
+	low, high int64
 	items     *evRule
 	minItems  int
 	maxItems  int // 0 is no limit
@@ -43,7 +47,7 @@ func evText(max int, null bool) *evRule {
 func evNullable(r evRule) *evRule { r.null = true; return &r }
 
 func evInteger(low int64, null bool) *evRule {
-	return &evRule{kind: "integer", null: null, low: big.NewRat(low, 1)}
+	return &evRule{kind: "integer", null: null, low: low, high: maxEvidenceInt}
 }
 
 func evList(items *evRule, min, max int) *evRule {
@@ -55,17 +59,17 @@ func evObject(required []string, fields map[string]*evRule) *evRule {
 }
 
 var (
-	evName     = evString(`^[A-Za-z0-9._-]{1,128}$`)
-	evScheme   = evString(`^[A-Za-z0-9._:/@-]{1,128}$`)
-	evCode     = evString(`^[A-Z][A-Z0-9_]{0,63}$`)
-	evWord     = evString(`^[a-z][a-z0-9_]{0,63}$`)
-	evDigest   = evString(`^sha256:[0-9a-f]{64}$`)
-	evDigestOr = evNullable(*evDigest)
-	evTime     = evString(`^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\.[0-9]{1,9})?Z$`)
-	evNumber   = &evRule{kind: "number"}
-	evAttached = evObject([]string{"digest", "value"}, map[string]*evRule{"digest": evDigest, "value": {kind: "object"}})
+	evName       = evString(`^[A-Za-z0-9._-]{1,128}$`)
+	evScheme     = evString(`^[A-Za-z0-9._:/@-]{1,128}$`)
+	evCode       = evString(`^[A-Z][A-Z0-9_]{0,63}$`)
+	evWord       = evString(`^[a-z][a-z0-9_]{0,63}$`)
+	evDigest     = evString(`^sha256:[0-9a-f]{64}$`)
+	evDigestOr   = evNullable(*evDigest)
+	evTime       = evString(`^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\.[0-9]{1,9})?Z$`)
+	evCoordinate = evInteger(-maxEvidenceInt, false)
+	evAttached   = evObject([]string{"digest", "value"}, map[string]*evRule{"digest": evDigest, "value": {kind: "attached_value"}})
 
-	evBox = evObject([]string{"x0", "y0", "x1", "y1"}, map[string]*evRule{"x0": evNumber, "y0": evNumber, "x1": evNumber, "y1": evNumber})
+	evBox = evObject([]string{"x0", "y0", "x1", "y1"}, map[string]*evRule{"x0": evCoordinate, "y0": evCoordinate, "x1": evCoordinate, "y1": evCoordinate})
 
 	evSpan = evObject([]string{"start", "end"}, map[string]*evRule{
 		"start": evInteger(0, false), "end": evInteger(1, false), "page": evInteger(1, false), "box": evBox})
@@ -74,7 +78,7 @@ var (
 		"role": evWord, "start": evInteger(0, true), "end": evInteger(1, true), "passed": {kind: "boolean"}})
 
 	evJudgment = evObject([]string{"question", "p"}, map[string]*evRule{
-		"question": evWord, "answer": evText(256, true), "p": {kind: "number", low: big.NewRat(0, 1), high: big.NewRat(1, 1)}})
+		"question": evWord, "answer": evText(256, true), "p": {kind: "integer", low: 0, high: 1000000}})
 
 	evData = evObject([]string{"field", "value"}, map[string]*evRule{
 		"field": evText(256, false), "key": evText(256, true), "value": {kind: "string", null: true, maxLen: 65536},
@@ -107,8 +111,7 @@ var (
 )
 
 // agrees applies the schema keywords as the subset validator of
-// src/protocol/test_protocol.py does. An integer is an Int or an int, never
-// a float64. A number is an Int, an int or a float64. A bool is neither.
+// src/protocol/test_protocol.py does.
 func (r *evRule) agrees(value any) bool {
 	if value == nil {
 		return r.null
@@ -131,18 +134,12 @@ func (r *evRule) agrees(value any) bool {
 			return false
 		}
 		return true
-	case "integer", "number":
-		switch value.(type) {
-		case Int, int:
-		case float64:
-			if r.kind == "integer" {
-				return false
-			}
-		default:
-			return false
-		}
-		n, ok := number(value)
-		return ok && (r.low == nil || n.Cmp(r.low) >= 0) && (r.high == nil || n.Cmp(r.high) <= 0)
+	case "integer":
+		n, ok := evidenceInteger(value)
+		return ok && n >= r.low && n <= r.high
+	case "attached_value":
+		obj, ok := value.(Object)
+		return ok && evidenceValue(obj)
 	case "boolean":
 		_, ok := value.(bool)
 		return ok
@@ -179,6 +176,69 @@ func (r *evRule) agrees(value any) bool {
 		return true
 	}
 	return false
+}
+
+func evidenceInteger(value any) (int64, bool) {
+	var n int64
+	switch v := value.(type) {
+	case int:
+		n = int64(v)
+	case Int:
+		parsed, err := strconv.ParseInt(v.Text, 10, 64)
+		if err != nil || strconv.FormatInt(parsed, 10) != v.Text {
+			return 0, false
+		}
+		n = parsed
+	default:
+		return 0, false
+	}
+	return n, n >= -maxEvidenceInt && n <= maxEvidenceInt
+}
+
+// Attached values can have arbitrary keys but use the same number domain.
+func evidenceValue(value any) bool {
+	switch v := value.(type) {
+	case Object:
+		for _, child := range v {
+			if !evidenceValue(child) {
+				return false
+			}
+		}
+	case Array:
+		for _, child := range v {
+			if !evidenceValue(child) {
+				return false
+			}
+		}
+	case nil, bool, string:
+	default:
+		_, ok := evidenceInteger(v)
+		return ok
+	}
+	return true
+}
+
+func evidenceHasUnits(doc Object, facts Array) bool {
+	producer := doc["producer"].(Object)
+	attached, _ := producer["producer_data"].(Object)
+	value, _ := attached["value"].(Object)
+	units, _ := value["number_units"].(string)
+	if units == evidenceUnits {
+		return true
+	}
+	for _, raw := range facts {
+		fact := raw.(Object)
+		judgments, _ := fact["data"].(Object)["judgments"].(Array)
+		if len(judgments) != 0 {
+			return false
+		}
+		for _, span := range fact["spans"].(Array) {
+			if _, present := span.(Object)["box"]; present {
+				return false
+			}
+		}
+	}
+	return true
 }
 
 // evTextOK is the pattern of a text. Go and Python \s differ, so the check
@@ -220,9 +280,13 @@ func admitEvidence(doc any) (inputs Object, code, rule string) {
 	if !evDocument.agrees(obj) {
 		return bad("schema")
 	}
+	rawFacts := obj["facts"].(Array)
+	if !evidenceHasUnits(obj, rawFacts) {
+		return bad("schema")
+	}
 	// The schema passed, so each type assertion below holds.
 	var facts []Object
-	for _, x := range obj["facts"].(Array) {
+	for _, x := range rawFacts {
 		facts = append(facts, x.(Object))
 	}
 	review := func(f Object) Object { r, _ := f["review"].(Object); return r }
@@ -235,9 +299,9 @@ func admitEvidence(doc any) (inputs Object, code, rule string) {
 		return out
 	}
 	more := func(end, start any) bool {
-		a, _ := number(end)
-		b, _ := number(start)
-		return a.Cmp(b) > 0
+		a, _ := evidenceInteger(end)
+		b, _ := evidenceInteger(start)
+		return a > b
 	}
 	if len(facts) > maxEvidenceFacts {
 		return bad("too_many_facts")

@@ -99,7 +99,10 @@ func TestEvidenceRead(t *testing.T) {
 		base = w.must("author", "author", "propose", fields)["snapshot_ref"].(string)
 		return base
 	}
-	human, open, none := propose(doc("valid-human-confirmed")), propose(doc("open-review")), propose(nil)
+	human := propose(doc("valid-human-confirmed"))
+	open := propose(doc("open-review"))
+	legacy := propose(doc("schema-legacy-full-data"))
+	none := propose(nil)
 	root := must(w.store.Read(nil)).Cursor
 	read := func(ref string) Object {
 		out, err := w.host("reviewer", "reviewer", w.runner).Handle(Object{"op": "evidence", "snapshot_ref": ref})
@@ -114,6 +117,9 @@ func TestEvidenceRead(t *testing.T) {
 	}
 	if got := read(open); got["admission"] != "invalid" || got["code"] != "invalid_evidence" || got["rule"] != "open_review" || got["inputs"] != nil {
 		t.Fatalf("refused document: %v", got)
+	}
+	if got := read(legacy); got["admission"] != "invalid" || got["code"] != "invalid_evidence" || got["rule"] != "schema" || got["inputs"] != nil {
+		t.Fatalf("legacy fractional document: %v", got)
 	}
 	if got := read(none); got["admission"] != "absent" || len(got) != 3 {
 		t.Fatalf("no document: %v", got)

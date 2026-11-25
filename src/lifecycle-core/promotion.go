@@ -23,7 +23,7 @@ var (
 			"profile_digest": evDigest, "measure_digest": evDigest, "gold_digest": evDigest, "labels_digest": evDigest,
 			"routes": evList(evObject([]string{"field", "route", "bound_bp"}, map[string]*evRule{
 				"field": measureText(256), "route": measureText(64),
-				"bound_bp": {kind: "integer", low: big.NewRat(0, 1), high: big.NewRat(10000, 1)}}), 1, 2000)})
+				"bound_bp": {kind: "integer", low: 0, high: 10000}}), 1, 2000)})
 )
 
 // checkPromotionContext checks the optional Host context field

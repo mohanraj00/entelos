@@ -97,8 +97,8 @@ func evidenceBounded(value any, depth int, remaining *int) bool {
 	return *remaining >= 0
 }
 
-// These are only the required members and JSON types of evidence.schema.json.
-// Patterns, value ranges, digests and admission decisions are not checked here.
+// These are the approval 1.2 attachment types. The evidence admission schema
+// further restricts p and box coordinates to fixed-point integers.
 func evidenceType(value any, kind string) bool {
 	if strings.HasPrefix(kind, "?") {
 		return value == nil || evidenceType(value, kind[1:])

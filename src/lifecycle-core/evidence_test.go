@@ -128,6 +128,11 @@ func TestEvidenceStructureFromSchema(t *testing.T) {
 				if !ok {
 					kinds = Array{prop["type"]}
 				}
+				// The stable attachment check keeps its original numeric types.
+				// Admission uses the stricter types in the evidence schema.
+				if name == "box" || (name == "judgment" && key == "p") {
+					kinds = Array{"number"}
+				}
 				prior := obj[key]
 				for _, bad := range []struct {
 					kind  string

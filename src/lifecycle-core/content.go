@@ -556,7 +556,8 @@ func evidenceDigest(doc any) string {
 // checkContentEvidence applies the evidence checks of CONTENT.md in their
 // order. A manifest with an evidence reference needs the document that the
 // reference names, and each attached document must pass the admission rules
-// of EVIDENCE.md. A document without a reference is permitted.
+// of EVIDENCE.md, including its number domain. A document without a reference
+// is permitted.
 func checkContentEvidence(manifest Object, doc any, hasDoc bool) {
 	reference, hasReference := manifest["evidence"]
 	if hasReference && !hasDoc {

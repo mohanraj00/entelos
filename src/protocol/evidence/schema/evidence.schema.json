@@ -10,7 +10,41 @@
     "producer": {"$ref": "#/$defs/producer"},
     "facts": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/fact"}}
   },
+  "if": {
+    "properties": {
+      "facts": {
+        "contains": {
+          "anyOf": [
+            {"properties": {"spans": {"contains": {"required": ["box"]}}}},
+            {"properties": {"data": {"required": ["judgments"], "properties": {"judgments": {"minItems": 1}}}}}
+          ]
+        }
+      }
+    }
+  },
+  "then": {
+    "properties": {
+      "producer": {
+        "required": ["producer_data"],
+        "properties": {
+          "producer_data": {
+            "properties": {
+              "value": {"required": ["number_units"], "properties": {"number_units": {"const": "ppm-milli"}}}
+            }
+          }
+        }
+      }
+    }
+  },
   "$defs": {
+    "wire_value": {
+      "type": ["null", "boolean", "string", "integer", "array", "object"],
+      "minimum": -9007199254740991,
+      "maximum": 9007199254740991,
+      "items": {"$ref": "#/$defs/wire_value"},
+      "additionalProperties": {"$ref": "#/$defs/wire_value"}
+    },
+    "coordinate": {"type": "integer", "minimum": -9007199254740991, "maximum": 9007199254740991},
     "name": {"type": "string", "pattern": "^[A-Za-z0-9._-]{1,128}$"},
     "scheme": {"type": "string", "pattern": "^[A-Za-z0-9._:/@-]{1,128}$"},
     "code": {"type": "string", "pattern": "^[A-Z][A-Z0-9_]{0,63}$"},
@@ -29,7 +63,7 @@
       "additionalProperties": false,
       "properties": {
         "digest": {"$ref": "#/$defs/digest"},
-        "value": {"type": "object"}
+        "value": {"type": "object", "additionalProperties": {"$ref": "#/$defs/wire_value"}}
       }
     },
     "producer": {
@@ -48,10 +82,10 @@
       "required": ["x0", "y0", "x1", "y1"],
       "additionalProperties": false,
       "properties": {
-        "x0": {"type": "number"},
-        "y0": {"type": "number"},
-        "x1": {"type": "number"},
-        "y1": {"type": "number"}
+        "x0": {"$ref": "#/$defs/coordinate"},
+        "y0": {"$ref": "#/$defs/coordinate"},
+        "x1": {"$ref": "#/$defs/coordinate"},
+        "y1": {"$ref": "#/$defs/coordinate"}
       }
     },
     "span": {
@@ -59,9 +93,9 @@
       "required": ["start", "end"],
       "additionalProperties": false,
       "properties": {
-        "start": {"type": "integer", "minimum": 0},
-        "end": {"type": "integer", "minimum": 1},
-        "page": {"type": "integer", "minimum": 1},
+        "start": {"type": "integer", "minimum": 0, "maximum": 9007199254740991},
+        "end": {"type": "integer", "minimum": 1, "maximum": 9007199254740991},
+        "page": {"type": "integer", "minimum": 1, "maximum": 9007199254740991},
         "box": {"$ref": "#/$defs/box"}
       }
     },
@@ -71,8 +105,8 @@
       "additionalProperties": false,
       "properties": {
         "role": {"$ref": "#/$defs/word"},
-        "start": {"type": ["integer", "null"], "minimum": 0},
-        "end": {"type": ["integer", "null"], "minimum": 1},
+        "start": {"type": ["integer", "null"], "minimum": 0, "maximum": 9007199254740991},
+        "end": {"type": ["integer", "null"], "minimum": 1, "maximum": 9007199254740991},
         "passed": {"type": "boolean"}
       }
     },
@@ -83,7 +117,7 @@
       "properties": {
         "question": {"$ref": "#/$defs/word"},
         "answer": {"$ref": "#/$defs/text_or_null"},
-        "p": {"type": "number", "minimum": 0, "maximum": 1}
+        "p": {"type": "integer", "minimum": 0, "maximum": 1000000}
       }
     },
     "data": {
@@ -122,7 +156,7 @@
         "reviewer_kind": {"type": "string", "enum": ["human", "model"]},
         "verdict": {"$ref": "#/$defs/word"},
         "time": {"$ref": "#/$defs/time"},
-        "ms": {"type": "integer", "minimum": 0},
+        "ms": {"type": "integer", "minimum": 0, "maximum": 9007199254740991},
         "entry_digest": {"$ref": "#/$defs/digest"},
         "producer_data": {"$ref": "#/$defs/attached"}
       }

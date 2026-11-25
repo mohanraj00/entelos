@@ -29,8 +29,16 @@ Each table uses these value shapes:
 - A **text** has 1 to 256 characters, with one or more characters that are not white space, and no control characters (U+0000 to U+001F and U+007F). Spaces and `:` are permitted. A **long text** has the same rule, with 4096 characters maximum. So `data.field`, `data.key`, `data.unit`, `fact_id`, `ref` and each reviewer name have 256 characters maximum, and a control character in them gives `schema`. `data.value` is not a text.
 - A **word** matches `^[a-z][a-z0-9_]{0,63}$`. A **code** matches `^[A-Z][A-Z0-9_]{0,63}$`.
 - A **digest** is `sha256:` and 64 lowercase hex digits.
-- An **attached object** is `{"digest": <digest>, "value": <object>}`. Entelos keeps the object as it is and does not read it.
+- An **attached object** is `{"digest": <digest>, "value": <object>}`. Entelos retains its value. Admission checks its number domain and reads the producer's unit marker when required.
 - "or null" means that the field is present, and its value can be `null`. "Optional" means that the field can be absent.
+
+### Numbers
+
+Each JSON number, including a number inside an attached object, uses the [wire protocol number domain](../PROTOCOL.md#request). Write an integer from −9007199254740991 to 9007199254740991 with no decimal point or exponent. A producer can use a string in an attached object to retain an exact decimal.
+
+If a document has a box or one or more judgments, set `producer.producer_data.value.number_units` to `"ppm-milli"` and supply the digest of that attached object. For a probability, multiply by 1000000. For a box, multiply each coordinate in page points by 1000. One point is 1/72 inch. Round to the nearest integer, with ties to even, if conversion needs rounding. The box must still have positive width and height after conversion.
+
+For example, write `970000` for a probability of 0.97 and `700500` for a coordinate of 700.5 points.
 
 ### Document and producer
 
@@ -62,7 +70,7 @@ Each table uses these value shapes:
 | `facts[].spans[].start` | integer | 0 or more. |
 | `facts[].spans[].end` | integer | More than `start`. |
 | `facts[].spans[].page` | integer | Optional. The page number, from 1. |
-| `facts[].spans[].box` | object | Optional. `x0`, `y0`, `x1` and `y1`, each a number in the page units of the producer. A box needs a page. |
+| `facts[].spans[].box` | object | Optional. `x0`, `y0`, `x1` and `y1`, each an integer in thousandths of a point. A box needs a page. |
 | `facts[].pins` | array | Optional. 0 to 16 source pins. |
 | `facts[].pins[].url` | long text | The URL of the pinned source. |
 | `facts[].pins[].digest` | digest or null | The bytes that the producer got. |
@@ -87,7 +95,7 @@ Span offsets are UTF-8 byte offsets into the NFC text that `text_digest` identif
 | `facts[].data.schema_digest` | digest | Optional. The schema of the producer. |
 | `facts[].data.policy_digest` | digest | Optional. The policy of the producer. |
 | `facts[].data.packs` | array | Optional. 0 to 64 texts: the packs that the decision used. |
-| `facts[].data.judgments` | array | Optional. 0 to 64 judgments: `question` (word), `answer` (optional, text or null), `p` (number from 0 to 1). |
+| `facts[].data.judgments` | array | Optional. 0 to 64 judgments with `question` (word), `answer` (optional, text or null) and `p` (integer probability in parts per million, from 0 to 1000000). |
 | `facts[].producer_data` | attached object | Optional. Other data of the producer for the fact. |
 
 ### Review
@@ -126,7 +134,7 @@ A reader applies these rules in this order. Each rule examines all of the facts 
 |---|---|---|
 | 1 | The document is an object, and `format` is a string of the shape `entelos.evidence/<number>`. The number has one or more digits and no leading zero. | `invalid_evidence`, rule `format` |
 | 2 | The number after the slash is `1`. | `unsupported_evidence_format` |
-| 3 | The document agrees with the schema. | `invalid_evidence`, rule `schema` |
+| 3 | The document agrees with the schema and the [number rules](#numbers). | `invalid_evidence`, rule `schema` |
 | 4 | The document has 256 facts or fewer. | `invalid_evidence`, rule `too_many_facts` |
 | 5 | Each `fact_id` is unique. | `invalid_evidence`, rule `duplicate_fact` |
 | 6 | For each span, `end` is more than `start`. For each part, `start` and `end` are both null, or `end` is more than `start`. | `invalid_evidence`, rule `span_order` |
@@ -162,7 +170,7 @@ The policy inputs do not read `outcome` codes, `data` or an attached object. A l
 
 This table shows how a mapping can give one fact from groundgate 0.14.0 (spec v0.12, commit `ca88ff7`). It uses the receipt (SPEC section 5), the `facts@1` export (section 5.1), the digests (section 6) and the review records `resolution@1` and `answer@2`. No code in this repository implements the map. The vector `valid-full-data` uses each field, with invented values.
 
-The seam test [`tests/test_groundgate_seam.py`](../../../tests/test_groundgate_seam.py) implements a part of this map for groundgate 0.16.0, in the test only. It reads the `facts@2` export (section 5.2) and the store records of its packet: `resolution@1` for the slot, `receipt@1` for the decision, and the answer log for `time` and `ms`. It maps the statuses `admitted`, `confirmed` and `chosen`. It does not map `corrected`, `packs`, `judgments`, `pins` or attached objects. It states that the reviewer of the test is `human`.
+The seam test [`tests/test_groundgate_seam.py`](../../../tests/test_groundgate_seam.py) implements a part of this map for groundgate 0.16.0, in the test only. It reads the `facts@2` export (section 5.2) and the store records of its packet. It maps the statuses `admitted`, `confirmed` and `chosen`. For a locator it takes `citation.locator.page` and multiplies the four values in `citation.locator.box` by 10 to convert hundredths of a PDF point to thousandths. It adds the unit marker to the producer data. It does not map `corrected`, `packs`, `judgments`, `pins` or the producer's attached objects. It states that the reviewer of the test is `human`.
 
 | entelos field | groundgate value |
 |---|---|
@@ -175,13 +183,13 @@ The seam test [`tests/test_groundgate_seam.py`](../../../tests/test_groundgate_s
 | `profile_digest`, `completeness` | The profile digest and the completeness report of the run of the fact. |
 | `source_kind`, `url`, `ref` | `citation.source`, `citation.url`, `citation.ref`. |
 | `source_digest`, `text_digest` | `citation.source_sha256`, `citation.text_sha256`. Both are null for `external` and `knowledge`. |
-| `spans` | `[citation.span]`, or `[]` if the span is null. |
+| `spans` | The start and end of `citation.span`, or `[]` if the span is null. Map a page and box using the [number rules](#numbers). |
 | `outcome`, `codes` | The decision `outcome` and `codes`. |
 | `data.field`, `data.key`, `data.value`, `data.unit` | The decision `field`, `key`, `value` and `unit`. |
 | `data.parts` | The decision `parts`. |
 | `data.schema_digest`, `data.policy_digest` | `schema_sha256`, `policy_sha256`. |
 | `data.packs` | The decision `packs`. |
-| `data.judgments` | The receipt `judgments` for the candidate, without `candidate_sha256`. |
+| `data.judgments` | The receipt `judgments` for the candidate, without `candidate_sha256`. Convert `p` to parts per million and add the unit marker. |
 | `pins` | For an external item: `url` and `retrieved`, with `digest` and `edition` null. |
 | `producer_data` | Other decision members, for example `proposer`, `missing` and `evidence_units`. |
 | `review.status` | The slot `status` of `resolution@1`. |
@@ -190,12 +198,9 @@ The seam test [`tests/test_groundgate_seam.py`](../../../tests/test_groundgate_s
 
 ## Citation in a proposal
 
-Approval API [1.2](../approval/APPROVAL.md#evidence-attachment-in-12) (#161) implements attachment and retrieval of the producer document. It checks the object and format and retains it in the snapshot. The evidence read applies the admission rules and gives the policy inputs ([below](#the-evidence-read)). The first two items of this list are still a proposal.
+Approval API [1.2](../approval/APPROVAL.md#evidence-attachment-in-12) (#161) accepts one optional document in the `evidence` field of `propose`. The snapshot retains the document. Entelos keeps the producer's digests and claims in that document. The producer retains the receipts and sources.
 
-- The `propose` request gets an optional field `evidence`, with one evidence document.
-- The Host applies the rules of this file before it writes the snapshot. A refusal stops the write, and the root does not change.
-- The snapshot records the document. Entelos stores the digests, the spans, the outcomes, the data, the reviews, the attached objects and the policy inputs. It does not copy the receipts or the sources.
-- The approval policy reads the policy inputs.
+For a content proposal, the Host applies the admission rules before it writes a snapshot. A refusal leaves the store root as it was. The Host-only evidence read applies the rules to a retained document and derives the policy inputs.
 
 ### The evidence read
 
@@ -216,6 +221,8 @@ The read applies the rules to the document that the snapshot retains, at the rea
 ## Versions
 
 The major version is the number after the slash in `format`. A reader reads only the major version that it knows. An unknown major version gives `unsupported_evidence_format`. A reader of version 1 refuses a field that it does not know, so a new entelos field or a new enum value needs a new major version.
+
+The experimental format keeps the name `entelos.evidence/1` after [#208](https://github.com/mohanraj00/entelos/issues/208). Admission of an earlier document with a decimal number, an out-of-range integer or a box or judgment without the unit marker gives `invalid_evidence`, rule `schema`. A document with only integers in range and no box or judgments needs no conversion. Earlier snapshots keep their bytes. Approval API 1.2 still attaches documents using its [shape and protocol checks](../approval/APPROVAL.md#evidence-attachment-in-12).
 
 The attached objects are the extension point. A producer can put a new field in `producer.producer_data`, `facts[].completeness`, `facts[].producer_data` or `facts[].review.answers[].producer_data` without a new major version. Words, codes, `source_kind` and `verdict` are not enums, so a new producer value also needs no new major version.
 

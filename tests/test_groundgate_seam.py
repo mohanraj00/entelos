@@ -38,6 +38,8 @@ CANDIDATES = [
     {'id': 'a', 'field': 'boxes', 'value': 3, 'evidence': {'start': 18, 'end': 19, 'text': '3'}},
     {'id': 'b', 'field': 'estimate', 'value': 4, 'evidence': {'start': 36, 'end': 37, 'text': '4'}},
 ]
+# groundgate records boxes in hundredths of a PDF point.
+PLACES = [[18, 19, 1, 7200, 70050, 9000, 71225]]
 REVIEW_POLICY = {'format': 'review-policy@1', 'audit': {'rate': '0', 'seed': ''}, 'agree': 1,
                  'leads': [], 'rejected': False}
 REVIEWER = 'ana'
@@ -49,7 +51,9 @@ ANSWER = {'format': 'answer@2', 'reviewer': REVIEWER, 'verdict': 'confirm', 'dec
           'time': '2026-11-15T10:00:00Z'}
 # The facts that a person expects from DOCUMENT, without the digests.
 EXPECTED_FACTS = [
-    {'fact_id': 'boxes', 'outcome': 'admitted', 'codes': [], 'spans': [{'start': 18, 'end': 19}],
+    {'fact_id': 'boxes', 'outcome': 'admitted', 'codes': [],
+     'spans': [{'start': 18, 'end': 19, 'page': 1,
+                'box': {'x0': 72000, 'y0': 700500, 'x1': 90000, 'y1': 712250}}],
      'data': {'field': 'boxes', 'key': None, 'value': '3', 'unit': None}, 'review': None},
     {'fact_id': 'estimate', 'outcome': 'needs_verification', 'codes': ['QUALIFIED_VALUE'],
      'spans': [{'start': 36, 'end': 37}],
@@ -100,6 +104,14 @@ def to_evidence(folder, export):
                 raise ValueError('the slot receipt is not the cited receipt')
             (decision,) = [receipt['decisions'][i] for i in slot['decisions']][:1]
             citation = f['citation']
+            spans = []
+            if citation['span'] is not None:
+                span = {k: citation['span'][k] for k in ('start', 'end')}
+                locator = citation.get('locator')
+                if locator is not None:
+                    span['page'] = locator['page']
+                    span['box'] = {k: n * 10 for k, n in zip(('x0', 'y0', 'x1', 'y1'), locator['box'])}
+                spans.append(span)
             fact = {
                 'fact_id': f['field'] if f['key'] is None else f['field'] + ':' + f['key'],
                 'receipt_digest': receipt['receipt_sha256'],
@@ -110,8 +122,7 @@ def to_evidence(folder, export):
                 'text_digest': citation['text_sha256'],
                 'url': citation['url'],
                 'ref': citation['ref'],
-                'spans': [] if citation['span'] is None else
-                         [{'start': citation['span']['start'], 'end': citation['span']['end']}],
+                'spans': spans,
                 'outcome': decision['outcome'],
                 'codes': decision['codes'],
                 'data': {'field': f['field'], 'key': f['key'], 'value': f['value'], 'unit': f['unit'],
@@ -133,9 +144,12 @@ def to_evidence(folder, export):
                                   'task_digest': f['review']['task'],
                                   'resolution_digest': export['resolution_sha256']}
             facts.append(fact)
-    return {'format': 'entelos.evidence/1',
-            'producer': {'id': 'groundgate', 'version': VERSION, 'digest_scheme': DIGEST_SCHEME},
-            'facts': facts}
+    producer = {'id': 'groundgate', 'version': VERSION, 'digest_scheme': DIGEST_SCHEME}
+    if any('box' in span for fact in facts for span in fact['spans']):
+        value = {'number_units': 'ppm-milli'}
+        raw = json.dumps(value, separators=(',', ':')).encode('utf-8')
+        producer['producer_data'] = {'digest': store_key('number-units@1', raw), 'value': value}
+    return {'format': 'entelos.evidence/1', 'producer': producer, 'facts': facts}
 
 
 class GroundgateSeam(unittest.TestCase):
@@ -150,7 +164,7 @@ class GroundgateSeam(unittest.TestCase):
         policy.write_text(json.dumps(REVIEW_POLICY), 'utf-8')
         with FolderStore(cls.folder) as store:
             reading, _ = put_reading(store, cls.source)
-            cls.packet, receipt = admit_packet(store, DOCUMENT, SCHEMA, CANDIDATES, None, reading=reading)
+            cls.packet, receipt = admit_packet(store, DOCUMENT, SCHEMA, CANDIDATES, None, reading=reading, places=PLACES)
             cls.receipt = receipt.to_dict()
             cls.tasks = write_tasks(store, cls.packet, REVIEW_POLICY).tasks
             for task, _ in cls.tasks:
