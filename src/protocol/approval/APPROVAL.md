@@ -272,7 +272,7 @@ The records are the stored records. The schema requires `format` `entelos.record
 
 `propose` accepts optional `evidence`, an object with `format: "entelos.evidence/1"`. The producer supplies the document described by [EVIDENCE.md](../evidence/EVIDENCE.md). The Host retains the object in the snapshot. This binds it to the snapshot content reference and idempotency payload.
 
-The Host checks the required members and JSON types in the [evidence schema](../evidence/schema/evidence.schema.json). This check includes nested members. It applies to each path, including the JSONL Host and direct `Handle` calls. The Host refuses unknown members outside attached `value` objects. These checks do not test patterns or value ranges.
+The Host checks the required members and JSON types of the attachment, including nested members. This applies to each path, including the JSONL Host and direct `Handle` calls. The Host refuses unknown members outside attached `value` objects. The 1.2 attachment check treats `p` and box coordinates as numbers and checks neither their units nor their ranges. The socket and HTTP binding enforce the protocol number domain before the attachment check.
 
 The document can have at most 32 nested object or array levels. The document object is at level 1. The encoded document can have at most 262144 bytes (256 KiB). This count uses compact sorted JSON, raw UTF-8 and one final newline, as the core codec writes it. Both limits include attached `value` objects.
 
@@ -280,7 +280,7 @@ An incorrect structure or format, or a document above either limit, gives `inval
 
 The 1.2 `proposal` result adds `evidence` with the retained document, when present. When absent, the field is omitted. Reads at an earlier store cursor retain that document. A response for a version below 1.2 omits both the top-level `evidence` field and `snapshot.evidence`. The stored snapshot does not change. A proposal made without evidence keeps its earlier record and response fields.
 
-This issue adds attachment and retrieval only. It does not implement the proposed evidence admission rules, validate the producer's factual claims, derive policy inputs or retrieve external objects. The document is the producer's statement. It remains subject to the protocol integer-only value domain and frame bound.
+Attachment and retrieval carry the producer's statement. The [evidence admission schema](../evidence/schema/evidence.schema.json) and the [fixed-point number rules](../evidence/EVIDENCE.md#numbers) apply when the Host checks evidence admission. Use those rules to produce a document that can pass admission and travel on both bindings. Wire requests remain subject to the protocol integer-only value domain and frame bound.
 
 ### `decide` (write)
 

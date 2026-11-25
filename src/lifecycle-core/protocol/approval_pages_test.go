@@ -400,3 +400,111 @@ func TestApprovalEvidenceVectorsOffline(t *testing.T) {
 		})
 	}
 }
+
+func TestFullEvidenceBindings(t *testing.T) {
+	raw, err := os.ReadFile(filepath.Join(protocolDir, "evidence", "vectors", "evidence-cases.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	vectors, err := lifecycle.Decode(raw)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var full lifecycle.Object
+	for _, rawCase := range vectors.(lifecycle.Object)["cases"].(lifecycle.Array) {
+		c := rawCase.(lifecycle.Object)
+		if c["name"] == "valid-full-data" {
+			full = c
+			break
+		}
+	}
+	if full == nil {
+		t.Fatal("missing valid-full-data")
+	}
+	doc := full["evidence"]
+	roles := []string{"author", "reviewer"}
+	principals := lifecycle.Object{"author": lifecycle.Object{"actor": "author", "roles": lifecycle.Array{"author", "reviewer"}}}
+	clock := filepath.Join(t.TempDir(), "clock")
+	writePrivate(t, clock, []byte("2026-11-20T09:00:00Z"))
+	schemas := loadTestSchemas(t)
+	run := func(t *testing.T, mode string) (lifecycle.Object, lifecycle.Object) {
+		inTempDir(t)
+		store := lifecycle.NewMemoryStore()
+		host, err := lifecycle.NewHost(store, attachmentRuntime{}, lifecycle.Object{
+			"scope": "demo", "worker": "worker", "runner_actor": "runner", "functions": lifecycle.Array{"record.visible"},
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		host.Clock = lifecycle.FileClock{Path: clock}
+		direct := func(op string, body lifecycle.Object) lifecycle.Object {
+			t.Helper()
+			result, err := host.HandleAs("author", roles, merged(body, lifecycle.Object{"op": op}))
+			if err != nil {
+				t.Fatalf("%s: %v", op, err)
+			}
+			return result.(lifecycle.Object)
+		}
+		window := lifecycle.Object{"function": "record.visible", "from": "2026-11-01", "until": "2027-01-01"}
+		source := direct("source", merged(window, lifecycle.Object{"text": "invented source", "reason": "fixture",
+			"expected_revision": "", "request_key": "source"}))
+		body := merged(window, lifecycle.Object{"base_snapshot": "", "source_ref": at(source, "result", "source_ref"),
+			"bundle": lifecycle.Object{"manifest": "{}", "environment": "{}", "source": "fixture", "fixed": "{}"},
+			"reason": "fixture", "expected_revision": source["cursor"], "request_key": "propose", "evidence": doc})
+		call := direct
+		if mode != "host" {
+			dir, err := os.Getwd()
+			if err != nil {
+				t.Fatal(err)
+			}
+			prefix := filepath.Join(dir, "full-evidence")
+			var send func(string, []byte) lifecycle.Object
+			if transport, inProcess := strings.CutSuffix(mode, "-in-process"); inProcess {
+				send = pageTransport(t, transport, host, schemas, principals, prefix)
+			} else {
+				send = serveTransport(t, transport, host, schemas, principals, "demo", sock, prefix)
+			}
+			call = func(op string, body lifecycle.Object) lifecycle.Object {
+				t.Helper()
+				request := lifecycle.Object{"protocol": "1.2", "request_id": op, "operation": op, "body": body}
+				response := send("author", lifecycle.Encode(request))
+				if response["status"] != "ok" {
+					t.Fatalf("%s: %s", op, lifecycle.Encode(response))
+				}
+				return response["result"].(lifecycle.Object)
+			}
+		}
+		proposed := call("propose", body)
+		ref := at(proposed, "result", "snapshot_ref")
+		proposal := call("proposal", lifecycle.Object{"snapshot_ref": ref})
+		if !sameValue(proposal["evidence"], doc) || !sameValue(at(proposal, "snapshot", "evidence"), doc) {
+			t.Fatal("the proposal did not retain the full evidence vector")
+		}
+		admission := direct("evidence", lifecycle.Object{"snapshot_ref": ref})
+		if admission["admission"] != "valid" || !sameValue(admission["inputs"], at(full, "expect", "inputs")) {
+			t.Fatalf("evidence admission: %s", lifecycle.Encode(admission))
+		}
+		root, err := store.Read(nil)
+		if err != nil || proposed["cursor"] != root.Cursor || proposal["cursor"] != root.Cursor {
+			t.Fatalf("propose or proposal did not return the store cursor: %v", err)
+		}
+		// The stream namespace is random in each fresh store, so roots differ.
+		delete(proposed, "cursor")
+		delete(proposal, "cursor")
+		return proposed, proposal
+	}
+	directPropose, directRead := run(t, "host")
+	for _, transport := range transports {
+		for _, mode := range []string{transport + "-in-process", transport} {
+			t.Run(mode, func(t *testing.T) {
+				proposed, proposal := run(t, mode)
+				if !sameValue(proposed, directPropose) {
+					t.Fatalf("propose differs from the direct Go Host: got %s, want %s", lifecycle.Encode(proposed), lifecycle.Encode(directPropose))
+				}
+				if !sameValue(proposal, directRead) {
+					t.Fatal("proposal differs from the direct Go Host")
+				}
+			})
+		}
+	}
+}
