@@ -1,6 +1,6 @@
 {
  "format_version": 1,
- "note": "Each case starts with an empty store. The Host installs the subject content:loan-rules/region-a. A source and a plan cover 2025-01-01 to 2029-01-01. A propose step gives the interval of the candidate. Each expected value is written from CONTENT.md. Each ref was calculated with shasum -a 256 on the manifest text. A manifest with item values has the field applicability: the values that the snapshot, the event and the selection record, written from CONTENT.md.",
+ "note": "Each case starts with an empty store. The Host installs the subject content:loan-rules/region-a. A source and a plan cover 2025-01-01 to 2029-01-01. A propose step gives the interval of the candidate. Each expected value is written from CONTENT.md. Each ref was calculated with shasum -a 256 on the manifest text. A manifest with item values has the field applicability: the values that the snapshot, the event and the selection record, written from CONTENT.md. Each evidence digest was calculated with shasum -a 256 on the canonical text of its document, as CONTENT.md defines it.",
  "subjects": [
   "content:loan-rules/region-a"
  ],
@@ -10,8 +10,8 @@
    "ref": "sha256:12ff473e4cec51c00d4c005eab1b0b7bfcd1c22cedec8169759721dba72410b3"
   },
   "second": {
-   "text": "{\"format\":\"entelos.content/1\",\"collection\":\"loan-rules\",\"partition\":\"region-a\",\"base\":\"sha256:12ff473e4cec51c00d4c005eab1b0b7bfcd1c22cedec8169759721dba72410b3\",\"items\":[{\"item_id\":\"limits\",\"digest\":\"sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\",\"size\":130,\"media_type\":\"text/markdown\"}],\"evidence\":{\"format\":\"entelos.evidence/1\",\"digest\":\"sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc\"}}",
-   "ref": "sha256:ceb03e6677fca9ca107177fc6ed4f063c51896367dd8b0b88d4e7a443fed3f85"
+   "text": "{\"format\":\"entelos.content/1\",\"collection\":\"loan-rules\",\"partition\":\"region-a\",\"base\":\"sha256:12ff473e4cec51c00d4c005eab1b0b7bfcd1c22cedec8169759721dba72410b3\",\"items\":[{\"item_id\":\"limits\",\"digest\":\"sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\",\"size\":130,\"media_type\":\"text/markdown\"}],\"evidence\":{\"format\":\"entelos.evidence/1\",\"digest\":\"sha256:5234697869248029eb488a95fb012dde25575e03edf64d3e945a90974d3ce89f\"}}",
+   "ref": "sha256:7fe204f1c5751238bfc04746b070c769bea3a585c33957b8d3d9d9e5f9a48878"
   },
   "other-head": {
    "text": "{\"format\":\"entelos.content/1\",\"collection\":\"loan-rules\",\"partition\":\"region-b\",\"base\":\"\",\"items\":[{\"item_id\":\"limits\",\"digest\":\"sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"size\":120}]}",
@@ -37,6 +37,138 @@
       "fr"
      ]
     }
+   }
+  },
+  "names-refused": {
+   "text": "{\"format\":\"entelos.content/1\",\"collection\":\"loan-rules\",\"partition\":\"region-a\",\"base\":\"\",\"items\":[{\"item_id\":\"limits\",\"digest\":\"sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"size\":120,\"media_type\":\"text/markdown\"}],\"evidence\":{\"format\":\"entelos.evidence/1\",\"digest\":\"sha256:da628c43dba6940b8eadcd140a86241f8dd623138d9ac3454dbe2cdb7dcb5f37\"}}",
+   "ref": "sha256:cfc5e877d733412902f55aa9f7b9bbc39a4300bcff10ebb9ddcfabdf8876d4be"
+  }
+ },
+ "evidence": {
+  "accepted": {
+   "document": {
+    "format": "entelos.evidence/1",
+    "producer": {
+     "id": "producer-a",
+     "version": "1.0.0",
+     "digest_scheme": "producer-a/1"
+    },
+    "facts": [
+     {
+      "fact_id": "f-1",
+      "receipt_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+      "decision_digest": "sha256:2222222222222222222222222222222222222222222222222222222222222222",
+      "packet_digest": "sha256:3333333333333333333333333333333333333333333333333333333333333333",
+      "source_kind": "document",
+      "source_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "text_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "spans": [
+       {
+        "start": 21,
+        "end": 22
+       }
+      ],
+      "outcome": "admitted",
+      "codes": [],
+      "data": {
+       "field": "items",
+       "key": null,
+       "value": "2",
+       "unit": null
+      }
+     }
+    ]
+   },
+   "digest": "sha256:5234697869248029eb488a95fb012dde25575e03edf64d3e945a90974d3ce89f",
+   "admission": "valid"
+  },
+  "other": {
+   "document": {
+    "format": "entelos.evidence/1",
+    "producer": {
+     "id": "producer-a",
+     "version": "1.0.0",
+     "digest_scheme": "producer-a/1"
+    },
+    "facts": [
+     {
+      "fact_id": "f-2",
+      "receipt_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+      "decision_digest": "sha256:2222222222222222222222222222222222222222222222222222222222222222",
+      "packet_digest": "sha256:3333333333333333333333333333333333333333333333333333333333333333",
+      "source_kind": "document",
+      "source_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "text_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "spans": [
+       {
+        "start": 21,
+        "end": 22
+       }
+      ],
+      "outcome": "admitted",
+      "codes": [],
+      "data": {
+       "field": "items",
+       "key": null,
+       "value": "2",
+       "unit": null
+      }
+     }
+    ]
+   },
+   "digest": "sha256:be7639aef113946147a9dbac3e1528dce216fbe6b44d45760f83b5b6814a6ba1",
+   "admission": "valid"
+  },
+  "open-review": {
+   "document": {
+    "format": "entelos.evidence/1",
+    "producer": {
+     "id": "producer-a",
+     "version": "1.0.0",
+     "digest_scheme": "producer-a/1"
+    },
+    "facts": [
+     {
+      "fact_id": "f-1",
+      "receipt_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+      "decision_digest": "sha256:2222222222222222222222222222222222222222222222222222222222222222",
+      "packet_digest": "sha256:3333333333333333333333333333333333333333333333333333333333333333",
+      "source_kind": "document",
+      "source_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "text_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "spans": [
+       {
+        "start": 21,
+        "end": 22
+       }
+      ],
+      "outcome": "needs_verification",
+      "codes": [],
+      "data": {
+       "field": "items",
+       "key": null,
+       "value": "2",
+       "unit": null
+      },
+      "review": {
+       "status": "open",
+       "answers": [
+        {
+         "reviewer": "person:Ana Diaz",
+         "reviewer_kind": "human",
+         "verdict": "unsure",
+         "time": "2026-11-12T09:30:00Z",
+         "ms": 5400
+        }
+       ]
+      }
+     }
+    ]
+   },
+   "digest": "sha256:da628c43dba6940b8eadcd140a86241f8dd623138d9ac3454dbe2cdb7dcb5f37",
+   "admission": {
+    "code": "invalid_evidence",
+    "rule": "open_review"
    }
   }
  },
@@ -88,7 +220,8 @@
      "propose": "second",
      "from": "2027-01-01",
      "until": "2028-01-01",
-     "expect": "second"
+     "expect": "second",
+     "evidence": "accepted"
     },
     {
      "state": "first",
@@ -163,7 +296,8 @@
      "propose": "second",
      "from": "2026-01-01",
      "until": "2027-01-01",
-     "expect": "second"
+     "expect": "second",
+     "evidence": "accepted"
     },
     {
      "state": "first",
@@ -195,7 +329,8 @@
      "until": "2027-01-01",
      "expect": {
       "error": "stale_base"
-     }
+     },
+     "evidence": "accepted"
     },
     {
      "propose": "first",
@@ -215,7 +350,8 @@
      "propose": "second",
      "from": "2026-01-01",
      "until": "2027-01-01",
-     "expect": "second"
+     "expect": "second",
+     "evidence": "accepted"
     },
     {
      "propose": "second",
@@ -223,7 +359,8 @@
      "until": "2027-01-01",
      "expect": {
       "error": "stale_base"
-     }
+     },
+     "evidence": "accepted"
     }
    ]
   },
@@ -478,6 +615,79 @@
     {
      "resolve": "2026-06-01",
      "expect": "first"
+    }
+   ]
+  },
+  {
+   "name": "evidence-at-propose",
+   "steps": [
+    {
+     "propose": "names-refused",
+     "evidence": "open-review",
+     "from": "2026-01-01",
+     "until": "2027-01-01",
+     "expect": {
+      "error": "invalid_evidence",
+      "rule": "open_review"
+     }
+    },
+    {
+     "propose": "first",
+     "evidence": "open-review",
+     "from": "2026-01-01",
+     "until": "2027-01-01",
+     "expect": {
+      "error": "invalid_evidence",
+      "rule": "open_review"
+     }
+    },
+    {
+     "propose": "first",
+     "evidence": "other",
+     "from": "2026-01-01",
+     "until": "2027-01-01",
+     "expect": "first"
+    },
+    {
+     "propose": "second",
+     "from": "2026-01-01",
+     "until": "2027-01-01",
+     "expect": {
+      "error": "evidence_missing"
+     }
+    },
+    {
+     "propose": "second",
+     "evidence": "other",
+     "from": "2026-01-01",
+     "until": "2027-01-01",
+     "expect": {
+      "error": "evidence_mismatch"
+     }
+    },
+    {
+     "propose": "second",
+     "evidence": "accepted",
+     "from": "2026-01-01",
+     "until": "2027-01-01",
+     "expect": "second"
+    },
+    {
+     "qualify": "second",
+     "verdict": "passed",
+     "expect": "passed"
+    },
+    {
+     "decide": "second",
+     "expect": "accept"
+    },
+    {
+     "activate": "second",
+     "expect": "second"
+    },
+    {
+     "resolve": "2026-06-01",
+     "expect": "second"
     }
    ]
   }

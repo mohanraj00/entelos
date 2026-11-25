@@ -2,7 +2,7 @@
 
 This file specifies the admission evidence that an external producer gives for a proposal. It is the first part of issue [#104](https://github.com/mohanraj00/entelos/issues/104), and issue [#148](https://github.com/mohanraj00/entelos/issues/148) tracks it.
 
-Status: **implemented in the evidence read**. Approval API 1.2 retains and returns the producer document. The Go lifecycle Host applies these admission rules in the Host-only `evidence` read ([below](#the-evidence-read)). `propose` does not apply them yet. The schema and the vectors in this directory are the contract. The vectors have expected values that a person wrote from this text. No candidate output made them. [`check_spec.py`](check_spec.py) checks the vectors against the schema and the rules of this file. It does not run a Host.
+Status: **implemented in the evidence read**. Approval API 1.2 retains and returns the producer document. The Go lifecycle Host applies these admission rules in the Host-only `evidence` read ([below](#the-evidence-read)). `propose`, an accept `decide` and `activate` of a content proposal also apply them ([CONTENT.md](../content/CONTENT.md#evidence)). For a CEL bundle proposal, `propose` does not apply them yet. The schema and the vectors in this directory are the contract. The vectors have expected values that a person wrote from this text. No candidate output made them. [`check_spec.py`](check_spec.py) checks the vectors against the schema and the rules of this file. It does not run a Host.
 
 ## Terms
 
@@ -211,7 +211,7 @@ Result: `{"cursor", "snapshot_ref", "admission", "code"?, "rule"?, "inputs"?}`.
 | `valid` | The document passes all of the rules. | `inputs`: the four policy inputs. |
 | `invalid` | A rule refuses the document. | `code`, and `rule` for `invalid_evidence`. |
 
-The read applies the rules to the document that the snapshot retains, at the read cursor. It writes nothing. The snapshot bytes and the 1.2 `propose` and `proposal` results do not change, so the stable approval vectors keep their bytes. A document that a rule refuses stays in the snapshot. `propose` 1.2 does not refuse it, because that would change which 1.2 requests are valid ([STABILITY.md](../../../docs/STABILITY.md)). A later wire version can refuse it at `propose`.
+The read applies the rules to the document that the snapshot retains, at the read cursor. It writes nothing. The snapshot bytes and the 1.2 `propose` and `proposal` results do not change, so the stable approval vectors keep their bytes. For a CEL bundle proposal, a document that a rule refuses stays in the snapshot. `propose` 1.2 does not refuse it, because that would change which 1.2 requests are valid ([STABILITY.md](../../../docs/STABILITY.md)). A later wire version can refuse it at `propose`.
 
 ## Versions
 
@@ -241,7 +241,7 @@ The checker applies the same rules as the Host. Agreement of the checker and the
 
 ## Limits
 
-- The Host retains and returns an attachment through approval API 1.2. Only the Host-only `evidence` read applies the admission rules and gives the policy inputs. `propose` does not refuse a document that a rule refuses, and the wire protocol has no evidence read. A passing format check does not show Host admission of evidence.
+- The Host retains and returns an attachment through approval API 1.2. For a CEL bundle proposal, only the Host-only `evidence` read applies the admission rules. `propose` refuses a refused document only for a content proposal. Only the `evidence` read gives the policy inputs, and the wire protocol has no evidence read. A passing format check does not show Host admission of evidence.
 - No approval policy of the Host reads the policy inputs yet. The policy verdict of [POLICY.md](../policy/POLICY.md) (proposed) is the place for that.
 - Entelos cannot check a digest, a span, an outcome, a code or a review, because it does not read the receipts or the sources. The policy inputs are statements of the producer.
 - Entelos does not check that an attached object agrees with its digest.

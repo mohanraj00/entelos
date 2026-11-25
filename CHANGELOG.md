@@ -4,7 +4,12 @@ This file lists the changes for each snapshot tag. A tag is a stable snapshot to
 
 ## Unreleased
 
-No change yet.
+### Reference code
+
+- A content proposal checks its evidence at `propose` (#207). [CONTENT.md](src/protocol/content/CONTENT.md#evidence) defines the digest that the manifest field `evidence.digest` identifies: SHA-256 of the canonical text of the evidence document. If the manifest names evidence, the request must attach that document. Else `propose` refuses with `evidence_missing` or `evidence_mismatch`. An attached document must pass the 14 rules of [EVIDENCE.md](src/protocol/evidence/EVIDENCE.md#rules), else `propose` refuses with `invalid_evidence` and the rule. Each refusal has the stage `admission` and writes nothing. A document without a manifest reference is still permitted. A CEL bundle proposal keeps the behavior of approval API 1.2.
+  - Effect on a store with old snapshots: the records keep their bytes, and no migration is necessary. A content snapshot of an earlier Host can have a reference with no document, a document with another digest, or a document that the rules refuse. For such a snapshot, an accept `decide` and `activate` now refuse with the same codes. A reject `decide` still works. An existing decision or activation event does not change, and `resolve` and a replay give the same answers. To continue, propose a new snapshot with the named document.
+  - The approval `state` of such a snapshot can still be `awaiting_verdict`, because the `refusal` values of approval API 1.2 are fixed.
+  - The lifecycle vectors of the content format change: the manifest `second` names the digest of a vector document, so its `ref` changes. The new case `evidence-at-propose` covers each new code.
 
 ## v0.6.0 (2026-11-20)
 

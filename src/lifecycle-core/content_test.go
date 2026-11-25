@@ -104,6 +104,7 @@ type contentRun struct {
 	runner    *contentRunner
 	subject   string
 	manifests Object
+	evidence  Object
 	source    string
 	plan      string
 	snapshots map[string]string
@@ -119,6 +120,7 @@ func newContentRun(t *testing.T, doc Object) *contentRun {
 	w.functions = doc["subjects"].(Array)
 	w.signer, _ = newTestSigner(t)
 	r := &contentRun{t: t, w: w, runner: runner, subject: w.functions[0].(string), manifests: doc["manifests"].(Object),
+		evidence:  lookup(doc, "evidence", Object{}).(Object),
 		snapshots: map[string]string{}, reports: map[string]string{}, decisions: map[string]string{}, events: map[string]string{},
 		cursors: map[string]string{}}
 	wide := Object{"function": r.subject, "from": "2025-01-01", "until": "2029-01-01"}
@@ -204,9 +206,18 @@ func (r *contentRun) step(step Object) any {
 	case step["propose"] != nil:
 		name := step["propose"].(string)
 		manifest := r.manifests[name].(Object)
-		out, err := w.do("author", "author", w.runner, "propose", Object{"candidate": Object{"kind": "content", "manifest": manifest["text"]},
-			"from": step["from"], "until": step["until"], "source_ref": r.source, "reason": "update " + name})
+		body := Object{"candidate": Object{"kind": "content", "manifest": manifest["text"]},
+			"from": step["from"], "until": step["until"], "source_ref": r.source, "reason": "update " + name}
+		if evidence, has := step["evidence"]; has {
+			body["evidence"] = r.evidence[evidence.(string)].(Object)["document"]
+		}
+		before := must(w.store.Read(nil)).Cursor
+		out, err := w.do("author", "author", w.runner, "propose", body)
 		if err != nil {
+			// A refusal writes nothing, so the root does not change.
+			if after := must(w.store.Read(nil)).Cursor; after != before {
+				r.t.Errorf("propose %s: a refusal changed the root", name)
+			}
 			if _, rule := step["expect"].(Object)["rule"]; !rule {
 				return Object{"error": failure(err)["error"]}
 			}
@@ -352,6 +363,11 @@ func TestHostProposeAppliesTheContentVectors(t *testing.T) {
 			w, source := contentWorld(t, &contentRunner{})
 			out, err := w.do("author", "author", w.runner, "propose", Object{"candidate": candidate, "from": "2026-01-01", "until": "2027-01-01",
 				"source_ref": source, "reason": "vector"})
+			// A valid manifest that names evidence needs the document, and
+			// the vector request attaches none.
+			if expect["valid"] == true && strings.Contains(candidate.(Object)["manifest"].(string), `"evidence":`) {
+				expect = Object{"code": "evidence_missing"}
+			}
 			if expect["valid"] == true {
 				if err != nil || !equal(out["candidate"], Object{"kind": "content", "ref": expect["ref"]}) || !equal(out["head"], expect["head"]) {
 					t.Fatalf("got %v %v", out, err)
@@ -463,8 +479,9 @@ func TestApprovalAPIListsAContentProposal(t *testing.T) {
 	w.must("author", "author", "propose", Object{"candidate": Object{"kind": "content", "manifest": first["text"]}, "from": "2026-01-01",
 		"until": "2027-01-01", "source_ref": source, "reason": "first"})
 	second := manifests["second"].(Object)
+	accepted := doc["evidence"].(Object)["accepted"].(Object)
 	ref := w.must("author", "author", "propose", Object{"candidate": Object{"kind": "content", "manifest": second["text"]}, "from": "2026-01-01",
-		"until": "2027-01-01", "source_ref": source, "reason": "second"})["snapshot_ref"]
+		"until": "2027-01-01", "source_ref": source, "reason": "second", "evidence": accepted["document"]})["snapshot_ref"]
 	list, err := w.read(Object{"op": "proposals"})
 	if err != nil {
 		t.Fatal(err)
@@ -479,7 +496,7 @@ func TestApprovalAPIListsAContentProposal(t *testing.T) {
 		t.Fatal(err)
 	}
 	snapshot := one["snapshot"].(Object)
-	evidence := Object{"format": "entelos.evidence/1", "digest": "sha256:" + strings.Repeat("c", 64)}
+	evidence := Object{"format": "entelos.evidence/1", "digest": accepted["digest"]}
 	if !equal(snapshot["candidate"], Object{"kind": "content", "ref": second["ref"]}) || !equal(snapshot["evidence_reference"], evidence) ||
 		snapshot["base"] != first["ref"] || !equal(one["bundle"], Object{"content": second["text"]}) {
 		t.Fatalf("proposal: %s", Encode(one))
@@ -518,5 +535,97 @@ func TestUnknownFieldAfterALargeInteger(t *testing.T) {
 	want := Object{"valid": false, "code": "invalid_content", "rule": "unknown_field", "field": "owner"}
 	if !equal(got, want) {
 		t.Fatalf("got %s", Encode(got))
+	}
+}
+
+// The digest of an evidence document is the SHA-256 of its canonical text.
+// The order of the members and the white space of the request text do not
+// change it.
+func TestEvidenceDigestIsTheCanonicalText(t *testing.T) {
+	for name, x := range contentVectors(t, "lifecycle-cases.json")["evidence"].(Object) {
+		entry := x.(Object)
+		if got := evidenceDigest(entry["document"]); got != entry["digest"] {
+			t.Errorf("%s: digest %s, want %s", name, got, entry["digest"])
+		}
+		spaced := strings.ReplaceAll(strings.ReplaceAll(string(Encode(entry["document"])), `,"`, " ,\n \""), `":`, `" : `)
+		if got := evidenceDigest(must(Decode([]byte(spaced)))); got != entry["digest"] {
+			t.Errorf("%s: the digest of the spaced text is %s", name, got)
+		}
+	}
+}
+
+// A content snapshot of an earlier Host can hold evidence that the checks
+// refuse. decide refuses an accept on it, and activate refuses an accept
+// decision of the earlier Host. A reject stays possible.
+func TestEarlierContentSnapshotEvidenceIsRefused(t *testing.T) {
+	doc := contentVectors(t, "lifecycle-cases.json")
+	evidence := doc["evidence"].(Object)
+	documentOf := func(name string) any { return evidence[name].(Object)["document"] }
+	changes := map[string]func(Object){
+		"evidence_missing":  func(s Object) { delete(s, "evidence") },
+		"evidence_mismatch": func(s Object) { s["evidence"] = documentOf("other") },
+		"invalid_evidence": func(s Object) {
+			s["evidence_reference"] = Object{"format": "entelos.evidence/1", "digest": evidence["open-review"].(Object)["digest"]}
+			s["evidence"] = documentOf("open-review")
+		},
+	}
+	for code, change := range changes {
+		t.Run(code, func(t *testing.T) {
+			want := Object{"error": code}
+			if code == "invalid_evidence" {
+				want["rule"] = "open_review"
+			}
+			r := newContentRun(t, doc)
+			window := Object{"from": "2026-01-01", "until": "2027-01-01"}
+			r.step(with(window, Object{"propose": "first"}))
+			if got := r.step(with(window, Object{"propose": "second", "evidence": "accepted"})); got != "second" {
+				t.Fatalf("propose: %v", got)
+			}
+			// Write the snapshot as an earlier Host wrote it, and make it the head.
+			r.earlier(func(v *View) {
+				snapshot := copyObject(get(v, r.snapshots["second"], "snapshot"))
+				change(snapshot)
+				ref := v.Put("snapshot", snapshot)
+				object(item(v.State, "heads"))[headKey(snapshot["function"], snapshot["scope"])] = ref
+				r.snapshots["second"] = ref
+			})
+			if got := r.step(Object{"qualify": "second", "verdict": "passed"}); got != "passed" {
+				t.Fatalf("qualify: %v", got)
+			}
+			if got := r.step(Object{"decide": "second"}); !equal(got, want) {
+				t.Fatalf("decide: got %s", Encode(got))
+			}
+			// The earlier Host recorded an accept decision.
+			r.earlier(func(v *View) {
+				snapshot := get(v, r.snapshots["second"], "snapshot")
+				record := merge(pick(snapshot, interval4...), Object{"snapshot_ref": r.snapshots["second"], "report_ref": r.reports["second"],
+					"actor": "reviewer", "reason": "earlier", "disposition": "accept", "runner_policy": "fixture-runner",
+					"decided_at": "2026-11-01T00:00:00Z"})
+				ref := v.Put("decision", record)
+				appendEntry(object(v.State["decision_stream"]), "decisions", ref)
+				appendEntry(reviewEntry(reviews(v), r.snapshots["second"], true), "decisions", ref)
+				r.decisions["second"] = ref
+			})
+			if got := r.step(Object{"activate": "second"}); !equal(got, want) {
+				t.Fatalf("activate: got %s", Encode(got))
+			}
+			if _, err := r.w.do("reviewer-b", "reviewer", r.w.runner, "decide", Object{"report_ref": r.reports["second"], "reason": "reject",
+				"disposition": "reject"}); err != nil {
+				t.Fatalf("reject: %v", err)
+			}
+		})
+	}
+}
+
+// earlier writes records in one commit, as a Host of an earlier version did.
+func (r *contentRun) earlier(write func(v *View)) {
+	r.t.Helper()
+	root := must(r.w.store.Read(nil))
+	r.w.keys++
+	if _, err := r.w.store.Transact(root.Cursor, fmt.Sprint("earlier-", r.w.keys), Object{}, func(v *View) (any, error) {
+		write(v)
+		return Object{}, nil
+	}); err != nil {
+		r.t.Fatal(err)
 	}
 }
