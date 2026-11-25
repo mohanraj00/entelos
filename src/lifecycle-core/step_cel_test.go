@@ -57,6 +57,9 @@ func TestStepGateCEL(t *testing.T) {
 	cases := Array{
 		Object{"case": "complete", "inputs": complete, "status": "ok", "value": true},
 		Object{"case": "incomplete", "inputs": incomplete, "status": "ok", "value": false},
+		// The gate reads only the record. A record that disagrees with the text still gives the answer of the record,
+		// so the workflow alone makes sure that the record comes from step_output (STEP.md, Limits).
+		Object{"case": "record disagrees with text", "inputs": with(incomplete, Object{"step_result": Object{"complete": true}}), "status": "ok", "value": true},
 		Object{"case": "unknown digest", "inputs": with(complete, Object{"step_output_digest": stepNoticeDigest}), "status": "ok", "value": false},
 	}
 

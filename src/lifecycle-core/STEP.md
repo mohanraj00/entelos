@@ -71,7 +71,7 @@ For a `completed` outcome, `StepDecisionInputs` gives these `invoke` inputs. Eac
 
 If the output is not UTF-8 text, the fault is `step_output_not_text`. The workflow can add its own inputs before the `invoke`.
 
-For JSON output, the workflow can decode `step_output` before `invoke` and add the decoded object as a caller variable declared as a `record` in [`cel-typed/v1`](../cel-lifecycle/typed-profile-spec.md#record). For example, the gate can read `step_result.complete` from a `step_result` record with a bool field named `complete`, and read `step_output_digest` as a string. Keep the original `step_output` and `step_output_digest` in the inputs so the receipt binds the text, its digest and the decoded record.
+For JSON output, the workflow can decode `step_output` before `invoke` and add the decoded object as a caller variable declared as a `record` in [`cel-typed/v1`](../cel-lifecycle/typed-profile-spec.md#record). For example, the gate can read `step_result.complete` from a `step_result` record with a bool field named `complete`, and read `step_output_digest` as a string. Keep the original `step_output` and `step_output_digest` in the inputs. Then the receipt binds the text, its digest and the decoded record as three separate inputs. The receipt does not show that the record comes from the text. The Host and the gate do not compare them, because a `cel-typed/v1` rule cannot decode JSON text. The workflow alone makes sure that it decodes the record from `step_output`.
 
 ### S9. Decision record and replay
 
@@ -93,4 +93,5 @@ The tests use a fixture step runner. The tests in `step_test.go` use a Go fake o
 - The Host does not know a step. A workflow that sends other inputs to `invoke` gets no check from this contract. The gate rule can require the step inputs with its caller variables.
 - The core trusts the step runner for the status and the run identity. A runner that reports `completed` for a failed run is outside this contract. The digests show only that the bytes are the bytes of the outcome.
 - A digest does not show that the output is correct. The gate rule and its qualification decide what an acceptable output is.
+- The Host does not check that a decoded record agrees with `step_output`. The workflow owns the decode. `TestStepGateCEL` has a case where the record disagrees with the text, and the gate gives the answer of the record.
 - The trace is the bytes that the adapter gives. This contract does not define a trace format.
