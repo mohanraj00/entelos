@@ -4,6 +4,10 @@ This file lists the changes for each snapshot tag. A tag is a stable snapshot to
 
 ## Unreleased
 
+### CI
+
+- The [Kind seam](.github/workflows/kind-seam.yml) workflow runs the three agent step seam tests on one runner (#215). It keeps the failure logs for 7 days. A failure does not block a merge.
+
 ### Reference code
 
 - Evidence uses safe JSON integers on all admission paths (#208). Producers write judgment `p` in parts per million and box coordinates in thousandths of a point. Add the unit marker for either field and use strings for any exact decimals in attached objects. Recompute the manifest evidence digest after conversion. Admission refuses earlier fractional, out-of-range or unmarked box and judgment data with `invalid_evidence`, rule `schema`. The format name stays `entelos.evidence/1`. See the [number rules](src/protocol/evidence/EVIDENCE.md#numbers).

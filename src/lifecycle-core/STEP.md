@@ -88,6 +88,8 @@ The tests use a fixture step runner. The tests in `step_test.go` use a Go fake o
 - `TestStepResultChecks`: 12 results that disagree with their bytes or their request are refused, and 3 requests that are not valid.
 - `TestStepGateCEL`: the Host qualifies a `cel-typed/v1` gate with the CEL runtime, then invokes it with the step inputs and a decoded JSON record. The gate accepts one completed result and refuses another. A failed result gives `step_failed` and no inputs (#209).
 
+The [Kind seam](../../.github/workflows/kind-seam.yml) workflow runs `TestKindSeam`, `TestKindFailedRun` and `TestKindBudgetStop` on one `ubuntu-24.04` runner. The example's [pins.env](../../examples/agent-step-koodam/kind/pins.env) gives the versions and digests for this test. The workflow runs every week and on manual dispatch. It runs on pull requests that change the example, `src/lifecycle-core/step.go` or the workflow file. A failure does not block a merge.
+
 ## Limits
 
 - The Host does not know a step. A workflow that sends other inputs to `invoke` gets no check from this contract. The gate rule can require the step inputs with its caller variables.
