@@ -41,11 +41,10 @@ func readVector(t *testing.T, name string) Object {
 	return value.(Object)
 }
 
-// typedBundle makes the four bundle files of a typed vector. The manifest
+// typedBundle makes the four bundle files of a typed rule. The manifest
 // names the build under test and the content references of the other files.
-func typedBundle(t *testing.T, vector Object, build string) Object {
+func typedBundle(t *testing.T, b Object, build string) Object {
 	t.Helper()
-	b := vector["bundle"].(Object)
 	data := map[string][]byte{"environment": Encode(b["environment"]), "source": []byte(b["source"].(string)), "fixed": Encode(b["fixed"])}
 	manifest := Object{"function_id": b["function_id"], "profile": b["profile"], "caller_variables": b["caller_variables"],
 		"limits": b["limits"], "implementation_ref": build}
@@ -129,7 +128,7 @@ func TestTypedPolicyFromProposalToReplay(t *testing.T) {
 	plan := result(d.call("reviewer", "plan", "typed-plan", "ok", Object{"source_ref": source, "cases": typedPlanCases(t),
 		"origin": "The step typed-cases-pass of conformance/typed/case-checks.json", "supersedes": Array{}}))["plan_ref"].(string)
 	proposal := result(d.call("author", "propose", "typed-proposal", "ok", Object{"function": function, "from": from, "until": until,
-		"base_snapshot": "", "source_ref": source, "bundle": typedBundle(t, vector, build), "reason": "typed proposal"}))
+		"base_snapshot": "", "source_ref": source, "bundle": typedBundle(t, vector["bundle"].(Object), build), "reason": "typed proposal"}))
 	q, decision := d.qualifyDecide(proposal["snapshot_ref"].(string), plan, "typed")
 	d.check("typed-qualification", "Do the stated typed cases qualify the typed bundle?", at(q, "report", "status") == "passed", q)
 	d.call("reviewer", "activate", "typed-activate", "ok", Object{"decision_ref": decision, "targets": Array{}})
