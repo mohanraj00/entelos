@@ -218,6 +218,10 @@ try:
  if seam[-1].returncode==0:seam.append(run('groundgate-seam',[seam_python,'-B','-m','unittest','-v','tests/test_groundgate_seam.py']))
  check('groundgate-seam','Does a groundgate 0.16.0 export, mapped to entelos.evidence/1, pass the evidence checker and the Host evidence read with the hand-written policy inputs?',
        len(seam)==3 and all(x.returncode==0 for x in seam),{'exit_codes':[x.returncode for x in seam],'stderr':seam[-1].stderr[-4000:]})
+ # The seam test of #112. Temporary stand-in: it reads tests/nookku-seam/standin/ and installs no nookku release.
+ finding=run('nookku-seam',[sys.executable,'-B','-m','unittest','-v','tests/test_nookku_seam.py'])
+ check('nookku-seam','Does a nookku finding record of the stand-in files become a candidate case, with no effect before approval, that fails on the old snapshot and passes on the corrected snapshot?',
+       finding.returncode==0,{'stand_in':True,'stderr':finding.stderr[-4000:]})
  demo=run('consumer-reuse',[sys.executable,'-B',ROOT/'examples/ci-trigger/run.py','--work',w/'reuse','--cel-binary',w/'bin/cel-handoff','--author-binary',w/'bin/cel-expr','--record-bundle',w/'record-bundle','--host',w/'bin/lifecycle-core'])
  reuse=json.loads((w/'reuse/results.json').read_text())
  check('two-consumers-and-baseline','Do both consumer loops and the ordinary-code comparison pass?',demo.returncode==0 and reuse['status']=='passed',{'status':reuse['status'],'checks':reuse['checks'],'measurements':reuse['measurements'],'errors':reuse['errors']})

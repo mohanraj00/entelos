@@ -233,14 +233,14 @@ func (h *Host) Handle(request any) (result any, err error) {
 	}
 	// These request values are copied into records or task state. Check
 	// their types here for every transport, including the JSONL Host.
-	for _, name := range []string{"text", "reason", "origin", "message", "note", "owner", "correction_snapshot", "task_id", "checkpoint", "token", "status"} {
+	for _, name := range []string{"text", "reason", "origin", "message", "note", "owner", "correction_snapshot", "task_id", "checkpoint", "token", "status", "finding"} {
 		if value, present := q[name]; present {
 			if _, ok := value.(string); !ok {
 				return nil, NewFault("invalid_request", name+" must be a string", "")
 			}
 		}
 	}
-	for _, name := range []string{"supersedes", "targets"} {
+	for _, name := range []string{"supersedes", "targets", "imports"} {
 		if value, present := q[name]; present {
 			list, ok := value.(Array)
 			if !ok {
@@ -326,8 +326,10 @@ func (h *Host) authorizeRetry(op string, q Object, cursor any) {
 	}
 	v := must(h.Store.Read(cursor))
 	switch op {
-	case "plan":
+	case "plan", "import_finding":
 		h.scoped(v, item(q, "source_ref"), "source")
+	case "decide_case":
+		h.scoped(v, item(q, "candidate_ref"), kindCandidate)
 	case "qualify":
 		h.scoped(v, item(q, "snapshot_ref"), "snapshot")
 		h.scoped(v, item(q, "plan_ref"), "plan")
@@ -1097,11 +1099,22 @@ func (h *Host) apply(v *View, op string, q Object) any {
 	case "plan":
 		source := h.scoped(v, item(q, "source_ref"), "source")
 		cases := item(q, "cases")
-		if list, ok := cases.(Array); !ok || len(list) == 0 || !truthy(item(q, "origin")) {
+		// FINDING.md clause F5: the case of each accepted candidate
+		// follows the cases of the request.
+		imports, imported := h.importedCases(v, q)
+		list, ok := cases.(Array)
+		if !ok || len(list)+len(imported) == 0 || !truthy(item(q, "origin")) {
 			fail("invalid_plan", "independent nonempty cases and origin required", "")
+		}
+		if len(imported) > 0 {
+			cases = append(append(Array{}, list...), imported...)
 		}
 		record := merge(pick(source, interval4...), Object{"source_ref": item(q, "source_ref"), "cases": cases, "origin": item(q, "origin"),
 			"supersedes": lookup(q, "supersedes", Array{}), "installer": actor})
+		// A plan with no import keeps the bytes of an earlier Host.
+		if len(imports) > 0 {
+			record["imports"] = imports
+		}
 		h.supersedes(v, record, "plan", "invalid_supersession", "case replacement must overlap the same scope/function")
 		ref := v.Put("plan", record)
 		appendOnce(v, "plans", ref)
@@ -1225,6 +1238,10 @@ func (h *Host) apply(v *View, op string, q Object) any {
 		return Object{"report_ref": ref, "report": report}
 	case "decide":
 		return h.decide(v, q)
+	case "import_finding":
+		return h.importFinding(v, q)
+	case "decide_case":
+		return h.decideCase(v, q)
 	case "activate":
 		index := reviews(v)
 		decision := h.scoped(v, item(q, "decision_ref"), "decision")
