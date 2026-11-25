@@ -1,0 +1,55 @@
+name: Kind seam
+
+on:
+  schedule:
+    - cron: '23 8 * * 1'
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'examples/agent-step-koodam/**'
+      - 'src/lifecycle-core/step.go'
+      - '.github/workflows/kind-seam.yml'
+
+permissions: {}
+
+jobs:
+  kind-seam:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: examples/agent-step-koodam/go.mod
+          cache: false
+      - name: Install kind
+        run: |
+          source examples/agent-step-koodam/kind/pins.env
+          kind_bin="$RUNNER_TEMP/kind-bin"
+          mkdir "$kind_bin"
+          curl --fail --silent --show-error --location --proto '=https' --output "$kind_bin/kind" \
+            "https://github.com/kubernetes-sigs/kind/releases/download/${KIND_VERSION}/kind-linux-amd64"
+          printf '%s  %s\n' "$KIND_SHA256_LINUX_AMD64" "$kind_bin/kind" | sha256sum --check --strict
+          chmod +x "$kind_bin/kind"
+          printf '%s\n' "$kind_bin" >> "$GITHUB_PATH"
+        shell: bash
+      - name: Install Helm
+        uses: azure/setup-helm@9bc31f4ebc9c6b171d7bfbaa5d006ae7abdb4310 # v5.0.1
+        with:
+          version: v4.2.3
+      - name: Run the seam tests
+        run: sh examples/agent-step-koodam/kind/seam.sh "$RUNNER_TEMP/kind-seam"
+      - name: Upload failure logs
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: kind-seam-logs-${{ github.run_attempt }}
+          path: |
+            ${{ runner.temp }}/kind-seam
+            !${{ runner.temp }}/kind-seam/kubeconfig
+          retention-days: 7
+          if-no-files-found: warn
