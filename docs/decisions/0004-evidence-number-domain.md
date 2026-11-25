@@ -14,7 +14,7 @@ How can one evidence document pass Host admission and travel through approval AP
 
 1. **Evidence uses the wire number domain.** Each number is an integer in the range ±(2^53 − 1), including numbers in attached objects.
 2. **Judgments use parts per million and boxes use thousandths of a point.** A producer declares those units in its attached producer data. The marker distinguishes converted values from earlier integers in the same fields.
-3. **The experimental format keeps the name `entelos.evidence/1`.** Admission refuses earlier numeric forms with `invalid_evidence`, rule `schema`. Earlier documents that already meet the number rules continue to pass admission.
+3. **The experimental format keeps the name `entelos.evidence/1`.** Admission refuses earlier numeric forms with `invalid_evidence`, rule `schema`. An earlier document with only integers in range and no box or judgments needs no conversion. An earlier document with a box or judgments needs the unit marker, else admission refuses it.
 
 ## Reasons
 

@@ -82,7 +82,7 @@ Issue [#104](https://github.com/mohanraj00/entelos/issues/104) adds the evidence
 
 Issue [#207](https://github.com/mohanraj00/entelos/issues/207) checks the evidence of a content proposal at `propose`. The manifest `evidence.digest` is the SHA-256 of the canonical text of the attached document. `propose` refuses a missing or different document and a document that the EVIDENCE.md rules refuse, and writes nothing. An accept `decide` and `activate` apply the same checks to a content snapshot of an earlier Host. A CEL bundle proposal keeps the 1.2 behavior.
 
-Issue [#208](https://github.com/mohanraj00/entelos/issues/208) uses safe integers for evidence admission. [Decision 0004](decisions/0004-evidence-number-domain.md) sets the units for judgments and boxes and records why protocol 1.2 keeps its number domain. A parity test attaches and reads `valid-full-data` through the Go Host, socket and both HTTP modes. The groundgate seam maps an exported box to thousandths of a point.
+Issue [#208](https://github.com/mohanraj00/entelos/issues/208) uses safe integers for evidence admission. [Decision 0004](decisions/0004-evidence-number-domain.md) sets the units for judgments and boxes and records why protocol 1.2 keeps its number domain. A parity test attaches and reads `valid-full-data` through the Go Host and through the socket and HTTP transports, each in process and on a live listener. `make verify` ran all of these modes. The groundgate seam maps an exported box to thousandths of a point.
 
 ### v0.4 policy verdict
 
