@@ -24,7 +24,7 @@ The groundgate seam test uses groundgate 0.16.0, licence Apache-2.0, from PyPI. 
 
 The nookku seam test uses copied test data of nookku, licence Apache-2.0, from its public repository: 13 finding conformance cases and their README at commit `05189f0333c33774c186e839fa4bdc2c607a318f`, and one finding record that a local run of that commit wrote. The files are in [`tests/nookku-seam/standin/`](../tests/nookku-seam/standin/), and `SOURCE.json` in that folder records the SHA-256 of each one. The copy is temporary: a later change pins the published nookku wheel by hash and removes the files. No nookku code is in this tree.
 
-The optional kind seam test of the agent step adapter uses the koodam release v0.4.0, licence Apache-2.0, from its public OCI registry. [`examples/agent-step-koodam/kind/pins.env`](../examples/agent-step-koodam/kind/pins.env) pins the chart, the koodam image, the kind node image and the image of the test agent (curl, licence curl) by digest. The chart installs the koodam controller and its own pinned images of LiteLLM and PostgreSQL in the test cluster. `verify.py` and CI do not run this test. None of these files is in this tree, and this project does not distribute them.
+The optional kind seam test of the agent step adapter uses the koodam release v0.4.0, licence Apache-2.0, from its public OCI registry. [`examples/agent-step-koodam/kind/pins.env`](../examples/agent-step-koodam/kind/pins.env) pins the chart, the koodam image, the kind node image and the image of the test agent (curl, licence curl) by digest. The chart installs the koodam controller and its own pinned images of LiteLLM and PostgreSQL in the test cluster. The [Kind seam](../.github/workflows/kind-seam.yml) workflow runs this test. None of these files is in this tree, and this project does not distribute them.
 
 ## CI tools
 
@@ -34,6 +34,8 @@ The [Claude review](../.github/workflows/claude-review.yml) and [CI](../.github/
 |---|---|---|---|
 | @anthropic-ai/claude-code-linux-x64 | 2.1.319 | Proprietary. The package `LICENSE.md` says "All rights reserved" and points to the Anthropic legal agreements at https://code.claude.com/docs/en/legal-and-compliance. | The workflow checks the SHA-512 value of the package, then runs the CLI on the runner with the owner's OAuth token. |
 | actionlint (rhysd/actionlint, linux_amd64 release archive) | 1.7.7 | MIT. The `LICENSE.txt` of the release archive says "the MIT License", Copyright (c) 2021 rhysd. | The `actionlint` job of the CI workflow checks the SHA-256 value of the archive, then parses each workflow. It gets no secret. |
+| kind (`kind-linux-amd64`) | v0.33.0 | Apache-2.0 | The Kind seam workflow checks the SHA-256 value before it runs this binary. |
+| `azure/setup-helm` | v5.0.1 | MIT | The Kind seam workflow pins this action by commit SHA. The action installs `helm` v4.2.3, licence Apache-2.0. |
 
 The Apache-2.0 licence of this project does not apply to this tool. The owner's account agreement with Anthropic controls its use. If a workflow changes the version of a tool, change its row too.
 

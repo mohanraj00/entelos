@@ -40,9 +40,15 @@ The script does these steps:
 1. It makes the kind cluster `entelos-agent-step` with a kubeconfig in the work directory. It does not change your kubeconfig.
 2. It installs the koodam chart of `kind/pins.env` by its digest, with the koodam image by its digest, the bundled gateway and the mock model. It stops if the controller does not run the pinned image.
 3. It runs `TestKindSeam`, `TestKindFailedRun` and `TestKindBudgetStop`. Each test creates one Agent.
-4. It writes `seam.log` and `agents.json` to the work directory, and it deletes the cluster.
+4. It writes the setup and test logs to the work directory. If the test or setup fails, it exports the cluster logs before it deletes the cluster.
 
 The agent of the test is a shell script, not a model. It checks the digest of the notice, calls the mock model 1 time for a spend record, and writes the first sentence of the notice as the summary.
+
+## CI workflow
+
+The [Kind seam](../../.github/workflows/kind-seam.yml) workflow runs `kind/seam.sh` on one `ubuntu-24.04` runner. It runs all three seam tests with the versions and digests in `kind/pins.env`. The job checks the SHA-256 value of the `kind` binary before it starts the script.
+
+The workflow runs every week and on manual dispatch. It runs on pull requests that change this example, `src/lifecycle-core/step.go` or the workflow file. A failure does not block a merge. The job keeps its failure logs for 7 days.
 
 ## Limits
 
@@ -50,5 +56,4 @@ The agent of the test is a shell script, not a model. It checks the digest of th
 - The chart installs the images of LiteLLM and PostgreSQL that it pins by digest. `kind/pins.env` does not repeat those pins.
 - The gate is a frozen Go function, and the qualification runner is a fixture that runs no rule. The example does not use the CEL runtime.
 - The Host uses the memory store. The example keeps no store after the test.
-- No CI job runs the kind test. The evidence is a run from a clean checkout on a local kind cluster.
 - The adapter is experimental, and so is the step outcome contract.

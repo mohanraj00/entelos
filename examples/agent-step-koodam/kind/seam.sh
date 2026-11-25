@@ -27,12 +27,17 @@ cluster=entelos-agent-step
 export KUBECONFIG="$work/kubeconfig"
 cleanup() {
   status=$?
+  if [ "$status" -ne 0 ]; then
+    kind export logs "$work/cluster-logs" --name "$cluster" >>"$work/kind.log" 2>&1 || true
+  fi
   if [ "${KEEP_CLUSTER:-0}" != 1 ]; then
     kind delete cluster --name "$cluster" --kubeconfig "$KUBECONFIG" >>"$work/kind.log" 2>&1 || true
   fi
   exit "$status"
 }
-trap cleanup EXIT INT TERM
+trap cleanup EXIT
+trap 'exit 130' INT
+trap 'exit 143' TERM
 
 # KIND_API_PORT fixes the host port of the API server. It is optional.
 if [ -n "${KIND_API_PORT:-}" ]; then
@@ -41,23 +46,23 @@ if [ -n "${KIND_API_PORT:-}" ]; then
 else
   set --
 fi
-kind create cluster --name "$cluster" --image "$KIND_NODE_IMAGE" --kubeconfig "$KUBECONFIG" --wait 180s ${1+"$@"} >"$work/kind.log" 2>&1
-kubectl wait --for=condition=Ready node --all --timeout=120s >>"$work/kind.log"
+kind create cluster --name "$cluster" --image "$KIND_NODE_IMAGE" --kubeconfig "$KUBECONFIG" --retain --wait 180s ${1+"$@"} >"$work/kind.log" 2>&1
+kubectl wait --for=condition=Ready node --all --timeout=120s >>"$work/kind.log" 2>&1
 
-kubectl create namespace koodam-system >>"$work/install.log"
-printf 'sk-%s' "$(openssl rand -hex 32)" | kubectl -n koodam-system create secret generic koodam-gateway --from-file=master-key=/dev/stdin >>"$work/install.log"
+kubectl create namespace koodam-system >>"$work/install.log" 2>&1
+printf 'sk-%s' "$(openssl rand -hex 32)" | kubectl -n koodam-system create secret generic koodam-gateway --from-file=master-key=/dev/stdin >>"$work/install.log" 2>&1
 # The digests select the chart and the koodam image. The version is a check only.
 koodam_image="$KOODAM_IMAGE:$KOODAM_VERSION@$KOODAM_IMAGE_DIGEST"
 helm install koodam "$KOODAM_CHART@$KOODAM_CHART_DIGEST" -n koodam-system -f "$here/values.yaml" \
   --set-string image.tag="$KOODAM_VERSION@$KOODAM_IMAGE_DIGEST" --wait --timeout 10m >>"$work/install.log" 2>&1
-helm list -n koodam-system -o json >"$work/helm-release.json"
+helm list -n koodam-system -o json >"$work/helm-release.json" 2>>"$work/install.log"
 grep -q "\"app_version\":\"$KOODAM_VERSION\"" "$work/helm-release.json" || { echo "The chart is not koodam $KOODAM_VERSION." >&2; exit 1; }
-kubectl -n koodam-system rollout status deployment --timeout=5m >>"$work/install.log"
+kubectl -n koodam-system rollout status deployment --timeout=5m >>"$work/install.log" 2>&1
 # The controller must run the pinned image, and the Agent CRD must have the run identity.
-kubectl -n koodam-system get deployment -o jsonpath='{range .items[*]}{range .spec.template.spec.containers[*]}{.image}{"\n"}{end}{end}' >"$work/images.txt"
+kubectl -n koodam-system get deployment -o jsonpath='{range .items[*]}{range .spec.template.spec.containers[*]}{.image}{"\n"}{end}{end}' >"$work/images.txt" 2>>"$work/install.log"
 grep -qx "$koodam_image" "$work/images.txt" || { echo "No deployment runs $koodam_image." >&2; exit 1; }
-kubectl get crd agents.core.koodam.dev -o json | grep -q '"runID"' || { echo "The Agent CRD has no status.runID." >&2; exit 1; }
-kubectl create namespace entelos-steps >>"$work/install.log"
+kubectl get crd agents.core.koodam.dev -o json 2>>"$work/install.log" | grep -q '"runID"' || { echo "The Agent CRD has no status.runID." >&2; exit 1; }
+kubectl create namespace entelos-steps >>"$work/install.log" 2>&1
 
 cd "$here/.."
 ENTELOS_KIND_KUBECONFIG="$KUBECONFIG" ENTELOS_KIND_NAMESPACE=entelos-steps ENTELOS_AGENT_IMAGE="$AGENT_IMAGE" \
