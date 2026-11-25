@@ -4,7 +4,7 @@ This file lists the changes for each snapshot tag. A tag is a stable snapshot to
 
 ## Unreleased
 
-No change yet.
+- A lifecycle test qualifies and invokes a typed CEL gate on step results, covering acceptance, refusal and a failed run with no decision inputs (#209).
 
 ## v0.6.0 (2026-11-20)
 
