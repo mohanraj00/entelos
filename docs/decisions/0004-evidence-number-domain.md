@@ -1,8 +1,8 @@
 # 0004 One number domain for evidence and the wire
 
-- Status: accepted
+- Status: proposed
 - Date: 2026-11-25
-- Decided by: the maintainer, at the routine merge of the Host change. The Host enforces the rule from this merge.
+- Decided by: the maintainer, when the maintainer merges the Host change
 - Issue: [#208](https://github.com/mohanraj00/entelos/issues/208)
 - Spec: [EVIDENCE.md](../../src/protocol/evidence/EVIDENCE.md#numbers)
 
