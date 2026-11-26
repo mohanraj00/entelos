@@ -40,6 +40,8 @@ On 2026-11-18, the v0.5.0 section of the [CHANGELOG](../CHANGELOG.md) got its da
 
 On 2026-11-20, the v0.6.0 section of the [CHANGELOG](../CHANGELOG.md) got its date, its upgrade steps and its limits. The owner is to create the `v0.6.0` tag after the docs PR merges. The issues of the snapshot are closed: [#113](https://github.com/mohanraj00/entelos/issues/113), [#197](https://github.com/mohanraj00/entelos/issues/197), [#198](https://github.com/mohanraj00/entelos/issues/198) and [#201](https://github.com/mohanraj00/entelos/issues/201). The wire protocol, the record format and the pinned stable surfaces do not change, and each new Go declaration is experimental. The kind evidence of #113 is one local run. The test of an earlier store on this Host has no issue. See the agent step section below for the CI job and the test of the runtime.
 
+On 2026-11-26, the v0.7.0 section of the [CHANGELOG](../CHANGELOG.md) got its date, its upgrade steps and its limits. The owner is to create the `v0.7.0` tag after the docs PR merges. The issues of the snapshot are closed: [#207](https://github.com/mohanraj00/entelos/issues/207), [#208](https://github.com/mohanraj00/entelos/issues/208), [#209](https://github.com/mohanraj00/entelos/issues/209), [#215](https://github.com/mohanraj00/entelos/issues/215) and [#112](https://github.com/mohanraj00/entelos/issues/112). The wire protocol, the record format and the pinned stable surfaces do not change. The evidence format stays experimental, and Decision 0004 has the status `proposed`. The test of an earlier store on this Host has no issue.
+
 The v0.4 milestone started with [#126](https://github.com/mohanraj00/entelos/issues/126), typed rule inputs and outputs. The spec [typed-profile-spec.md](../src/cel-lifecycle/typed-profile-spec.md) specifies the profile `cel-typed/v1`, with vectors in [conformance/typed/](../src/cel-lifecycle/conformance/typed/) (#141, `6d92fb2`). The engine implements the profile (#144, `c498611`), and `TestTypedProfileVectors` runs the typed vectors on the engine. The executor and the WASM bridge refuse a typed bundle. `TestTypedPolicyFromProposalToReplay` runs the vector `admission-record.json` (int, date and list inputs) through the lifecycle Host, from the proposal to a pinned replay of each receipt.
 
 ### v0.4 approval API
@@ -114,7 +116,7 @@ The optional adapter [examples/agent-step-koodam](../examples/agent-step-koodam/
 
 On 2026-11-25, issue [#209](https://github.com/mohanraj00/entelos/issues/209) added `TestStepGateCEL`. It qualifies and invokes a typed gate with the step inputs and a decoded JSON record. Two completed results give opposite answers, and a failed result gives no inputs. The test uses a fixture step runner.
 
-Issue #215 adds the [Kind seam](../.github/workflows/kind-seam.yml) workflow. It runs the three seam tests on one `ubuntu-24.04` runner. A failure does not block a merge. The CI result is pending.
+Issue #215 adds the [Kind seam](../.github/workflows/kind-seam.yml) workflow. It runs the three seam tests on one `ubuntu-24.04` runner. A failure does not block a merge. The workflow passed on the head of PR #220 (`abc1b43`, run 45684730254).
 
 ### Finding import
 

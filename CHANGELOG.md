@@ -4,6 +4,12 @@ This file lists the changes for each snapshot tag. A tag is a stable snapshot to
 
 ## Unreleased
 
+No change yet.
+
+## v0.7.0 (2026-11-26)
+
+This snapshot checks the evidence of a content proposal at `propose` (#207) and uses one fixed-point number domain for evidence admission (#208). It adds the finding import contract for one nookku finding record (#112). A new test runs a step result through the CEL runtime (#209). A CI workflow runs the kind seam test of the agent step (#215). The wire protocol, the record format and the pinned stable surfaces do not change.
+
 ### CI
 
 - The [Kind seam](.github/workflows/kind-seam.yml) workflow runs the three agent step seam tests on one runner (#215). It keeps the failure logs for 7 days. A failure does not block a merge.
@@ -22,6 +28,26 @@ This file lists the changes for each snapshot tag. A tag is a stable snapshot to
   - The wire protocol, the record format and the pinned stable surfaces do not change. Each new declaration is not exported.
   - `make verify` has the new check `nookku-seam`. It installs nookku 0.6.1 from PyPI in a virtual environment, and [`tests/nookku-seam/requirements.txt`](tests/nookku-seam/requirements.txt) pins the wheel by its SHA-256. The released tool runs the invented library example with a local agent and exports three finding records. The Host reads these records and nine changed copies.
   - Limits: no shipped runner reads the case format `entelos.finding-case/1`, a case decision has no signed record, and the Host does not keep the record text.
+
+### Upgrade steps
+
+These steps upgrade a Host and a store from v0.6.0.
+
+1. The record format stays `entelos.record/1`, and the wire protocol versions 1.0, 1.1 and 1.2 do not change. A v0.6.0 store needs no migration command. No test runs a v0.6.0 store on the v0.7.0 Host, so make a copy of the bare repository before the first write.
+2. If you produce evidence, write the judgment `p` in parts per million (#208). Write the box coordinates in thousandths of a point. Add the unit marker for each field. Use strings for exact decimals in attached objects. After the conversion, compute the manifest evidence digest again. An accept `decide` and `activate` refuse a content snapshot with an unmarked box or judgment, with `invalid_evidence` and rule `schema`. To continue, convert the evidence. Then propose a new snapshot. [Decision 0004](docs/decisions/0004-evidence-number-domain.md) has the status `proposed`.
+3. If a content proposal names evidence in the manifest field `evidence.digest`, attach that document to the `propose` request (#207). The digest is the SHA-256 of the canonical text of the document. Else `propose` refuses with `evidence_missing`, `evidence_mismatch` or `invalid_evidence`. A content snapshot of an earlier Host gets the same refusals at an accept `decide` and at `activate`. To continue, propose a new snapshot with the named document.
+4. If a reader shows the approval `state`, expect `awaiting_verdict` for a snapshot that the evidence check refuses (#207). The `refusal` values of approval API 1.2 do not change.
+5. The changes to the Go lifecycle core change the lifecycle build identity. Keep the v0.6.0 build with a store for exact replay.
+6. `make verify` has the check `nookku-seam` (#112). It installs nookku 0.6.1 from PyPI in a virtual environment, and [`tests/nookku-seam/requirements.txt`](tests/nookku-seam/requirements.txt) pins the wheel by its SHA-256. To import a finding, call the Host-only write `import_finding`. Record the decision of a reviewer with `decide_case`. Then send `plan` with the field `imports`.
+
+### Compatibility and limits
+
+- [STABILITY.md](docs/STABILITY.md) gives the promise of v0.4.0, and v0.7.0 keeps it. The pinned surfaces do not change. The evidence format `entelos.evidence/1` stays experimental. The new declarations of the finding import are not exported.
+- Decision 0004 has the status `proposed`. Protocol 1.2 keeps its number domain.
+- An existing decision or activation event does not change, and `resolve` and a replay give the same answers. A reject `decide` still works on a snapshot that the evidence check refuses.
+- No shipped runner reads the case format `entelos.finding-case/1`, a case decision has no signed record, and the Host does not keep the record text. The wire protocol does not have the writes `import_finding` and `decide_case`.
+- #209 and #215 remove two limits of v0.6.0. A test runs a step result through the CEL runtime with a fixture step runner. The Kind seam workflow runs the kind test. A failure of that workflow does not block a merge.
+- The limits of v0.6.0 that this list does not change stay. The policy verdict is a proposed spec that no Host writes. The sidecar wire protocol does not accept `candidate` and `applicability`. The callable profile is string and bool input and bool output.
 
 ## v0.6.0 (2026-11-20)
 
