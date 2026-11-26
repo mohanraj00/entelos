@@ -12,7 +12,7 @@ The embedding host installs the runner with `NewHostWithRunner`, the same as the
 
 - `Candidate`: the snapshot reference, the bundle identity and the engine build that the proposal recorded.
 - `Files`: the exact candidate bytes. The Host reads them from the store by content reference.
-- `Cases`: the case list of the installed plan.
+- `Cases`: the case list of the installed plan. A plan can import the case of an approved candidate ([FINDING.md](FINDING.md)).
 
 The runner gets only this input. It does not get the store.
 

@@ -4,7 +4,8 @@ package lifecycle
 
 // hostOnlyOps are the operations of Handle that the wire protocol does not
 // have yet: the approval read of VERDICT.md, the evidence read of
-// EVIDENCE.md and the promotion read of PROMOTION.md.
+// EVIDENCE.md, the promotion read of PROMOTION.md and the two writes of
+// FINDING.md.
 var hostOnlyOps = map[string]struct {
 	role   string
 	fields []string
@@ -12,6 +13,10 @@ var hostOnlyOps = map[string]struct {
 	"approval":  {"reader", []string{"function", "candidate", "cursor"}},
 	"evidence":  {"reviewer", []string{"snapshot_ref", "cursor"}},
 	"promotion": {"reviewer", []string{"report_ref", "cursor"}},
+	// The writes of FINDING.md: the import of a finding record as a
+	// candidate case, and the decision of a reviewer on a candidate.
+	"import_finding": {"author", []string{"source_ref", "finding"}},
+	"decide_case":    {"reviewer", []string{"candidate_ref", "disposition", "reason"}},
 }
 
 // Verdict states of VERDICT.md.

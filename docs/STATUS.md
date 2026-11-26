@@ -116,6 +116,14 @@ On 2026-11-25, issue [#209](https://github.com/mohanraj00/entelos/issues/209) ad
 
 Issue #215 adds the [Kind seam](../.github/workflows/kind-seam.yml) workflow. It runs the three seam tests on one `ubuntu-24.04` runner. A failure does not block a merge. The CI result is pending.
 
+### Finding import
+
+Issue [#112](https://github.com/mohanraj00/entelos/issues/112) adds the finding import contract [FINDING.md](../src/lifecycle-core/FINDING.md) to the Go lifecycle core. The Host-only write `import_finding` reads one nookku finding record of record version 1.0. It stores a candidate case with its origin and the SHA-256 of the input text. The Host-only write `decide_case` records one decision of a reviewer, who is not the importer. The `plan` request imports only a candidate with an accept decision. An import writes no report, no verdict and no event.
+
+The Go tests use hand-written records and a fixture runner. The check `nookku-seam` of `verify.py` gives records of nookku to the Host. In the invented example, the finding of a wrong due date becomes a case that fails on the old catalog snapshot and passes on the corrected one. Before the approval, the candidate has no effect on a qualification.
+
+The seam check runs nookku 0.6.1 from PyPI. [`tests/nookku-seam/requirements.txt`](../tests/nookku-seam/requirements.txt) pins the wheel by its SHA-256, and `verify.py` installs it in a virtual environment with no dependencies. The released tool runs the library example with a local agent and no model. It exports three records: one mismatch, one issue row of a person and one mismatch of a gate run. The check also gives the Host nine changed copies of the mismatch record, and the reader of the release agrees on each refusal. Limits: the seam has no model row, no shipped runner reads the case format, a case decision has no signed record, and the wire protocol does not have the two writes.
+
 ### M1 First contact
 
 On 2026-10-30, the M1 work was complete in `main` (merge commit `e844246`):

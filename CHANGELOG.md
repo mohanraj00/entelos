@@ -17,6 +17,11 @@ This file lists the changes for each snapshot tag. A tag is a stable snapshot to
   - The approval `state` of such a snapshot can still be `awaiting_verdict`, because the `refusal` values of approval API 1.2 are fixed.
   - The lifecycle vectors of the content format change: the manifest `second` names the digest of a vector document, so its `ref` changes. The new case `evidence-at-propose` covers each new code.
 - A lifecycle test qualifies and invokes a typed CEL gate on step results, covering acceptance, refusal and a failed run with no decision inputs (#209).
+- The finding import contract (#112): [FINDING.md](src/lifecycle-core/FINDING.md) and `finding.go` in the Go lifecycle core. The Host-only write `import_finding` reads one nookku finding record of record version 1.0 and stores a candidate case with its origin and the SHA-256 of the input text. The reader ignores an unknown field, accepts a newer minor version and refuses an unknown major version. The Host-only write `decide_case` records one decision of a reviewer on a candidate. The `plan` request takes the Host-only field `imports`, and it refuses a candidate with no accept decision with `case_not_approved`. An import gives no passed flag and activates nothing, and a candidate is not a case before a plan imports it.
+  - Effect on a store: the new record kinds are `case_candidate` and `case_decision`, and the new state field is `case_candidates`. A store gets the field at its first import. A plan with no import keeps its bytes. No migration is necessary.
+  - The wire protocol, the record format and the pinned stable surfaces do not change. Each new declaration is not exported.
+  - `make verify` has the new check `nookku-seam`. It installs nookku 0.6.1 from PyPI in a virtual environment, and [`tests/nookku-seam/requirements.txt`](tests/nookku-seam/requirements.txt) pins the wheel by its SHA-256. The released tool runs the invented library example with a local agent and exports three finding records. The Host reads these records and nine changed copies.
+  - Limits: no shipped runner reads the case format `entelos.finding-case/1`, a case decision has no signed record, and the Host does not keep the record text.
 
 ## v0.6.0 (2026-11-20)
 
