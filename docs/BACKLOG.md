@@ -71,6 +71,8 @@ On 2026-11-20, the v0.6.0 section of the CHANGELOG got its date. The owner creat
 
 On 2026-11-25, #209 closed one of these items: `TestStepGateCEL` runs a step result through the CEL runtime.
 
+On 2026-11-26, the v0.7.0 section of the CHANGELOG got its date. The owner creates the `v0.7.0` tag after that docs PR merges. Each issue of the snapshot is closed: #207, #208, #209, #215 and #112. The test of an earlier store on this Host has no issue. Open issues track the policy verdict write (#210) and the content workflow on the wire protocol (#213). The full conformance vectors of the verdict binding have no issue.
+
 The v0.3.0 announcement candidate targets 2026-12-12. [#14](https://github.com/mohanraj00/entelos/issues/14) tracks the candidate, approval and record review, and release handoff. It depends on sidecar authentication (#125), the copy-proof docs (#60, #62 and #66) and evidence for Claude review (#114). The exit test requires the exact candidate to pass on Linux and macOS with the limits at the top of the README. The tag, quiet share and public post each require owner authorization.
 
 No issue here authorizes an unscoped model benchmark, a new domain policy, a public package release or production deployment. Choose the smallest change that completes the issue's stated workflow and preserve its failures/limits.
