@@ -135,7 +135,7 @@ The example is invented. An agent answers questions about the due dates of a sam
 
 The seam test `tests/test_nookku_seam.py` gives records of nookku to `TestFindingSeam`, which runs the reader, the import and the example on them. `make verify` runs it as the check `nookku-seam`.
 
-The seam test uses a temporary stand-in. The nookku release with the finding record is not published. Thus the test reads the files of `tests/nookku-seam/standin/`: the 13 finding conformance cases of nookku at one commit, and one record that a local run of that commit wrote for the example. `SOURCE.json` in that folder records the commit and the SHA-256 of each file. The test installs no nookku. After the release, the test pins the wheel by its SHA-256 and runs nookku from that wheel.
+The seam test runs nookku 0.6.1. `tests/nookku-seam/requirements.txt` pins the wheel of PyPI by its SHA-256, and `verify.py` installs it in a virtual environment. The released tool runs the example with a local agent that has fixed replies, and no model runs. It exports three records: one mismatch, one issue row of a person and one mismatch of a gate run. The test also makes nine changed copies of the mismatch record. The copies have an unknown field, a newer minor version, no `subject`, no `script.sha256`, an unknown major version, two seal mismatches, a wrong turn input and a model author. A person wrote the expected rule of each copy, and the reader of the release must agree on each refusal.
 
 ## Limits
 
@@ -145,4 +145,4 @@ The seam test uses a temporary stand-in. The nookku release with the finding rec
 - The wire protocol and the sidecar have no `import_finding`, no `decide_case` and no `imports` field.
 - A candidate belongs to one source. A plan of another source needs a new import.
 - The subject of a finding is text that the caller of the test tool gave. The Host records it and does not compare it with a snapshot.
-- The seam test does not yet run a released nookku version.
+- The seam test has no model row. `finding_test.go` covers a model row with a hand-written record.

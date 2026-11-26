@@ -122,7 +122,7 @@ Issue [#112](https://github.com/mohanraj00/entelos/issues/112) adds the finding 
 
 The Go tests use hand-written records and a fixture runner. The check `nookku-seam` of `verify.py` gives records of nookku to the Host. In the invented example, the finding of a wrong due date becomes a case that fails on the old catalog snapshot and passes on the corrected one. Before the approval, the candidate has no effect on a qualification.
 
-The seam check is a temporary stand-in. On 2026-11-25, the nookku release with the finding record was not published. The check reads 13 conformance cases of nookku at commit `05189f0` and one record of a local run of that commit, with a recorded SHA-256 for each file. It installs no nookku release. The next task is the pin of the published wheel by its SHA-256, and a seam test that runs nookku from that wheel. Other limits: no shipped runner reads the case format, a case decision has no signed record, and the wire protocol does not have the two writes.
+The seam check runs nookku 0.6.1 from PyPI. [`tests/nookku-seam/requirements.txt`](../tests/nookku-seam/requirements.txt) pins the wheel by its SHA-256, and `verify.py` installs it in a virtual environment with no dependencies. The released tool runs the library example with a local agent and no model. It exports three records: one mismatch, one issue row of a person and one mismatch of a gate run. The check also gives the Host nine changed copies of the mismatch record, and the reader of the release agrees on each refusal. Limits: the seam has no model row, no shipped runner reads the case format, a case decision has no signed record, and the wire protocol does not have the two writes.
 
 ### M1 First contact
 

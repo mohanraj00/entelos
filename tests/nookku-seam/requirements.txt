@@ -1,0 +1,5 @@
+# The seam test of #112 (tests/test_nookku_seam.py) installs only this release.
+# verify.py installs it with --require-hashes --only-binary :all: --no-deps.
+# The hash is the wheel of PyPI for the release v0.6.1 (tag commit 65d0d8c).
+nookku==0.6.1 \
+    --hash=sha256:fb6b75b5e6efe838f74ae723c8d8fdd94df78d75abed39008f728877caf529c0
