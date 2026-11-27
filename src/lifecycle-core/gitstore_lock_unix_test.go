@@ -1,0 +1,137 @@
+//go:build unix
+
+package lifecycle
+
+import (
+	"bytes"
+	"context"
+	"errors"
+	"os"
+	"strings"
+	"testing"
+)
+
+// killPublisher runs during, stops the git process of the ref transaction
+// with SIGKILL, and then accepts.
+type killPublisher struct {
+	child   func() *os.Process
+	during  func()
+	records [][]byte
+}
+
+func (p *killPublisher) Publish(ctx context.Context, record, signed []byte) error {
+	p.records = append(p.records, record)
+	p.during()
+	if err := p.child().Kill(); err != nil {
+		return err
+	}
+	return nil
+}
+
+// The git process stops with SIGKILL during a publish. The lock file of
+// the root ref stays, and each later write fails. The recovery refuses
+// while the update is in progress. After the update, it finds the stale
+// lock file and removes it. The root ref does not change, and the next
+// write succeeds.
+func TestRecoverAStaleRootLock(t *testing.T) {
+	store, err := OpenGitStore(t.TempDir() + "/store")
+	if err != nil {
+		t.Fatal(err)
+	}
+	w, _ := raceWorld(t, store)
+	_, decision := w.decided("pass")
+	if state, err := store.RecoverRootLock(true); err != nil || state["lock"] != "absent" {
+		t.Fatalf("a store with no lock file: %v %v", state, err)
+	}
+	var child *os.Process
+	store.prepared = func(p *os.Process) { child = p }
+	var inProgress error
+	publisher := &killPublisher{child: func() *os.Process { return child }}
+	publisher.during = func() { _, inProgress = store.RecoverRootLock(true) }
+	w.publisher = publisher
+	before, err := store.Root()
+	if err != nil {
+		t.Fatal(err)
+	}
+	q := Object{"op": "activate", "expected_revision": before, "request_key": "activate-kill", "decision_ref": decision, "targets": Array{}}
+	host := w.host("reviewer", "reviewer", w.runner)
+	_, err = host.Handle(copyObject(q))
+	if faultCode(t, err) != "store_error" {
+		t.Fatalf("the write with a stopped git process: %v", err)
+	}
+	if faultCode(t, inProgress) != "update_in_progress" {
+		t.Fatalf("the recovery during the update: %v", inProgress)
+	}
+	lock := store.rootLockPath()
+	exists := func() bool {
+		_, err := os.Stat(lock)
+		if err != nil && !errors.Is(err, os.ErrNotExist) {
+			t.Fatal(err)
+		}
+		return err == nil
+	}
+	root := func() string {
+		root, err := store.Root()
+		if err != nil {
+			t.Fatal(err)
+		}
+		return root
+	}
+	if f := err.(*Fault); !strings.Contains(f.Message, "run entelos-unlock") {
+		t.Fatalf("the message does not name the recovery: %s", f.Message)
+	}
+	if !exists() || root() != before {
+		t.Fatalf("after SIGKILL: lock file %v, root %s, want a lock file and root %s", exists(), root(), before)
+	}
+	// Each later write fails while the lock file stays.
+	store.prepared, w.publisher = nil, nil
+	_, err = w.do("reviewer", "reviewer", w.runner, "source", with(window, Object{"text": "other rule", "reason": "other", "supersedes": Array{}}))
+	if faultCode(t, err) != "store_error" || root() != before || !strings.Contains(err.(*Fault).Message, "run entelos-unlock") {
+		t.Fatalf("a write with a stale lock file: %v", err)
+	}
+	// The check removes nothing.
+	state, err := store.RecoverRootLock(false)
+	if err != nil || !equal(state, Object{"lock": "stale", "root": before}) || !exists() {
+		t.Fatalf("check: %v %v", state, err)
+	}
+	state, err = store.RecoverRootLock(true)
+	if err != nil || !equal(state, Object{"lock": "removed", "root": before}) || exists() || root() != before {
+		t.Fatalf("recovery: %v %v", state, err)
+	}
+	if state, err := store.RecoverRootLock(true); err != nil || state["lock"] != "absent" {
+		t.Fatalf("a second recovery: %v %v", state, err)
+	}
+	// The next write succeeds. It is the retry of the stopped request, and
+	// the consumer gets the same bytes again.
+	fast := &testPublisher{}
+	w.publisher = fast
+	out, err := w.host("reviewer", "reviewer", w.runner).Handle(copyObject(q))
+	if err != nil {
+		t.Fatal(err)
+	}
+	event := out.(Object)["result"].(Object)["event_ref"]
+	if root() == before || w.activations()[text(event)] == nil {
+		t.Fatal("the activation is not the new root")
+	}
+	if len(fast.records) != 1 || len(publisher.records) != 1 || !bytes.Equal(fast.records[0], publisher.records[0]) {
+		t.Fatal("the retry gave other bytes")
+	}
+}
+
+// A lock path that is not a regular file is not a stale lock file.
+func TestRecoveryRefusesAnotherFileKind(t *testing.T) {
+	store, err := OpenGitStore(t.TempDir() + "/store")
+	if err != nil {
+		t.Fatal(err)
+	}
+	lock := store.rootLockPath()
+	if err := os.MkdirAll(lock, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := store.RecoverRootLock(true); faultCode(t, err) != "invalid_store" {
+		t.Fatalf("got %v", err)
+	}
+	if info, err := os.Stat(lock); err != nil || !info.IsDir() {
+		t.Fatalf("the recovery changed the path: %v", err)
+	}
+}

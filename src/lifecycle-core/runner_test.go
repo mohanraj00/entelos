@@ -7,6 +7,7 @@ package lifecycle
 import (
 	"strings"
 	"testing"
+	"time"
 )
 
 // fixtureRunner gives the verdict that its table states for a bundle.
@@ -62,6 +63,9 @@ type world struct {
 	signer *Signer
 	// publisher is the publisher of each Host. Nil publishes nothing.
 	publisher Publisher
+	// publishTimeout is the time limit of a publisher call. Zero is the
+	// default limit.
+	publishTimeout time.Duration
 	// scope is the Host scope. An empty value is "demo".
 	scope string
 	// functions are the installed subjects. Nil is record.visible.
@@ -106,6 +110,7 @@ func (w *world) host(actor, role string, runner Runner) *Host {
 		h.Clock = fixedClock{w.now}
 	}
 	h.SetPublisher(w.publisher)
+	h.SetPublishTimeout(w.publishTimeout)
 	return h
 }
 

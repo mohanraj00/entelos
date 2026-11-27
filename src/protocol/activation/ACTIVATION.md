@@ -163,6 +163,9 @@ The rules below are the same for the `activate` write with its activation record
 
 - The Host calls the publisher in the write, after it stages and signs the records, and before it commits them. The store calls the publisher only after it owns the root update: the in-memory store holds its lock, and the Git store holds the lock of the root ref in one `git update-ref --stdin` transaction. Thus a write that loses the compare-and-swap to another write does not publish.
 - The publisher must not call the Host or the store, because the store holds its lock during the call.
+- The call has a time limit. The default limit is 10 seconds, and `Host.SetPublishTimeout` sets another limit. The publisher gets a Go context with this deadline, and it must stop its work when the context is done.
+- At the limit, the Host commits nothing and releases the store lock. The result is `publish_timeout` with the stage `publish`. The Host does not wait for the publisher. Thus the limit is also the longest time that one publisher call stops the other writes.
+- After `publish_timeout`, the caller does not know if the consumer has the record. A publisher that ignores the context can give the record to the consumer after the limit. This is the same case as a commit that fails after an accept, and the same rule applies: a retry gives the same bytes.
 - On an accept, the Host commits the write.
 - On a refusal, the Host commits nothing. The result is `publish_refused` with the stage `publish`, and the message has the reason of the consumer. Thus a refused suspension does not suspend in entelos either.
 - On a failure of the commit after an accept, the consumer has a record that the store does not have. A retry of the same request makes the same bytes, and the consumer gets them again. The consumer must accept a record that it already has.
@@ -174,8 +177,61 @@ The rules below are the same for the `activate` write with its activation record
 | Code | Use |
 |---|---|
 | `publish_refused` | The publisher refused the activation record or the suspension record. The message has the reason. |
+| `publish_timeout` | The publisher gave no answer in the time limit. The store committed nothing. |
 | `publish_unsigned` | The Host has a publisher and no signing key. |
 | `publish_unsupported` | The Host has a publisher and a store that does not call it under the lock. |
+
+## Stale lock of the root ref
+
+The Git store moves its root in one `git update-ref` command. That command makes the lock file `refs/lifecycle/state.lock` in the repository and removes it when it completes. During a publisher call, the lock file is there for the time of the call.
+
+A test with git 2.54.0 on macOS shows these facts, for a `git update-ref --stdin` process after its `prepare` command:
+
+- If the Host process stops, the `git` process gets the end of its input. It then removes the lock file and does not move the root.
+- If the `git` process gets SIGTERM, it removes the lock file.
+- If the `git` process gets SIGKILL, the lock file stays. For example, a container runtime can stop all processes of a container in this way.
+
+A lock file that stays is a stale lock file. No process owns it. Each later write fails with `store_error`, and the root does not move. Reads continue to work. The message of `git` tells the reader to remove the file by hand. Do not do that before the check below: the Host adds the name of the recovery command to the message.
+
+### How the store knows that no update is in progress
+
+The repository has the file `lifecycle-root-update.flock`. It is empty, and the Git store makes it at the first write. Each update of the root ref takes a shared `flock` lock on this file. The `git` process of the update keeps the file open until it stops. The operating system releases the lock when the last process closes the file, also after SIGKILL.
+
+The recovery takes an exclusive `flock` lock on the same file, and it does not wait. Thus the recovery gets the lock only if no Host is in an update and no `git` process of an update is alive. Then no process owns the lock file of the root ref, and the lock file is stale. While the recovery holds the exclusive lock, a new update waits for 1 second maximum and then fails with `store_error`.
+
+The removal of a stale lock file does not change the root. An update moves the root only when `git` renames its lock file to the ref file. A lock file that stays is a lock file that `git` did not rename.
+
+### Recovery procedure
+
+Do these steps on the system that has the repository:
+
+1. Run `entelos-unlock --repo <store.git> --check`. The command removes nothing.
+2. Read the field `lock` of the result. If it is `absent`, no lock file is there, and the store needs no recovery. Stop.
+3. If the result is the code `update_in_progress`, a write is in progress. Wait for the publish time limit and do step 1 again. If the code stays, stop the callers that send writes, because each failed write also holds the marker lock for a short time.
+4. If `lock` is `stale`, run `entelos-unlock --repo <store.git>`. The field `lock` of the result is then `removed`.
+5. Compare the field `root` of step 1 and of step 4. The two values are the same.
+6. Send the write again with the same request key. If the stopped write did not commit, the consumer gets the same bytes again.
+
+Step 4 does the check of step 1 again under the same exclusive lock, and removes the lock file only then. Thus it is also safe to do step 4 without step 1.
+
+The command prints one JSON line. On success, the line has `"status":"ok"` and the fields `lock` and `root`, and the exit status is 0. On a refusal, the line has the code, and the exit status is 1. The Go function `GitStore.RecoverRootLock` does the same work for an embedding host.
+
+| Code | Use |
+|---|---|
+| `update_in_progress` | An update of the root ref is in progress. The recovery removed nothing. The stage is `store`. |
+| `invalid_store` | The lock path of the root ref is not a regular file, or the repository is not there. The recovery removed nothing. |
+
+Do not remove the lock file by hand, unless the limits below make the command unusable. A removal by hand during an update breaks the lock of that update. Its compare-and-swap is then not safe.
+
+The check has these limits:
+
+- It sees only a Host of this version or later. A Host of an earlier version takes no lock on the marker file.
+- It sees only the processes on the same operating system kernel. For a repository on a network file system, a Host on a different machine is not visible. Stop each Host of the store before you do the recovery.
+- It needs a Unix system with `flock`. On each other system, the Git store takes no lock on the marker file, and the recovery gives `store_error`.
+- On a file system that does not support `flock`, the Git store takes no lock on the marker file, and the recovery gives `store_error`.
+- It sees only the updates that the Git store makes. A `git` command that a person runs on the repository is not visible. Run no other `git` command on the repository during the recovery.
+- It examines only the lock file of the root ref. It does not repair other damage of the repository.
+- The lock file path is the path of the Git files ref format. This is the default format of git 2.54.0, and the Git store makes its repository with the default format. A repository with the reftable format has no such file, and the recovery gives `absent`.
 
 ## Vectors
 
@@ -214,4 +270,6 @@ The Go tests `TestActivationVectors` and `TestSuspensionVectors` do checks 1 to 
 - The Host stores no record of a refused publish. The caller gets the code and the reason.
 - An activation before the signing key has no activation record, and a suspension before the signing key has no suspension record.
 - A suspension record does not show that its targets exist or that they overlap its interval. The Host checks this at the `suspend` write. A consumer can compare each target with the events that it knows.
-- A slow publisher holds the store lock, and the other writes wait or fail for that time. If the process stops during the call, the Git store keeps the lock file of the root ref, and a person must remove it.
+- A slow publisher holds the store lock for the publish time limit maximum, and the other writes wait or fail for that time. The default limit is 10 seconds.
+- The Host does not stop a publisher that ignores its context. Such a call continues in the Host process after `publish_timeout`.
+- If the `git` process stops with SIGKILL during a write, the Git store keeps the lock file of the root ref. The Host does not remove it automatically. A person runs `entelos-unlock`, as [Stale lock of the root ref](#stale-lock-of-the-root-ref) says, with the limits of that section.

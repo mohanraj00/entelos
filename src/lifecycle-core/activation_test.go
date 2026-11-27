@@ -6,10 +6,12 @@ package lifecycle
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"os"
 	"strings"
 	"testing"
+	"time"
 )
 
 func activationVectors(t *testing.T) Object { return publishedVectors(t, "activation-cases.json") }
@@ -119,7 +121,7 @@ type testPublisher struct {
 	records, signed [][]byte
 }
 
-func (p *testPublisher) Publish(record, signed []byte) error {
+func (p *testPublisher) Publish(ctx context.Context, record, signed []byte) error {
 	p.records, p.signed = append(p.records, record), append(p.signed, signed)
 	return p.refuse
 }
@@ -470,7 +472,7 @@ type lockPublisher struct {
 	calls int
 }
 
-func (p *lockPublisher) Publish(record, signed []byte) error {
+func (p *lockPublisher) Publish(ctx context.Context, record, signed []byte) error {
 	p.calls++
 	p.err = p.write()
 	return nil
@@ -529,5 +531,144 @@ func TestPublisherNeedsAStepStore(t *testing.T) {
 	_, err = w.do("reviewer", "reviewer", w.runner, "suspend", with(window, Object{"targets": Array{decision}, "reason": "stop"}))
 	if f, ok := err.(*Fault); !ok || f.Code != "publish_unsupported" || f.Stage != "publish" || len(publisher.records) != 0 {
 		t.Fatalf("suspend: got %v", err)
+	}
+}
+
+// slowPublisher gives no answer before the deadline. If obey is true, it
+// stops at the deadline with the error of the context. Else it continues
+// until release closes, and then accepts.
+type slowPublisher struct {
+	obey    bool
+	release chan struct{}
+	// calls gets the record and the time to the deadline of each call.
+	calls chan slowCall
+	late  chan struct{}
+}
+
+type slowCall struct {
+	record []byte
+	// limited is true if the context has a deadline. deadline is the time
+	// from the start of the call to it.
+	limited  bool
+	deadline time.Duration
+}
+
+func (p *slowPublisher) Publish(ctx context.Context, record, signed []byte) error {
+	call := slowCall{record: record}
+	if at, ok := ctx.Deadline(); ok {
+		call.limited, call.deadline = true, time.Until(at)
+	}
+	p.calls <- call
+	if p.obey {
+		<-ctx.Done()
+		return ctx.Err()
+	}
+	<-p.release
+	close(p.late)
+	return nil
+}
+
+// The publisher call has a time limit. At the limit, the result is
+// publish_timeout, the store commits nothing and the store lock is free.
+// A retry of the same request gives the same bytes.
+func TestPublisherCallHasATimeLimit(t *testing.T) {
+	stores := map[string]func(t *testing.T) Store{
+		"memory": func(t *testing.T) Store { return NewMemoryStore() },
+		"git": func(t *testing.T) Store {
+			store, err := OpenGitStore(t.TempDir() + "/store")
+			if err != nil {
+				t.Fatal(err)
+			}
+			return store
+		},
+	}
+	for name, open := range stores {
+		for _, obey := range []bool{true, false} {
+			t.Run(name+map[bool]string{true: "-obeys-the-context", false: "-ignores-the-context"}[obey], func(t *testing.T) {
+				store := open(t)
+				w, _ := raceWorld(t, store)
+				_, decision := w.decided("pass")
+				slow := &slowPublisher{obey: obey, release: make(chan struct{}), calls: make(chan slowCall, 1), late: make(chan struct{})}
+				w.publisher, w.publishTimeout = slow, 200*time.Millisecond
+				before := must(w.store.Read(nil)).Cursor
+				q := Object{"op": "activate", "expected_revision": before, "request_key": "activate-slow", "decision_ref": decision, "targets": Array{}}
+				// The write returns while a publisher that ignores the
+				// context still waits for release.
+				_, err := w.host("reviewer", "reviewer", w.runner).Handle(copyObject(q))
+				if f, ok := err.(*Fault); !ok || f.Code != "publish_timeout" || f.Stage != "publish" || !strings.Contains(f.Message, "200ms") {
+					t.Fatalf("got %v", err)
+				}
+				call := <-slow.calls
+				if !call.limited || call.deadline > 200*time.Millisecond {
+					t.Fatalf("the context deadline: %v, %s from the call", call.limited, call.deadline)
+				}
+				if must(w.store.Read(nil)).Cursor != before || w.activations() != nil {
+					t.Fatal("a publish after the time limit changed the store")
+				}
+				if git, ok := store.(*GitStore); ok {
+					if _, err := os.Stat(git.rootLockPath()); !errors.Is(err, os.ErrNotExist) {
+						t.Fatalf("lock file: %v", err)
+					}
+				}
+				// The store lock is free: another write succeeds.
+				w.publisher = nil
+				w.must("reviewer", "reviewer", "source", with(window, Object{"text": "other rule", "reason": "other", "supersedes": Array{}}))
+				// A late accept of the first call commits nothing.
+				if !obey {
+					close(slow.release)
+					<-slow.late
+					if w.activations() != nil {
+						t.Fatal("a late accept made an activation")
+					}
+				}
+				// The retry gives the same bytes to a publisher that answers.
+				fast := &testPublisher{}
+				w.publisher = fast
+				q["expected_revision"] = must(w.store.Read(nil)).Cursor
+				if _, err := w.host("reviewer", "reviewer", w.runner).Handle(copyObject(q)); err != nil {
+					t.Fatal(err)
+				}
+				if len(fast.records) != 1 || !bytes.Equal(fast.records[0], call.record) {
+					t.Fatal("the retry gave other bytes")
+				}
+			})
+		}
+	}
+}
+
+// A refusal with the error of another context is a refusal, not a timeout.
+// The default limit applies when the embedding host sets none.
+func TestPublisherRefusalIsNotATimeout(t *testing.T) {
+	w, publisher := raceWorld(t, NewMemoryStore())
+	_, decision := w.decided("pass")
+	publisher.refuse = context.DeadlineExceeded
+	_, err := w.do("reviewer", "reviewer", w.runner, "activate", Object{"decision_ref": decision, "targets": Array{}})
+	if faultCode(t, err) != "publish_refused" {
+		t.Fatalf("got %v", err)
+	}
+	if DefaultPublishTimeout != 10*time.Second {
+		t.Fatalf("default limit %s", DefaultPublishTimeout)
+	}
+}
+
+// panicPublisher panics with a fault, as a step with no time limit can.
+type panicPublisher struct{}
+
+func (panicPublisher) Publish(ctx context.Context, record, signed []byte) error {
+	panic(NewFault("publish_refused", "panic in the publisher", "publish"))
+}
+
+// A panic in the publisher stops the write and not the process.
+func TestPublisherPanicStopsTheWrite(t *testing.T) {
+	w, _ := raceWorld(t, NewMemoryStore())
+	_, decision := w.decided("pass")
+	w.publisher = panicPublisher{}
+	before := must(w.store.Read(nil)).Cursor
+	_, err := w.do("reviewer", "reviewer", w.runner, "activate", Object{"decision_ref": decision, "targets": Array{}})
+	if f, ok := err.(*Fault); !ok || f.Message != "panic in the publisher" {
+		t.Fatalf("got %v", err)
+	}
+	if must(w.store.Read(nil)).Cursor != before {
+		t.Fatal("the write changed the store")
 	}
 }
