@@ -4,6 +4,10 @@ This file lists the changes for each snapshot tag. A tag is a stable snapshot to
 
 ## Unreleased
 
+### Reference code
+
+- The update marker of the Git store is private to the user of the Host (#229). The Git store makes `lifecycle-root-update.flock` with the mode `0600`, sets this mode on a marker of v0.8.0 at the first write or recovery, and refuses a marker of a different user with `invalid_store`. Each Host of one store, and `entelos-unlock`, must run as the same user. See [the permissions of the Git store](src/lifecycle-core/README.md#permissions-of-the-git-store).
+
 ## v0.8.0 (2026-11-27)
 
 This snapshot writes the policy verdict in the Go Host (#210) and adds a signed record for a suspension (#211). It puts a time limit on the publisher call and adds a recovery of a stale lock file of the root ref (#212). Wire protocol 1.3 carries the content workflow on the socket and on the HTTP binding (#213). The lifecycle build identity now covers only the core Go source files, and receipts record the Go and Git versions in `host_tools` (#214). The record format does not change. The pinned stable files change only by the rule for a new protocol minor version.

@@ -14,10 +14,34 @@ import (
 	"time"
 )
 
+// openMarker opens or makes the update marker. The file is a regular file
+// of the user of the Host with the mode 0600. A flock lock needs no write
+// permission, so a file that another account can open lets that account
+// hold the exclusive lock and stop each write.
+//
+// The open is for read and write, because some network file systems give
+// an exclusive flock lock only on a file that is open for write. It does
+// not wait on a FIFO, and it follows no link. The mode change does not
+// close a file that another account opened earlier: see "Permissions of
+// the Git store" in README.md.
 func (s *GitStore) openMarker() (*os.File, error) {
-	f, err := os.OpenFile(filepath.Join(s.Path, updateMarker), os.O_RDONLY|os.O_CREATE|syscall.O_NOFOLLOW, 0o644)
+	f, err := os.OpenFile(filepath.Join(s.Path, updateMarker), os.O_RDWR|os.O_CREATE|syscall.O_NOFOLLOW|syscall.O_NONBLOCK, 0o600)
 	if err != nil {
 		return nil, NewFault("store_error", "the update marker of the store does not open: "+err.Error(), "store")
+	}
+	info, err := f.Stat()
+	if err == nil {
+		// A new file gets the effective user ID of the process.
+		st, ok := info.Sys().(*syscall.Stat_t)
+		if !info.Mode().IsRegular() || !ok || int(st.Uid) != os.Geteuid() {
+			err = errors.New("it is not a regular file of the current user")
+		} else if info.Mode() != 0o600 {
+			err = f.Chmod(0o600)
+		}
+	}
+	if err != nil {
+		f.Close()
+		return nil, NewFault("invalid_store", "the update marker of the store is not usable: "+err.Error(), "store")
 	}
 	return f, nil
 }
