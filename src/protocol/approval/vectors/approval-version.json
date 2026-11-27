@@ -313,10 +313,10 @@
    }
   },
   {
-   "name": "minor-3",
+   "name": "minor-4",
    "principal": "reviewer-a",
    "request": {
-    "protocol": "1.3",
+    "protocol": "1.4",
     "request_id": "e-10",
     "operation": "proposals",
     "body": {}

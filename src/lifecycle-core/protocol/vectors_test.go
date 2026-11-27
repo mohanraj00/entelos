@@ -242,12 +242,7 @@ func shape(s *Schemas, response any, operation any) []string {
 		if err := s.Validate(env["success"].(lifecycle.Object), response, "response", env); err != nil {
 			return []string{"response schema: " + err.Error()}
 		}
-		minor := 0
-		if obj["protocol"] == "1.2" {
-			minor = 2
-		} else if obj["protocol"] == "1.1" {
-			minor = 1
-		}
+		minor := map[any]int{"1.1": 1, "1.2": 2, "1.3": 3}[obj["protocol"]]
 		defs, known := s.Operation(fmt.Sprint(operation), minor)
 		if !known {
 			return []string{"response schema: a success needs a known operation"}

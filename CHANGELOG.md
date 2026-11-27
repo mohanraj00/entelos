@@ -19,6 +19,12 @@ This file lists the changes for each snapshot tag. A tag is a stable snapshot to
   - The new function `GitStore.RecoverRootLock` and the new command `entelos-unlock --repo <store.git> [--check]` examine the lock file of the root ref and remove a stale one. A `git` process that stops with SIGKILL during a write leaves this file, and each later write then fails with `store_error`. The recovery refuses with the new code `update_in_progress` while an update is in progress. It does not change the root ref.
   - Effect on a store: the Git store makes the empty file `lifecycle-root-update.flock` in the repository at its first write. Each update of the root ref takes a shared `flock` lock on it. The records and the root do not change, and no migration is necessary. On a file system that does not support `flock`, a write takes no lock on the marker file, and the recovery refuses with `store_error`.
   - Limits: the recovery sees only a Host of this version or later on the same operating system kernel, and it needs a Unix system. The Host does not stop a publisher that ignores its context.
+- Wire protocol 1.3 carries the content workflow on the socket and on the HTTP binding (#213). See [PROTOCOL.md](src/protocol/PROTOCOL.md#version-13).
+  - The 1.3 schemas add `propose.candidate`, `activate.applicability`, the content fields of the `proposal` and `resolve` results, and the reads `evidence`, `promotion` and `approval`. Versions 1.0 to 1.2 refuse the new fields and reads with `invalid_request` at the protocol stage.
+  - Pinned stable files change by the rule for the first unsupported minor version: the envelope accepts `1.3`, and the cases `higher-minor`, `minor-4` and the 1.4 envelope cases now use `1.4`. The pin adds `src/protocol/approval/schema/1.3/` and the vector file `session-content.json`.
+  - In 1.3, a CEL bundle body without `function`, `base_snapshot` or `bundle` gets `invalid_request` from the Host at the stage `lifecycle`, not from the schema at the stage `protocol`.
+  - Effect on a store: none. The Host rules and the records do not change.
+  - Limits: a 1.0 to 1.2 `resolve` or `proposal` of a content subject still gives content fields that its schema does not describe. The sidecar installs only `CELRunner`, so it cannot qualify a content candidate.
 
 ### Decisions
 

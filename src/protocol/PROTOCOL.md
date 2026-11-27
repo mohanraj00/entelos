@@ -2,7 +2,7 @@
 
 This file defines the versioned wire protocol between an application module and the lifecycle. Issue [#83](https://github.com/mohanraj00/entelos/issues/83) owns it. The [technology decision](../../docs/decisions/0001-technology.md) selected JSON with a JSON Schema, length-prefixed frames on a Unix socket, and RFC 8785 for canonical bytes.
 
-[STABILITY.md](../../docs/STABILITY.md) states the compatibility of the protocol. The schemas and vectors of 1.0, 1.1 and 1.2 are stable surfaces.
+[STABILITY.md](../../docs/STABILITY.md) states the compatibility of the protocol. The schemas and vectors of 1.0, 1.1, 1.2 and 1.3 are stable surfaces.
 
 Versions 1.1 and 1.2 are defined in [approval/APPROVAL.md](approval/APPROVAL.md) for issues [#130](https://github.com/mohanraj00/entelos/issues/130) and [#161](https://github.com/mohanraj00/entelos/issues/161). This file defines the base 1.0 contract. Protocol 1.2 also adds the optional `activate.supersedes` array of event references, with the same shape as `targets` ([#180](https://github.com/mohanraj00/entelos/issues/180)). Its [schema](approval/schema/1.2/activate.schema.json) overrides the 1.0 `activate` schema only for 1.2 requests. Versions 1.0 and 1.1 keep the old schema and refuse the field with `invalid_request` at the protocol stage. [SUPERSESSION.md](supersession/SUPERSESSION.md) defines the unchanged Host rules. The Go Host and sidecar implement all three versions.
 
@@ -15,12 +15,15 @@ The [read schema](approval/schema/1.2/decision_events.schema.json) and
 Versions 1.0 and 1.1 refuse the operation and field with `invalid_request`.
 The socket and HTTP adapters call the same Host read as JSONL.
 
+Protocol 1.3 carries the content workflow of [CONTENT.md](content/CONTENT.md) ([#213](https://github.com/mohanraj00/entelos/issues/213)). [Version 1.3](#version-13) defines it. The Go Host and sidecar implement it.
+
 ## Files
 
 | Path | Content |
 |---|---|
 | `schema/envelope.schema.json` | The request envelope, the success and failure responses, and the diagnostic object. |
 | `schema/<operation>.schema.json` | One file for each lifecycle operation. `$defs/request_body` is the request body. `$defs/result` is the `result` of a success response. |
+| `approval/schema/1.3/*.schema.json` | The 1.3 schemas. Each one overrides the earlier schema of the same operation, only for 1.3 requests. |
 | `vectors/session-*.json` | Golden request and response vectors. |
 | `vectors/jcs.json` | RFC 8785 canonical form vectors. |
 | `vectors/envelope-schema.json` | Valid and invalid values for the envelope definitions. |
@@ -166,6 +169,47 @@ The Go sidecar (#84) passes the vector files:
 - The runner also checks that the socket file has mode 0600, that each payload is canonical, and that the sidecar removes its socket file and exits with status 0 after SIGTERM.
 - A self-test gives the runner a wrong response, a close that the step does not expect and a close that does not occur. The runner must report all three.
 - The Go tests in `src/lifecycle-core/protocol/` run all vector files in the process, with short reads and short writes, and the stub Host checks.
+
+## Version 1.3
+
+Version 1.3 carries the content workflow on the socket and on the HTTP binding. The schemas in [`approval/schema/1.3/`](approval/schema/1.3/) override the earlier schema of the same operation, only for 1.3 requests. Each other operation keeps its latest earlier schema.
+
+| Operation | Change in 1.3 |
+|---|---|
+| `propose` | The optional field `candidate`, with `{"kind":"cel-bundle","bundle":{…}}` or `{"kind":"content","manifest":"…"}`. The fields `function`, `base_snapshot` and `bundle` become optional in the schema. The result can have `candidate` and `head`, and `bundle_ref` becomes optional. |
+| `activate` | The optional field `applicability`, an object with one member for each `item_id`. Each member is an object of field names. Each field has 1 or more level strings of 1 to 256 characters. |
+| `proposal` | The `bundle` of a content proposal has the one file `content`, with the exact manifest text. |
+| `resolve` | The selection of a content subject has `candidate`, `collection` and `partition`. It has no `engine_build`. It has `applicability` if the event has the field. |
+| `evidence` | The new reviewer read of [EVIDENCE.md](evidence/EVIDENCE.md#the-evidence-read). |
+| `promotion` | The new reviewer read of [PROMOTION.md](promotion/PROMOTION.md#the-promotion-read). |
+| `approval` | The new read of [VERDICT.md](verdict/VERDICT.md), with the role `reader`. |
+
+These rules apply:
+
+- The Host applies the candidate rules of [CONTENT.md](content/CONTENT.md#requests). A body with `candidate` and `bundle` gets `invalid_request` at the stage `lifecycle`. A content candidate with `function` or `base_snapshot` gets the same refusal.
+- A CEL bundle body without `function`, `base_snapshot` or `bundle` agrees with the 1.3 schema, and the Host refuses it with `invalid_request` at the stage `lifecycle`. In 1.2, the schema refuses the same body at the stage `protocol`.
+- Versions 1.0, 1.1 and 1.2 refuse `propose.candidate`, `activate.applicability` and the three reads with `invalid_request` at the stage `protocol`. The Host does not get the request.
+- The three reads have the roles and the scope checks of the Host. They give the same result as the Host-only reads of the earlier Host.
+- A request with the version 1.4 or higher gets `unsupported_version` with `"protocol":"1.0"`.
+
+These stable files change:
+
+| File | Change | Reason |
+|---|---|---|
+| `schema/envelope.schema.json` | `success.protocol` and `failure.protocol` use `enum` `["1.0","1.1","1.2","1.3"]`. | A 1.3 response is valid. |
+| `vectors/envelope-schema.json` | The cases `success-version-1.3` and `failure-version-1.3` become valid. The new cases `success-version-1.4` and `failure-version-1.4` are invalid. | 1.3 is now supported, and 1.4 is the first unsupported minor version. |
+| `vectors/session-envelope.json` | Step `higher-minor` sends `"1.4"`. It still expects `unsupported_version` with `"1.0"`. | The same reason. |
+| `approval/vectors/approval-version.json` | Step `minor-3` becomes `minor-4` and sends `"1.4"`. It still expects `unsupported_version` with `"1.0"`. | The same reason. |
+
+[`vectors/session-content.json`](vectors/session-content.json) has 19 steps. They refuse the new fields and reads in 1.0 and 1.2, run a content `propose` and its retry, give three Host refusals, read `evidence`, `approval` and `promotion`, and refuse three invalid `applicability` values at the protocol stage. The candidate `ref` of the expected values is the SHA-256 digest of the exact manifest text, which a person computed outside the Host. The sidecar has the CEL runner, which does not qualify content, so these steps stop before `qualify`.
+
+`TestContentWorkflowOnTheWire` in `../lifecycle-core/protocol/` installs a stub content runner. It runs one content proposal from `source` to `resolve` through the Unix socket and through the HTTP binding with a static token and with a signed claim. It also shows that a 1.2 `activate` cannot confirm the values, so the Host refuses it with `applicability_mismatch`.
+
+Limits of 1.3:
+
+- A 1.0, 1.1 or 1.2 `resolve` or `proposal` of a content subject gives the content fields, and the schema of that version does not describe them. The adapter does not change these results, because the results of an existing version must not change. A client of the content workflow uses 1.3.
+- The sidecar installs only the CEL runner. Thus a content proposal through the sidecar gets no passed report. An embedding host installs its own runner, as the test does.
+- The content manifest, the evidence document and the applicability values stay experimental formats. The 1.3 schemas check their shape on the wire, not their rules.
 
 ## Limits
 

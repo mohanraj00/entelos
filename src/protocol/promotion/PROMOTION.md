@@ -127,7 +127,7 @@ The consumer then loads only the profile bytes with that digest.
 
 ## Host behavior
 
-The Go lifecycle Host applies this section (#152). The wire protocol does not have the promotion read yet.
+The Go lifecycle Host applies this section (#152). Protocol 1.3 has the promotion read on the wire (#213).
 
 - The Host context gets the optional field `promotion_collections`, a list of nonempty collection names. A value of another type gives `configuration_error` when the Host starts.
 - The runner gives the measure summary in `Verdict.Measure` ([RUNNER.md](../../lifecycle-core/RUNNER.md#verdict)). If it is not nil, `qualify` stores it as the report field `measure`. `qualify` does not check it. A report without a summary keeps the bytes of an earlier Host.

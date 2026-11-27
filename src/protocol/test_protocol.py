@@ -29,6 +29,18 @@ SAFE_INT=2**53-1
 SCHEMAS={p.name[:-len('.schema.json')]:json.loads(p.read_text()) for p in sorted((HERE/'schema').glob('*.schema.json'))}
 ENVELOPE=SCHEMAS.pop('envelope')['$defs']
 OPERATIONS=SCHEMAS
+# Protocol 1.1, 1.2 and 1.3 replace the schemas of some operations. A later version uses the latest replacement.
+_APPROVAL=HERE/'approval'/'schema'
+OVERRIDES={'1.1':{p.name[:-len('.schema.json')]:json.loads(p.read_text()) for p in sorted(_APPROVAL.glob('*.schema.json')) if p.name!='credentials.schema.json'},
+           '1.2':{p.name[:-len('.schema.json')]:json.loads(p.read_text()) for p in sorted((_APPROVAL/'1.2').glob('*.schema.json'))},
+           '1.3':{p.name[:-len('.schema.json')]:json.loads(p.read_text()) for p in sorted((_APPROVAL/'1.3').glob('*.schema.json'))}}
+VERSIONS=('1.0','1.1','1.2','1.3')
+
+def operation_schema(operation,version):
+    """The schema of an operation for the protocol version of a response."""
+    for v in reversed(VERSIONS[1:VERSIONS.index(version)+1] if version in VERSIONS else ()):
+        if operation in OVERRIDES[v]:return OVERRIDES[v][operation]
+    return OPERATIONS.get(operation)
 
 class SchemaError(Exception):
     def __init__(self,message):super().__init__(message);self.message=message
@@ -124,8 +136,9 @@ def shape(response,operation):
     try:
         if response['status']=='ok':
             validate(ENVELOPE['success'],response,'response',ENVELOPE)
-            if operation not in OPERATIONS:return ['response schema: a success needs a known operation for its result schema']
-            schema=OPERATIONS[operation]['$defs'];validate(schema['result'],response['result'],'result',schema)
+            found=operation_schema(operation,response.get('protocol'))
+            if found is None:return ['response schema: a success needs a known operation for its result schema']
+            schema=found['$defs'];validate(schema['result'],response['result'],'result',schema)
         else:validate(ENVELOPE['failure'],response,'response',ENVELOPE)
     except SchemaError as e:return ['response schema: '+e.message]
     return []
@@ -274,7 +287,7 @@ def response_version(step):
     """APPROVAL.md: a response has the version of its request when the receiver supports it. Each other response has 1.0."""
     request=step.get('request')
     version=request.get('protocol') if isinstance(request,dict) else None
-    return version if version in ('1.0','1.1','1.2') else '1.0'
+    return version if version in VERSIONS else '1.0'
 
 def run_step(transport,step,bound,name):
     errors=[];expect=step['expect']

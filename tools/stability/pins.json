@@ -13,7 +13,8 @@
   "protocol_versions": [
     "1.0",
     "1.1",
-    "1.2"
+    "1.2",
+    "1.3"
   ],
   "files": [
     "src/protocol/schema/*.json",
@@ -22,7 +23,8 @@
     "src/protocol/approval/vectors/*.json",
     "src/cel-lifecycle/conformance/storage/*.json",
     "src/cel-lifecycle/conformance/ingest/*.json",
-    "src/protocol/approval/schema/1.2/*.json"
+    "src/protocol/approval/schema/1.2/*.json",
+    "src/protocol/approval/schema/1.3/*.json"
   ],
   "sha256": {
     "src/protocol/schema/ack.schema.json": "ea03ff1537dcbc50519a480e4dd575e9029480a46c26ebc51922d31711892b4d",
@@ -31,7 +33,7 @@
     "src/protocol/schema/claim.schema.json": "d05a7f6738d3b1187d908ace2ad40c8b68719c6f37a17e3421fee83d5b7dcc44",
     "src/protocol/schema/decide.schema.json": "749b5e33cd6d153674b58c30b340c4aee5c901edd23305fb988ee073bc1272c1",
     "src/protocol/schema/describe.schema.json": "2849a869061e9b7d106c77ddf3f730de51e58d7fc0cababf9b62d1be967eec77",
-    "src/protocol/schema/envelope.schema.json": "eeb3c3e575be3819dd21016d12c1f845a1e8199a4173bf918d8611d10485e434",
+    "src/protocol/schema/envelope.schema.json": "2a349892ce52ec81dbe5906e51c38f1225a31a8df7fe4a8315c121026b895e56",
     "src/protocol/schema/ingest.schema.json": "01be0e5e5a08a92273d47b05e232ce6fa67b26168db6832fafac7baf8209cb73",
     "src/protocol/schema/inspect.schema.json": "8b0a036d6a3a7c66f3a1a5613ef89063d5e0fa641233f806d83fbda773261c99",
     "src/protocol/schema/invoke.schema.json": "793944611bb3e0ad0f8a21d29990adcd4f69ef86d6de37ef1507ee2b56c53e5f",
@@ -48,10 +50,11 @@
     "src/protocol/schema/source.schema.json": "7801ad507a0c4e9d6cfad186874964267e5058d089b6725b9245076db9b9ae22",
     "src/protocol/schema/suspend.schema.json": "316a62cfb0399487f5a3fda2c27d82062b805f7c7b707e6e120b1da14a34561a",
     "src/protocol/schema/takeover.schema.json": "3f593bcfc24dbf3dac50f0f59ad2e126606be918d9a317cc43295bb430ce0640",
-    "src/protocol/vectors/envelope-schema.json": "fea64ce254ba1a4925f044b0a4327f780d992d23b07c1de13b94905c1e8b6dd7",
+    "src/protocol/vectors/envelope-schema.json": "8db031f1a3ca39aaeacce1b392dba75f1887d654ade3f360c61e1f5c04ab49ae",
     "src/protocol/vectors/jcs.json": "2411c4764130048bff3caf1f785800f6a2df3be1ea5cfa3920b1c9145b09d13d",
     "src/protocol/vectors/session-body.json": "031532c1a2262cf8f1d10f146bc4827b88cfc6474a7a490b2a1b995c6342bc92",
-    "src/protocol/vectors/session-envelope.json": "e3e6b23d0147e76031a9c426be8c8697f67ed0252e053d15305bdfbeebacdbb7",
+    "src/protocol/vectors/session-content.json": "47bbd7df6746fa53cfd8cd536c423dd96a7cae920bc2ba0989acef5fbf435223",
+    "src/protocol/vectors/session-envelope.json": "eb2e91041e437173ed8e2b228f2270defe3baf29eba45fedd7fb06db13bdb861",
     "src/protocol/vectors/session-lifecycle.json": "ac6e4cb56caf68f0bc4b2406781d802ffc7af61e1c37091777a88a0256c30c9d",
     "src/protocol/vectors/session-stream.json": "044d13fe610428a80ed6a8ca518887cd9053dfd96e2510b96edd07ecc31dc38d",
     "src/protocol/vectors/session-supersession.json": "12d049c27880ca9c59308bc35cb12d4e41b355372d76e1a469eedf50e9f37261",
@@ -63,7 +66,7 @@
     "src/protocol/approval/vectors/approval-reject.json": "9215168d5c9c694b717a92a69bd9d8cc125bc53200c26e04a467a69d8ea70aaf",
     "src/protocol/approval/vectors/approval-scope.json": "59379ab38594bb05bfe3c71584f2741d4f8f5a29f6b6b21d9a9520a7feca27c8",
     "src/protocol/approval/vectors/approval-verdicts.json": "881c27ead1ea9dac1a5c8a4f3c746c90b956eebf1301d5d1ffc88b310c84f35c",
-    "src/protocol/approval/vectors/approval-version.json": "0d65367ae7b50add0d0bdfea121eb1abba90a5c35e631d94e5630e0f00ddfe02",
+    "src/protocol/approval/vectors/approval-version.json": "c6d0583b3e7720859ad495525142c52d37a549c701f8528230d8fae15d7321f9",
     "src/protocol/approval/vectors/page-cases.json": "ef4d0076f2ba7b6cb54f519952023b609ed1a77789352e00e9ee3548c884673a",
     "src/cel-lifecycle/conformance/storage/content-identity.json": "21557800b9bbc032f98350529fb48b2163fe52b001eb6b029d03d3243b0e8ffd",
     "src/cel-lifecycle/conformance/storage/empty-store.json": "efc93147c46b147749b7713d3cf64ffa3a9bcf9cb9b9308fdc558486022b4208",
@@ -87,6 +90,13 @@
     "src/protocol/approval/schema/1.2/decision_events.schema.json": "6c6c65794add87d71f3f2d85890f8d4460ff38c71a70ed37b7dff408d8daa2e5",
     "src/protocol/approval/schema/1.2/proposal.schema.json": "8c09ce6d1a940705343aba3a9535f0f66372e5b2529d4e0f51b63aa8e98e494e",
     "src/protocol/approval/schema/1.2/proposals.schema.json": "db02f9dec7f046478eedf1765ad156cbd31968a5191eed776a71983613555f3a",
-    "src/protocol/approval/schema/1.2/propose.schema.json": "3f7bb7191cc5e929233e484d65d4c011d9fab302e4d451ad214aeccfefdeed4f"
+    "src/protocol/approval/schema/1.2/propose.schema.json": "3f7bb7191cc5e929233e484d65d4c011d9fab302e4d451ad214aeccfefdeed4f",
+    "src/protocol/approval/schema/1.3/activate.schema.json": "9b5bc11c719e95ec5cdc367195d6be3c7d16612e83399140b6f89685d45b8d7c",
+    "src/protocol/approval/schema/1.3/approval.schema.json": "508eb6817a2584dd76451ab489f14f68fb935b0febfd09ff0ba119673a62f6ba",
+    "src/protocol/approval/schema/1.3/evidence.schema.json": "ecf42032712db026db9a9ae80fdf5f80ce76c827484afa82381042be353034c3",
+    "src/protocol/approval/schema/1.3/promotion.schema.json": "53620214d4e5ca2b7be81d53a878c56cc51e4404c0370acf5b0d87a69dc762a7",
+    "src/protocol/approval/schema/1.3/proposal.schema.json": "24b70d1887733d61f66323bb3293f995ca1603f7be59535fae43da2cf176cf05",
+    "src/protocol/approval/schema/1.3/propose.schema.json": "6a51a15309ae82267bc870badb23c8e900a9c1a307b89681ddb2e9d99438b072",
+    "src/protocol/approval/schema/1.3/resolve.schema.json": "9da195b3104031449128604028b393cb1ca94942166ffe8158411d5956e48a5f"
   }
 }

@@ -1,0 +1,63 @@
+{
+ "$defs": {
+  "request_body": {
+   "additionalProperties": false,
+   "properties": {
+    "cursor": {
+     "type": "string"
+    },
+    "report_ref": {
+     "pattern": "^sha256:[0-9a-f]{64}$",
+     "type": "string"
+    }
+   },
+   "required": [
+    "report_ref"
+   ],
+   "type": "object"
+  },
+  "result": {
+   "additionalProperties": false,
+   "properties": {
+    "cursor": {
+     "minLength": 1,
+     "type": "string"
+    },
+    "inputs": {
+     "type": "object"
+    },
+    "promotion": {
+     "enum": [
+      "valid",
+      "invalid"
+     ]
+    },
+    "report_ref": {
+     "pattern": "^sha256:[0-9a-f]{64}$",
+     "type": "string"
+    },
+    "rule": {
+     "minLength": 1,
+     "type": "string"
+    },
+    "snapshot_ref": {
+     "pattern": "^sha256:[0-9a-f]{64}$",
+     "type": "string"
+    }
+   },
+   "required": [
+    "cursor",
+    "report_ref",
+    "snapshot_ref",
+    "promotion"
+   ],
+   "type": "object"
+  }
+ },
+ "$id": "https://github.com/mohanraj00/entelos/blob/main/src/protocol/approval/schema/1.3/promotion.schema.json",
+ "$schema": "https://json-schema.org/draft/2020-12/schema",
+ "description": "Protocol 1.3 promotion read of PROMOTION.md. It applies the promotion rules to one report and its candidate.",
+ "title": "promotion",
+ "x-entelos-access": "read",
+ "x-entelos-protocol": "1.3"
+}

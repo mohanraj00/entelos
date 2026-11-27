@@ -25,10 +25,10 @@ var schema = map[string]struct {
 }{
 	"source":          {"reviewer", []string{"function", "from", "until", "text", "supersedes", "reason"}},
 	"plan":            {"reviewer", []string{"source_ref", "cases", "origin", "supersedes"}},
-	"propose":         {"author", []string{"function", "from", "until", "base_snapshot", "source_ref", "bundle", "reason", "stale_mode", "evidence"}},
+	"propose":         {"author", []string{"function", "from", "until", "base_snapshot", "source_ref", "bundle", "reason", "stale_mode", "evidence", "candidate"}},
 	"qualify":         {"runner", []string{"snapshot_ref", "plan_ref"}},
 	"decide":          {"reviewer", []string{"report_ref", "reason", "disposition", "fact_reviews"}},
-	"activate":        {"reviewer", []string{"decision_ref", "targets", "supersedes"}},
+	"activate":        {"reviewer", []string{"decision_ref", "targets", "supersedes", "applicability"}},
 	"suspend":         {"reviewer", []string{"function", "from", "until", "targets", "reason"}},
 	"load":            {"worker", []string{"function", "date"}},
 	"invoke":          {"caller", []string{"function", "date", "expected_bundle_ref", "inputs"}},
@@ -48,6 +48,9 @@ var schema = map[string]struct {
 	"proposals":       {"reviewer", []string{"cursor", "limit"}},
 	"proposal":        {"reviewer", []string{"snapshot_ref", "cursor"}},
 	"decision_events": {"event_reader", []string{"cursor", "limit"}},
+	"approval":        {"reader", []string{"function", "candidate", "cursor"}},
+	"evidence":        {"reviewer", []string{"snapshot_ref", "cursor"}},
+	"promotion":       {"reviewer", []string{"report_ref", "cursor"}},
 }
 
 // Reads are the operations that publish no state.

@@ -385,8 +385,9 @@ func unknownField(text string) (string, bool) {
 }
 
 // hostOnlyFields has the request fields of the Host that no protocol schema
-// has yet. The wire protocol gets them in a later minor version.
-var hostOnlyFields = map[string][]string{"propose": {"candidate"}, "activate": {"applicability"}, "plan": {"imports"}}
+// has yet. Protocol 1.3 has the fields propose.candidate and
+// activate.applicability, so the schema table has them.
+var hostOnlyFields = map[string][]string{"plan": {"imports"}}
 
 // requestSubject gives the function value of a request for the access check
 // of a retry. For a content proposal, it is the subject of the head that the

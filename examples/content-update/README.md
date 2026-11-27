@@ -41,5 +41,6 @@ Host contexts, with no login flow or signing key. The runner checks file identit
 and size, not the meaning of the text. The application owns item storage and
 delivery. A dated content read selects a manifest and writes no answer receipt.
 The shipped commands use `CELRunner`, which refuses content candidates.
-The wire protocol does not accept `propose.candidate` yet. See
+Protocol 1.3 accepts `propose.candidate` on the wire, but the sidecar cannot
+qualify a content candidate with `CELRunner`. See
 [CONTENT.md](../../src/protocol/content/CONTENT.md).

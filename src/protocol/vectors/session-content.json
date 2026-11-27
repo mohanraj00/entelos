@@ -1,0 +1,685 @@
+{
+ "description": "Protocol 1.3: the content workflow on the wire. Expected values are hand-written from PROTOCOL.md and CONTENT.md. The candidate ref is the SHA-256 digest of the exact manifest text.",
+ "context": {
+  "actor": "author-a",
+  "roles": [
+   "author",
+   "reviewer",
+   "reader"
+  ],
+  "scope": "tenant-example",
+  "runner_actor": "fixture-runner",
+  "worker": "local-worker",
+  "functions": [
+   "content:loan-rules/region-a"
+  ]
+ },
+ "steps": [
+  {
+   "name": "legacy-1.0-refuses-candidate",
+   "request": {
+    "protocol": "1.0",
+    "request_id": "c-1",
+    "operation": "propose",
+    "body": {
+     "from": "2026-11-01",
+     "until": "2026-12-01",
+     "source_ref": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+     "reason": "first content",
+     "candidate": {
+      "kind": "content",
+      "manifest": "{\"format\":\"entelos.content/1\",\"collection\":\"loan-rules\",\"partition\":\"region-a\",\"base\":\"\",\"items\":[{\"item_id\":\"rules-de\",\"digest\":\"sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd\",\"size\":200,\"applicability\":{\"region\":[\"eu\",\"de\"]}}]}"
+     },
+     "expected_revision": "",
+     "request_key": "p-0"
+    }
+   },
+   "expect": {
+    "response": {
+     "protocol": "1.0",
+     "request_id": "c-1",
+     "status": "invalid_request",
+     "diagnostic": {
+      "code": "invalid_request",
+      "stage": "protocol",
+      "message": {
+       "$type": "string"
+      }
+     }
+    }
+   }
+  },
+  {
+   "name": "legacy-1.2-refuses-candidate",
+   "request": {
+    "protocol": "1.2",
+    "request_id": "c-2",
+    "operation": "propose",
+    "body": {
+     "from": "2026-11-01",
+     "until": "2026-12-01",
+     "source_ref": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+     "reason": "first content",
+     "candidate": {
+      "kind": "content",
+      "manifest": "{\"format\":\"entelos.content/1\",\"collection\":\"loan-rules\",\"partition\":\"region-a\",\"base\":\"\",\"items\":[{\"item_id\":\"rules-de\",\"digest\":\"sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd\",\"size\":200,\"applicability\":{\"region\":[\"eu\",\"de\"]}}]}"
+     },
+     "expected_revision": "",
+     "request_key": "p-0"
+    }
+   },
+   "expect": {
+    "response": {
+     "protocol": "1.2",
+     "request_id": "c-2",
+     "status": "invalid_request",
+     "diagnostic": {
+      "code": "invalid_request",
+      "stage": "protocol",
+      "message": {
+       "$type": "string"
+      }
+     }
+    }
+   }
+  },
+  {
+   "name": "legacy-1.2-refuses-applicability",
+   "request": {
+    "protocol": "1.2",
+    "request_id": "c-3",
+    "operation": "activate",
+    "body": {
+     "decision_ref": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+     "targets": [],
+     "applicability": {
+      "rules-de": {
+       "region": [
+        "eu",
+        "de"
+       ]
+      }
+     },
+     "expected_revision": "",
+     "request_key": "a-0"
+    }
+   },
+   "expect": {
+    "response": {
+     "protocol": "1.2",
+     "request_id": "c-3",
+     "status": "invalid_request",
+     "diagnostic": {
+      "code": "invalid_request",
+      "stage": "protocol",
+      "message": {
+       "$type": "string"
+      }
+     }
+    }
+   }
+  },
+  {
+   "name": "legacy-1.2-refuses-evidence",
+   "request": {
+    "protocol": "1.2",
+    "request_id": "c-4",
+    "operation": "evidence",
+    "body": {
+     "snapshot_ref": "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+    }
+   },
+   "expect": {
+    "response": {
+     "protocol": "1.2",
+     "request_id": "c-4",
+     "status": "invalid_request",
+     "diagnostic": {
+      "code": "invalid_request",
+      "stage": "protocol",
+      "message": {
+       "$type": "string"
+      }
+     }
+    }
+   }
+  },
+  {
+   "name": "legacy-1.2-refuses-promotion",
+   "request": {
+    "protocol": "1.2",
+    "request_id": "c-5",
+    "operation": "promotion",
+    "body": {
+     "report_ref": "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+    }
+   },
+   "expect": {
+    "response": {
+     "protocol": "1.2",
+     "request_id": "c-5",
+     "status": "invalid_request",
+     "diagnostic": {
+      "code": "invalid_request",
+      "stage": "protocol",
+      "message": {
+       "$type": "string"
+      }
+     }
+    }
+   }
+  },
+  {
+   "name": "legacy-1.2-refuses-approval",
+   "request": {
+    "protocol": "1.2",
+    "request_id": "c-6",
+    "operation": "approval",
+    "body": {
+     "function": "content:loan-rules/region-a",
+     "candidate": {
+      "kind": "content",
+      "ref": "sha256:855bfa697544e23458f73cca2eeea23d52dcb95c3eb1aa5358e6ef1bf620ca6d"
+     }
+    }
+   },
+   "expect": {
+    "response": {
+     "protocol": "1.2",
+     "request_id": "c-6",
+     "status": "invalid_request",
+     "diagnostic": {
+      "code": "invalid_request",
+      "stage": "protocol",
+      "message": {
+       "$type": "string"
+      }
+     }
+    }
+   }
+  },
+  {
+   "name": "version-1.4-unsupported",
+   "request": {
+    "protocol": "1.4",
+    "request_id": "c-7",
+    "operation": "inspect",
+    "body": {}
+   },
+   "expect": {
+    "response": {
+     "protocol": "1.0",
+     "request_id": "c-7",
+     "status": "unsupported_version",
+     "diagnostic": {
+      "code": "unsupported_version",
+      "stage": "protocol",
+      "message": {
+       "$type": "string"
+      }
+     }
+    }
+   }
+  },
+  {
+   "name": "source-1.3",
+   "request": {
+    "protocol": "1.3",
+    "request_id": "c-8",
+    "operation": "source",
+    "body": {
+     "from": "2026-11-01",
+     "until": "2026-12-01",
+     "function": "content:loan-rules/region-a",
+     "text": "The content rules of region a.",
+     "reason": "first",
+     "expected_revision": "",
+     "request_key": "s-1"
+    }
+   },
+   "expect": {
+    "response": {
+     "protocol": "1.3",
+     "request_id": "c-8",
+     "status": "ok",
+     "result": {
+      "cursor": {
+       "$capture": "c1"
+      },
+      "result": {
+       "source_ref": {
+        "$capture": "s1"
+       }
+      },
+      "reused": false
+     }
+    }
+   }
+  },
+  {
+   "name": "propose-content",
+   "request": {
+    "protocol": "1.3",
+    "request_id": "c-9",
+    "operation": "propose",
+    "body": {
+     "from": "2026-11-01",
+     "until": "2026-12-01",
+     "source_ref": {
+      "$use": "s1"
+     },
+     "reason": "first content",
+     "candidate": {
+      "kind": "content",
+      "manifest": "{\"format\":\"entelos.content/1\",\"collection\":\"loan-rules\",\"partition\":\"region-a\",\"base\":\"\",\"items\":[{\"item_id\":\"rules-de\",\"digest\":\"sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd\",\"size\":200,\"applicability\":{\"region\":[\"eu\",\"de\"]}}]}"
+     },
+     "expected_revision": {
+      "$use": "c1"
+     },
+     "request_key": "p-1"
+    }
+   },
+   "expect": {
+    "response": {
+     "protocol": "1.3",
+     "request_id": "c-9",
+     "status": "ok",
+     "result": {
+      "cursor": {
+       "$capture": "c2"
+      },
+      "result": {
+       "snapshot_ref": {
+        "$capture": "p1"
+       },
+       "candidate": {
+        "kind": "content",
+        "ref": "sha256:855bfa697544e23458f73cca2eeea23d52dcb95c3eb1aa5358e6ef1bf620ca6d"
+       },
+       "head": {
+        "kind": "content",
+        "collection": "loan-rules",
+        "partition": "region-a"
+       }
+      },
+      "reused": false
+     }
+    }
+   }
+  },
+  {
+   "name": "propose-content-retry",
+   "request": {
+    "protocol": "1.3",
+    "request_id": "c-10",
+    "operation": "propose",
+    "body": {
+     "from": "2026-11-01",
+     "until": "2026-12-01",
+     "source_ref": {
+      "$use": "s1"
+     },
+     "reason": "first content",
+     "candidate": {
+      "kind": "content",
+      "manifest": "{\"format\":\"entelos.content/1\",\"collection\":\"loan-rules\",\"partition\":\"region-a\",\"base\":\"\",\"items\":[{\"item_id\":\"rules-de\",\"digest\":\"sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd\",\"size\":200,\"applicability\":{\"region\":[\"eu\",\"de\"]}}]}"
+     },
+     "expected_revision": {
+      "$use": "c1"
+     },
+     "request_key": "p-1"
+    }
+   },
+   "expect": {
+    "response": {
+     "protocol": "1.3",
+     "request_id": "c-10",
+     "status": "ok",
+     "result": {
+      "cursor": {
+       "$capture": "c2"
+      },
+      "result": {
+       "snapshot_ref": {
+        "$capture": "p1"
+       },
+       "candidate": {
+        "kind": "content",
+        "ref": "sha256:855bfa697544e23458f73cca2eeea23d52dcb95c3eb1aa5358e6ef1bf620ca6d"
+       },
+       "head": {
+        "kind": "content",
+        "collection": "loan-rules",
+        "partition": "region-a"
+       }
+      },
+      "reused": true
+     }
+    }
+   }
+  },
+  {
+   "name": "propose-candidate-and-bundle",
+   "request": {
+    "protocol": "1.3",
+    "request_id": "c-11",
+    "operation": "propose",
+    "body": {
+     "from": "2026-11-01",
+     "until": "2026-12-01",
+     "source_ref": {
+      "$use": "s1"
+     },
+     "reason": "first content",
+     "candidate": {
+      "kind": "content",
+      "manifest": "{\"format\":\"entelos.content/1\",\"collection\":\"loan-rules\",\"partition\":\"region-a\",\"base\":\"\",\"items\":[{\"item_id\":\"rules-de\",\"digest\":\"sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd\",\"size\":200,\"applicability\":{\"region\":[\"eu\",\"de\"]}}]}"
+     },
+     "expected_revision": {
+      "$use": "c2"
+     },
+     "request_key": "p-2",
+     "bundle": {
+      "manifest": "{}",
+      "environment": "{}",
+      "source": "true",
+      "fixed": "{}"
+     }
+    }
+   },
+   "expect": {
+    "response": {
+     "protocol": "1.3",
+     "request_id": "c-11",
+     "status": "invalid_request",
+     "diagnostic": {
+      "code": "invalid_request",
+      "stage": "lifecycle",
+      "message": {
+       "$type": "string"
+      }
+     }
+    }
+   }
+  },
+  {
+   "name": "propose-unknown-kind",
+   "request": {
+    "protocol": "1.3",
+    "request_id": "c-12",
+    "operation": "propose",
+    "body": {
+     "from": "2026-11-01",
+     "until": "2026-12-01",
+     "source_ref": {
+      "$use": "s1"
+     },
+     "reason": "first content",
+     "candidate": {
+      "kind": "rules",
+      "manifest": "{\"format\":\"entelos.content/1\",\"collection\":\"loan-rules\",\"partition\":\"region-a\",\"base\":\"\",\"items\":[{\"item_id\":\"rules-de\",\"digest\":\"sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd\",\"size\":200,\"applicability\":{\"region\":[\"eu\",\"de\"]}}]}"
+     },
+     "expected_revision": {
+      "$use": "c2"
+     },
+     "request_key": "p-3"
+    }
+   },
+   "expect": {
+    "response": {
+     "protocol": "1.3",
+     "request_id": "c-12",
+     "status": "invalid_request",
+     "diagnostic": {
+      "code": "invalid_request",
+      "stage": "protocol",
+      "message": {
+       "$type": "string"
+      }
+     }
+    }
+   }
+  },
+  {
+   "name": "propose-content-with-function",
+   "request": {
+    "protocol": "1.3",
+    "request_id": "c-13",
+    "operation": "propose",
+    "body": {
+     "from": "2026-11-01",
+     "until": "2026-12-01",
+     "source_ref": {
+      "$use": "s1"
+     },
+     "reason": "first content",
+     "candidate": {
+      "kind": "content",
+      "manifest": "{\"format\":\"entelos.content/1\",\"collection\":\"loan-rules\",\"partition\":\"region-a\",\"base\":\"\",\"items\":[{\"item_id\":\"rules-de\",\"digest\":\"sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd\",\"size\":200,\"applicability\":{\"region\":[\"eu\",\"de\"]}}]}"
+     },
+     "expected_revision": {
+      "$use": "c2"
+     },
+     "request_key": "p-4",
+     "function": "content:loan-rules/region-a"
+    }
+   },
+   "expect": {
+    "response": {
+     "protocol": "1.3",
+     "request_id": "c-13",
+     "status": "invalid_request",
+     "diagnostic": {
+      "code": "invalid_request",
+      "stage": "lifecycle",
+      "message": {
+       "$type": "string"
+      }
+     }
+    }
+   }
+  },
+  {
+   "name": "evidence-absent",
+   "request": {
+    "protocol": "1.3",
+    "request_id": "c-14",
+    "operation": "evidence",
+    "body": {
+     "snapshot_ref": {
+      "$use": "p1"
+     }
+    }
+   },
+   "expect": {
+    "response": {
+     "protocol": "1.3",
+     "request_id": "c-14",
+     "status": "ok",
+     "result": {
+      "cursor": {
+       "$capture": "c2"
+      },
+      "snapshot_ref": {
+       "$capture": "p1"
+      },
+      "admission": "absent"
+     }
+    }
+   }
+  },
+  {
+   "name": "approval-unknown",
+   "request": {
+    "protocol": "1.3",
+    "request_id": "c-15",
+    "operation": "approval",
+    "body": {
+     "function": "content:loan-rules/region-a",
+     "candidate": {
+      "kind": "content",
+      "ref": "sha256:855bfa697544e23458f73cca2eeea23d52dcb95c3eb1aa5358e6ef1bf620ca6d"
+     }
+    }
+   },
+   "expect": {
+    "response": {
+     "protocol": "1.3",
+     "request_id": "c-15",
+     "status": "ok",
+     "result": {
+      "cursor": {
+       "$capture": "c2"
+      },
+      "approved": false,
+      "state": "unknown",
+      "counts": {
+       "human": 0,
+       "model": 0,
+       "policy": 0
+      },
+      "required": {
+       "human": 0,
+       "model": 0,
+       "policy": 0
+      },
+      "verdicts": []
+     }
+    }
+   }
+  },
+  {
+   "name": "promotion-unknown-report",
+   "request": {
+    "protocol": "1.3",
+    "request_id": "c-16",
+    "operation": "promotion",
+    "body": {
+     "report_ref": "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+    }
+   },
+   "expect": {
+    "response": {
+     "protocol": "1.3",
+     "request_id": "c-16",
+     "status": "artifact_unavailable",
+     "diagnostic": {
+      "code": "artifact_unavailable",
+      "stage": "store",
+      "message": {
+       "$type": "string"
+      }
+     }
+    }
+   }
+  },
+  {
+   "name": "activate-level-not-string",
+   "request": {
+    "protocol": "1.3",
+    "request_id": "c-17",
+    "operation": "activate",
+    "body": {
+     "decision_ref": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+     "targets": [],
+     "applicability": {
+      "rules-de": {
+       "region": [
+        "eu",
+        1
+       ]
+      }
+     },
+     "expected_revision": {
+      "$use": "c2"
+     },
+     "request_key": "a-1"
+    }
+   },
+   "expect": {
+    "response": {
+     "protocol": "1.3",
+     "request_id": "c-17",
+     "status": "invalid_request",
+     "diagnostic": {
+      "code": "invalid_request",
+      "stage": "protocol",
+      "message": {
+       "$type": "string"
+      }
+     }
+    }
+   }
+  },
+  {
+   "name": "activate-values-not-object",
+   "request": {
+    "protocol": "1.3",
+    "request_id": "c-18",
+    "operation": "activate",
+    "body": {
+     "decision_ref": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+     "targets": [],
+     "applicability": {
+      "rules-de": [
+       "eu"
+      ]
+     },
+     "expected_revision": {
+      "$use": "c2"
+     },
+     "request_key": "a-1"
+    }
+   },
+   "expect": {
+    "response": {
+     "protocol": "1.3",
+     "request_id": "c-18",
+     "status": "invalid_request",
+     "diagnostic": {
+      "code": "invalid_request",
+      "stage": "protocol",
+      "message": {
+       "$type": "string"
+      }
+     }
+    }
+   }
+  },
+  {
+   "name": "activate-empty-levels",
+   "request": {
+    "protocol": "1.3",
+    "request_id": "c-19",
+    "operation": "activate",
+    "body": {
+     "decision_ref": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+     "targets": [],
+     "applicability": {
+      "rules-de": {
+       "region": []
+      }
+     },
+     "expected_revision": {
+      "$use": "c2"
+     },
+     "request_key": "a-1"
+    }
+   },
+   "expect": {
+    "response": {
+     "protocol": "1.3",
+     "request_id": "c-19",
+     "status": "invalid_request",
+     "diagnostic": {
+      "code": "invalid_request",
+      "stage": "protocol",
+      "message": {
+       "$type": "string"
+      }
+     }
+    }
+   }
+  }
+ ]
+}

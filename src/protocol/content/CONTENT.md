@@ -2,7 +2,7 @@
 
 This file specifies a second kind of candidate: a content proposal. Issues [#153](https://github.com/mohanraj00/entelos/issues/153) (the spec) and [#175](https://github.com/mohanraj00/entelos/issues/175) (the Host) track it. A content proposal goes from proposal to activation with no CEL file.
 
-Status: **implemented in the Host, unstable**. The Host reads this format through the Host request field `candidate` of `propose`. The wire protocol does not have that field yet. The schemas and the vectors in this directory are the contract. The vectors have expected values that a person wrote from this text. No candidate output made them. [`check_spec.py`](check_spec.py) applies the rules of this file to the vectors, without a Host. The Go tests of `src/lifecycle-core` run the same vectors against the Host. [Decision 0003](../../../docs/decisions/0003-content-kind.md) records the kind model.
+Status: **implemented in the Host, unstable**. The Host reads this format through the request field `candidate` of `propose`. Protocol 1.3 has the field on the wire ([PROTOCOL.md](../PROTOCOL.md#version-13)). The schemas and the vectors in this directory are the contract. The vectors have expected values that a person wrote from this text. No candidate output made them. [`check_spec.py`](check_spec.py) applies the rules of this file to the vectors, without a Host. The Go tests of `src/lifecycle-core` run the same vectors against the Host. [Decision 0003](../../../docs/decisions/0003-content-kind.md) records the kind model.
 
 ## Terms
 
@@ -283,7 +283,7 @@ The Go test `TestEarlierContentSnapshotEvidenceIsRefused` writes content snapsho
 
 ## Limits
 
-- The wire protocol has no `candidate` field and no `activate` field `applicability` yet. Only a Host request (the Go API or the JSONL Host) can give a content candidate or confirm its values.
+- Protocol 1.3 has the `candidate` field and the `activate` field `applicability` ([PROTOCOL.md](../PROTOCOL.md#version-13)). Versions 1.0 to 1.2 refuse them. The sidecar installs only the CEL runner, so it cannot qualify a content candidate.
 - `proposals` gives no separate `candidate` or `evidence_reference` field in its list item. A reader gets them from `proposal`.
 - The Host does not fetch the evidence document that the manifest `evidence` names. The request must attach it. The digest shows only that the attached document is the named document. It does not show that the producer statements in the document are true.
 - The `state` of the approval API does not give the evidence codes, because the `refusal` values of approval API 1.2 are fixed. A content proposal with refused evidence of an earlier Host can show `awaiting_verdict`, and its accept `decide` gives the code.
