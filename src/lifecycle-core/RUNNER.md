@@ -47,6 +47,14 @@ If the runner cannot give a verdict, it gives a `*Fault` with a code, a stage an
 
 For CEL, `Identity()` is the `-build` output of the executable, and `Expected` is the engine build of the snapshot. Thus the CEL records are the same as before this contract. A different runner identity gives a different report record, and thus a different report reference.
 
+## Lifecycle build
+
+`lifecycle_build` is a content reference with media type `application/vnd.cel-lifecycle.implementation+json`. The body contains the file name, a zero byte, the exact file bytes and a zero byte for each `*.go` file in the root of the lifecycle core, in file name order. It excludes `*_test.go`.
+
+A new Host execution receipt has a `host_tools` object. The value of `go` is `runtime.Version()`. The value of `git` is the output of `git --version` with the final line feed removed. The Host does not compare these tool versions. The checks of the runner and engine builds still apply.
+
+The old lifecycle build reference also included the two tool versions. The new Host can read reports and receipts with the old reference. When an operation checks an old lifecycle build, it refuses it with `implementation_unavailable`. To serve again, run `qualify` on the new Host with the snapshot and an applicable plan. Accept the new report with `decide` and run `activate` with the new decision. Use `supersedes` for an overlapping old activation. For a CEL bundle, run `load` before `invoke`. Keep the original lifecycle and engine builds for exact replay of an old receipt. These steps do not rewrite stored records.
+
 ## Admission
 
 `decide` and `activate` check the report again. The checks are in this order:

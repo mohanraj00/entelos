@@ -74,7 +74,9 @@ entelos-sidecar ... --credentials-file <path>
 
 ## Build identity
 
-The lifecycle build identity is a content reference over the core `*.go` sources, the Go version and the `git --version` text. It does not include the `*_test.go` files. It does not include `protocol/` or `cmd/`, so the sidecar adapter is not part of the lifecycle build identity.
+The lifecycle build identity uses the names and bytes of the Go source files in this directory. It excludes test files and subdirectories. New Host execution receipts record the Go and Git versions in `host_tools`. An upgrade of either tool alone keeps the lifecycle build identity. The runner and engine build checks still apply.
+
+Reports and receipts with the old identity remain readable. Qualify again, accept the new report, and replace the old activation before you resume service. Keep the original build for exact replay of an old receipt. See the [lifecycle build rules](RUNNER.md#lifecycle-build).
 
 ## Limits
 

@@ -253,6 +253,51 @@ func TestMigrationOfAV030Store(t *testing.T) {
 	migrate(t, f.store, false, "current")
 }
 
+func TestLoadAfterQualificationOnTheNewLifecycleBuild(t *testing.T) {
+	f := loadV030Store(t)
+	migrate(t, f.store, false, "migrated")
+	now := "2026-11-20T09:00:00Z"
+	host := migrationHost(t, f.store, &now)
+	before := must(f.store.Read(nil))
+	oldRef := f.refs["activated_report"].(string)
+	oldBytes := must(before.GetRaw(oldRef, Media("qualification")))
+	oldReport := must(before.Get(oldRef, "qualification"))
+	if oldReport["status"] != "passed" || oldReport["lifecycle_build"] == host.BuildRef {
+		t.Fatalf("old report: %v", oldReport)
+	}
+
+	send := func(actor, role, key, op string, fields Object) (any, error) {
+		t.Helper()
+		q := with(fields, Object{"op": op, "request_key": key, "expected_revision": must(f.store.Read(nil)).Cursor})
+		return host.HandleAs(actor, []string{role}, q)
+	}
+	target := Object{"function": "record.visible", "date": "2026-11-15"}
+	if _, err := send("worker-1", "worker", "old-load", "load", target); faultCode(t, err) != "implementation_unavailable" {
+		t.Fatalf("load with the old report: %v", err)
+	}
+	if cursor := must(f.store.Read(nil)).Cursor; cursor != before.Cursor {
+		t.Fatalf("refused load moved the root to %s", cursor)
+	}
+
+	qualified := must(send("fixture-runner", "runner", "new-report", "qualify",
+		pick(oldReport, "snapshot_ref", "plan_ref"))).(Object)["result"].(Object)
+	decision := must(send("reviewer-b", "reviewer", "new-decision", "decide",
+		Object{"report_ref": qualified["report_ref"], "reason": "new lifecycle build"})).(Object)["result"].(Object)
+	must(send("reviewer-b", "reviewer", "new-activation", "activate",
+		Object{"decision_ref": decision["decision_ref"], "supersedes": Array{f.refs["activation_event"]}}))
+	loaded := must(send("worker-1", "worker", "new-load", "load", target)).(Object)["result"].(Object)
+	answer := must(send("caller", "caller", "new-invoke", "invoke",
+		with(target, Object{"expected_bundle_ref": loaded["bundle_ref"], "inputs": Object{"state": "ready"}}))).(Object)["result"].(Object)
+	receipt := answer["receipt"].(Object)
+	if receipt["lifecycle_build"] != host.BuildRef || receipt["selection"].(Object)["report_ref"] != qualified["report_ref"] {
+		t.Fatalf("receipt after qualification: %v", receipt)
+	}
+	after := must(f.store.Read(nil))
+	if !bytes.Equal(must(after.GetRaw(oldRef, Media("qualification"))), oldBytes) {
+		t.Fatal("the old report changed")
+	}
+}
+
 func toObject(m map[string]string) Object {
 	out := Object{}
 	for k, v := range m {

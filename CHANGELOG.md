@@ -12,6 +12,9 @@ This file lists the changes for each snapshot tag. A tag is a stable snapshot to
   - The signed record field `record_kind` accepts the new value `suspension`. A verifier of an earlier version refuses such a signed record with `invalid_signed_record`, rule `schema`.
   - The wire protocol and the pinned stable surfaces do not change. The sidecar still has no publisher setting.
   - Limits: a suspension before the signing key has no suspension record, and the record does not copy the `reason` of the event.
+- A stable lifecycle build identity (#214): [Decision 0005](docs/decisions/0005-build-identity.md) and [RUNNER.md](src/lifecycle-core/RUNNER.md#lifecycle-build). The identity now covers only the names and bytes of the core Go source files. An upgrade of Go or `git` alone keeps the identity.
+  - Each new execution receipt records the Go and Git versions in the new field `host_tools`. The Host does not compare them.
+  - Effect on a store: reports and receipts with the old identity stay readable, but the new Host refuses their use with `implementation_unavailable`. Run `qualify`, `decide` and `activate` again (with `supersedes`), then `load`. Exact replay of an old receipt needs the original build.
 
 ### Decisions
 
