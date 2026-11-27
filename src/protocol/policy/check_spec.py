@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Check the proposed policy verdict vectors without a Host.
+"""Check the policy verdict vectors without a Host.
 
 The checker applies the rules of POLICY.md to each case. A pass shows that
 the vectors, the schemas and the rules agree. It does not show that a Host agrees.
@@ -187,7 +187,7 @@ def main():
     doc=json.loads((HERE/'vectors'/'policy-cases.json').read_text())
     errors=run(doc)+self_test(doc)
     print(json.dumps({'passed':not errors,'cases':len(doc['cases']),'replays':len(doc['replays']),'requirements':len(doc['requirements']),'errors':errors,
-                      'scope':'Proposed policy verdict vectors: rule order, fail-closed routes, the receipt, the audit draw, replay and the verdict requirement. No Host and no CEL engine ran.'},indent=1))
+                      'scope':'Policy verdict vectors: rule order, fail-closed routes, the receipt, the audit draw, replay and the verdict requirement. No Host and no CEL engine ran.'},indent=1))
     return 1 if errors else 0
 
 if __name__=='__main__':raise SystemExit(main())

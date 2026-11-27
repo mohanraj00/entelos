@@ -164,7 +164,7 @@ func (h *Host) snapshotCounts(v *View, index Object, s subjectSnapshot) Object {
 	var current []Object
 	for _, decisionRef := range elements(reviewEntry(index, s.ref, false)["decisions"]) {
 		decision := get(v, decisionRef, "decision")
-		if h.verdictState(v, index, decision, s.snapshot) == verdictCurrent && h.activatable(v, decision) {
+		if !h.ignored(v, decision) && h.verdictState(v, index, decision, s.snapshot) == verdictCurrent && h.activatable(v, decision) {
 			current = append(current, decision)
 		}
 	}

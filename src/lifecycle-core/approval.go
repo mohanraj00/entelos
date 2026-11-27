@@ -138,7 +138,11 @@ func appendEntry(entry Object, field, ref string) {
 func (h *Host) verdicts(v *View, entry Object) []Object {
 	var out []Object
 	for _, ref := range elements(entry["decisions"]) {
-		out = append(out, get(v, ref, "decision"))
+		// POLICY.md: the Host ignores a policy verdict on a head that needs
+		// a human verdict.
+		if d := get(v, ref, "decision"); !h.ignored(v, d) {
+			out = append(out, d)
+		}
 	}
 	return out
 }
