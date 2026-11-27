@@ -1,0 +1,319 @@
+{
+ "format_version": 1,
+ "spec": "ACTIVATION.md",
+ "note": "Hand-written cases. The references are invented. An expected record of mappings is written from the suspension record table of ACTIVATION.md.",
+ "mappings": [
+  {
+   "name": "suspend-content-subject",
+   "records": {
+    "event": {
+     "format": "entelos.record/1",
+     "function": "content:loan-rules/region-a",
+     "scope": "lending",
+     "from": "2026-02-01",
+     "until": "2027-01-01",
+     "kind": "suspend",
+     "targets": [
+      "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+     ],
+     "actor": "reviewer-1",
+     "reason": "stop",
+     "event_id": "suspend-1"
+    }
+   },
+   "event_ref": "sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+   "request_key": "suspend-1",
+   "expect": {
+    "format": "entelos.record/1",
+    "scope": "lending",
+    "function": "content:loan-rules/region-a",
+    "event_ref": "sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+    "request_key": "suspend-1",
+    "from": "2026-02-01",
+    "until": "2027-01-01",
+    "targets": [
+     "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+    ],
+    "actor": "reviewer-1"
+   }
+  },
+  {
+   "name": "suspend-two-targets-no-key",
+   "records": {
+    "event": {
+     "format": "entelos.record/1",
+     "function": "record.visible",
+     "scope": "lending",
+     "from": "2026-03-01",
+     "until": "2026-04-01",
+     "kind": "suspend",
+     "targets": [
+      "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+      "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+     ],
+     "actor": "operator-2",
+     "reason": "a wrong rule",
+     "event_id": "suspend-1"
+    }
+   },
+   "event_ref": "sha256:9999999999999999999999999999999999999999999999999999999999999999",
+   "request_key": "",
+   "expect": {
+    "format": "entelos.record/1",
+    "scope": "lending",
+    "function": "record.visible",
+    "event_ref": "sha256:9999999999999999999999999999999999999999999999999999999999999999",
+    "request_key": "",
+    "from": "2026-03-01",
+    "until": "2026-04-01",
+    "targets": [
+     "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+     "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+    ],
+    "actor": "operator-2"
+   }
+  },
+  {
+   "name": "enable-has-no-record",
+   "records": {
+    "event": {
+     "format": "entelos.record/1",
+     "function": "content:loan-rules/region-a",
+     "scope": "lending",
+     "from": "2026-02-01",
+     "until": "2027-01-01",
+     "kind": "enable",
+     "targets": [],
+     "actor": "reviewer-1",
+     "reason": "stop",
+     "event_id": "suspend-1",
+     "snapshot_ref": "sha256:5555555555555555555555555555555555555555555555555555555555555555",
+     "report_ref": "sha256:7777777777777777777777777777777777777777777777777777777777777777",
+     "decision_ref": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+    }
+   },
+   "event_ref": "sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+   "request_key": "activate-1",
+   "expect": {
+    "none": true
+   }
+  }
+ ],
+ "records": [
+  {
+   "name": "valid-content-subject",
+   "record_kind": "suspension",
+   "record": "{\"format\":\"entelos.record/1\",\"scope\":\"lending\",\"function\":\"content:loan-rules/region-a\",\"event_ref\":\"sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff\",\"request_key\":\"suspend-1\",\"from\":\"2026-02-01\",\"until\":\"2027-01-01\",\"targets\":[\"sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee\"],\"actor\":\"reviewer-1\"}",
+   "expect": {
+    "valid": true
+   }
+  },
+  {
+   "name": "valid-two-targets-no-key",
+   "record_kind": "suspension",
+   "record": "{\"format\":\"entelos.record/1\",\"scope\":\"lending\",\"function\":\"record.visible\",\"event_ref\":\"sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff\",\"request_key\":\"\",\"from\":\"2026-02-01\",\"until\":\"2027-01-01\",\"targets\":[\"sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee\",\"sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\"],\"actor\":\"reviewer-1\"}",
+   "expect": {
+    "valid": true
+   }
+  },
+  {
+   "name": "record-kind-activation",
+   "record_kind": "activation",
+   "record": "{\"format\":\"entelos.record/1\",\"scope\":\"lending\",\"function\":\"content:loan-rules/region-a\",\"event_ref\":\"sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff\",\"request_key\":\"suspend-1\",\"from\":\"2026-02-01\",\"until\":\"2027-01-01\",\"targets\":[\"sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee\"],\"actor\":\"reviewer-1\"}",
+   "expect": {
+    "valid": false,
+    "code": "unexpected_record_kind"
+   }
+  },
+  {
+   "name": "record-kind-event",
+   "record_kind": "event",
+   "record": "{\"format\":\"entelos.record/1\",\"scope\":\"lending\",\"function\":\"content:loan-rules/region-a\",\"event_ref\":\"sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff\",\"request_key\":\"suspend-1\",\"from\":\"2026-02-01\",\"until\":\"2027-01-01\",\"targets\":[\"sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee\"],\"actor\":\"reviewer-1\"}",
+   "expect": {
+    "valid": false,
+    "code": "unexpected_record_kind"
+   }
+  },
+  {
+   "name": "activation-record-as-suspension",
+   "record_kind": "suspension",
+   "record": "{\"format\":\"entelos.record/1\",\"scope\":\"lending\",\"function\":\"content:loan-rules/region-a\",\"event_ref\":\"sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee\",\"request_key\":\"activate-1\",\"candidate\":{\"kind\":\"content\",\"ref\":\"sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc\"},\"base\":\"\",\"collection\":\"loan-rules\",\"partition\":\"region-a\",\"from\":\"2026-01-01\",\"until\":\"2027-01-01\",\"source_ref\":\"sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"snapshot_ref\":\"sha256:5555555555555555555555555555555555555555555555555555555555555555\",\"report_ref\":\"sha256:7777777777777777777777777777777777777777777777777777777777777777\",\"decision_ref\":\"sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd\",\"producer\":\"author-1\",\"runner\":\"runner-1\",\"approver\":\"approver-1\",\"activator\":\"reviewer-1\",\"targets\":[],\"supersedes\":[],\"applicability\":{\"rules-de\":{\"region\":[\"eu\",\"de\"]},\"rules-fr\":{\"region\":[\"eu\",\"fr\"]}}}",
+   "expect": {
+    "valid": false,
+    "code": "invalid_suspension",
+    "rule": "unknown_field",
+    "field": "candidate"
+   }
+  },
+  {
+   "name": "json-not-an-object",
+   "record_kind": "suspension",
+   "record": "[]",
+   "expect": {
+    "valid": false,
+    "code": "invalid_suspension",
+    "rule": "json"
+   }
+  },
+  {
+   "name": "json-duplicate",
+   "record_kind": "suspension",
+   "record": "{\"format\":\"entelos.record/1\",\"scope\":\"lending\",\"function\":\"content:loan-rules/region-a\",\"event_ref\":\"sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff\",\"request_key\":\"suspend-1\",\"from\":\"2026-02-01\",\"until\":\"2027-01-01\",\"targets\":[\"sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee\"],\"actor\":\"reviewer-1\",\"actor\":\"reviewer-2\"}",
+   "expect": {
+    "valid": false,
+    "code": "invalid_suspension",
+    "rule": "json"
+   }
+  },
+  {
+   "name": "json-nan",
+   "record_kind": "suspension",
+   "record": "{\"format\":\"entelos.record/1\",\"scope\":\"lending\",\"function\":\"content:loan-rules/region-a\",\"event_ref\":\"sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff\",\"request_key\":NaN,\"from\":\"2026-02-01\",\"until\":\"2027-01-01\",\"targets\":[\"sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee\"],\"actor\":\"reviewer-1\"}",
+   "expect": {
+    "valid": false,
+    "code": "invalid_suspension",
+    "rule": "json"
+   }
+  },
+  {
+   "name": "format-missing",
+   "record_kind": "suspension",
+   "record": "{\"scope\":\"lending\",\"function\":\"content:loan-rules/region-a\",\"event_ref\":\"sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff\",\"request_key\":\"suspend-1\",\"from\":\"2026-02-01\",\"until\":\"2027-01-01\",\"targets\":[\"sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee\"],\"actor\":\"reviewer-1\"}",
+   "expect": {
+    "valid": false,
+    "code": "unsupported_record_format"
+   }
+  },
+  {
+   "name": "format-other-major",
+   "record_kind": "suspension",
+   "record": "{\"format\":\"entelos.record/2\",\"scope\":\"lending\",\"function\":\"content:loan-rules/region-a\",\"event_ref\":\"sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff\",\"request_key\":\"suspend-1\",\"from\":\"2026-02-01\",\"until\":\"2027-01-01\",\"targets\":[\"sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee\"],\"actor\":\"reviewer-1\"}",
+   "expect": {
+    "valid": false,
+    "code": "unsupported_record_format"
+   }
+  },
+  {
+   "name": "unknown-reason-field",
+   "record_kind": "suspension",
+   "record": "{\"format\":\"entelos.record/1\",\"scope\":\"lending\",\"function\":\"content:loan-rules/region-a\",\"event_ref\":\"sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff\",\"request_key\":\"suspend-1\",\"from\":\"2026-02-01\",\"until\":\"2027-01-01\",\"targets\":[\"sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee\"],\"actor\":\"reviewer-1\",\"reason\":\"stop\"}",
+   "expect": {
+    "valid": false,
+    "code": "invalid_suspension",
+    "rule": "unknown_field",
+    "field": "reason"
+   }
+  },
+  {
+   "name": "unknown-field-before-type-error",
+   "record_kind": "suspension",
+   "record": "{\"format\":\"entelos.record/1\",\"scope\":\"lending\",\"function\":\"content:loan-rules/region-a\",\"event_ref\":\"sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff\",\"request_key\":\"suspend-1\",\"from\":\"2026-02-01\",\"until\":\"2027-01-01\",\"targets\":\"none\",\"actor\":\"reviewer-1\",\"owner\":\"example\"}",
+   "expect": {
+    "valid": false,
+    "code": "invalid_suspension",
+    "rule": "unknown_field",
+    "field": "owner"
+   }
+  },
+  {
+   "name": "schema-missing-actor",
+   "record_kind": "suspension",
+   "record": "{\"format\":\"entelos.record/1\",\"scope\":\"lending\",\"function\":\"content:loan-rules/region-a\",\"event_ref\":\"sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff\",\"request_key\":\"suspend-1\",\"from\":\"2026-02-01\",\"until\":\"2027-01-01\",\"targets\":[\"sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee\"]}",
+   "expect": {
+    "valid": false,
+    "code": "invalid_suspension",
+    "rule": "schema"
+   }
+  },
+  {
+   "name": "schema-no-targets",
+   "record_kind": "suspension",
+   "record": "{\"format\":\"entelos.record/1\",\"scope\":\"lending\",\"function\":\"content:loan-rules/region-a\",\"event_ref\":\"sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff\",\"request_key\":\"suspend-1\",\"from\":\"2026-02-01\",\"until\":\"2027-01-01\",\"targets\":[],\"actor\":\"reviewer-1\"}",
+   "expect": {
+    "valid": false,
+    "code": "invalid_suspension",
+    "rule": "schema"
+   }
+  },
+  {
+   "name": "schema-bad-target-ref",
+   "record_kind": "suspension",
+   "record": "{\"format\":\"entelos.record/1\",\"scope\":\"lending\",\"function\":\"content:loan-rules/region-a\",\"event_ref\":\"sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff\",\"request_key\":\"suspend-1\",\"from\":\"2026-02-01\",\"until\":\"2027-01-01\",\"targets\":[\"sha256:EEEE\"],\"actor\":\"reviewer-1\"}",
+   "expect": {
+    "valid": false,
+    "code": "invalid_suspension",
+    "rule": "schema"
+   }
+  },
+  {
+   "name": "schema-empty-scope",
+   "record_kind": "suspension",
+   "record": "{\"format\":\"entelos.record/1\",\"scope\":\"\",\"function\":\"content:loan-rules/region-a\",\"event_ref\":\"sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff\",\"request_key\":\"suspend-1\",\"from\":\"2026-02-01\",\"until\":\"2027-01-01\",\"targets\":[\"sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee\"],\"actor\":\"reviewer-1\"}",
+   "expect": {
+    "valid": false,
+    "code": "invalid_suspension",
+    "rule": "schema"
+   }
+  },
+  {
+   "name": "schema-request-key-number",
+   "record_kind": "suspension",
+   "record": "{\"format\":\"entelos.record/1\",\"scope\":\"lending\",\"function\":\"content:loan-rules/region-a\",\"event_ref\":\"sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff\",\"request_key\":1,\"from\":\"2026-02-01\",\"until\":\"2027-01-01\",\"targets\":[\"sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee\"],\"actor\":\"reviewer-1\"}",
+   "expect": {
+    "valid": false,
+    "code": "invalid_suspension",
+    "rule": "schema"
+   }
+  },
+  {
+   "name": "schema-date-shape",
+   "record_kind": "suspension",
+   "record": "{\"format\":\"entelos.record/1\",\"scope\":\"lending\",\"function\":\"content:loan-rules/region-a\",\"event_ref\":\"sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff\",\"request_key\":\"suspend-1\",\"from\":\"2026-2-1\",\"until\":\"2027-01-01\",\"targets\":[\"sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee\"],\"actor\":\"reviewer-1\"}",
+   "expect": {
+    "valid": false,
+    "code": "invalid_suspension",
+    "rule": "schema"
+   }
+  },
+  {
+   "name": "interval-empty",
+   "record_kind": "suspension",
+   "record": "{\"format\":\"entelos.record/1\",\"scope\":\"lending\",\"function\":\"content:loan-rules/region-a\",\"event_ref\":\"sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff\",\"request_key\":\"suspend-1\",\"from\":\"2026-02-01\",\"until\":\"2026-02-01\",\"targets\":[\"sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee\"],\"actor\":\"reviewer-1\"}",
+   "expect": {
+    "valid": false,
+    "code": "invalid_suspension",
+    "rule": "interval"
+   }
+  },
+  {
+   "name": "interval-reversed",
+   "record_kind": "suspension",
+   "record": "{\"format\":\"entelos.record/1\",\"scope\":\"lending\",\"function\":\"content:loan-rules/region-a\",\"event_ref\":\"sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff\",\"request_key\":\"suspend-1\",\"from\":\"2026-02-01\",\"until\":\"2026-01-01\",\"targets\":[\"sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee\"],\"actor\":\"reviewer-1\"}",
+   "expect": {
+    "valid": false,
+    "code": "invalid_suspension",
+    "rule": "interval"
+   }
+  },
+  {
+   "name": "interval-not-a-date",
+   "record_kind": "suspension",
+   "record": "{\"format\":\"entelos.record/1\",\"scope\":\"lending\",\"function\":\"content:loan-rules/region-a\",\"event_ref\":\"sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff\",\"request_key\":\"suspend-1\",\"from\":\"2026-02-30\",\"until\":\"2027-01-01\",\"targets\":[\"sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee\"],\"actor\":\"reviewer-1\"}",
+   "expect": {
+    "valid": false,
+    "code": "invalid_suspension",
+    "rule": "interval"
+   }
+  },
+  {
+   "name": "interval-year-zero",
+   "record_kind": "suspension",
+   "record": "{\"format\":\"entelos.record/1\",\"scope\":\"lending\",\"function\":\"content:loan-rules/region-a\",\"event_ref\":\"sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff\",\"request_key\":\"suspend-1\",\"from\":\"0000-01-01\",\"until\":\"2027-01-01\",\"targets\":[\"sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee\"],\"actor\":\"reviewer-1\"}",
+   "expect": {
+    "valid": false,
+    "code": "invalid_suspension",
+    "rule": "interval"
+   }
+  }
+ ]
+}

@@ -150,6 +150,8 @@ func (w *world) signatures() Object { return w.stateIndex("signatures") }
 
 func (w *world) activations() Object { return w.stateIndex("activations") }
 
+func (w *world) suspensions() Object { return w.stateIndex("suspensions") }
+
 func (w *world) stateIndex(name string) Object {
 	out, err := w.read(Object{"op": "inspect"})
 	if err != nil {
@@ -170,10 +172,12 @@ func TestHostSignsApprovalAndActivationRecords(t *testing.T) {
 	suspension := w.must("reviewer", "reviewer", "suspend", with(window, Object{"targets": Array{event}, "reason": "stop"}))["event_ref"].(string)
 	index := w.signatures()
 	activation := w.activations()[event].(string)
-	if len(index) != 4 {
+	suspended := w.suspensions()[suspension].(string)
+	if len(index) != 5 {
 		t.Fatalf("signatures %s", Encode(index))
 	}
-	for ref, kind := range map[string]string{decision: "decision", event: "event", suspension: "event", activation: "activation"} {
+	for ref, kind := range map[string]string{decision: "decision", event: "event", suspension: "event", activation: "activation",
+		suspended: "suspension"} {
 		signed, err := w.read(Object{"op": "record", "kind": "signed", "ref": index[ref]})
 		if err != nil {
 			t.Fatal(err)

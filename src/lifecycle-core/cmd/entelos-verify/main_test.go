@@ -33,10 +33,13 @@ func TestCommandVerifiesAFile(t *testing.T) {
 	}{
 		"valid-approval":   {0, "ok"},
 		"valid-activation": {0, "ok"},
-		"changed-record":   {1, "record_mismatch"},
-		"unknown-key":      {1, "unknown_key"},
-		"revoked-key":      {1, "revoked_key"},
-		"format-major-2":   {1, "unsupported_record_format"},
+		"valid-suspension": {0, "ok"},
+		// A suspension record with the record kind of an activation record.
+		"suspension-as-activation": {1, "signature_invalid"},
+		"changed-record":           {1, "record_mismatch"},
+		"unknown-key":              {1, "unknown_key"},
+		"revoked-key":              {1, "revoked_key"},
+		"format-major-2":           {1, "unsupported_record_format"},
 	}
 	seen := 0
 	for _, x := range doc["cases"].(lifecycle.Array) {

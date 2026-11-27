@@ -1,6 +1,7 @@
 package lifecycle
 
-// The activation record of src/protocol/activation/ACTIVATION.md.
+// The activation record and the suspension record of
+// src/protocol/activation/ACTIVATION.md.
 
 import (
 	"encoding/base64"
@@ -10,7 +11,18 @@ import (
 	"time"
 )
 
-const activationKind = "activation"
+const (
+	activationKind = "activation"
+	suspensionKind = "suspension"
+)
+
+// publishedRecords gives, for each write that makes a published record, the
+// record kind and the state field that maps the event reference to the
+// record reference.
+var publishedRecords = map[string]struct{ kind, field string }{
+	"activate": {activationKind, "activations"},
+	"suspend":  {suspensionKind, "suspensions"},
+}
 
 // activationFields are the fields of the record table. activationOptional
 // are the fields of a content candidate only.
@@ -20,32 +32,37 @@ var (
 		"snapshot_ref": true, "report_ref": true, "decision_ref": true, "producer": true, "runner": true, "approver": true,
 		"activator": true, "targets": true, "supersedes": true, "applicability": true}
 	activationOptional = map[string]bool{"collection": true, "partition": true}
-	candidateFields    = map[string]bool{"kind": true, "ref": true}
-	activationBase     = regexp.MustCompile(`^(sha256:[0-9a-f]{64})?$`)
-	activationDate     = regexp.MustCompile(`^[0-9]{4}-[0-9]{2}-[0-9]{2}$`)
+	suspensionFields   = map[string]bool{"format": true, "scope": true, "function": true, "event_ref": true, "request_key": true,
+		"from": true, "until": true, "targets": true, "actor": true}
+	candidateFields = map[string]bool{"kind": true, "ref": true}
+	activationBase  = regexp.MustCompile(`^(sha256:[0-9a-f]{64})?$`)
+	activationDate  = regexp.MustCompile(`^[0-9]{4}-[0-9]{2}-[0-9]{2}$`)
 )
 
-// Publisher gives a signed activation record to a consumer, for example a
-// store with gated collections. The embedding host installs it.
+// Publisher gives a signed activation record or a signed suspension record
+// to a consumer, for example a store with gated collections. The embedding
+// host installs it.
 //
-// The Host calls Publish in the activate write, after it signs the records
-// and before it commits them. The store makes the call after it owns the
-// root update, so a write that loses the compare-and-swap does not publish.
-// The store holds its lock during the call, so Publish must not call the
-// Host or the store. record is the activation record and signed is its
-// signed record, as the store keeps them. An error refuses the activation,
-// and the Host stores nothing. A commit can fail after an accept. A retry
-// of the same request then gives the same bytes again, so the consumer must
-// accept a record that it already has.
+// The Host calls Publish in the activate write and in the suspend write,
+// after it signs the records and before it commits them. The store makes
+// the call after it owns the root update, so a write that loses the
+// compare-and-swap does not publish. The store holds its lock during the
+// call, so Publish must not call the Host or the store. record is the
+// activation record or the suspension record, and signed is its signed
+// record, as the store keeps them. The record_kind of the signed record
+// gives the kind. An error refuses the write, and the Host stores nothing.
+// A commit can fail after an accept. A retry of the same request then gives
+// the same bytes again, so the consumer must accept a record that it
+// already has.
 type Publisher interface {
 	Publish(record, signed []byte) error
 }
 
 // SetPublisher installs the publisher of the Host. Nil removes it. A Host
-// with a publisher and no signing key refuses each activate with
-// publish_unsigned. A Host with a publisher and a store of another package
-// refuses each activate with publish_unsupported. A Host that As gives has the publisher of its source at
-// that time.
+// with a publisher and no signing key refuses each activate and each
+// suspend with publish_unsigned. A Host with a publisher and a store of
+// another package refuses them with publish_unsupported. A Host that As
+// gives has the publisher of its source at that time.
 func (h *Host) SetPublisher(p Publisher) { h.publisher = p }
 
 // activationRecord maps one enable event and the records that it names to
@@ -74,6 +91,18 @@ func activationRecord(event Object, eventRef string, snapshot, base, report, dec
 		"targets": event["targets"], "supersedes": lookup(event, "supersedes", Array{}), "applicability": lookup(event, "applicability", Object{})})
 }
 
+// suspensionRecord maps one suspend event to the suspension record of
+// ACTIVATION.md, or nil for another event. The record copies values only
+// and has no time field, so the same event gives the same bytes. It does
+// not copy the reason of the event.
+func suspensionRecord(event Object, eventRef, requestKey string) Object {
+	if !equal(event["kind"], "suspend") {
+		return nil
+	}
+	return Object{"format": RecordFormat, "scope": event["scope"], "function": event["function"], "event_ref": eventRef,
+		"request_key": requestKey, "from": event["from"], "until": event["until"], "targets": event["targets"], "actor": event["actor"]}
+}
+
 // putActivation stores the activation record of an enable event when the
 // Host has a signing key. The state field activations maps the event
 // reference to the record reference. signStaged then signs the record.
@@ -86,48 +115,87 @@ func (h *Host) putActivation(v *View, event Object, eventRef string, snapshot, r
 		base = get(v, ref, "snapshot")
 	}
 	requestKey, _ := key.(string)
-	index, ok := v.State["activations"].(Object)
-	if !ok {
-		if _, has := v.State["activations"]; has {
-			fail("invalid_store", "activations is not an object", "store")
-		}
-		index = Object{}
-		v.State["activations"] = index
-	}
-	index[eventRef] = v.Put(activationKind, activationRecord(event, eventRef, snapshot, base, report, decision, requestKey))
+	putPublished(v, "activate", eventRef, activationRecord(event, eventRef, snapshot, base, report, decision, requestKey))
 }
 
-// publish gives the signed activation record of this write to the
-// publisher. The bytes are read now. The store calls the publisher after it
-// owns the root update, so a write that loses the compare-and-swap does not
-// publish. A refusal stops the write.
-func (h *Host) publish(v *View, value any) {
-	if h.publisher == nil {
+// putSuspension stores the suspension record of a suspend event when the
+// Host has a signing key. The state field suspensions maps the event
+// reference to the record reference. signStaged then signs the record.
+func (h *Host) putSuspension(v *View, event Object, eventRef string, key any) {
+	if h.signer == nil {
 		return
 	}
-	ref := item(item(v.State, "activations"), text(item(value, "event_ref")))
+	requestKey, _ := key.(string)
+	putPublished(v, "suspend", eventRef, suspensionRecord(event, eventRef, requestKey))
+}
+
+// putPublished stores the published record of the write op and adds it to
+// the state field of its kind.
+func putPublished(v *View, op, eventRef string, record Object) {
+	published := publishedRecords[op]
+	index, ok := v.State[published.field].(Object)
+	if !ok {
+		if _, has := v.State[published.field]; has {
+			fail("invalid_store", published.field+" is not an object", "store")
+		}
+		index = Object{}
+		v.State[published.field] = index
+	}
+	index[eventRef] = v.Put(published.kind, record)
+}
+
+// publish gives the signed activation record or the signed suspension
+// record of this write to the publisher. The bytes are read now. The store
+// calls the publisher after it owns the root update, so a write that loses
+// the compare-and-swap does not publish. A refusal stops the write.
+func (h *Host) publish(v *View, op string, value any) {
+	published, has := publishedRecords[op]
+	if h.publisher == nil || !has {
+		return
+	}
+	ref := item(item(v.State, published.field), text(item(value, "event_ref")))
 	signed := item(item(v.State, "signatures"), text(ref))
-	record, signedRaw, publisher := getRaw(v, ref, Media(activationKind)), getRaw(v, signed, Media(signedKind)), h.publisher
+	record, signedRaw, publisher := getRaw(v, ref, Media(published.kind)), getRaw(v, signed, Media(signedKind)), h.publisher
 	v.beforeCommit(func() error {
 		if err := publisher.Publish(record, signedRaw); err != nil {
-			return NewFault("publish_refused", "the publisher refused the activation record: "+err.Error(), "publish")
+			return NewFault("publish_refused", "the publisher refused the "+published.kind+" record: "+err.Error(), "publish")
 		}
 		return nil
 	})
 }
 
 func activationFault(code, rule, message string) *Fault {
+	return recordFault(activationKind, code, rule, message)
+}
+
+// recordFault gives a refusal of the rules of one published record kind.
+// The stage is the kind, and the message starts with the rule name.
+func recordFault(kind, code, rule, message string) *Fault {
 	if rule != "" {
 		message = rule + ": " + message
 	}
-	return NewFault(code, message, "activation")
+	return NewFault(code, message, kind)
 }
 
 // VerifyActivation checks a signed activation record with the checks of
 // SIGNED.md and then with the rules of ACTIVATION.md. It makes no call to a
 // Host. A valid record gives the verifier result, with the activation
-// record as the record.
+// record as the record. A suspension record is not an activation record:
+// the result is unexpected_record_kind.
 func VerifyActivation(signed []byte, keys *KeySet) (Object, error) {
+	return verifyPublished(signed, keys, activationKind, checkActivation)
+}
+
+// VerifySuspension checks a signed suspension record with the checks of
+// SIGNED.md and then with the suspension rules of ACTIVATION.md. It makes
+// no call to a Host. A valid record gives the verifier result, with the
+// suspension record as the record. An activation record is not a
+// suspension record: the result is unexpected_record_kind.
+func VerifySuspension(signed []byte, keys *KeySet) (Object, error) {
+	return verifyPublished(signed, keys, suspensionKind, checkSuspension)
+}
+
+func verifyPublished(signed []byte, keys *KeySet, kind string, check func(string, []byte) (Object, error)) (Object, error) {
 	result, err := VerifySigned(signed, keys)
 	if err != nil {
 		return nil, err
@@ -136,14 +204,72 @@ func VerifyActivation(signed []byte, keys *KeySet) (Object, error) {
 	doc := must(Decode(signed)).(Object)
 	raw, err := base64.StdEncoding.DecodeString(doc["record"].(string))
 	if err != nil {
-		return nil, activationFault("invalid_activation", "json", "the record is not base64 text")
+		return nil, recordFault(kind, "invalid_"+kind, "json", "the record is not base64 text")
 	}
-	record, err := checkActivation(text(result["record_kind"]), raw)
+	record, err := check(text(result["record_kind"]), raw)
 	if err != nil {
 		return nil, err
 	}
 	result["record"] = record
 	return result, nil
+}
+
+// checkSuspension applies the suspension rules of ACTIVATION.md to the
+// record bytes, in their order. The first rule that fails gives the result.
+func checkSuspension(recordKind string, raw []byte) (Object, error) {
+	bad := func(rule, message string) (Object, error) {
+		return nil, recordFault(suspensionKind, "invalid_suspension", rule, message)
+	}
+	if recordKind != suspensionKind {
+		return nil, recordFault(suspensionKind, "unexpected_record_kind", "", "the record kind is "+recordKind+", not suspension")
+	}
+	value, err := Decode(raw)
+	doc, ok := value.(Object)
+	if err != nil || !ok {
+		return bad("json", "the record is not one strict JSON object")
+	}
+	if !equal(doc["format"], RecordFormat) {
+		return nil, recordFault(suspensionKind, "unsupported_record_format", "", "the record format is not "+RecordFormat)
+	}
+	if field := unknownRecordField(raw, suspensionFields, nil); field != "" {
+		return bad("unknown_field", field)
+	}
+	if !suspensionShape(doc) {
+		return bad("schema", "the record does not agree with the schema")
+	}
+	from, until := doc["from"].(string), doc["until"].(string)
+	if !calendarDate(from) || !calendarDate(until) || from >= until {
+		return bad("interval", "the interval is not two real dates in order")
+	}
+	return doc, nil
+}
+
+// suspensionShape applies the schema of the suspension record.
+func suspensionShape(doc Object) bool {
+	// A nil pattern is a string with 1 character or more.
+	str := func(name string, pattern *regexp.Regexp) bool {
+		s, ok := doc[name].(string)
+		return ok && (pattern == nil && s != "" || pattern != nil && pattern.MatchString(s))
+	}
+	if len(doc) != len(suspensionFields) {
+		return false
+	}
+	for name := range doc {
+		if !suspensionFields[name] {
+			return false
+		}
+	}
+	targets, ok := doc["targets"].(Array)
+	if _, key := doc["request_key"].(string); !key || !ok || len(targets) == 0 || !str("scope", nil) || !str("function", nil) ||
+		!str("actor", nil) || !str("event_ref", refPattern) || !str("from", activationDate) || !str("until", activationDate) {
+		return false
+	}
+	for _, target := range targets {
+		if s, ok := target.(string); !ok || !refPattern.MatchString(s) {
+			return false
+		}
+	}
+	return true
 }
 
 // checkActivation applies the rules of ACTIVATION.md to the record bytes,
@@ -160,7 +286,7 @@ func checkActivation(recordKind string, raw []byte) (Object, error) {
 	if !equal(doc["format"], RecordFormat) {
 		return nil, activationFault("unsupported_record_format", "", "the record format is not "+RecordFormat)
 	}
-	if field := unknownActivationField(raw); field != "" {
+	if field := unknownRecordField(raw, activationFields, candidateFields); field != "" {
 		return nil, activationFault("invalid_activation", "unknown_field", field)
 	}
 	if !activationShape(doc) {
@@ -187,10 +313,11 @@ func calendarDate(s string) bool {
 	return err == nil && parsed.Year() >= 1 && parsed.Format("2006-01-02") == s
 }
 
-// unknownActivationField gives the path of the first member name that the
-// record table does not define, in the order of the text, or "". The walk
-// enters the record and its candidate. The names in applicability are data.
-func unknownActivationField(raw []byte) string {
+// unknownRecordField gives the path of the first member name that the record
+// table does not define, in the order of the text, or "". fields are the
+// fields of the record. The walk enters the record and, if candidate is
+// not nil, its candidate. The names in applicability are data.
+func unknownRecordField(raw []byte, fields, candidate map[string]bool) string {
 	dec := json.NewDecoder(strings.NewReader(string(raw)))
 	dec.UseNumber()
 	root, err := readKeys(dec)
@@ -198,12 +325,12 @@ func unknownActivationField(raw []byte) string {
 		return ""
 	}
 	for _, name := range root.names {
-		if !activationFields[name] {
+		if !fields[name] {
 			return name
 		}
-		if node := root.members[name]; name == "candidate" && node.object {
+		if node := root.members[name]; candidate != nil && name == "candidate" && node.object {
 			for _, inner := range node.names {
-				if !candidateFields[inner] {
+				if !candidate[inner] {
 					return "candidate." + inner
 				}
 			}
