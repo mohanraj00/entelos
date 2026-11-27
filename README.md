@@ -37,7 +37,7 @@ The example embeds the real Go Host with an application qualification runner and
 
 The reviewer installs the plan cases from [expected.json](examples/content-update/expected.json). This file gives each expected item identifier, digest and size. It simulates a plan that the reviewer owns. In a real deployment, the plan must come from a source outside the candidate.
 
-[content-update/README.md](examples/content-update/README.md) explains the files and limits. [CONTENT.md](src/protocol/content/CONTENT.md) specifies the manifest and dated reads. The proposed [policy verdict spec](src/protocol/policy/POLICY.md) adds accept, refuse or route to a person. No Host writes a policy verdict yet.
+[content-update/README.md](examples/content-update/README.md) explains the files and limits. [CONTENT.md](src/protocol/content/CONTENT.md) specifies the manifest and dated reads. The [policy verdict spec](src/protocol/policy/POLICY.md) adds accept, refuse or route to a person. The Go Host writes it with the Host-only write `policy_decide`.
 
 ## Run a rule update
 
@@ -142,7 +142,7 @@ Other examples show these uses:
 
 ## Limits
 
-The Go Host reads content manifests through `propose.candidate`. The sidecar wire protocol does not accept this field yet. The shipped commands install `CELRunner`, which refuses content candidates. An application must embed the Host with its own runner, as the content example does. Entelos keeps the manifest, not the item files. A content read selects a candidate; it does not execute content or write an answer receipt. An earlier cursor can select the earlier candidate. Policy verdicts and evidence admission remain proposed.
+The Go Host reads content manifests through `propose.candidate`. The sidecar wire protocol does not accept this field yet. The shipped commands install `CELRunner`, which refuses content candidates. An application must embed the Host with its own runner, as the content example does. Entelos keeps the manifest, not the item files. A content read selects a candidate; it does not execute content or write an answer receipt. An earlier cursor can select the earlier candidate. The sidecar wire protocol does not have the policy verdict operations.
 
 The callable profile `cel-string-bool/v1` accepts named string/bool variables and a boolean result. The engine also implements `cel-typed/v1` with integers, dates, lists and records ([typed-profile-spec.md](src/cel-lifecycle/typed-profile-spec.md)). The executor and the WASM bridge refuse a typed bundle. Floating-point numbers and custom extensions are unsupported. Internal expressions use the pinned CEL standard language. Resource ceilings are configured example bounds, not measured production-safe defaults.
 
