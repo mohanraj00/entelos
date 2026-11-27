@@ -35,9 +35,9 @@ The reason for decision 3: a policy that requires a person must not pass with a 
 The kind `policy` has two sources:
 
 - a `decide` record of an actor that `actor_kinds` names as `policy`, for a policy check that the application runs and that calls `decide` with its own credential;
-- an `accept` policy verdict of POLICY.md, when a Host writes that record. Its identity is the policy function.
+- an `accept` policy verdict of POLICY.md. `policy_decide` writes it as a decision record with the kind `policy` and the field `policy_verdict_ref`. Its identity is the policy function.
 
-No Host writes the second source yet. Until then, only the first source counts.
+If the verdict requirement of POLICY.md for the head is `human`, the Host ignores a policy verdict of the second source. It does not count for a kind.
 
 ## Host context
 
@@ -137,4 +137,4 @@ The decision record gets one optional field. The approval schemas and the creden
 - The verdict policy is one policy for each Host. A policy for each subject is not in this file.
 - The count uses the `actor` string. Two names for one person count as two identities.
 - A verdict of an earlier Host has no kind, so it counts for no kind.
-- A policy verdict of POLICY.md counts only after a Host writes that record.
+- The Go Host calls one policy function, so the `policy` count of a snapshot from the second source is 0 or 1.

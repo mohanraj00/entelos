@@ -4,8 +4,8 @@ package lifecycle
 
 // hostOnlyOps are the operations of Handle that the wire protocol does not
 // have yet: the approval read of VERDICT.md, the evidence read of
-// EVIDENCE.md, the promotion read of PROMOTION.md and the two writes of
-// FINDING.md.
+// EVIDENCE.md, the promotion read of PROMOTION.md, the two writes of
+// FINDING.md and the policy write and read of POLICY.md.
 var hostOnlyOps = map[string]struct {
 	role   string
 	fields []string
@@ -17,6 +17,10 @@ var hostOnlyOps = map[string]struct {
 	// candidate case, and the decision of a reviewer on a candidate.
 	"import_finding": {"author", []string{"source_ref", "finding"}},
 	"decide_case":    {"reviewer", []string{"candidate_ref", "disposition", "reason"}},
+	// The write and the read of POLICY.md: the policy verdict on one item,
+	// and the replay of a stored policy verdict.
+	"policy_decide": {"reviewer", []string{"report_ref"}},
+	"policy_replay": {"reviewer", []string{"policy_verdict_ref", "cursor"}},
 }
 
 // Verdict states of VERDICT.md.
@@ -86,6 +90,11 @@ func (h *Host) approval(v *View, q Object) Object {
 	for _, p := range h.sameCandidate(v, index, function, asked) {
 		for _, decisionRef := range elements(reviewEntry(index, p.ref, false)["decisions"]) {
 			decision := get(v, decisionRef, "decision")
+			// POLICY.md: the Host ignores a policy verdict on a head that
+			// needs a human verdict.
+			if h.ignored(v, decision) {
+				continue
+			}
 			state := h.verdictState(v, index, decision, p.snapshot)
 			found[state] = true
 			items = append(items, Object{"decision_ref": decisionRef, "decision": decision, "state": state})

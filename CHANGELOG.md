@@ -12,6 +12,8 @@ This file lists the changes for each snapshot tag. A tag is a stable snapshot to
   - The signed record field `record_kind` accepts the new value `suspension`. A verifier of an earlier version refuses such a signed record with `invalid_signed_record`, rule `schema`.
   - The wire protocol and the pinned stable surfaces do not change. The sidecar still has no publisher setting.
   - Limits: a suspension before the signing key has no suspension record, and the record does not copy the `reason` of the event.
+- The Go Host writes the policy verdict of [POLICY.md](src/protocol/policy/POLICY.md) (#210). The Host-only write `policy_decide` calls the one policy function of the new Host context field `policy_functions`, and writes a `policy_verdict` record with an `invoke` receipt. An accept or a refuse also writes a decision record of the kind `policy`. The Host-only read `policy_replay` replays the verdict. The Host context field `requirements` gives the verdict requirement of each head; the default is `human`. If the requirement is `human`, `activate` refuses an activation that only a policy verdict supports with the new code `human_verdict_required`. The qualification report gets the optional field `change_class` from the new runner field `Verdict.ChangeClass`. The wire protocol does not change.
+  - Effect on a store: the records keep their bytes. A Host context without `policy_functions` and `requirements` keeps the earlier behavior.
 
 ### Decisions
 

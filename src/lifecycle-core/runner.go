@@ -39,9 +39,14 @@ type QualificationInput struct {
 // nil, the Host keeps it as the "measure" field of the qualification record.
 // The Host does not check it at qualification. The promotion read applies
 // the rules of PROMOTION.md to it.
+//
+// ChangeClass is the optional change class of POLICY.md. If it is not
+// empty, the Host keeps it as the "change_class" field of the qualification
+// record. Entelos does not check it. A policy reads it.
 type Verdict struct {
-	Outcome any
-	Measure any
+	Outcome     any
+	Measure     any
+	ChangeClass string
 }
 
 // Runner is a qualification runner.

@@ -52,7 +52,8 @@ var schema = map[string]struct {
 
 // Reads are the operations that publish no state.
 var Reads = map[string]bool{"describe": true, "resolve": true, "inspect": true, "record": true, "receipt": true,
-	"proposals": true, "proposal": true, "approval": true, "evidence": true, "decision_events": true, "promotion": true}
+	"proposals": true, "proposal": true, "approval": true, "evidence": true, "decision_events": true, "promotion": true,
+	"policy_replay": true}
 
 //go:embed *.go
 var sources embed.FS
@@ -168,6 +169,9 @@ func NewHostWithRunner(store Store, rt Runtime, runner Runner, context any) (*Ho
 		return nil, err
 	}
 	if err := checkPromotionContext(ctx); err != nil {
+		return nil, err
+	}
+	if err := checkPolicyContext(ctx); err != nil {
 		return nil, err
 	}
 	build, err := Implementation()
@@ -333,7 +337,7 @@ func (h *Host) authorizeRetry(op string, q Object, cursor any) {
 	case "qualify":
 		h.scoped(v, item(q, "snapshot_ref"), "snapshot")
 		h.scoped(v, item(q, "plan_ref"), "plan")
-	case "decide":
+	case "decide", "policy_decide":
 		h.scoped(v, item(q, "report_ref"), "qualification")
 	case "activate":
 		h.scoped(v, item(q, "decision_ref"), "decision")
@@ -730,6 +734,8 @@ func (h *Host) readOperation(op string, q Object) any {
 		return h.evidenceRead(v, q)
 	case "promotion":
 		return h.promotionRead(v, q)
+	case "policy_replay":
+		return h.policyReplay(v, q)
 	}
 	selected := h.resolve(v, item(q, "function"), item(q, "date"))
 	if op == "resolve" {
@@ -1208,8 +1214,9 @@ func (h *Host) apply(v *View, op string, q Object) any {
 		c := candidate(q["snapshot_ref"], snapshot)
 		expected := h.Runner.Expected(c)
 		var outcome, measure, diagnostic any
+		changeClass := ""
 		if applicable {
-			outcome, measure, diagnostic = h.check(v, snapshot, c, item(plan, "cases"))
+			outcome, measure, changeClass, diagnostic = h.check(v, snapshot, c, item(plan, "cases"))
 		}
 		// The Host sets the status from the verdict and the bindings. The
 		// runner cannot pass a candidate or a runner that it did not name.
@@ -1233,11 +1240,18 @@ func (h *Host) apply(v *View, op string, q Object) any {
 		if measure != nil {
 			report["measure"] = measure
 		}
+		// A report without a change class keeps the bytes of an earlier
+		// Host. A policy reads it (POLICY.md, Policy inputs).
+		if changeClass != "" {
+			report["change_class"] = changeClass
+		}
 		ref := v.Put("qualification", report)
 		appendEntry(reviewEntry(index, text(q["snapshot_ref"]), true), "reports", ref)
 		return Object{"report_ref": ref, "report": report}
 	case "decide":
 		return h.decide(v, q)
+	case "policy_decide":
+		return h.policyDecide(v, q)
 	case "import_finding":
 		return h.importFinding(v, q)
 	case "decide_case":
@@ -1256,6 +1270,8 @@ func (h *Host) apply(v *View, op string, q Object) any {
 		case verdictStale:
 			fail("stale_verdict", "the head of this subject has other content than the verdict judged", "admission")
 		}
+		// POLICY.md, Verdict requirement.
+		h.checkRequirement(v, index, decision, snapshot)
 		h.checkVerdictPolicy(v, index, text(report["snapshot_ref"]), snapshot)
 		confirmed := confirmApplicability(q, snapshot)
 		event := merge(pick(snapshot, interval4...), Object{"kind": "enable", "snapshot_ref": report["snapshot_ref"], "report_ref": decision["report_ref"],
@@ -1431,16 +1447,16 @@ func (h *Host) apply(v *View, op string, q Object) any {
 
 // check runs the qualification cases on the installed runner. A runner fault
 // is a diagnostic, not an error of the request.
-func (h *Host) check(v *View, snapshot Object, c Candidate, cases any) (outcome, measure, diagnostic any) {
+func (h *Host) check(v *View, snapshot Object, c Candidate, cases any) (outcome, measure any, changeClass string, diagnostic any) {
 	defer func() {
 		if r := recover(); r != nil {
 			fault, ok := r.(*Fault)
 			if !ok {
 				panic(r)
 			}
-			outcome, measure, diagnostic = nil, nil, fault.Record()
+			outcome, measure, changeClass, diagnostic = nil, nil, "", fault.Record()
 		}
 	}()
 	verdict := must(h.Runner.Qualify(QualificationInput{Candidate: c, Files: h.files(v, snapshot), Cases: cases}))
-	return verdict.Outcome, verdict.Measure, nil
+	return verdict.Outcome, verdict.Measure, verdict.ChangeClass, nil
 }
