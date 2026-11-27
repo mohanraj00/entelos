@@ -485,6 +485,9 @@ func (h *Host) policyDecide(v *View, q Object) Object {
 		head:   snapshotHead(snapshot),
 		values: h.policyValues(v, reportRef, report, snapshot), nonce: newNonce}
 	c.call = func(inputs Object) (output, code any) {
+		// Store the inputs first. A refusal of the receipt path, for example
+		// implementation_unavailable, then keeps its replay evidence.
+		v.PutRaw("application/json", Encode(inputs))
 		var actual any
 		if failed := recoverFault(func() {
 			out := h.receipt(v, h.selection(v, policy["function"], date, event), Encode(inputs), q["request_key"], "invoke", "", "", "", "")

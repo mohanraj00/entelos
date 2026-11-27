@@ -7,6 +7,7 @@ package lifecycle
 
 import (
 	"os"
+	"strings"
 	"testing"
 )
 
@@ -56,8 +57,8 @@ func TestPolicyVectors(t *testing.T) {
 		policy, _ := c["policy"].(Object)
 		verdict, _ := judgePolicy(policyCase{date: text(c["date"]), functions: c["policy_functions"].(Array),
 			requirements: c["requirements"].(Array), policy: policy, typed: true,
-			item:   Object{"snapshot_ref": it["snapshot_ref"], "report_ref": it["report_ref"], "candidate": it["candidate"]},
-			head:   it["head"].(Object), values: values, call: vectorCall(t, name, c["call"]),
+			item: Object{"snapshot_ref": it["snapshot_ref"], "report_ref": it["report_ref"], "candidate": it["candidate"]},
+			head: it["head"].(Object), values: values, call: vectorCall(t, name, c["call"]),
 			nonce: func() string { return text(c["nonce"]) }})
 		if !equal(verdict, c["expect"]) {
 			t.Errorf("%s: verdict\n%s\nwant\n%s", name, Encode(verdict), Encode(c["expect"]))
@@ -283,6 +284,24 @@ func TestPolicyDecideRoutes(t *testing.T) {
 				t.Fatalf("call %v, receipt %v", called, verdict["receipt"])
 			}
 		})
+	}
+}
+
+// A refusal of the receipt path is a policy_error verdict. Its inputs stay
+// in the store, so a replay on the original build gives the same outcome.
+func TestPolicyErrorKeepsItsInputs(t *testing.T) {
+	engine := &policyEngine{build: engineBuild, output: "accept"}
+	w, report := newPolicyWorld(t, engine, "policy")
+	engine.build = "sha256:" + strings.Repeat("f", 64)
+	out := w.must("reviewer", "reviewer", "policy_decide", Object{"report_ref": report})
+	verdict := out["verdict"].(Object)
+	if verdict["reason"] != "policy_error" || at(verdict, "receipt", "error") != "implementation_unavailable" || out["decision_ref"] != nil {
+		t.Fatalf("verdict %s", Encode(out))
+	}
+	engine.build = engineBuild
+	replay := must(w.host("reviewer", "reviewer", w.runner).Handle(Object{"op": "policy_replay", "policy_verdict_ref": out["policy_verdict_ref"]})).(Object)
+	if replay["replay"] != "differs" || replay["outcome"] != "accept" {
+		t.Fatalf("policy_replay %s", Encode(replay))
 	}
 }
 
