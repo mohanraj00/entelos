@@ -13,6 +13,10 @@ This file lists the changes for each snapshot tag. A tag is a stable snapshot to
   - The wire protocol and the pinned stable surfaces do not change. The sidecar still has no publisher setting.
   - Limits: a suspension before the signing key has no suspension record, and the record does not copy the `reason` of the event.
 
+### Decisions
+
+- The maintainer accepted [Decision 0004](docs/decisions/0004-evidence-number-domain.md) on 2026-11-27, after the Host change merged in PR #218 (#208). The decision text does not change (#222).
+
 ## v0.7.0 (2026-11-26)
 
 This snapshot checks the evidence of a content proposal at `propose` (#207) and uses one fixed-point number domain for evidence admission (#208). It adds the finding import contract for one nookku finding record (#112). A new test runs a step result through the CEL runtime (#209). A CI workflow runs the kind seam test of the agent step (#215). The wire protocol, the record format and the pinned stable surfaces do not change.
