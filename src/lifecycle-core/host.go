@@ -100,6 +100,9 @@ type Host struct {
 	BuildRef string
 	// Clock gives the recorded times. Nil is the system clock.
 	Clock Clock
+
+	goVersion  string
+	gitVersion string
 	// signer signs each decision and event record that the Host writes.
 	// Nil writes no signed record. SetSigner installs it.
 	signer *Signer
@@ -177,7 +180,13 @@ func NewHostWithRunner(store Store, rt Runtime, runner Runner, context any) (*Ho
 	if err != nil {
 		return nil, err
 	}
-	return &Host{Store: store, Runtime: rt, Runner: runner, Context: ctx, BuildRef: build}, nil
+	goVersion := runtime.Version()
+	git, err := gitVersion()
+	if err != nil {
+		return nil, err
+	}
+	return &Host{Store: store, Runtime: rt, Runner: runner, Context: ctx, BuildRef: build,
+		goVersion: goVersion, gitVersion: git}, nil
 }
 
 func (h *Host) ctx(name string) string { return h.Context[name].(string) }
@@ -759,7 +768,7 @@ func (h *Host) receipt(v *View, selection Object, inputs []byte, key any, mode s
 		fail("implementation_unavailable", "exact replay/execution build unavailable", "runtime")
 	}
 	h.qualifiedBuild(v, selection)
-	tools := Object{"go": runtime.Version(), "git": must(gitVersion())}
+	tools := Object{"go": h.goVersion, "git": h.gitVersion}
 	files := h.files(v, snapshot)
 	must(h.Runtime.Execute(files, "describe", nil, nil))
 	actual := must(h.Runtime.Execute(files, "run", inputs, nil))

@@ -210,16 +210,19 @@ func TestFixtureRunnerCompletesTheLifecyclePath(t *testing.T) {
 }
 
 func TestGitVersionChangeKeepsTheQualifiedBuild(t *testing.T) {
-	dir := t.TempDir()
-	git := `#!/bin/sh
+	setGitVersion := func(version string) {
+		t.Helper()
+		dir := t.TempDir()
+		git := `#!/bin/sh
 [ "$1" = --version ] || exit 1
-printf 'git version %s\n' "$TEST_LIFECYCLE_GIT_VERSION"
+printf 'git version %s\n' '` + version + `'
 `
-	if err := os.WriteFile(filepath.Join(dir, "git"), []byte(git), 0o755); err != nil {
-		t.Fatal(err)
+		if err := os.WriteFile(filepath.Join(dir, "git"), []byte(git), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		t.Setenv("PATH", dir)
 	}
-	t.Setenv("PATH", dir+string(os.PathListSeparator)+os.Getenv("PATH"))
-	t.Setenv("TEST_LIFECYCLE_GIT_VERSION", "2.54.0")
+	setGitVersion("2.54.0")
 
 	bundleRef := bundleRefOf("pass")
 	w := newWorld(t, &fixtureRunner{name: "fixture-a", verdicts: map[string]string{bundleRef: "passed"}})
@@ -233,8 +236,17 @@ printf 'git version %s\n' "$TEST_LIFECYCLE_GIT_VERSION"
 	w.must("worker", "worker", "load", target)
 	inputs := with(target, Object{"expected_bundle_ref": bundleRef, "inputs": Object{"state": "ready"}})
 
+	caller := w.host("caller", "caller", w.runner)
 	before := w.must("caller", "caller", "invoke", inputs)
-	t.Setenv("TEST_LIFECYCLE_GIT_VERSION", "2.55.0")
+	setGitVersion("2.55.0")
+	root, err := w.store.Read(nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	sameHost, err := caller.Handle(with(inputs, Object{"op": "invoke", "expected_revision": root.Cursor, "request_key": "invoke-same-host"}))
+	if err != nil {
+		t.Fatal(err)
+	}
 	after := w.must("caller", "caller", "invoke", inputs)
 	w.must("worker", "worker", "load", target)
 	replay := w.must("reader", "reader", "replay", Object{"receipt_ref": before["receipt_ref"], "reason": "Git upgrade"})
@@ -245,7 +257,12 @@ printf 'git version %s\n' "$TEST_LIFECYCLE_GIT_VERSION"
 	for _, check := range []struct {
 		result  Object
 		version string
-	}{{before, "2.54.0"}, {after, "2.55.0"}, {replay, "2.55.0"}} {
+	}{
+		{before, "2.54.0"},
+		{sameHost.(Object)["result"].(Object), "2.54.0"},
+		{after, "2.55.0"},
+		{replay, "2.55.0"},
+	} {
 		receipt := check.result["receipt"].(Object)
 		wantTools := Object{"go": runtime.Version(), "git": "git version " + check.version}
 		if receipt["lifecycle_build"] != build || receipt["selection"].(Object)["report_ref"] != reportRef ||
@@ -448,6 +465,14 @@ esac`)
 func TestHostRequiresARunner(t *testing.T) {
 	context := Object{"actor": "a", "roles": Array{"reader"}, "scope": "demo", "runner_actor": "r", "worker": "w", "functions": Array{"f"}}
 	if _, err := NewHostWithRunner(NewMemoryStore(), &fakeEngine{build: engineBuild}, nil, context); faultCode(t, err) != "configuration_error" {
+		t.Fatal(err)
+	}
+}
+
+func TestHostRequiresGit(t *testing.T) {
+	t.Setenv("PATH", t.TempDir())
+	context := Object{"actor": "a", "roles": Array{"reader"}, "scope": "demo", "runner_actor": "r", "worker": "w", "functions": Array{"f"}}
+	if _, err := NewHost(NewMemoryStore(), &fakeEngine{build: engineBuild}, context); faultCode(t, err) != "configuration_error" {
 		t.Fatal(err)
 	}
 }
