@@ -9,9 +9,10 @@ This example is a small standalone approval dashboard (issue [#157](https://gith
 - The sidecar serves the page with `--http-static <directory>`. The page and the API thus have the same origin. The HTTP binding sends no CORS headers, so a page on another origin cannot read a response.
 - The page sends each request to `POST /v1/request` with `Authorization: Bearer <token>`. In this example, the token is a local static token of `--credentials-file` (`--http-local-tokens`, loopback only).
 - The page keeps the token in memory only. It does not store the token. A new page load needs the token again.
-- The page uses the [mugham](https://github.com/mohanraj00/mugham) UI kit, release `v0.3.0`, with contract format 2. [mugham.json](mugham.json) is the one pin: the repository, the tag and the commit. To change the kit version, change this file. `run.py` refuses a checkout if the tag or `HEAD` is not the pinned commit.
+- The page uses the [mugham](https://github.com/mohanraj00/mugham) UI kit, release `v0.7.0`, with contract format 2. [mugham.json](mugham.json) is the one pin: the repository, the tag and the commit. To change the kit version, change this file. `run.py` refuses a checkout if the tag or `HEAD` is not the pinned commit.
 - The kit shows each value as text, never as markup. A proposal reason such as `<b>x</b>` shows as the characters `<b>x</b>`.
 - A fill has no `actions` key. The page binds each action in code, and the kit refuses a fill with an `actions` key.
+- The kit gives one `key` to all tries of one action. The page sends this key as the `request_key` of `decide`, so a retry of the same verdict does not record a second verdict.
 - Each card and the form show their author in the authorship slot. The page binds the same actor to the element, so the kit refuses a fill that names a different author.
 
 | Part | Kit component | Data |
@@ -35,7 +36,7 @@ The API gives the id of each writer, but no actor type. The page gives the type 
 
 If the API gives no id, the page shows the id `unknown`. A producer can be a person or an agent. The page shows each producer as `agent`, so it never shows the content of an agent as the content of a person.
 
-The kit v0.3.0 also has `mu-citation` and `mu-excerpt`. The page does not use them, because the API gives no `https:` locator for a source or a bundle text, and the citation slot needs one.
+The kit v0.7.0 also has `mu-citation` and `mu-excerpt`. The page does not use them, because the API gives no `https:` locator for a source or a bundle text, and the citation slot needs one.
 
 The page shows the verdict kinds in different ways:
 
