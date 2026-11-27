@@ -18,7 +18,7 @@ This source-only reference does not vendor dependencies or distribute compiled b
 
 The author CLI is fetched separately from its pinned public repository, which retains its Apache-2.0 license and dependency notices. Its source and binaries are not in this tree.
 
-The optional approval dashboard uses the mugham UI kit, tag `v0.3.0` (commit `f61f5d4e0b5e8345d6449761b833e5ff575fcb9b`), licence Apache-2.0. The kit has no runtime dependency. `examples/approval-dashboard/run.py` fetches it from its public repository into the work directory and copies its `LICENSE` with it into the served site. Its source is not in this tree.
+The optional approval dashboard uses the mugham UI kit, tag `v0.7.0` (commit `4f399d191a052cdc782dff619b10a427e61d267b`), licence Apache-2.0. The kit has no runtime dependency. `examples/approval-dashboard/run.py` fetches it from its public repository into the work directory and copies its `LICENSE` with it into the served site. Its source is not in this tree.
 
 The groundgate seam test uses groundgate 0.16.0, licence Apache-2.0, from PyPI. [`tests/groundgate-seam/requirements.txt`](../tests/groundgate-seam/requirements.txt) pins the wheel and the sdist by hash. `verify.py` installs the wheel in a virtual environment in the work directory, with no dependencies. The package is not in this tree, and this project does not distribute it.
 

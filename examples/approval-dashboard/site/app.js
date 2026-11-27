@@ -139,14 +139,15 @@ $('reason').addEventListener('mu-action', (event) => {
 // A verdict button sends decide. The button shows done only after the API gives the verdict record.
 for (const disposition of ['accept', 'reject']) {
   $(disposition).addEventListener('mu-action', async (event) => {
-    const { id, arguments: args } = event.detail;
+    // The kit gives the same key to each try of one action. The API uses it as the idempotency key.
+    const { id, key, arguments: args } = event.detail;
     const button = event.target;
     if (!kept) {
       button.receipt({ id, ok: false, message: 'Keep a reason first.' });
       return;
     }
     const response = await call(token, 'decide', {
-      report_ref: args.report_ref, reason: kept, disposition: args.disposition, expected_revision: cursor, request_key: id,
+      report_ref: args.report_ref, reason: kept, disposition: args.disposition, expected_revision: cursor, request_key: key,
     });
     if (response.status !== 'ok') {
       button.receipt({ id, ok: false, message: `The API refused the verdict: ${refusalText(response)}` });

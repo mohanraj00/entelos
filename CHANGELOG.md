@@ -17,6 +17,10 @@ This file lists the changes for each snapshot tag. A tag is a stable snapshot to
 
 - The maintainer accepted [Decision 0004](docs/decisions/0004-evidence-number-domain.md) on 2026-11-27, after the Host change merged in PR #218 (#208). The decision text does not change (#222).
 
+### Contents
+
+- The approval dashboard moves from the mugham UI kit `v0.3.0` to `v0.7.0`. It sends the action key of the kit as the `request_key` of `decide`, so a retry of one verdict records it only once.
+
 ## v0.7.0 (2026-11-26)
 
 This snapshot checks the evidence of a content proposal at `propose` (#207) and uses one fixed-point number domain for evidence admission (#208). It adds the finding import contract for one nookku finding record (#112). A new test runs a step result through the CEL runtime (#209). A CI workflow runs the kind seam test of the agent step (#215). The wire protocol, the record format and the pinned stable surfaces do not change.
