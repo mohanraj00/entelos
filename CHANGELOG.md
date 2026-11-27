@@ -19,6 +19,9 @@ This file lists the changes for each snapshot tag. A tag is a stable snapshot to
   - The new function `GitStore.RecoverRootLock` and the new command `entelos-unlock --repo <store.git> [--check]` examine the lock file of the root ref and remove a stale one. A `git` process that stops with SIGKILL during a write leaves this file, and each later write then fails with `store_error`. The recovery refuses with the new code `update_in_progress` while an update is in progress. It does not change the root ref.
   - Effect on a store: the Git store makes the empty file `lifecycle-root-update.flock` in the repository at its first write. Each update of the root ref takes a shared `flock` lock on it. The records and the root do not change, and no migration is necessary. On a file system that does not support `flock`, a write takes no lock on the marker file, and the recovery refuses with `store_error`.
   - Limits: the recovery sees only a Host of this version or later on the same operating system kernel, and it needs a Unix system. The Host does not stop a publisher that ignores its context.
+- A stable lifecycle build identity (#214): [Decision 0005](docs/decisions/0005-build-identity.md) and [RUNNER.md](src/lifecycle-core/RUNNER.md#lifecycle-build). The identity now covers only the names and bytes of the core Go source files. An upgrade of Go or `git` alone keeps the identity.
+  - Each new execution receipt records the Go and Git versions in the new field `host_tools`. The Host does not compare them.
+  - Effect on a store: reports and receipts with the old identity stay readable, but the new Host refuses their use with `implementation_unavailable`. Run `qualify`, `decide` and `activate` again (with `supersedes`), then `load`. Exact replay of an old receipt needs the original build.
 
 ### Decisions
 

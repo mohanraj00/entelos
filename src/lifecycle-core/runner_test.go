@@ -5,6 +5,9 @@ package lifecycle
 // The fixture runner reads its verdicts from a table. It never runs a rule.
 
 import (
+	"os"
+	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -211,6 +214,69 @@ func TestFixtureRunnerCompletesTheLifecyclePath(t *testing.T) {
 	}
 }
 
+func TestGitVersionChangeKeepsTheQualifiedBuild(t *testing.T) {
+	setGitVersion := func(version string) {
+		t.Helper()
+		dir := t.TempDir()
+		git := `#!/bin/sh
+[ "$1" = --version ] || exit 1
+printf 'git version %s\n' '` + version + `'
+`
+		if err := os.WriteFile(filepath.Join(dir, "git"), []byte(git), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		t.Setenv("PATH", dir)
+	}
+	setGitVersion("2.54.0")
+
+	bundleRef := bundleRefOf("pass")
+	w := newWorld(t, &fixtureRunner{name: "fixture-a", verdicts: map[string]string{bundleRef: "passed"}})
+	snapshot, plan, _ := w.candidate("pass")
+	qualified := w.must("fixture-runner", "runner", "qualify", Object{"snapshot_ref": snapshot, "plan_ref": plan})
+	reportRef := qualified["report_ref"]
+	build := qualified["report"].(Object)["lifecycle_build"]
+	decision := w.must("reviewer", "reviewer", "decide", Object{"report_ref": reportRef, "reason": "fixture verdict"})["decision_ref"]
+	w.must("reviewer", "reviewer", "activate", Object{"decision_ref": decision, "targets": Array{}})
+	target := Object{"function": "record.visible", "date": "2026-11-15"}
+	w.must("worker", "worker", "load", target)
+	inputs := with(target, Object{"expected_bundle_ref": bundleRef, "inputs": Object{"state": "ready"}})
+
+	caller := w.host("caller", "caller", w.runner)
+	before := w.must("caller", "caller", "invoke", inputs)
+	setGitVersion("2.55.0")
+	root, err := w.store.Read(nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	sameHost, err := caller.Handle(with(inputs, Object{"op": "invoke", "expected_revision": root.Cursor, "request_key": "invoke-same-host"}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	after := w.must("caller", "caller", "invoke", inputs)
+	w.must("worker", "worker", "load", target)
+	replay := w.must("reader", "reader", "replay", Object{"receipt_ref": before["receipt_ref"], "reason": "Git upgrade"})
+	if replay["receipt"].(Object)["matches_original"] != true {
+		t.Fatalf("replay: %v", replay)
+	}
+
+	for _, check := range []struct {
+		result  Object
+		version string
+	}{
+		{before, "2.54.0"},
+		{sameHost.(Object)["result"].(Object), "2.54.0"},
+		{after, "2.55.0"},
+		{replay, "2.55.0"},
+	} {
+		receipt := check.result["receipt"].(Object)
+		wantTools := Object{"go": runtime.Version(), "git": "git version " + check.version}
+		if receipt["lifecycle_build"] != build || receipt["selection"].(Object)["report_ref"] != reportRef ||
+			!equal(receipt["host_tools"], wantTools) {
+			t.Fatalf("receipt for Git %s: %v", check.version, receipt)
+		}
+	}
+}
+
 // The fixture states a failed verdict for one bundle and no verdict for
 // another. The Host records failed and unresolved, and admission refuses both.
 func TestFixtureRunnerFailsAsItsFixtureSays(t *testing.T) {
@@ -404,6 +470,14 @@ esac`)
 func TestHostRequiresARunner(t *testing.T) {
 	context := Object{"actor": "a", "roles": Array{"reader"}, "scope": "demo", "runner_actor": "r", "worker": "w", "functions": Array{"f"}}
 	if _, err := NewHostWithRunner(NewMemoryStore(), &fakeEngine{build: engineBuild}, nil, context); faultCode(t, err) != "configuration_error" {
+		t.Fatal(err)
+	}
+}
+
+func TestHostRequiresGit(t *testing.T) {
+	t.Setenv("PATH", t.TempDir())
+	context := Object{"actor": "a", "roles": Array{"reader"}, "scope": "demo", "runner_actor": "r", "worker": "w", "functions": Array{"f"}}
+	if _, err := NewHost(NewMemoryStore(), &fakeEngine{build: engineBuild}, context); faultCode(t, err) != "configuration_error" {
 		t.Fatal(err)
 	}
 }

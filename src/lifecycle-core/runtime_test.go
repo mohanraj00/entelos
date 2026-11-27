@@ -2,9 +2,7 @@ package lifecycle
 
 import (
 	"os"
-	"os/exec"
 	"path/filepath"
-	"runtime"
 	"sort"
 	"strings"
 	"testing"
@@ -84,23 +82,17 @@ func TestBuildIdentityLeavesOutTests(t *testing.T) {
 		}
 		body = append(append(append(append(body, name...), 0), raw...), 0)
 	}
-	git, err := exec.Command("git", "--version").Output()
-	if err != nil {
-		t.Fatal(err)
-	}
-	body = append(append(body, runtime.Version()...), git...)
 	got, err := Implementation()
 	if err != nil || got != ContentRef(Envelope(Media("implementation"), body)) {
 		t.Fatalf("identity %s %v differs from the core sources", got, err)
 	}
 }
 
-// The git --version call for the build identity uses the clean Git
-// environment. GIT_TRACE in the caller environment must not reach it.
-func TestBuildIdentityUsesTheCleanGitEnvironment(t *testing.T) {
+// The Git version check must remove GIT_TRACE from its environment.
+func TestGitVersionUsesTheCleanGitEnvironment(t *testing.T) {
 	trace := filepath.Join(t.TempDir(), "trace")
 	t.Setenv("GIT_TRACE", trace)
-	if _, err := Implementation(); err != nil {
+	if _, err := gitVersion(); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := os.Stat(trace); err == nil {
