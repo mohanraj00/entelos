@@ -105,6 +105,9 @@ type Host struct {
 	// suspension record to a consumer before the commit. Nil publishes
 	// nothing. SetPublisher installs it.
 	publisher Publisher
+	// publishTimeout is the time limit of one publisher call. Zero is
+	// DefaultPublishTimeout. SetPublishTimeout sets it.
+	publishTimeout time.Duration
 }
 
 // NewHost checks the trusted host context. The CEL runner of rt qualifies

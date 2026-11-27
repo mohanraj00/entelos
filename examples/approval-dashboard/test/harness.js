@@ -25,8 +25,10 @@ const shadow = (node) => (node?.shadowRoot ? node.shadowRoot.textContent : '');
 // The card elements in a container of the page. Each card has its own bound author.
 const gridCards = (box) => [...(box?.querySelectorAll(':scope > mu-card') ?? [])];
 const press = (node, part = 'button') => node.shadowRoot.querySelector(`[part="${part}"]`).click();
-// Hand-written: the author line of the kit, `Author: <type> <id>`.
-const author = (type, id) => `Author: ${type} ${id}`;
+// Hand-written from the card contract of the kit: an author with no name shows `Author: <type>, <id>`.
+const author = (type, id) => `Author: ${type}, ${id}`;
+// Hand-written from the provenance line of the kit: other components show `Author: <type> <id>`.
+const formAuthor = (type, id) => `Author: ${type} ${id}`;
 
 // Hand-written: the text of each list card. The wait comes from the seed clocks.
 const LIST = [
@@ -114,7 +116,7 @@ async function dashboard(job) {
   const input = field.shadowRoot.querySelector('input');
   input.value = job.verdict_reason;
   input.dispatchEvent(new Event('input', { bubbles: true, composed: true }));
-  check('form-author-page', shadow(form).includes(author('system', 'approval-dashboard')), shadow(form));
+  check('form-author-page', shadow(form).includes(formAuthor('system', 'approval-dashboard')), shadow(form));
   press(form);
   await until('reason kept', () => form.dataset.state === 'done');
 

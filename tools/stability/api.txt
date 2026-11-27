@@ -28,6 +28,7 @@ stable github.com/mohanraj00/entelos/src/cel-handoff type Pin struct { Function 
 stable github.com/mohanraj00/entelos/src/cel-handoff type Report struct { Status string `json:"status"` BundleRef string `json:"bundle_ref"` ImplementationRef string `json:"implementation_ref"` Cases []CaseResult `json:"cases"` }
 stable github.com/mohanraj00/entelos/src/cel-handoff type Response struct { Status string `json:"status"` Value any `json:"value,omitempty"` BundleRef string `json:"bundle_ref,omitempty"` ImplementationRef string `json:"implementation_ref,omitempty"` Diagnostic *Diagnostic `json:"diagnostic,omitempty"` Cost *uint64 `json:"cost,omitempty"` }
 experimental github.com/mohanraj00/entelos/src/cel-handoff type Variable struct { Name string `json:"name,omitempty"` Type string `json:"type"` Description string `json:"description,omitempty"` Items *string `json:"items,omitempty"` Fields *[]Variable `json:"fields,omitempty"` }
+experimental github.com/mohanraj00/entelos/src/lifecycle-core const DefaultPublishTimeout = 10 * time.Second
 experimental github.com/mohanraj00/entelos/src/lifecycle-core const KeySetFormat = "entelos.keyset/1"
 stable github.com/mohanraj00/entelos/src/lifecycle-core const RecordFormat = "entelos.record/1"
 stable github.com/mohanraj00/entelos/src/lifecycle-core const RootRef = "refs/lifecycle/state"
@@ -47,12 +48,14 @@ stable github.com/mohanraj00/entelos/src/lifecycle-core func (*Fault) Record() O
 experimental github.com/mohanraj00/entelos/src/lifecycle-core func (*GitStore) Git(data []byte, args ...string) ([]byte, error)
 stable github.com/mohanraj00/entelos/src/lifecycle-core func (*GitStore) History(cursor string) ([]string, error)
 stable github.com/mohanraj00/entelos/src/lifecycle-core func (*GitStore) Read(cursor any) (*View, error)
+experimental github.com/mohanraj00/entelos/src/lifecycle-core func (*GitStore) RecoverRootLock(remove bool) (Object, error)
 stable github.com/mohanraj00/entelos/src/lifecycle-core func (*GitStore) Root() (string, error)
 experimental github.com/mohanraj00/entelos/src/lifecycle-core func (*GitStore) RunGit(args []string, data []byte) (GitResult, error)
 stable github.com/mohanraj00/entelos/src/lifecycle-core func (*GitStore) Transact(expected, key, payload any, apply func(*View) (any, error)) (Object, error)
 stable github.com/mohanraj00/entelos/src/lifecycle-core func (*Host) As(actor string, roles []string) *Host
 stable github.com/mohanraj00/entelos/src/lifecycle-core func (*Host) Handle(request any) (result any, err error)
 stable github.com/mohanraj00/entelos/src/lifecycle-core func (*Host) HandleAs(actor string, roles []string, request any) (any, error)
+experimental github.com/mohanraj00/entelos/src/lifecycle-core func (*Host) SetPublishTimeout(limit time.Duration)
 experimental github.com/mohanraj00/entelos/src/lifecycle-core func (*Host) SetPublisher(p Publisher)
 experimental github.com/mohanraj00/entelos/src/lifecycle-core func (*Host) SetSigner(s *Signer)
 experimental github.com/mohanraj00/entelos/src/lifecycle-core func (*Host) StartDecisionEvents() error
@@ -110,7 +113,7 @@ stable github.com/mohanraj00/entelos/src/lifecycle-core type Int struct { Text s
 experimental github.com/mohanraj00/entelos/src/lifecycle-core type KeySet struct { }
 stable github.com/mohanraj00/entelos/src/lifecycle-core type MemoryStore struct { BeforePublish func() error }
 stable github.com/mohanraj00/entelos/src/lifecycle-core type Object = map[string]any
-experimental github.com/mohanraj00/entelos/src/lifecycle-core type Publisher interface { Publish(record, signed []byte) error }
+experimental github.com/mohanraj00/entelos/src/lifecycle-core type Publisher interface { Publish(ctx context.Context, record, signed []byte) error }
 stable github.com/mohanraj00/entelos/src/lifecycle-core type QualificationInput struct { Candidate Candidate Files map[string][]byte Cases any }
 stable github.com/mohanraj00/entelos/src/lifecycle-core type Runner interface { Identity() (string, error) Expected(c Candidate) string Qualify(in QualificationInput) (Verdict, error) }
 stable github.com/mohanraj00/entelos/src/lifecycle-core type Runtime interface { Build() (string, error) Execute(files map[string][]byte, command string, inputs []byte, cases any) (any, error) }

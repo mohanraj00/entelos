@@ -4,8 +4,10 @@ package lifecycle
 // src/protocol/activation/ACTIVATION.md.
 
 import (
+	"context"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"regexp"
 	"strings"
 	"time"
@@ -54,9 +56,24 @@ var (
 // A commit can fail after an accept. A retry of the same request then gives
 // the same bytes again, so the consumer must accept a record that it
 // already has.
+//
+// ctx has the deadline of the call. See SetPublishTimeout. At the deadline
+// the Host stops the write with publish_timeout and stores nothing. It
+// does not wait for Publish. Thus Publish must stop its work when ctx is
+// done. A call that continues after the deadline can still give the record
+// to the consumer, as a commit that fails after an accept does.
 type Publisher interface {
-	Publish(record, signed []byte) error
+	Publish(ctx context.Context, record, signed []byte) error
 }
+
+// DefaultPublishTimeout is the time limit of one publisher call, if the
+// embedding host sets no other limit.
+const DefaultPublishTimeout = 10 * time.Second
+
+// SetPublishTimeout sets the time limit of one publisher call. A limit of
+// zero or less sets DefaultPublishTimeout. A Host that As gives has the
+// limit of its source at that time.
+func (h *Host) SetPublishTimeout(limit time.Duration) { h.publishTimeout = limit }
 
 // SetPublisher installs the publisher of the Host. Nil removes it. A Host
 // with a publisher and no signing key refuses each activate and each
@@ -156,12 +173,58 @@ func (h *Host) publish(v *View, op string, value any) {
 	ref := item(item(v.State, published.field), text(item(value, "event_ref")))
 	signed := item(item(v.State, "signatures"), text(ref))
 	record, signedRaw, publisher := getRaw(v, ref, Media(published.kind)), getRaw(v, signed, Media(signedKind)), h.publisher
-	v.beforeCommit(func() error {
-		if err := publisher.Publish(record, signedRaw); err != nil {
-			return NewFault("publish_refused", "the publisher refused the "+published.kind+" record: "+err.Error(), "publish")
+	limit := h.publishTimeout
+	if limit <= 0 {
+		limit = DefaultPublishTimeout
+	}
+	v.beforeCommit(func() error { return callPublisher(publisher, limit, published.kind, record, signedRaw) })
+}
+
+// callPublisher makes one publisher call with a time limit. The store holds
+// its lock during the call, so the limit is also the longest time that a
+// publisher can stop the other writes. At the deadline, the result is
+// publish_timeout, and the call does not wait for the publisher.
+func callPublisher(publisher Publisher, limit time.Duration, kind string, record, signed []byte) error {
+	ctx, cancel := context.WithTimeout(context.Background(), limit)
+	defer cancel()
+	type answer struct {
+		err      error
+		panicked any
+	}
+	// The buffer lets a late publisher end without a reader.
+	done := make(chan answer, 1)
+	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				done <- answer{panicked: r}
+			}
+		}()
+		done <- answer{err: publisher.Publish(ctx, record, signed)}
+	}()
+	timeout := NewFault("publish_timeout", "the publisher gave no answer for the "+kind+" record in "+limit.String()+"; the store commits nothing", "publish")
+	var got answer
+	select {
+	case got = <-done:
+	case <-ctx.Done():
+		// An answer that came at the deadline counts.
+		select {
+		case got = <-done:
+		default:
+			return timeout
 		}
+	}
+	if got.panicked != nil {
+		// runSteps recovers this, as it does for a step with no time limit.
+		panic(got.panicked)
+	}
+	if got.err == nil {
 		return nil
-	})
+	}
+	// A publisher that stopped at the deadline gives the error of ctx.
+	if ctx.Err() != nil && errors.Is(got.err, context.DeadlineExceeded) {
+		return timeout
+	}
+	return NewFault("publish_refused", "the publisher refused the "+kind+" record: "+got.err.Error(), "publish")
 }
 
 func activationFault(code, rule, message string) *Fault {
