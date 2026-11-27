@@ -61,8 +61,7 @@ var Reads = map[string]bool{"describe": true, "resolve": true, "inspect": true, 
 //go:embed *.go
 var sources embed.FS
 
-// Implementation is the content identity of this lifecycle build: the core
-// sources, the Go version and the Git version.
+// Implementation gives the content reference of the core source files.
 func Implementation() (string, error) {
 	names, err := fs.Glob(sources, "*.go")
 	if err != nil {
@@ -71,7 +70,6 @@ func Implementation() (string, error) {
 	sort.Strings(names)
 	var body []byte
 	for _, name := range names {
-		// The identity holds only the core sources, not the tests.
 		if strings.HasSuffix(name, "_test.go") {
 			continue
 		}
@@ -79,17 +77,22 @@ func Implementation() (string, error) {
 		if err != nil {
 			return "", err
 		}
-		body = append(append(append(append(body, name...), 0), raw...), 0)
+		body = append(body, name...)
+		body = append(body, 0)
+		body = append(body, raw...)
+		body = append(body, 0)
 	}
-	body = append(body, runtime.Version()...)
+	return ContentRef(Envelope(Media("implementation"), body)), nil
+}
+
+func gitVersion() (string, error) {
 	cmd := exec.Command("git", "--version")
 	cmd.Env = gitEnvironment()
 	git, err := cmd.Output()
 	if err != nil {
 		return "", NewFault("configuration_error", "git is unavailable: "+err.Error(), "")
 	}
-	body = append(body, git...)
-	return ContentRef(Envelope(Media("implementation"), body)), nil
+	return strings.TrimSuffix(string(git), "\n"), nil
 }
 
 // Host is the trusted lifecycle host for one context.
@@ -101,6 +104,9 @@ type Host struct {
 	BuildRef string
 	// Clock gives the recorded times. Nil is the system clock.
 	Clock Clock
+
+	goVersion  string
+	gitVersion string
 	// signer signs each decision and event record that the Host writes.
 	// Nil writes no signed record. SetSigner installs it.
 	signer *Signer
@@ -184,7 +190,13 @@ func NewHostWithRunner(store Store, rt Runtime, runner Runner, context any) (*Ho
 	if err != nil {
 		return nil, err
 	}
-	return &Host{Store: store, Runtime: rt, Runner: runner, Context: ctx, BuildRef: build}, nil
+	goVersion := runtime.Version()
+	git, err := gitVersion()
+	if err != nil {
+		return nil, err
+	}
+	return &Host{Store: store, Runtime: rt, Runner: runner, Context: ctx, BuildRef: build,
+		goVersion: goVersion, gitVersion: git}, nil
 }
 
 func (h *Host) ctx(name string) string { return h.Context[name].(string) }
@@ -496,6 +508,8 @@ func (h *Host) planValid(v *View, planRef any, snapshot Object) bool {
 	return true
 }
 
+const lifecycleBuildMismatch = "installed lifecycle build differs from the qualified build. Qualify the snapshot again on this Host"
+
 func (h *Host) reportValid(v *View, ref any) (Object, Object) {
 	report := h.scoped(v, ref, "qualification")
 	snapshot := h.scoped(v, item(report, "snapshot_ref"), "snapshot")
@@ -505,7 +519,10 @@ func (h *Host) reportValid(v *View, ref any) (Object, Object) {
 	if !equal(item(report, "runner"), h.ctx("runner_actor")) {
 		fail("untrusted_runner", "report is not from the installed runner", "admission")
 	}
-	if !equal(item(report, "lifecycle_build"), h.BuildRef) || !equal(item(report, "engine_build"), must(h.Runner.Identity())) {
+	if !equal(item(report, "lifecycle_build"), h.BuildRef) {
+		fail("implementation_unavailable", lifecycleBuildMismatch, "admission")
+	}
+	if !equal(item(report, "engine_build"), must(h.Runner.Identity())) {
 		fail("implementation_unavailable", "qualification build is not installed", "admission")
 	}
 	// Check the bindings again. The verdict must name the bytes of this
@@ -531,7 +548,7 @@ func (h *Host) reportValid(v *View, ref any) (Object, Object) {
 func (h *Host) qualifiedBuild(v *View, selection Object) {
 	report := h.scoped(v, item(selection, "report_ref"), "qualification")
 	if !equal(item(report, "lifecycle_build"), h.BuildRef) {
-		fail("implementation_unavailable", "installed lifecycle build differs from the qualified build", "runtime")
+		fail("implementation_unavailable", lifecycleBuildMismatch, "runtime")
 	}
 }
 
@@ -763,6 +780,7 @@ func (h *Host) receipt(v *View, selection Object, inputs []byte, key any, mode s
 		fail("implementation_unavailable", "exact replay/execution build unavailable", "runtime")
 	}
 	h.qualifiedBuild(v, selection)
+	tools := Object{"go": h.goVersion, "git": h.gitVersion}
 	files := h.files(v, snapshot)
 	must(h.Runtime.Execute(files, "describe", nil, nil))
 	actual := must(h.Runtime.Execute(files, "run", inputs, nil))
@@ -773,7 +791,7 @@ func (h *Host) receipt(v *View, selection Object, inputs []byte, key any, mode s
 	responseRef := v.PutRaw("application/json", Encode(actual))
 	record := Object{"function": item(selection, "function"), "scope": item(selection, "scope"), "mode": mode, "selection": selection,
 		"inputs_ref": inputRef, "response_ref": responseRef, "actual_bundle": item(actual, "bundle_ref"),
-		"engine_build": item(actual, "implementation_ref"), "lifecycle_build": h.BuildRef, "invocation_id": key,
+		"engine_build": item(actual, "implementation_ref"), "lifecycle_build": h.BuildRef, "host_tools": tools, "invocation_id": key,
 		"previous_receipt": previous, "reason": reason, "stale_mode": lookup(snapshot, "stale_mode", failClosed),
 		"stale": staleReason != "", "stale_reason": staleReason}
 	if truthy(original) {
