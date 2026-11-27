@@ -28,12 +28,35 @@ type GitResult struct {
 	Stdout, Stderr []byte
 }
 
+// updateMarker is a file in the repository. Each update of the root ref
+// holds a shared lock on it, and the recovery of a stale lock file takes
+// an exclusive lock. See RecoverRootLock.
+const updateMarker = "lifecycle-root-update.flock"
+
 // GitStore is the local Git adapter.
 type GitStore struct {
 	Path string
 	env  []string
 	// Hook replaces the git command runner. Tests use it for fault injection.
 	Hook func(store *GitStore, args []string, data []byte) (GitResult, error)
+	// prepared gets the git process of a ref transaction after it locked
+	// the root ref. Tests use it to stop that process.
+	prepared func(*os.Process)
+}
+
+// rootLockPath is the lock file of the root ref in the files ref format.
+func (s *GitStore) rootLockPath() string {
+	return filepath.Join(s.Path, filepath.FromSlash(RootRef)+".lock")
+}
+
+// lockHint names the recovery in the message of a failed update, if the
+// lock file of the root ref is there. The message of git tells the reader
+// to remove the file by hand, and that is not safe during an update.
+func (s *GitStore) lockHint() string {
+	if _, err := os.Lstat(s.rootLockPath()); err != nil {
+		return ""
+	}
+	return " The lock file of the root ref is there. Do not remove it by hand: if it stays, run entelos-unlock."
 }
 
 // gitEnvironment is the process environment without GIT_* variables, plus a
@@ -82,9 +105,18 @@ func OpenGitStore(path string) (*GitStore, error) {
 
 // RunGit runs one git command against the repository without hooks.
 func (s *GitStore) RunGit(args []string, data []byte) (GitResult, error) {
+	return s.runGit(args, data, nil)
+}
+
+// runGit runs one git command. The command keeps marker open until it
+// stops, if marker is not nil.
+func (s *GitStore) runGit(args []string, data []byte, marker *os.File) (GitResult, error) {
 	full := append([]string{"--git-dir=" + s.Path, "-c", "core.hooksPath=" + os.DevNull, "-c", "core.fsmonitor=false"}, args...)
 	cmd := exec.Command("git", full...)
 	cmd.Env = s.env
+	if marker != nil {
+		cmd.ExtraFiles = []*os.File{marker}
+	}
 	if data != nil {
 		cmd.Stdin = bytes.NewReader(data)
 	}
@@ -301,12 +333,22 @@ func (s *GitStore) runsCommitSteps() {}
 // of git update-ref. The prepare command locks the root ref and checks the
 // old value. The steps run while the lock is held, and the commit command
 // then moves the root. A failed step aborts the transaction. This path does
-// not use Hook. If the process stops between prepare and commit, the lock
-// file stays, and a person must remove it.
+// not use Hook. If the git process stops with SIGKILL between prepare and
+// commit, the lock file stays. RecoverRootLock removes it. The git process
+// keeps the update marker open, so the recovery knows that an update is in
+// progress while this function or its git process runs.
 func (s *GitStore) updateWithSteps(commit, old, base string, steps []func() error) (err error) {
+	marker, err := s.holdUpdate()
+	if err != nil {
+		return err
+	}
 	cmd := exec.Command("git", "--git-dir="+s.Path, "-c", "core.hooksPath="+os.DevNull, "-c", "core.fsmonitor=false",
 		"update-ref", "--stdin")
 	cmd.Env = s.env
+	if marker != nil {
+		defer marker.Close()
+		cmd.ExtraFiles = []*os.File{marker}
+	}
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
 	in, err := cmd.StdinPipe()
@@ -335,15 +377,18 @@ func (s *GitStore) updateWithSteps(commit, old, base string, steps []func() erro
 			if root, err := s.Root(); err == nil && root != base {
 				return NewFault("stale_revision", "root CAS lost; no state/outbox was published", "")
 			}
-			return NewFault("store_error", "the root ref is locked or changed: "+stderr.String(), "store")
+			return NewFault("store_error", "the root ref is locked or changed: "+stderr.String()+s.lockHint(), "store")
 		}
+	}
+	if s.prepared != nil {
+		s.prepared(cmd.Process)
 	}
 	if err := runSteps(steps); err != nil {
 		end("abort")
 		return err
 	}
 	if err := end("commit"); err != nil {
-		return NewFault("store_error", "the root ref update failed after the steps: "+stderr.String(), "store")
+		return NewFault("store_error", "the root ref update failed after the steps: "+err.Error()+" "+stderr.String()+s.lockHint(), "store")
 	}
 	return nil
 }
@@ -423,7 +468,20 @@ func (s *GitStore) Transact(expected, key, payload any, apply func(*View) (any, 
 		}
 		return Object{"cursor": commit, "result": result, "reused": false}, nil
 	}
-	r, err := s.run([]string{"update-ref", RootRef, commit, old}, nil)
+	marker, err := s.holdUpdate()
+	if err != nil {
+		return nil, err
+	}
+	update := []string{"update-ref", RootRef, commit, old}
+	var r GitResult
+	if s.Hook != nil {
+		r, err = s.Hook(s, update, nil)
+	} else {
+		r, err = s.runGit(update, nil, marker)
+	}
+	if marker != nil {
+		marker.Close()
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -435,7 +493,7 @@ func (s *GitStore) Transact(expected, key, payload any, apply func(*View) (any, 
 		if root != base {
 			return nil, NewFault("stale_revision", "root CAS lost; no state/outbox was published", "")
 		}
-		return nil, NewFault("store_error", string(r.Stderr), "store")
+		return nil, NewFault("store_error", string(r.Stderr)+s.lockHint(), "store")
 	}
 	return Object{"cursor": commit, "result": result, "reused": false}, nil
 }

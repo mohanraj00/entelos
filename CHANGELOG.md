@@ -12,6 +12,11 @@ This file lists the changes for each snapshot tag. A tag is a stable snapshot to
   - The signed record field `record_kind` accepts the new value `suspension`. A verifier of an earlier version refuses such a signed record with `invalid_signed_record`, rule `schema`.
   - The wire protocol and the pinned stable surfaces do not change. The sidecar still has no publisher setting.
   - Limits: a suspension before the signing key has no suspension record, and the record does not copy the `reason` of the event.
+- A time limit for the publisher call, and a recovery of a stale lock file of the root ref (#212). See [ACTIVATION.md](src/protocol/activation/ACTIVATION.md#stale-lock-of-the-root-ref).
+  - The Go interface `Publisher` changes: `Publish` now takes a `context.Context` as its first parameter. The context has the deadline of the call. The default limit is 10 seconds, and the new function `Host.SetPublishTimeout` sets another limit. At the limit, the result is the new code `publish_timeout` with the stage `publish`, the store commits nothing, and the store lock is free. To update a publisher, add the parameter and stop the work when the context is done.
+  - The new function `GitStore.RecoverRootLock` and the new command `entelos-unlock --repo <store.git> [--check]` examine the lock file of the root ref and remove a stale one. A `git` process that stops with SIGKILL during a write leaves this file, and each later write then fails with `store_error`. The recovery refuses with the new code `update_in_progress` while an update is in progress. It does not change the root ref.
+  - Effect on a store: the Git store makes the empty file `lifecycle-root-update.flock` in the repository at its first write. Each update of the root ref takes a shared `flock` lock on it. The records and the root do not change, and no migration is necessary. On a file system that does not support `flock`, a write takes no lock on the marker file, and the recovery refuses with `store_error`.
+  - Limits: the recovery sees only a Host of this version or later on the same operating system kernel, and it needs a Unix system. The Host does not stop a publisher that ignores its context.
 - A stable lifecycle build identity (#214): [Decision 0005](docs/decisions/0005-build-identity.md) and [RUNNER.md](src/lifecycle-core/RUNNER.md#lifecycle-build). The identity now covers only the names and bytes of the core Go source files. An upgrade of Go or `git` alone keeps the identity.
   - Each new execution receipt records the Go and Git versions in the new field `host_tools`. The Host does not compare them.
   - Effect on a store: reports and receipts with the old identity stay readable, but the new Host refuses their use with `implementation_unavailable`. Run `qualify`, `decide` and `activate` again (with `supersedes`), then `load`. Exact replay of an old receipt needs the original build.
@@ -19,6 +24,10 @@ This file lists the changes for each snapshot tag. A tag is a stable snapshot to
 ### Decisions
 
 - The maintainer accepted [Decision 0004](docs/decisions/0004-evidence-number-domain.md) on 2026-11-27, after the Host change merged in PR #218 (#208). The decision text does not change (#222).
+
+### Contents
+
+- The approval dashboard moves from the mugham UI kit `v0.3.0` to `v0.7.0`. It sends the action key of the kit as the `request_key` of `decide`, so a retry of one verdict records it only once.
 
 ## v0.7.0 (2026-11-26)
 
