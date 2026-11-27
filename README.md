@@ -142,7 +142,7 @@ Other examples show these uses:
 
 ## Limits
 
-The Go Host reads content manifests through `propose.candidate`. The sidecar wire protocol does not accept this field yet. The shipped commands install `CELRunner`, which refuses content candidates. An application must embed the Host with its own runner, as the content example does. Entelos keeps the manifest, not the item files. A content read selects a candidate; it does not execute content or write an answer receipt. An earlier cursor can select the earlier candidate. The sidecar wire protocol does not have the policy verdict operations.
+The Go Host reads content manifests through `propose.candidate`. Wire protocol 1.3 accepts this field and `activate.applicability`. The shipped commands install `CELRunner`, which refuses content candidates. An application must embed the Host with its own runner, as the content example does. Entelos keeps the manifest, not the item files. A content read selects a candidate; it does not execute content or write an answer receipt. An earlier cursor can select the earlier candidate. The sidecar wire protocol does not have the policy verdict operations.
 
 The callable profile `cel-string-bool/v1` accepts named string/bool variables and a boolean result. The engine also implements `cel-typed/v1` with integers, dates, lists and records ([typed-profile-spec.md](src/cel-lifecycle/typed-profile-spec.md)). The executor and the WASM bridge refuse a typed bundle. Floating-point numbers and custom extensions are unsupported. Internal expressions use the pinned CEL standard language. Resource ceilings are configured example bounds, not measured production-safe defaults.
 

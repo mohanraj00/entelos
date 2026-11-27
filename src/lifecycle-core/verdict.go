@@ -3,16 +3,14 @@ package lifecycle
 // The verdict binding of src/protocol/verdict/VERDICT.md.
 
 // hostOnlyOps are the operations of Handle that the wire protocol does not
-// have yet: the approval read of VERDICT.md, the evidence read of
-// EVIDENCE.md, the promotion read of PROMOTION.md, the two writes of
-// FINDING.md and the policy write and read of POLICY.md.
+// have yet: the two writes of FINDING.md and the policy write and read of
+// POLICY.md. Protocol 1.3 has the approval read of VERDICT.md, the evidence
+// read of EVIDENCE.md and the promotion read of PROMOTION.md, so the schema
+// table has them.
 var hostOnlyOps = map[string]struct {
 	role   string
 	fields []string
 }{
-	"approval":  {"reader", []string{"function", "candidate", "cursor"}},
-	"evidence":  {"reviewer", []string{"snapshot_ref", "cursor"}},
-	"promotion": {"reviewer", []string{"report_ref", "cursor"}},
 	// The writes of FINDING.md: the import of a finding record as a
 	// candidate case, and the decision of a reviewer on a candidate.
 	"import_finding": {"author", []string{"source_ref", "finding"}},

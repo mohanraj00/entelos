@@ -83,7 +83,7 @@ Thus a reference that no proposal has, and a proposal with no verdict, both give
 
 ## Wire protocol
 
-The decision record and the approval schemas do not change, so the stable approval vectors keep their bytes. The refusal code is new. The `approval` read is a Host operation. The sidecar wire protocol does not have it yet.
+The decision record and the approval schemas do not change, so the stable approval vectors keep their bytes. The refusal code is new. The `approval` read is a Host operation. Protocol 1.3 has it on the wire (#213).
 
 ## Limits
 

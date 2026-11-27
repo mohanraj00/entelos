@@ -77,6 +77,17 @@
     "status": "ok",
     "result": {}
    },
+   "valid": true
+  },
+  {
+   "name": "success-version-1.4",
+   "def": "success",
+   "value": {
+    "protocol": "1.4",
+    "request_id": "r-1",
+    "status": "ok",
+    "result": {}
+   },
    "valid": false
   },
   {
@@ -129,6 +140,21 @@
    "def": "failure",
    "value": {
     "protocol": "1.3",
+    "request_id": "r-1",
+    "status": "invalid_request",
+    "diagnostic": {
+     "code": "invalid_request",
+     "stage": "protocol",
+     "message": "m"
+    }
+   },
+   "valid": true
+  },
+  {
+   "name": "failure-version-1.4",
+   "def": "failure",
+   "value": {
+    "protocol": "1.4",
     "request_id": "r-1",
     "status": "invalid_request",
     "diagnostic": {

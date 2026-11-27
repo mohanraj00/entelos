@@ -44,7 +44,8 @@ func TestProtocolSchemasAgreeWithTheHostTable(t *testing.T) {
 	paths, _ := filepath.Glob(filepath.Join("..", "protocol", "schema", "*.schema.json"))
 	approval, _ := filepath.Glob(filepath.Join("..", "protocol", "approval", "schema", "*.schema.json"))
 	latest, _ := filepath.Glob(filepath.Join("..", "protocol", "approval", "schema", "1.2", "*.schema.json"))
-	approval = append(approval, latest...)
+	content, _ := filepath.Glob(filepath.Join("..", "protocol", "approval", "schema", "1.3", "*.schema.json"))
+	approval = append(append(approval, latest...), content...)
 	files := Object{}
 	for _, path := range append(paths, approval...) {
 		raw, err := os.ReadFile(path)

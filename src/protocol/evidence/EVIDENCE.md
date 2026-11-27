@@ -2,7 +2,7 @@
 
 This file specifies the admission evidence that an external producer gives for a proposal. It is the first part of issue [#104](https://github.com/mohanraj00/entelos/issues/104), and issue [#148](https://github.com/mohanraj00/entelos/issues/148) tracks it.
 
-Status: **implemented in the evidence read**. Approval API 1.2 retains and returns the producer document. The Go lifecycle Host applies these admission rules in the Host-only `evidence` read ([below](#the-evidence-read)). `propose`, an accept `decide` and `activate` of a content proposal also apply them ([CONTENT.md](../content/CONTENT.md#evidence)). For a CEL bundle proposal, `propose` does not apply them yet. The schema and the vectors in this directory are the contract. The vectors have expected values that a person wrote from this text. No candidate output made them. [`check_spec.py`](check_spec.py) checks the vectors against the schema and the rules of this file. It does not run a Host.
+Status: **implemented in the evidence read**. Approval API 1.2 retains and returns the producer document. The Go lifecycle Host applies these admission rules in the `evidence` read ([below](#the-evidence-read)). `propose`, an accept `decide` and `activate` of a content proposal also apply them ([CONTENT.md](../content/CONTENT.md#evidence)). For a CEL bundle proposal, `propose` does not apply them yet. The schema and the vectors in this directory are the contract. The vectors have expected values that a person wrote from this text. No candidate output made them. [`check_spec.py`](check_spec.py) checks the vectors against the schema and the rules of this file. It does not run a Host.
 
 ## Terms
 
@@ -200,11 +200,11 @@ The seam test [`tests/test_groundgate_seam.py`](../../../tests/test_groundgate_s
 
 Approval API [1.2](../approval/APPROVAL.md#evidence-attachment-in-12) (#161) accepts one optional document in the `evidence` field of `propose`. The snapshot retains the document. Entelos keeps the producer's digests and claims in that document. The producer retains the receipts and sources.
 
-For a content proposal, the Host applies the admission rules before it writes a snapshot. A refusal leaves the store root as it was. The Host-only evidence read applies the rules to a retained document and derives the policy inputs.
+For a content proposal, the Host applies the admission rules before it writes a snapshot. A refusal leaves the store root as it was. The evidence read applies the rules to a retained document and derives the policy inputs.
 
 ### The evidence read
 
-The Go lifecycle Host has the Host-only read `evidence` (#104). The wire protocol does not have it yet.
+The Go lifecycle Host has the read `evidence` (#104). Protocol 1.3 has it on the wire (#213).
 
 Role: `reviewer`, as `proposal`. Body: `{"snapshot_ref": string, "cursor"?: string}`. The snapshot must be in the host scope, as for `proposal`.
 
@@ -248,7 +248,7 @@ The checker applies the same rules as the Host. Agreement of the checker and the
 
 ## Limits
 
-- The Host retains and returns an attachment through approval API 1.2. For a CEL bundle proposal, only the Host-only `evidence` read applies the admission rules. `propose` refuses a refused document only for a content proposal. Only the `evidence` read gives the policy inputs, and the wire protocol has no evidence read. A passing format check does not show Host admission of evidence.
+- The Host retains and returns an attachment through approval API 1.2. For a CEL bundle proposal, only the `evidence` read applies the admission rules. `propose` refuses a refused document only for a content proposal. Only the `evidence` read gives the policy inputs. Protocol 1.3 has the read on the wire, and versions 1.0 to 1.2 do not. A passing format check does not show Host admission of evidence.
 - No approval policy of the Host reads the policy inputs yet. The policy verdict of [POLICY.md](../policy/POLICY.md) (proposed) is the place for that.
 - Entelos cannot check a digest, a span, an outcome, a code or a review, because it does not read the receipts or the sources. The policy inputs are statements of the producer.
 - Entelos does not check that an attached object agrees with its digest.

@@ -22,6 +22,12 @@ This file lists the changes for each snapshot tag. A tag is a stable snapshot to
 - A stable lifecycle build identity (#214): [Decision 0005](docs/decisions/0005-build-identity.md) and [RUNNER.md](src/lifecycle-core/RUNNER.md#lifecycle-build). The identity now covers only the names and bytes of the core Go source files. An upgrade of Go or `git` alone keeps the identity.
   - Each new execution receipt records the Go and Git versions in the new field `host_tools`. The Host does not compare them.
   - Effect on a store: reports and receipts with the old identity stay readable, but the new Host refuses their use with `implementation_unavailable`. Run `qualify`, `decide` and `activate` again (with `supersedes`), then `load`. Exact replay of an old receipt needs the original build.
+- Wire protocol 1.3 carries the content workflow on the socket and on the HTTP binding (#213). See [PROTOCOL.md](src/protocol/PROTOCOL.md#version-13).
+  - The 1.3 schemas add `propose.candidate`, `activate.applicability`, the content fields of the `proposal` and `resolve` results, and the reads `evidence`, `promotion` and `approval`. Versions 1.0 to 1.2 refuse the new fields and reads with `invalid_request` at the protocol stage.
+  - Pinned stable files change by the rule for the first unsupported minor version: the envelope accepts `1.3`, and the cases `higher-minor`, `minor-4` and the 1.4 envelope cases now use `1.4`. The pin adds `src/protocol/approval/schema/1.3/` and the vector file `session-content.json`.
+  - In 1.3, a CEL bundle body without `function`, `base_snapshot` or `bundle` gets `invalid_request` from the Host at the stage `lifecycle`, not from the schema at the stage `protocol`.
+  - Effect on a store: none. The Host rules and the records do not change.
+  - Limits: a 1.0 to 1.2 `resolve` or `proposal` of a content subject still gives content fields that its schema does not describe. The sidecar installs only `CELRunner`, so it cannot qualify a content candidate.
 
 ### Decisions
 

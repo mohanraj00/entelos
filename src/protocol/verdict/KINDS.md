@@ -129,7 +129,7 @@ More vectors cover verdicts on two snapshots of the same content, a verdict with
 
 ## Wire protocol
 
-The decision record gets one optional field. The approval schemas and the credentials file do not change. The refusal code `verdicts_required` is new. The sidecar and the JSONL Host read the two fields from the `--context` file, and the Go API reads them from the Host context. The sidecar has no command-line setting for them, and its wire protocol has no `approval` read yet.
+The decision record gets one optional field. The approval schemas and the credentials file do not change. The refusal code `verdicts_required` is new. The sidecar and the JSONL Host read the two fields from the `--context` file, and the Go API reads them from the Host context. The sidecar has no command-line setting for them. Its wire protocol has the `approval` read from version 1.3 (#213).
 
 ## Limits
 
