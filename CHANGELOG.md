@@ -12,6 +12,11 @@ This file lists the changes for each snapshot tag. A tag is a stable snapshot to
   - The signed record field `record_kind` accepts the new value `suspension`. A verifier of an earlier version refuses such a signed record with `invalid_signed_record`, rule `schema`.
   - The wire protocol and the pinned stable surfaces do not change. The sidecar still has no publisher setting.
   - Limits: a suspension before the signing key has no suspension record, and the record does not copy the `reason` of the event.
+- A time limit for the publisher call, and a recovery of a stale lock file of the root ref (#212). See [ACTIVATION.md](src/protocol/activation/ACTIVATION.md#stale-lock-of-the-root-ref).
+  - The Go interface `Publisher` changes: `Publish` now takes a `context.Context` as its first parameter. The context has the deadline of the call. The default limit is 10 seconds, and the new function `Host.SetPublishTimeout` sets another limit. At the limit, the result is the new code `publish_timeout` with the stage `publish`, the store commits nothing, and the store lock is free. To update a publisher, add the parameter and stop the work when the context is done.
+  - The new function `GitStore.RecoverRootLock` and the new command `entelos-unlock --repo <store.git> [--check]` examine the lock file of the root ref and remove a stale one. A `git` process that stops with SIGKILL during a write leaves this file, and each later write then fails with `store_error`. The recovery refuses with the new code `update_in_progress` while an update is in progress. It does not change the root ref.
+  - Effect on a store: the Git store makes the empty file `lifecycle-root-update.flock` in the repository at its first write. Each update of the root ref takes a shared `flock` lock on it. The records and the root do not change, and no migration is necessary. On a file system that does not support `flock`, a write takes no lock on the marker file, and the recovery refuses with `store_error`.
+  - Limits: the recovery sees only a Host of this version or later on the same operating system kernel, and it needs a Unix system. The Host does not stop a publisher that ignores its context.
 
 ### Decisions
 

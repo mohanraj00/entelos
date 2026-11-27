@@ -1,6 +1,7 @@
 package lifecycle
 
 import (
+	"context"
 	"crypto/rand"
 	"fmt"
 )
@@ -9,7 +10,7 @@ import (
 // and each signed suspension record offline, and prints some of its fields.
 type printPublisher struct{ keys *KeySet }
 
-func (p printPublisher) Publish(record, signed []byte) error {
+func (p printPublisher) Publish(ctx context.Context, record, signed []byte) error {
 	// The record kind selects the rules. Each verifier refuses the other
 	// kind with unexpected_record_kind.
 	result, err := VerifySuspension(signed, p.keys)
