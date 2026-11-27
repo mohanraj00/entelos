@@ -4,7 +4,14 @@ This file lists the changes for each snapshot tag. A tag is a stable snapshot to
 
 ## Unreleased
 
-No change yet.
+### Reference code
+
+- A published record for a suspension (#211): [ACTIVATION.md](src/protocol/activation/ACTIVATION.md#suspension-record), a schema and 25 hand-written vector cases. The new record kind `suspension` names the scope, the subject, the interval, the targets, the actor and the event reference of one `suspend` event. A Host with a signing key writes and signs the record in the `suspend` write. `VerifySuspension` checks a signed suspension record offline. `VerifyActivation` refuses a suspension record with `unexpected_record_kind`, and the signature covers the record kind.
+  - The publisher now also gets the suspension record, before the commit of a `suspend` write. A refusal gives `publish_refused` and stores nothing, and a retry of the same request gives the same bytes. A Host with a publisher refuses a `suspend` with `publish_unsigned` or `publish_unsupported` in the cases where it refuses an `activate`. A publisher that accepts only activation records must refuse a record with the `record_kind` `suspension`.
+  - Effect on a store: the new record kind is `suspension`, and the new state field is `suspensions`. A signing Host writes two more records for each `suspend` write: the suspension record and its signed record. A store gets the field at its first signed suspension. A Host without a signing key writes the same bytes as before. No migration is necessary.
+  - The signed record field `record_kind` accepts the new value `suspension`. A verifier of an earlier version refuses such a signed record with `invalid_signed_record`, rule `schema`.
+  - The wire protocol and the pinned stable surfaces do not change. The sidecar still has no publisher setting.
+  - Limits: a suspension before the signing key has no suspension record, and the record does not copy the `reason` of the event.
 
 ## v0.7.0 (2026-11-26)
 

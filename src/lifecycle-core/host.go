@@ -100,8 +100,9 @@ type Host struct {
 	// signer signs each decision and event record that the Host writes.
 	// Nil writes no signed record. SetSigner installs it.
 	signer *Signer
-	// publisher gives each signed activation record to a consumer before
-	// the commit. Nil publishes nothing. SetPublisher installs it.
+	// publisher gives each signed activation record and each signed
+	// suspension record to a consumer before the commit. Nil publishes
+	// nothing. SetPublisher installs it.
 	publisher Publisher
 }
 
@@ -266,12 +267,13 @@ func (h *Host) Handle(request any) (result any, err error) {
 	if Reads[op] {
 		return h.readOperation(op, q), nil
 	}
-	// A consumer cannot verify an activation record without a signature.
-	if op == "activate" && h.publisher != nil && h.signer == nil {
+	// A consumer cannot verify a published record without a signature.
+	_, publishes := publishedRecords[op]
+	if publishes && h.publisher != nil && h.signer == nil {
 		return nil, NewFault("publish_unsigned", "the Host has a publisher and no signing key", "publish")
 	}
 	// Only a store that runs the commit steps publishes after it owns the root.
-	if _, ok := h.Store.(stepStore); op == "activate" && h.publisher != nil && !ok {
+	if _, ok := h.Store.(stepStore); publishes && h.publisher != nil && !ok {
 		return nil, NewFault("publish_unsupported", "the store does not run a step before the commit", "publish")
 	}
 	_, hasRevision := q["expected_revision"]
@@ -301,9 +303,7 @@ func (h *Host) Handle(request any) (result any, err error) {
 		prepareDecisionStream(v)
 		value = h.apply(v, op, q)
 		h.signStaged(v)
-		if op == "activate" {
-			h.publish(v, value)
-		}
+		h.publish(v, op, value)
 		return value, nil
 	})
 	if err != nil {
@@ -1276,7 +1276,9 @@ func (h *Host) apply(v *View, op string, q Object) any {
 	case "suspend":
 		target := h.target(q)
 		event := merge(target, Object{"kind": "suspend", "targets": item(q, "targets"), "actor": actor, "reason": item(q, "reason")})
-		return h.appendEvent(v, event, key)
+		out := h.appendEvent(v, event, key)
+		h.putSuspension(v, event, text(out["event_ref"]), key)
+		return out
 	case "load":
 		selection := h.resolve(v, item(q, "function"), item(q, "date"))
 		snapshot := h.scoped(v, selection["snapshot_ref"], "snapshot")

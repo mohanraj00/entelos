@@ -44,6 +44,8 @@ DECISION=dict(WINDOW,format='entelos.record/1',snapshot_ref=ref('snapshot'),repo
               reason='the report passed',disposition='accept',runner_policy='example-runner',decided_at='2026-11-15T10:00:00Z')
 EVENT=dict(WINDOW,format='entelos.record/1',kind='enable',snapshot_ref=ref('snapshot'),report_ref=ref('report'),
            decision_ref=ref('decision'),targets=[],actor='reviewer-a',event_id='activate-1')
+# A suspension record of ACTIVATION.md. Its target is an invented event reference.
+SUSPENSION=dict(WINDOW,format='entelos.record/1',event_ref=ref('suspend event'),request_key='suspend-1',targets=[ref('event')],actor='reviewer-a')
 
 def signed(kind,raw,name,scope='demo',function='record.visible'):
     """The signed record of the record bytes, with the test key of the name."""
@@ -61,6 +63,7 @@ def no(code,rule=None):
 def build():
     approval=signed('decision',canonical(DECISION),'a')
     activation=signed('event',canonical(EVENT),'a')
+    suspension=signed('suspension',canonical(SUSPENSION),'a')
     def edit(base,**fields):
         doc=copy.deepcopy(base);doc.update(fields)
         return {k:v for k,v in doc.items() if v is not None}
@@ -85,6 +88,7 @@ def build():
     cases=[
         ('valid-approval','current',approval,ok(approval)),
         ('valid-activation','current',activation,ok(activation)),
+        ('valid-suspension','current',suspension,ok(suspension)),
         ('valid-long-scope','current',signed('decision',canonical(dict(DECISION,scope='s'*300)),'a',scope='s'*300),
          ok(signed('decision',canonical(dict(DECISION,scope='s'*300)),'a',scope='s'*300))),
         ('empty-scope','current',edit(approval,scope=''),no('invalid_signed_record','schema')),
@@ -94,6 +98,9 @@ def build():
         ('changed-record-and-ref','current',edit(activation,record=b64(later),record_ref=record_ref('event',later)),no('signature_invalid')),
         ('changed-signature','current',edit(activation,signature=b64(bytes(flipped))),no('signature_invalid')),
         ('changed-kind','current',edit(approval,record_kind='event',record_ref=record_ref('event',as_event)),no('signature_invalid')),
+        # The signature covers the record kind, so a suspension record is not an activation record.
+        ('suspension-as-activation','current',edit(suspension,record_kind='activation',record_ref=record_ref('activation',canonical(SUSPENSION))),
+         no('signature_invalid')),
         ('changed-scope','current',edit(approval,scope='other'),no('record_mismatch','binding')),
         ('changed-function','current',edit(approval,function='record.hidden'),no('record_mismatch','binding')),
         # Keys.
@@ -146,7 +153,7 @@ def build():
     return {'format_version':1,
             'note':'Test data. The seeds are public. Never use these keys outside the vectors.',
             'keys':{name:{'seed':b64(SEEDS[name]),'public_key':b64(PUBLIC[name]),'key_id':KEY_ID[name]} for name in sorted(SEEDS)},
-            'records':{'decision':DECISION,'event':EVENT},
+            'records':{'decision':DECISION,'event':EVENT,'suspension':SUSPENSION},
             'key_sets':sets,
             'cases':[{'name':n,'key_set':k,'signed':s,'expect':e} for n,k,s,e in cases]}
 

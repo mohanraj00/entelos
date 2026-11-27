@@ -95,6 +95,7 @@ experimental github.com/mohanraj00/entelos/src/lifecycle-core func StepDecisionI
 experimental github.com/mohanraj00/entelos/src/lifecycle-core func StepRequestRef(req StepRequest) (string, error)
 experimental github.com/mohanraj00/entelos/src/lifecycle-core func VerifyActivation(signed []byte, keys *KeySet) (Object, error)
 experimental github.com/mohanraj00/entelos/src/lifecycle-core func VerifySigned(raw []byte, keys *KeySet) (Object, error)
+experimental github.com/mohanraj00/entelos/src/lifecycle-core func VerifySuspension(signed []byte, keys *KeySet) (Object, error)
 stable github.com/mohanraj00/entelos/src/lifecycle-core type Array = []any
 stable github.com/mohanraj00/entelos/src/lifecycle-core type CELRunner struct { Runtime Runtime }
 stable github.com/mohanraj00/entelos/src/lifecycle-core type CELRuntime struct { Binary, Work string }

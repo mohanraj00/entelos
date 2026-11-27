@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Check the activation record vectors without a Host.
+"""Check the activation record and suspension record vectors without a Host.
 
-The checker applies the mapping and the rules of ACTIVATION.md to the
-vectors. A pass shows that the vectors, the schema and the rules agree. It
+The checker applies the mappings and the rules of ACTIVATION.md to the
+vectors. A pass shows that the vectors, the schemas and the rules agree. It
 does not show that a Host agrees.
 """
 import argparse
@@ -22,6 +22,7 @@ sys.path.insert(0,str(HERE.parent))
 from test_protocol import SchemaError, validate  # noqa: E402
 
 SCHEMA=json.loads((HERE/'schema'/'activation.schema.json').read_text())
+SUSPENSION_SCHEMA=json.loads((HERE/'schema'/'suspension.schema.json').read_text())
 SPEC=(HERE/'ACTIVATION.md').read_text()
 RECORD_FORMAT='entelos.record/1'
 
@@ -48,9 +49,9 @@ def parse(text):
     except (ValueError,Duplicate):return None
 
 
-def table_terms(text):
-    """The rule names and the codes in the rules table of ACTIVATION.md."""
-    section=text.split('## Rules',1)[1].split('\n## ',1)[0]
+def table_terms(text,heading='## Rules'):
+    """The rule names and the codes in one rules table of ACTIVATION.md."""
+    section=text.split('\n'+heading+'\n',1)[1].split('\n## ',1)[0]
     rules=set(re.findall(r'rule `([a-z_]+)`',section))
     codes=set(re.findall(r'\| `([a-z_]+)`(?:, rule|\s*\|)',section))
     return rules,codes
@@ -73,14 +74,23 @@ def mapping(records,event_ref,request_key):
     return out
 
 
-def unknown(value,schema,path):
+def suspension_mapping(records,event_ref,request_key):
+    """The suspension record of ACTIVATION.md for one event, or None."""
+    event=records['event']
+    if event.get('kind')!='suspend':return None
+    return {'format':RECORD_FORMAT,'scope':event['scope'],'function':event['function'],'event_ref':event_ref,'request_key':request_key,
+            'from':event['from'],'until':event['until'],'targets':event['targets'],'actor':event['actor']}
+
+
+def unknown(value,schema,path,defs=None):
     """The path of the first member name that the schema does not define, in text order, or None."""
-    if '$ref' in schema:return unknown(value,SCHEMA['$defs'][schema['$ref'][len('#/$defs/'):]],path)
+    defs=SCHEMA['$defs'] if defs is None else defs
+    if '$ref' in schema:return unknown(value,defs[schema['$ref'][len('#/$defs/'):]],path,defs)
     if isinstance(value,dict) and schema.get('type')=='object' and schema.get('additionalProperties') is False:
         for k,v in value.items():
             where=path+'.'+k if path else k
             if k not in schema['properties']:return where
-            found=unknown(v,schema['properties'][k],where)
+            found=unknown(v,schema['properties'][k],where,defs)
             if found:return found
     return None
 
@@ -108,7 +118,28 @@ def judge(record_kind,text):
     return {'valid':True}
 
 
-def run(doc):
+def judge_suspension(record_kind,text):
+    """Apply the suspension rules of ACTIVATION.md in their order. Return the result in the vector shape."""
+    def bad(rule,**extra):return dict({'valid':False,'code':'invalid_suspension','rule':rule},**extra)
+    if record_kind!='suspension':return {'valid':False,'code':'unexpected_record_kind'}
+    doc=parse(text)
+    if not isinstance(doc,dict):return bad('json')
+    if doc.get('format')!=RECORD_FORMAT:return {'valid':False,'code':'unsupported_record_format'}
+    field=unknown(doc,SUSPENSION_SCHEMA,'',SUSPENSION_SCHEMA['$defs'])
+    if field:return bad('unknown_field',field=field)
+    try:validate(SUSPENSION_SCHEMA,doc,'suspension',SUSPENSION_SCHEMA['$defs'])
+    except SchemaError:return bad('schema')
+    if not (real_date(doc['from']) and real_date(doc['until']) and doc['from']<doc['until']):return bad('interval')
+    return {'valid':True}
+
+
+# One profile for each published record kind: the mapping, the rules and the heading of the rules table.
+ACTIVATION={'kind':'activation','mapping':mapping,'judge':judge,'heading':'## Rules','file':'activation-cases.json'}
+SUSPENSION={'kind':'suspension','mapping':suspension_mapping,'judge':judge_suspension,'heading':'### Suspension rules','file':'suspension-cases.json'}
+
+
+def run(doc,profile=ACTIVATION):
+    mapping,judge,kind=profile['mapping'],profile['judge'],profile['kind']
     errors=[];names=set();rules_seen=set();codes_seen=set()
     if doc.get('format_version')!=1:errors.append('format_version must be 1')
     for case in doc['mappings']+doc['records']:
@@ -118,15 +149,15 @@ def run(doc):
         got=mapping(case['records'],case['event_ref'],case['request_key'])
         want=None if case['expect']=={'none':True} else case['expect']
         if got!=want:errors.append(case['name']+': mapping gives '+json.dumps(got,sort_keys=True))
-        if want is not None and judge('activation',json.dumps(want))!={'valid':True}:
-            errors.append(case['name']+': the expected record is not valid: '+json.dumps(judge('activation',json.dumps(want))))
+        if want is not None and judge(kind,json.dumps(want))!={'valid':True}:
+            errors.append(case['name']+': the expected record is not valid: '+json.dumps(judge(kind,json.dumps(want))))
     for case in doc['records']:
         got=judge(case['record_kind'],case['record'])
         if got!=case['expect']:errors.append(case['name']+': got '+json.dumps(got,sort_keys=True))
         if not got['valid']:
             codes_seen.add(got['code'])
             if 'rule' in got:rules_seen.add(got['rule'])
-    rules,codes=table_terms(SPEC)
+    rules,codes=table_terms(SPEC,profile['heading'])
     for r in sorted(rules-rules_seen):errors.append('no record case for rule '+r)
     for c in sorted(codes-codes_seen):errors.append('no record case for code '+c)
     return errors
@@ -150,13 +181,42 @@ def self_test(doc):
     return ['self-test: no error for '+m for m in missed],len(tests)
 
 
+def suspension_self_test(doc):
+    """Change a copy of the suspension vectors. The checker must report each change."""
+    def case(d,n):return next(c for c in d['mappings']+d['records'] if c['name']==n)
+    def run_s(d):return run(d,SUSPENSION)
+    def change_actor(d):case(d,'suspend-content-subject')['expect']['actor']='someone-else'
+    def copy_reason(d):case(d,'suspend-content-subject')['expect']['reason']='stop'
+    def drop_target(d):case(d,'suspend-two-targets-no-key')['expect']['targets'].pop()
+    def enable_has_record(d):
+        c=case(d,'enable-has-no-record');c['expect']=suspension_mapping({'event':dict(c['records']['event'],kind='suspend')},c['event_ref'],c['request_key'])
+    def accept_activation_kind(d):case(d,'record-kind-activation')['expect']={'valid':True}
+    def accept_activation_record(d):case(d,'activation-record-as-suspension')['expect']={'valid':True}
+    def accept_no_targets(d):case(d,'schema-no-targets')['expect']={'valid':True}
+    def change_rule(d):case(d,'interval-reversed')['expect']['rule']='schema'
+    def drop_rule_case(d):d['records']=[c for c in d['records'] if c['expect'].get('rule')!='interval']
+    def drop_kind_cases(d):d['records']=[c for c in d['records'] if c['expect'].get('code')!='unexpected_record_kind']
+    def wrong_field(d):case(d,'unknown-reason-field')['expect']['field']='actor'
+    missed=[]
+    tests=(change_actor,copy_reason,drop_target,enable_has_record,accept_activation_kind,accept_activation_record,accept_no_targets,change_rule,
+           drop_rule_case,drop_kind_cases,wrong_field)
+    for f in tests:
+        d=copy.deepcopy(doc);f(d)
+        if not run_s(d):missed.append(f.__name__)
+    return ['self-test: no error for suspension '+m for m in missed],len(tests)
+
+
 def main():
     p=argparse.ArgumentParser(description=__doc__);p.parse_args()
-    doc=json.loads((HERE/'vectors'/'activation-cases.json').read_text())
+    doc=json.loads((HERE/'vectors'/ACTIVATION['file']).read_text())
+    suspension=json.loads((HERE/'vectors'/SUSPENSION['file']).read_text())
     missed,changes=self_test(doc)
-    errors=run(doc)+missed
-    print(json.dumps({'passed':not errors,'mappings':len(doc['mappings']),'records':len(doc['records']),'self_test_changes':changes,'errors':errors,
-                      'scope':'Activation record vectors: the mapping from stored records, the record schema, rule order and refusal codes. No Host ran.'},indent=1))
+    suspension_missed,suspension_changes=suspension_self_test(suspension)
+    errors=run(doc)+missed+['suspension: '+e for e in run(suspension,SUSPENSION)]+suspension_missed
+    print(json.dumps({'passed':not errors,'mappings':len(doc['mappings']),'records':len(doc['records']),'self_test_changes':changes,
+                      'suspension_mappings':len(suspension['mappings']),'suspension_records':len(suspension['records']),
+                      'suspension_self_test_changes':suspension_changes,'errors':errors,
+                      'scope':'Activation record and suspension record vectors: the mapping from stored records, the record schemas, rule order and refusal codes. No Host ran.'},indent=1))
     return 1 if errors else 0
 
 

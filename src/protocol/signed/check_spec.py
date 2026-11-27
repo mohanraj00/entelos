@@ -113,7 +113,7 @@ def judge(doc,key_set):
     try:return verify(doc,key_set)
     except Refusal as r:return r.result
 
-REQUIRED=('valid-approval','valid-activation','changed-record','unknown-key','revoked-key','format-major-2','record-format-major-2')
+REQUIRED=('valid-approval','valid-activation','valid-suspension','suspension-as-activation','changed-record','unknown-key','revoked-key','format-major-2','record-format-major-2')
 
 def run(doc):
     errors=[];names=set();codes_seen=set();pairs_seen=set()

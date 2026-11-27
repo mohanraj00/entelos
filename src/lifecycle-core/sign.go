@@ -41,9 +41,9 @@ const (
 )
 
 // signedKinds are the record kinds that the Host signs: an approval record
-// is a decision, an activation is an event, and the record of
-// ACTIVATION.md is an activation.
-var signedKinds = map[string]bool{"decision": true, "event": true, activationKind: true}
+// is a decision, an activation is an event, and the records of
+// ACTIVATION.md are an activation and a suspension.
+var signedKinds = map[string]bool{"decision": true, "event": true, activationKind: true, suspensionKind: true}
 
 var (
 	keySetFormatPattern = regexp.MustCompile(`^entelos\.keyset/([1-9][0-9]{0,8})$`)
@@ -180,13 +180,14 @@ func (s *Signer) sign(scope, function, kind string, record []byte) Object {
 }
 
 // SetSigner installs the signing key of the Host. The Host then signs each
-// decision, event and activation record that it writes. Nil removes the
-// key. A Host that As gives has the signer of its source at that time.
+// decision, event, activation and suspension record that it writes. Nil
+// removes the key. A Host that As gives has the signer of its source at
+// that time.
 func (h *Host) SetSigner(s *Signer) { h.signer = s }
 
-// signStaged signs each decision, event and activation record that this
-// transaction staged. The state maps each record reference to its signed
-// record. A record that has a signed record keeps it.
+// signStaged signs each decision, event, activation and suspension record
+// that this transaction staged. The state maps each record reference to
+// its signed record. A record that has a signed record keeps it.
 func (h *Host) signStaged(v *View) {
 	if h.signer == nil {
 		return
@@ -222,7 +223,7 @@ func (h *Host) signStaged(v *View) {
 		// Refuse the write. A record without its signed record, or with a
 		// signed record that no transport can give, is not acceptable.
 		if len(raw) > maxSignedRecord {
-			fail("record_too_large", "the record has "+strconv.Itoa(len(raw))+" bytes; a signing Host accepts a decision, event or activation record of "+
+			fail("record_too_large", "the record has "+strconv.Itoa(len(raw))+" bytes; a signing Host accepts a decision, event, activation or suspension record of "+
 				strconv.Itoa(maxSignedRecord)+" bytes maximum", "signature")
 		}
 		record := must(Decode(raw))

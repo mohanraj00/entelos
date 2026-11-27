@@ -562,6 +562,26 @@
    }
   },
   {
+   "name": "record-kind-suspension",
+   "record_kind": "suspension",
+   "record": "{\"format\":\"entelos.record/1\",\"scope\":\"lending\",\"function\":\"content:loan-rules/region-a\",\"event_ref\":\"sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff\",\"request_key\":\"suspend-1\",\"from\":\"2026-02-01\",\"until\":\"2027-01-01\",\"targets\":[\"sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee\"],\"actor\":\"reviewer-1\"}",
+   "expect": {
+    "valid": false,
+    "code": "unexpected_record_kind"
+   }
+  },
+  {
+   "name": "suspension-record-as-activation",
+   "record_kind": "activation",
+   "record": "{\"format\":\"entelos.record/1\",\"scope\":\"lending\",\"function\":\"content:loan-rules/region-a\",\"event_ref\":\"sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff\",\"request_key\":\"suspend-1\",\"from\":\"2026-02-01\",\"until\":\"2027-01-01\",\"targets\":[\"sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee\"],\"actor\":\"reviewer-1\"}",
+   "expect": {
+    "valid": false,
+    "code": "invalid_activation",
+    "rule": "unknown_field",
+    "field": "actor"
+   }
+  },
+  {
    "name": "json-not-an-object",
    "record_kind": "activation",
    "record": "[]",
