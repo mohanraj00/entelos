@@ -4,6 +4,10 @@ This file lists the changes for each snapshot tag. A tag is a stable snapshot to
 
 ## Unreleased
 
+## v0.8.0 (2026-11-27)
+
+This snapshot writes the policy verdict in the Go Host (#210) and adds a signed record for a suspension (#211). It puts a time limit on the publisher call and adds a recovery of a stale lock file of the root ref (#212). Wire protocol 1.3 carries the content workflow on the socket and on the HTTP binding (#213). The lifecycle build identity now covers only the core Go source files, and receipts record the Go and Git versions in `host_tools` (#214). The record format does not change. The pinned stable files change only by the rule for a new protocol minor version.
+
 ### Reference code
 
 - A published record for a suspension (#211): [ACTIVATION.md](src/protocol/activation/ACTIVATION.md#suspension-record), a schema and 25 hand-written vector cases. The new record kind `suspension` names the scope, the subject, the interval, the targets, the actor and the event reference of one `suspend` event. A Host with a signing key writes and signs the record in the `suspend` write. `VerifySuspension` checks a signed suspension record offline. `VerifyActivation` refuses a suspension record with `unexpected_record_kind`, and the signature covers the record kind.
@@ -36,6 +40,29 @@ This file lists the changes for each snapshot tag. A tag is a stable snapshot to
 ### Contents
 
 - The approval dashboard moves from the mugham UI kit `v0.3.0` to `v0.7.0`. It sends the action key of the kit as the `request_key` of `decide`, so a retry of one verdict records it only once.
+
+### Upgrade steps
+
+These steps upgrade a Host and a store from v0.7.0.
+
+1. The record format stays `entelos.record/1`, and the wire protocol versions 1.0 to 1.2 do not change. A v0.7.0 store needs no migration command. No test runs a v0.7.0 store on the v0.8.0 Host, so make a copy of the bare repository before the first write.
+2. Qualify the active snapshots again (#214). The new Host refuses a report or a receipt with the old lifecycle build identity with `implementation_unavailable`. Run `qualify`, `decide` and `activate` again, with `supersedes`. Then run `load`. Keep the v0.7.0 build with the store for exact replay of an old receipt. After this step, an upgrade of Go or `git` alone keeps the identity. [Decision 0005](docs/decisions/0005-build-identity.md) has the status `accepted`.
+3. If you implement the Go interface `Publisher`, add a `context.Context` as the first parameter of `Publish` (#212). Stop the work when the context is done. The default limit is 10 seconds. To set another limit, call `Host.SetPublishTimeout`. At the limit, the result is `publish_timeout`, and the store commits nothing.
+4. If a publisher accepts only activation records, make it refuse a record with the `record_kind` `suspension` (#211). A Host with a signing key and a publisher now sends a suspension record in each `suspend` write. A verifier of an earlier version refuses a signed suspension record with `invalid_signed_record`, rule `schema`. Update the verifier before you read such records.
+5. If a write fails with `store_error` after a `git` process stopped during a write, run `entelos-unlock --repo <store.git> --check` (#212). Then run it without `--check` to remove a stale lock file of the root ref. The command refuses with `update_in_progress` while an update is in progress.
+6. To use the content workflow on the wire, send protocol version `1.3` (#213). A client that tests the first unsupported minor version must now use `1.4`. A 1.3 CEL bundle request without `function`, `base_snapshot` or `bundle` gets `invalid_request` at the stage `lifecycle`, not at the stage `protocol`.
+7. To let a policy decide, give the Host context fields `policy_functions` and `requirements`, and call the Host-only write `policy_decide` (#210). The default requirement is `human`. For a `human` head, `activate` refuses an activation that only a policy verdict supports with `human_verdict_required`. A Host context without these fields keeps the earlier behavior.
+
+### Compatibility and limits
+
+- [STABILITY.md](docs/STABILITY.md) gives the promise of v0.4.0, and v0.8.0 keeps it. Protocol 1.3 is a new stable surface. The envelope accepts `1.3`, and the pinned cases of the first unsupported minor version use `1.4`. The policy verdict, the suspension record, `Publisher`, `entelos-unlock` and `host_tools` are experimental.
+- Decisions 0004 and 0005 have the status `accepted`.
+- An existing decision or activation event does not change, and each stored record keeps its bytes. Exact replay of a receipt with the old build identity needs the original build.
+- The wire protocol does not have `policy_decide` and `policy_replay`. The sidecar has no publisher setting, and it installs only `CELRunner`, so it cannot qualify a content candidate.
+- A 1.0 to 1.2 `resolve` or `proposal` of a content subject gives content fields that its schema does not describe ([#231](https://github.com/mohanraj00/entelos/issues/231)).
+- The recovery of a stale root lock sees only a Host of this version or later on the same operating system kernel, and it needs a Unix system. The Host does not stop a publisher that ignores its context. The Git store makes its update marker file with the mode `0644`. Another local account that can open the file can hold its lock and stop each write ([#229](https://github.com/mohanraj00/entelos/issues/229)).
+- A suspension before the signing key has no suspension record, and the record does not copy the `reason` of the event.
+- The limits of v0.7.0 that this list does not change stay. The callable profile is string and bool input and bool output. The full conformance vectors of the verdict binding have no issue.
 
 ## v0.7.0 (2026-11-26)
 
