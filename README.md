@@ -101,6 +101,7 @@ The answer is in `data.result.actual.value` only if both fields are `ok`. The st
 | Call or author a rule from your own service | [Call a rule from your service](#call-a-rule-from-your-service), [CONTRACTS.md](docs/CONTRACTS.md), then [INTEGRATION.md](docs/INTEGRATION.md) |
 | Compare Entelos with a tool you know | [OPA](docs/compare/opa.md), [Cedar](docs/compare/cedar.md), [GoRules ZEN](docs/compare/zen.md), [feature flags](docs/compare/flags.md), [ordinary code and Git](docs/compare/code-git.md) |
 | Know what Entelos does not do | [Limits](#limits) and [SUPPORT.md](docs/SUPPORT.md) |
+| Find the request, result and errors of one operation | [Operations](docs/operations/README.md) |
 | Run all the checks | [Run all checks](#run-all-checks) |
 | Ask a question or report a problem | [GitHub issues](https://github.com/mohanraj00/entelos/issues) |
 
