@@ -7,9 +7,12 @@ package lifecycle
 //	ENTELOS_STORE_VOLUME=<dir> go test -run TestGitStoreVolume -timeout 0 .
 //
 // ENTELOS_STORE_VOLUME_MAX sets the count of receipts (default 20000).
-// ENTELOS_STORE_VOLUME_MAX_BYTES stops the growth when the store directory
-// is larger (default 4 GiB). The store grows fast, so check the free disk
-// space first.
+// ENTELOS_STORE_VOLUME_MAX_BYTES is the size cap of the store directory
+// (default 4 GiB). The receipt phase stops at half of the cap. The rate and
+// contention phases use the other half: they check the size every 10
+// attempts and stop at the cap. The size can pass the cap by the writes of
+// at most 10 attempts. The store grows fast, so check the free disk space
+// first.
 
 import (
 	"encoding/json"
@@ -143,11 +146,13 @@ func TestGitStoreVolume(t *testing.T) {
 		maxBytes = n
 	}
 	stopped := ""
+	halted := ""
 	lastRetry := 0.0
 	if err := os.MkdirAll(out, 0o755); err != nil {
 		t.Fatal(err)
 	}
 	path := filepath.Join(out, "store.git")
+	over := func() bool { return dirSize(t, path) > maxBytes }
 	if _, err := os.Stat(path); err == nil {
 		t.Fatalf("%s exists; use a new output directory", path)
 	}
@@ -214,8 +219,8 @@ func TestGitStoreVolume(t *testing.T) {
 		}
 		segment = segment[:0]
 		for r.written < mark {
-			if r.written%100 == 0 && dirSize(t, path) > maxBytes {
-				stopped = fmt.Sprintf("the store passed %d bytes at %d receipts", maxBytes, r.written)
+			if r.written%100 == 0 && dirSize(t, path) > maxBytes/2 {
+				stopped = fmt.Sprintf("the store passed %d bytes at %d receipts", maxBytes/2, r.written)
 				break
 			}
 			fields := invokeFields(r.written)
@@ -277,12 +282,19 @@ func TestGitStoreVolume(t *testing.T) {
 	}
 	var rates []rate
 	for _, offered := range []int{5, 10, 20, 50, 100} {
+		if halted != "" {
+			break
+		}
 		window := 5 * time.Second
 		interval := time.Second / time.Duration(offered)
 		var lat []time.Duration
 		start := time.Now()
 		next := start
 		for time.Since(start) < window {
+			if len(lat)%10 == 0 && over() {
+				halted = fmt.Sprintf("the store passed %d bytes in the rate phase at %d per second", maxBytes, offered)
+				break
+			}
 			if wait := time.Until(next); wait > 0 {
 				time.Sleep(wait)
 			}
@@ -311,6 +323,9 @@ func TestGitStoreVolume(t *testing.T) {
 	}
 	var contentions []contention
 	for _, writers := range []int{2, 4} {
+		if halted != "" {
+			break
+		}
 		const each = 100
 		var mu sync.Mutex
 		c := contention{Writers: writers}
@@ -328,6 +343,15 @@ func TestGitStoreVolume(t *testing.T) {
 				h := r.host("caller", "caller", handle)
 				for i := 0; i < each; i++ {
 					for {
+						mu.Lock()
+						if halted == "" && c.Attempts%10 == 0 && over() {
+							halted = fmt.Sprintf("the store passed %d bytes in the contention phase with %d writers", maxBytes, writers)
+						}
+						stop := halted != ""
+						mu.Unlock()
+						if stop {
+							return
+						}
 						view, err := handle.Read(nil)
 						if err != nil {
 							t.Error(err)
@@ -368,7 +392,7 @@ func TestGitStoreVolume(t *testing.T) {
 	raw, _ := json.Marshal(map[string]any{
 		"go": runtime.Version(), "goos": runtime.GOOS, "goarch": runtime.GOARCH, "cpus": runtime.NumCPU(),
 		"checkpoints": checkpoints, "rates": rates, "contention": contentions,
-		"final_store_bytes": dirSize(t, path), "stopped": stopped, "max_bytes": maxBytes,
+		"final_store_bytes": dirSize(t, path), "stopped": stopped, "halted": halted, "max_bytes": maxBytes,
 	})
 	if err := os.WriteFile(filepath.Join(out, "summary.json"), raw, 0o644); err != nil {
 		t.Fatal(err)
