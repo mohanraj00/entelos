@@ -8,6 +8,27 @@ This file lists the changes for each snapshot tag. A tag is a stable snapshot to
 
 - The update marker of the Git store is private to the user of the Host (#229). The Git store makes `lifecycle-root-update.flock` with the mode `0600`, sets this mode on a marker of v0.8.0 at the first write or recovery, and refuses a marker of a different user with `invalid_store`. Each Host of one store, and `entelos-unlock`, must run as the same user. See [the permissions of the Git store](src/lifecycle-core/README.md#permissions-of-the-git-store).
 
+### Compatibility and limits
+
+- A compatibility promise for 1.x releases (#234): [STABILITY.md](docs/STABILITY.md#compatibility-promise-for-1x-releases). It states, for the Go API, the wire protocol and the record format, what a 1.x release can add, what it cannot change, and the deprecation path. Two fixture files that the v0.8.0 code made check the promise for a store of v0.8.0: `src/lifecycle-core/testdata/migration/v080-store.json` and `v080-wire.json`.
+
+### Upgrade steps
+
+These steps are for a store and a caller of v0.8.0.
+
+1. Stop each Host of the store. Keep the v0.8.0 build if you need an exact replay of a v0.8.0 receipt.
+2. Install the new build. The store needs no migration. `entelos-migrate --repo <store.git> --dry-run` gives the action `current`, and it writes nothing.
+3. Run each Host of one store, and `entelos-unlock`, as one operating system user (#229). The Git store sets the mode `0600` on the update marker at the first write or recovery. It refuses a marker of a different user with `invalid_store`.
+4. Start the Hosts. Each read works without a change: `inspect`, `record`, `receipt`, `proposals`, `proposal`, `resolve`, `approval` and `evidence`. Each stored record keeps its bytes and its Git object ID.
+5. Verify the signed records with the same key set. `entelos-verify` and `VerifySigned` accept each signed record of v0.8.0.
+6. Qualify again. The lifecycle build of this release is different from that of v0.8.0, because #229 changed a core Go source file ([RUNNER.md](src/lifecycle-core/RUNNER.md#lifecycle-build)). The Host refuses `decide`, `activate`, `load`, `invoke` and `replay` for a report or a receipt of the v0.8.0 build with `implementation_unavailable`, until you do these steps:
+   - For each active function: run `qualify` with the snapshot and its plan, accept the new report with `decide`, and run `activate` with `supersedes` for the old activation. Then run `load`.
+   - For each open proposal that has a report: run `qualify` again, then `decide` on the new report. The list `proposals` shows such a proposal with the refusal `implementation_unavailable`.
+7. If a client reads a content subject with `resolve` or `proposal`, make it send the protocol version `1.3` (#231). The versions 1.0 to 1.2 now refuse such a read with `unsupported_subject` at the stage `protocol`. For a CEL subject, a client of the versions 1.0 to 1.3 needs no change.
+8. Each stable Go declaration of v0.8.0 stays, so a caller of the Go API needs no change.
+
+`TestV080StoreWithALaterLifecycleBuild` does the steps 4 to 6 on the store fixture. The fixtures have no content subject, so they do not show step 7.
+
 ## v0.8.0 (2026-11-27)
 
 This snapshot writes the policy verdict in the Go Host (#210) and adds a signed record for a suspension (#211). It puts a time limit on the publisher call and adds a recovery of a stale lock file of the root ref (#212). Wire protocol 1.3 carries the content workflow on the socket and on the HTTP binding (#213). The lifecycle build identity now covers only the core Go source files, and receipts record the Go and Git versions in `host_tools` (#214). The record format does not change. The pinned stable files change only by the rule for a new protocol minor version.
