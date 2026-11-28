@@ -42,6 +42,8 @@ In the v0.6.0 snapshot, the read `decision_events` of version 1.2 gives a page w
 
 Version 1.3 is first in the v0.8.0 snapshot (#213). Its schemas add `propose.candidate`, `activate.applicability`, the content fields of the `proposal` and `resolve` results, and the reads `evidence`, `promotion` and `approval`. The pin checks them, and the session vectors in `src/protocol/vectors/session-content.json`. The formats inside these fields stay experimental, as the list below says. The schemas pin only their shape on the wire.
 
+From the v1.0.0 snapshot, versions 1.0, 1.1 and 1.2 refuse a `resolve` and a `proposal` of a content subject with `unsupported_subject` at the stage `protocol` (#231). Before this change, they gave the content fields, which the schemas of these versions do not describe. Thus each `ok` result of a version agrees with the result schema of that version. The results of a CEL subject do not change. The vectors are in `src/protocol/vectors/session-legacy-content.json`. A later 1.x version keeps this rule for each earlier version that does not describe a new subject kind.
+
 The pin records the SHA-256 of each of these files. An added, removed or changed file fails the pin. The pin also checks that the envelope schema accepts exactly the protocol versions `1.0`, `1.1`, `1.2` and `1.3`, and that the Go constant `protocol.Version` is `1.0`.
 
 ### Record format
@@ -150,6 +152,8 @@ A 1.x release does not do these things:
 - Change the schemas or the vectors of an existing version in a way that changes which messages are valid or what the results are.
 - Change the value of `protocol.Version`.
 
+One result of the versions 1.0, 1.1 and 1.2 is different in v1.0.0 from v0.8.0 (#231). A `resolve` or a `proposal` of a content subject gives `unsupported_subject` at the stage `protocol`. The [wire protocol](#wire-protocol) section gives the rule and its vectors. Each 1.x release keeps this rule. If a 1.x minor version adds a subject kind, each earlier version refuses a read of that kind with `unsupported_subject`. Such a refusal changes no result that the earlier version gave before the new kind.
+
 The rule for the cases of the first unsupported minor version stays as the [promise for 0.x releases](#compatibility-promise-for-0x-releases) gives it. The text of a diagnostic message is not a part of a result, as the list of experimental surfaces says.
 
 Deprecation: a deprecated protocol version stays accepted in each 1.x release. The earliest removal is v2.0.0.
@@ -174,7 +178,7 @@ A 1.x release does not do these things:
 
 The read promise is not a promise for the declarations or for new records of the experimental kinds. A 1.x release can change what it writes for an experimental kind, with a CHANGELOG entry.
 
-Migration: a store of v0.8.0 needs no migration for v1.0.0. If a later 1.x release needs a migration of the state file, the CHANGELOG gives the `entelos-migrate` command. Such a migration adds commits. It does not change a record. A store of v0.3.0 still needs the [migration of the review index](../src/protocol/approval/APPROVAL.md#migration-from-v030).
+Migration: a store of v0.8.0 needs no migration for v1.0.0. One operating rule is new in v1.0.0 (#229): each Host of one store, and `entelos-unlock`, must run as one operating system user, because the update marker has the mode `0600`. If a later 1.x release needs a migration of the state file, the CHANGELOG gives the `entelos-migrate` command. Such a migration adds commits. It does not change a record. A store of v0.3.0 still needs the [migration of the review index](../src/protocol/approval/APPROVAL.md#migration-from-v030).
 
 Deprecation: a 1.x release does not deprecate the read of a record kind. A deprecation applies only to the write of a kind or of a field. The CHANGELOG entry names the kind or the field.
 
@@ -203,7 +207,7 @@ These tests use the fixtures, and the `go test` step of `make verify` runs them:
 - `TestV080WireAnswers` in `src/lifecycle-core/protocol/compat_v080_test.go`.
 - `TestVerifiesTheSignedRecordsOfV080` in `src/lifecycle-core/cmd/entelos-verify/compat_v080_test.go`.
 
-The fixtures have these limits. The engine and the runner are test fixtures, so the fixtures do not show the results of a CEL execution. The wire test sends the requests to the adapter in the process, not through a socket or HTTP. No fixture has a store of v0.4.0 to v0.7.0. The pin does not record the fixture files. A change of a fixture file is a change of an expectation, and the review must examine it.
+The fixtures have these limits. The engine and the runner are test fixtures, so the fixtures do not show the results of a CEL execution. The wire test sends the requests to the adapter in the process, not through a socket or HTTP. No fixture has a store of v0.4.0 to v0.7.0. No fixture has a content subject, so the fixtures do not show the refusal of #231. The pin does not record the fixture files. A change of a fixture file is a change of an expectation, and the review must examine it.
 
 ## Deprecation path
 

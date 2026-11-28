@@ -217,7 +217,7 @@ func httpStatus(code string) int {
 		return http.StatusUnauthorized
 	case "forbidden":
 		return http.StatusForbidden
-	case "invalid_request", "invalid_frame", "unsupported_version":
+	case "invalid_request", "invalid_frame", "unsupported_version", "unsupported_subject":
 		return http.StatusBadRequest
 	case "internal_error", "response_too_large":
 		return http.StatusInternalServerError

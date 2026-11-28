@@ -55,6 +55,7 @@
     "src/protocol/vectors/session-body.json": "031532c1a2262cf8f1d10f146bc4827b88cfc6474a7a490b2a1b995c6342bc92",
     "src/protocol/vectors/session-content.json": "47bbd7df6746fa53cfd8cd536c423dd96a7cae920bc2ba0989acef5fbf435223",
     "src/protocol/vectors/session-envelope.json": "eb2e91041e437173ed8e2b228f2270defe3baf29eba45fedd7fb06db13bdb861",
+    "src/protocol/vectors/session-legacy-content.json": "3dd931ec1bd5eb27d6099dda4e0c30a7b73e319bd2abc412f49b1c90da006896",
     "src/protocol/vectors/session-lifecycle.json": "ac6e4cb56caf68f0bc4b2406781d802ffc7af61e1c37091777a88a0256c30c9d",
     "src/protocol/vectors/session-stream.json": "044d13fe610428a80ed6a8ca518887cd9053dfd96e2510b96edd07ecc31dc38d",
     "src/protocol/vectors/session-supersession.json": "12d049c27880ca9c59308bc35cb12d4e41b355372d76e1a469eedf50e9f37261",

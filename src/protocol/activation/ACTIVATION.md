@@ -195,7 +195,7 @@ A lock file that stays is a stale lock file. No process owns it. Each later writ
 
 ### How the store knows that no update is in progress
 
-The repository has the file `lifecycle-root-update.flock`. It is empty, and the Git store makes it at the first write. Each update of the root ref takes a shared `flock` lock on this file. The `git` process of the update keeps the file open until it stops. The operating system releases the lock when the last process closes the file, also after SIGKILL.
+The repository has the file `lifecycle-root-update.flock`. It is empty, and the Git store makes it at the first write. It is a regular file of the user of the Host, with the mode `0600`. A `flock` lock needs no write permission. Thus a file that a different account can open lets that account hold the exclusive lock and stop each write. At each use, the Git store sets a different mode to `0600`. It refuses a marker that is not a regular file of its user with `invalid_store`, and it follows no link. Each update of the root ref takes a shared `flock` lock on this file. The `git` process of the update keeps the file open until it stops. The operating system releases the lock when the last process closes the file, also after SIGKILL.
 
 The recovery takes an exclusive `flock` lock on the same file, and it does not wait. Thus the recovery gets the lock only if no Host is in an update and no `git` process of an update is alive. Then no process owns the lock file of the root ref, and the lock file is stale. While the recovery holds the exclusive lock, a new update waits for 1 second maximum and then fails with `store_error`.
 
@@ -203,7 +203,7 @@ The removal of a stale lock file does not change the root. An update moves the r
 
 ### Recovery procedure
 
-Do these steps on the system that has the repository:
+Do these steps on the system that has the repository, as the user of the Host:
 
 1. Run `entelos-unlock --repo <store.git> --check`. The command removes nothing.
 2. Read the field `lock` of the result. If it is `absent`, no lock file is there, and the store needs no recovery. Stop.
@@ -219,13 +219,14 @@ The command prints one JSON line. On success, the line has `"status":"ok"` and t
 | Code | Use |
 |---|---|
 | `update_in_progress` | An update of the root ref is in progress. The recovery removed nothing. The stage is `store`. |
-| `invalid_store` | The lock path of the root ref is not a regular file, or the repository is not there. The recovery removed nothing. |
+| `invalid_store` | The lock path of the root ref is not a regular file, the marker file is not a regular file of the current user, or the repository is not there. The recovery removed nothing. |
 
 Do not remove the lock file by hand, unless the limits below make the command unusable. A removal by hand during an update breaks the lock of that update. Its compare-and-swap is then not safe.
 
 The check has these limits:
 
 - It sees only a Host of this version or later. A Host of an earlier version takes no lock on the marker file.
+- Each Host of one store, and the recovery, must run as the same user. A Host of a different user cannot open the marker file, and its writes fail. The [permissions of the Git store](../../lifecycle-core/README.md#permissions-of-the-git-store) give the modes and the upgrade from v0.8.0.
 - It sees only the processes on the same operating system kernel. For a repository on a network file system, a Host on a different machine is not visible. Stop each Host of the store before you do the recovery.
 - It needs a Unix system with `flock`. On each other system, the Git store takes no lock on the marker file, and the recovery gives `store_error`.
 - On a file system that does not support `flock`, the Git store takes no lock on the marker file, and the recovery gives `store_error`.

@@ -31,6 +31,30 @@ Stores from v0.1.0 are not migrated. The v0.1.0 snapshot declared the records un
 
 The implementation is for modest local histories and trusted host adapters. Each receipt commits through the same root. Successful-request recovery searches first-parent history. Neither operation is a high-volume service design. Backups, retention, filesystem durability, sensitive-data access and cleanup of unreachable objects are operator responsibilities.
 
+### Git store volume
+
+I use three limits for one Git store: a store size of 1 GB, a write p95 of 1 second and a retry of the first request of 300 seconds. The supported volume is 1000 receipts for each store and one writer at about 1 write per second ([#164](https://github.com/mohanraj00/entelos/issues/164)). The limit comes from one run of `TestGitStoreVolume` in `src/lifecycle-core/volume_test.go` on commit `d7f63f3`. The run was on an Apple M4 with 10 cores, 24 GiB of memory and an APFS SSD, with macOS 27.0.1 and Go 1.27.2. Other work also ran on the machine. The 1-minute load average was 10.75 at the start and 8.74 at the end. `make check` does not run the test. It runs only when `ENTELOS_STORE_VOLUME` names an output directory.
+
+| Receipts | Store size | `state.json` | Write p50 | Write p95 | `inspect` | `decision_events` | Retry of the first request |
+|---|---|---|---|---|---|---|---|
+| 100 | 2.3 MB | 0.2 MB | 0.39 s | 0.77 s | 0.10 s | 0.11 s | 7.9 s |
+| 500 | 51 MB | 1.0 MB | 0.40 s | 0.56 s | 0.18 s | 0.16 s | 49 s |
+| 1000 | 209 MB | 2.0 MB | 0.36 s | 0.61 s | 0.37 s | 0.36 s | 194 s |
+| 2000 | 831 MB | 4.0 MB | 0.64 s | 1.27 s | 0.60 s | 0.41 s | not run |
+| 4600 | 4.37 GB | 9.3 MB | 0.70 s | 0.95 s | 0.87 s | 0.45 s | not run |
+
+Each write commits the full `state.json`, so the store size grows with the square of the receipt count. The retry of an earlier request walks the first-parent history, so its time grows with the history. The run skipped the retry after 1000 receipts, because it took more than 60 seconds. It stopped the receipt phase when the store passed 4 GiB.
+
+At 4600 receipts, one writer got about 1.2 writes per second at each offered rate from 5 to 100 per second. A higher offered rate gives a backlog, not more writes. Concurrent writers give fewer writes: 2 writers got 0.75 writes per second, and 4 writers got 0.45 writes per second. Of the 1541 attempts of the 4 writers, 1141 got `stale_revision` and retried.
+
+The retry limit is the first limit that a store passes. From 500 to 1000 receipts, the retry time grew from 49 s to 194 s, about 4 times. If it grows with the square of the receipt count, it passes 300 seconds at about 1250 receipts. That estimate is not a measurement. The store size passes 1 GB between 2000 and 4600 receipts, and the write p95 passed 1 second at 2000 receipts. The supported volume of 1000 receipts keeps a margin of about 20 percent below the first limit.
+
+Above 1000 receipts, writes and reads still give correct results, but the store size and the retry time grow fast. Do these steps:
+
+1. Start a new store for a new history, and keep the old store for replay.
+2. Make retries only for recent requests, or accept a longer retry time.
+3. For a larger history, use an adapter for a different store. A second store adapter is follow-up work ([#246](https://github.com/mohanraj00/entelos/issues/246)).
+
 Fault injection checks process-level publication and lost replies. It does not establish power-loss durability, consensus across clones or production DB portability. Worker state is a preparation acknowledgement, not live deployment health. Tasks have manual claims/checkpoints/fences, without lease expiry or a scheduler. Activation expiry compares the invocation date with the activation interval. The Host reads no clock, and there is no clock synchronization policy beyond the local clock of the executor that sets the date. A full numeric allowance model, structured wire types, custom capabilities, a production DB, remote synchronization and automatic learning are outside the maintained example scope.
 
 For a contribution, keep it tied to a concrete workflow and state what is tested. An adapter is not supported merely because it implements a similarly named method. New guarantees require independent expectations and relevant conformance checks.
