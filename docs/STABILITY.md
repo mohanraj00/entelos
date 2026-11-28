@@ -42,6 +42,8 @@ In the v0.6.0 snapshot, the read `decision_events` of version 1.2 gives a page w
 
 Version 1.3 is first in the v0.8.0 snapshot (#213). Its schemas add `propose.candidate`, `activate.applicability`, the content fields of the `proposal` and `resolve` results, and the reads `evidence`, `promotion` and `approval`. The pin checks them, and the session vectors in `src/protocol/vectors/session-content.json`. The formats inside these fields stay experimental, as the list below says. The schemas pin only their shape on the wire.
 
+From the v1.0.0 snapshot, versions 1.0, 1.1 and 1.2 refuse a `resolve` and a `proposal` of a content subject with `unsupported_subject` at the stage `protocol` (#231). Before this change, they gave the content fields, which the schemas of these versions do not describe. Thus each `ok` result of a version agrees with the result schema of that version. The results of a CEL subject do not change. The vectors are in `src/protocol/vectors/session-legacy-content.json`. A later 1.x version keeps this rule for each earlier version that does not describe a new subject kind.
+
 The pin records the SHA-256 of each of these files. An added, removed or changed file fails the pin. The pin also checks that the envelope schema accepts exactly the protocol versions `1.0`, `1.1`, `1.2` and `1.3`, and that the Go constant `protocol.Version` is `1.0`.
 
 ### Record format

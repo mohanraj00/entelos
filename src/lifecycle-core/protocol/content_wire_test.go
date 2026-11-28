@@ -166,6 +166,13 @@ func TestContentWorkflowOnTheWire(t *testing.T) {
 				!sameValue(selected["candidate"], lifecycle.Object{"kind": "content", "ref": ref}) {
 				t.Fatalf("resolve %s", lifecycle.Encode(selected))
 			}
+			// Before 1.3, the schemas do not describe a content result (#231).
+			for _, version := range []string{"1.0", "1.1", "1.2"} {
+				refusal(call("reviewer", version, "resolve", lifecycle.Object{"function": wireSubject, "date": "2026-11-27"}), "unsupported_subject", "protocol")
+			}
+			for _, version := range []string{"1.1", "1.2"} {
+				refusal(call("reviewer", version, "proposal", lifecycle.Object{"snapshot_ref": snapshot}), "unsupported_subject", "protocol")
+			}
 		})
 	}
 }

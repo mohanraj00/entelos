@@ -81,7 +81,7 @@ Issue [#156](https://github.com/mohanraj00/entelos/issues/156) adds HTTP as a se
 | `ok` | 200 |
 | `unauthenticated` | 401, with `WWW-Authenticate: Bearer` |
 | `forbidden` | 403 |
-| `invalid_request`, `invalid_frame`, `unsupported_version` | 400; 413 for a body over the bound; 415 for another media type |
+| `invalid_request`, `invalid_frame`, `unsupported_version`, `unsupported_subject` | 400; 413 for a body over the bound; 415 for another media type |
 | `internal_error`, `response_too_large` | 500 |
 | Each other refusal | 409 |
 

@@ -445,3 +445,11 @@ func TestHTTPRefusalHasTheContractHeaders(t *testing.T) {
 		t.Fatalf("got %d %v", resp.StatusCode, h)
 	}
 }
+
+// A content subject in an older version is a client error, as APPROVAL.md
+// states (#231).
+func TestHTTPStatusOfUnsupportedSubject(t *testing.T) {
+	if got := httpStatus("unsupported_subject"); got != http.StatusBadRequest {
+		t.Fatalf("HTTP status %d, want 400", got)
+	}
+}
