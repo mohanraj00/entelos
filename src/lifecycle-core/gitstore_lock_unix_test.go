@@ -7,7 +7,10 @@ import (
 	"context"
 	"errors"
 	"os"
+	"os/exec"
+	"path/filepath"
 	"strings"
+	"syscall"
 	"testing"
 )
 
@@ -115,6 +118,147 @@ func TestRecoverAStaleRootLock(t *testing.T) {
 	}
 	if len(fast.records) != 1 || len(publisher.records) != 1 || !bytes.Equal(fast.records[0], publisher.records[0]) {
 		t.Fatal("the retry gave other bytes")
+	}
+}
+
+// The update marker is a file of the current user with the mode 0600, so
+// no other account can open it and hold its lock. The store repairs a
+// wider mode, and it refuses a marker that is not a regular file.
+func TestUpdateMarkerIsPrivate(t *testing.T) {
+	store, err := OpenGitStore(t.TempDir() + "/store")
+	if err != nil {
+		t.Fatal(err)
+	}
+	w, _ := raceWorld(t, store)
+	w.publisher = nil
+	write := func(text string) error {
+		_, err := w.do("reviewer", "reviewer", w.runner, "source", with(window, Object{"text": text, "reason": text, "supersedes": Array{}}))
+		return err
+	}
+	marker := store.Path + "/" + updateMarker
+	mode := func() os.FileMode {
+		info, err := os.Lstat(marker)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return info.Mode()
+	}
+	if err := write("first rule"); err != nil || mode() != 0o600 {
+		t.Fatalf("first write: %v, marker mode %v", err, mode())
+	}
+	if err := os.Chmod(marker, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := write("second rule"); err != nil || mode() != 0o600 {
+		t.Fatalf("a write with a wide marker: %v, marker mode %v", err, mode())
+	}
+	if err := os.Chmod(marker, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := store.RecoverRootLock(false); err != nil || mode() != 0o600 {
+		t.Fatalf("a recovery with a wide marker: %v, marker mode %v", err, mode())
+	}
+	// A link is not a marker. The store follows no link.
+	if err := os.Remove(marker); err != nil {
+		t.Fatal(err)
+	}
+	target := t.TempDir() + "/other"
+	if err := os.WriteFile(target, nil, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(target, marker); err != nil {
+		t.Fatal(err)
+	}
+	before := must(store.Read(nil)).Cursor
+	if err := write("third rule"); faultCode(t, err) != "store_error" || must(store.Read(nil)).Cursor != before {
+		t.Fatalf("a write with a link as the marker: %v", err)
+	}
+	if _, err := store.RecoverRootLock(true); faultCode(t, err) != "store_error" {
+		t.Fatalf("a recovery with a link as the marker: %v", err)
+	}
+	if info, err := os.Stat(target); err != nil || info.Mode().Perm() != 0o644 {
+		t.Fatalf("the store changed the target of the link: %v", err)
+	}
+	// A directory is not a marker.
+	if err := os.Remove(marker); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Mkdir(marker, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if err := write("fourth rule"); err == nil || must(store.Read(nil)).Cursor != before {
+		t.Fatalf("a write with a directory as the marker: %v", err)
+	}
+	// A FIFO is not a marker, and the open does not wait for a writer.
+	if err := os.Remove(marker); err != nil {
+		t.Fatal(err)
+	}
+	if err := syscall.Mkfifo(marker, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := write("fifth rule"); faultCode(t, err) != "invalid_store" || must(store.Read(nil)).Cursor != before {
+		t.Fatalf("a write with a FIFO as the marker: %v", err)
+	}
+}
+
+// A different account cannot open the marker, and the store refuses a
+// marker of a different account. The test needs two accounts, and only
+// root can act as a second account. README.md gives the same check by hand.
+func TestUpdateMarkerRefusesAnotherAccount(t *testing.T) {
+	if os.Geteuid() != 0 {
+		t.Skip("only root can act as another account")
+	}
+	const other = 65534
+	// The other account can go into the store directory, as with the
+	// mode 0755. Thus only the mode of the marker stops the open.
+	dir := t.TempDir()
+	for _, d := range []string{filepath.Dir(dir), dir} {
+		if err := os.Chmod(d, 0o755); err != nil {
+			t.Fatal(err)
+		}
+	}
+	store, err := OpenGitStore(dir + "/store")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chmod(store.Path, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	marker := store.Path + "/" + updateMarker
+	openAsOther := func() error {
+		cmd := exec.Command("sh", "-c", `exec 3<"$1"`, "sh", marker)
+		cmd.SysProcAttr = &syscall.SysProcAttr{Credential: &syscall.Credential{Uid: other, Gid: other}}
+		return cmd.Run()
+	}
+	// A marker of an earlier version has the mode 0644. The other account
+	// can open it, so the path is not the cause of the later refusal.
+	if err := os.WriteFile(marker, nil, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chmod(marker, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := openAsOther(); err != nil {
+		t.Fatalf("the other account cannot open a marker with the mode 0644: %v", err)
+	}
+	if _, err := store.RecoverRootLock(false); err != nil {
+		t.Fatal(err)
+	}
+	if err := openAsOther(); err == nil {
+		t.Fatal("the other account opened the marker after a use by the store")
+	}
+	// A marker of the other account is not usable, also with a wide mode.
+	if err := os.Chown(marker, other, other); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chmod(marker, 0o666); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := store.RecoverRootLock(false); faultCode(t, err) != "invalid_store" {
+		t.Fatalf("a recovery with a marker of another account: %v", err)
+	}
+	if info, err := os.Stat(marker); err != nil || info.Mode().Perm() != 0o666 {
+		t.Fatalf("the store changed a marker of another account: %v", err)
 	}
 }
 
