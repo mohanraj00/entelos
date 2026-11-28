@@ -1,6 +1,6 @@
 # `policy_decide`
 
-This page describes the v0.8.0 release.
+This page describes the v1.0.0 release.
 
 Write the policy verdict on one report: accept, refuse or route to a person.
 

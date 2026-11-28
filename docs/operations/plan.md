@@ -1,6 +1,6 @@
 # `plan`
 
-This page describes the v0.8.0 release.
+This page describes the v1.0.0 release.
 
 Record the independent test cases for one source. Qualification runs a candidate against these cases.
 

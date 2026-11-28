@@ -1,6 +1,6 @@
 # Operations
 
-This page describes the v0.8.0 release.
+This page describes the v1.0.0 release.
 
 Each page gives one operation: its purpose, a tested example, the result and the errors.
 

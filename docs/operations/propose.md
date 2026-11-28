@@ -1,6 +1,6 @@
 # `propose`
 
-This page describes the v0.8.0 release.
+This page describes the v1.0.0 release.
 
 Propose a candidate for a function and a date interval: a CEL bundle, or a content manifest in 1.3. The Host records a snapshot.
 

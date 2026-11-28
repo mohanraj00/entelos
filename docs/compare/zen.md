@@ -1,6 +1,6 @@
 # Comparison with GoRules ZEN
 
-This page describes the v0.8.0 release.
+This page describes the v1.0.0 release.
 
 This page compares the [GoRules ZEN Engine](https://github.com/gorules/zen) and the commercial GoRules BRMS with the Entelos decision path. It uses the `record.visible` record filter from the [quickstart demo](../../examples/quickstart/README.md). It writes the same rule, the correction and the replay question as ZEN decision graphs. It covers decision graphs, versions and the simulator.
 

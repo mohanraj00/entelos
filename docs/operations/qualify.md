@@ -1,6 +1,6 @@
 # `qualify`
 
-This page describes the v0.8.0 release.
+This page describes the v1.0.0 release.
 
 Run the plan cases against one snapshot and record a report with the status `passed`, `failed` or `unresolved`.
 

@@ -1,6 +1,6 @@
 # `suspend`
 
-This page describes the v0.8.0 release.
+This page describes the v1.0.0 release.
 
 Stop the active events of a function for a date interval, with no replacement. A read in that interval then has no answer.
 

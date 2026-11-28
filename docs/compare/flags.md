@@ -1,6 +1,6 @@
 # Comparison: feature-flag services
 
-This page describes the v0.8.0 release.
+This page describes the v1.0.0 release.
 
 This page compares the Entelos decision path with two feature-flag services. It uses the `record.visible` record filter from the [quickstart demo](../../examples/quickstart/README.md). It writes the same rule, the correction and the replay question in each service where the service can.
 

@@ -1,6 +1,6 @@
 # `restate`
 
-This page describes the v0.8.0 release.
+This page describes the v1.0.0 release.
 
 Give a new, separate answer for the input and date of an earlier receipt, at a later cursor.
 

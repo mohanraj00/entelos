@@ -1,6 +1,6 @@
 # Integration boundary
 
-This page describes the v0.8.0 release.
+This page describes the v1.0.0 release.
 
 The host installs actor/role/scope/function/runner/worker context. A request cannot grant itself authority. The local context-file adapter demonstrates that split; another process owned by the same OS user can bypass it. Production authentication, authorization and redaction are application work.
 

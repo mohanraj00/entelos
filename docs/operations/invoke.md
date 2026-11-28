@@ -1,6 +1,6 @@
 # `invoke`
 
-This page describes the v0.8.0 release.
+This page describes the v1.0.0 release.
 
 Answer one call with the loaded bundle and record a receipt. The caller sends the bundle reference from `describe`.
 

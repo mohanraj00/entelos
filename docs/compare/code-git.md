@@ -1,6 +1,6 @@
 # Compare: ordinary code plus Git
 
-This page describes the v0.8.0 release.
+This page describes the v1.0.0 release.
 
 This page compares the Entelos decision path with a plain function in a service, its Git history and its tests. It uses the `record.visible` record filter from the [quickstart demo](../../examples/quickstart/README.md). The facts on this page are from 2026-10-30.
 

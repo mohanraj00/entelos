@@ -1,6 +1,6 @@
 # `observe`
 
-This page describes the v0.8.0 release.
+This page describes the v1.0.0 release.
 
 Report a problem with one receipt. The Host opens a correction task.
 

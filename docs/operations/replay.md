@@ -1,6 +1,6 @@
 # `replay`
 
-This page describes the v0.8.0 release.
+This page describes the v1.0.0 release.
 
 Run an earlier receipt again on its own snapshot and build. The answer must match the original answer.
 

@@ -1,6 +1,6 @@
 # Fact correction versus rule restatement
 
-This page describes the v0.8.0 release.
+This page describes the v1.0.0 release.
 
 A recorded answer can be wrong for two different reasons:
 

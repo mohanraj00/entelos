@@ -7,7 +7,7 @@
 
 # Entelos
 
-This README describes the v0.8.0 release. [STATUS.md](docs/STATUS.md) gives the current work.
+This README describes the v1.0.0 release. [STATUS.md](docs/STATUS.md) gives the current work.
 
 Entelos is an approval workflow for versioned content. An author proposes a change. The application qualifies the exact content. A reviewer approves it. An activation makes it effective on a date. Each version keeps its proposal, checks and approval. Rule hosting is one use: each answer has a receipt with its exact rule version and inputs. Replay uses that earlier version. A correction adds a new record and preserves the earlier answer.
 
@@ -153,7 +153,7 @@ This is local reference code. [STABILITY.md](docs/STABILITY.md) names the stable
 
 CI ingress verification is simulated. No webhook is authenticated and no pipeline is launched. Its raw-event audit sidecar is not atomic with the Git receipt. The application supplies source truth, independent expectations, admission/learning policy, authentication, retention and side effects. See [INTEGRATION.md](docs/INTEGRATION.md), [SUPPORT.md](docs/SUPPORT.md) and [SECURITY.md](SECURITY.md).
 
-The `inspect` and `record` reads refuse records from another scope with `scope_mismatch`. A shared store prevents `inspect` in each scope. The `record` read can still show if a reference exists. Use one store for each scope. A `request_key` with a NUL byte gives `store_error` on the Git store. It leaves unused objects but does not change the state. The in-memory store accepts this key. The v1.0 security review of the Go path and the sidecar is open work ([#236](https://github.com/mohanraj00/entelos/issues/236)).
+The `inspect` and `record` reads refuse records from another scope with `scope_mismatch`. A shared store prevents `inspect` in each scope. The `record` read can still show if a reference exists. Use one store for each scope. A `request_key` with a NUL byte gives `store_error` on the Git store. It leaves unused objects but does not change the state. The in-memory store accepts this key. [SECURITY_REVIEW_1.0.md](docs/SECURITY_REVIEW_1.0.md) records the v1.0 security review of the Go path and the sidecar. It found no P0, P1 or P2 item. [#251](https://github.com/mohanraj00/entelos/issues/251) tracks its one P3 item.
 
 The sidecar serves local Unix sockets and requires a token for each request. A credentials file can give each reviewer a separate actor and roles. The HTTP approval binding accepts signed claims or local static tokens. It needs a TLS front proxy for remote use. An ingested receipt is the statement of the executor: the Host does not run the rule again, and a content reference is not a signature. The Host signs approval and event records only when the embedding application installs a signing key. The browser executor keeps its receipt log in one browser profile. The example does not test storage eviction, private windows or more than one tab. The application must supply the expected module reference and the pin from a source that it trusts.
 

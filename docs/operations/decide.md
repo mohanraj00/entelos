@@ -1,6 +1,6 @@
 # `decide`
 
-This page describes the v0.8.0 release.
+This page describes the v1.0.0 release.
 
 Record the verdict of a reviewer on one qualification report. Version 1.1 adds the `reject` disposition.
 

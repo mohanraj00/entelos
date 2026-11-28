@@ -1,6 +1,6 @@
 # `decide_case`
 
-This page describes the v0.8.0 release.
+This page describes the v1.0.0 release.
 
 Accept or reject a candidate test case. `plan` takes only an accepted case.
 
