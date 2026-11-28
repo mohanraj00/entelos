@@ -19,7 +19,7 @@ This module is the lifecycle core. It is the only lifecycle Host. The specs, the
 - `migrate.go` and `cmd/entelos-migrate`: the migration of a v0.3.0 store to the review index of approval API 1.1 ([#159](https://github.com/mohanraj00/entelos/issues/159)). The arguments are `--repo` and the optional `--dry-run`. See [APPROVAL.md](../protocol/approval/APPROVAL.md#migration-from-v030).
 - `sign.go`: signed approval and activation records ([#155](https://github.com/mohanraj00/entelos/issues/155)). After `Host.SetSigner`, the Host signs each `decision`, `event`, `activation` and `suspension` record that it writes. `VerifySigned` checks a signed record against a public key set, with no service. [SIGNED.md](../protocol/signed/SIGNED.md) is the spec. `lifecycle-core` and `entelos-sidecar` take the key file with `--signing-key`.
 - `activation.go`: the activation record of [ACTIVATION.md](../protocol/activation/ACTIVATION.md) ([#105](https://github.com/mohanraj00/entelos/issues/105)). A signing Host writes one with each `enable` event. `VerifyActivation` checks a signed activation record offline. `Host.SetPublisher` installs an optional `Publisher`, which gets the record before the commit and can refuse it. The file also has the suspension record of the same spec ([#211](https://github.com/mohanraj00/entelos/issues/211)). A signing Host writes one with each `suspend` event, the `Publisher` gets it with the same rules, and `VerifySuspension` checks it offline. A publisher call has a time limit ([#212](https://github.com/mohanraj00/entelos/issues/212)): `Publish` gets a context with a deadline, and `Host.SetPublishTimeout` sets the limit.
-- `gitstore_lock_unix.go` and `cmd/entelos-unlock`: the recovery of a stale lock file of the root ref ([#212](https://github.com/mohanraj00/entelos/issues/212)). `GitStore.RecoverRootLock` removes the lock file only when no update of the root ref is in progress. [ACTIVATION.md](../protocol/activation/ACTIVATION.md#stale-lock-of-the-root-ref) gives the procedure.
+- `gitstore_lock_unix.go` and `cmd/entelos-unlock`: the recovery of a stale lock file of the root ref ([#212](https://github.com/mohanraj00/entelos/issues/212)). `GitStore.RecoverRootLock` removes the lock file only when no update of the root ref is in progress. [ACTIVATION.md](../protocol/activation/ACTIVATION.md#stale-lock-of-the-root-ref) gives the procedure. [Permissions of the Git store](#permissions-of-the-git-store) gives the required modes of the store directory and the marker.
 - Supersession ([#129](https://github.com/mohanraj00/entelos/issues/129)): `activate` takes `supersedes`, and `host.go` removes a superseded update from the selection at each date from the start of its successor. [SUPERSESSION.md](../protocol/supersession/SUPERSESSION.md) is the spec.
 - `cmd/entelos-verify`: the offline check of a signed record file. The arguments are `--keys` and the file. `cmd/entelos-keygen` makes a new signing key file. Its argument is `--out`.
 - `internal/private`: the read of a secret file with mode `0600`.
@@ -50,6 +50,31 @@ The `go test` step also runs the `protocol/` tests:
 
 The `sidecar-protocol` check in `verify.py` builds `cmd/entelos-sidecar`. Then it runs `src/protocol/test_protocol.py --sidecar`, which runs each session vector file through the socket of a new sidecar process. The `sidecar-client` check runs [examples/sidecar-client](../../examples/sidecar-client/README.md).
 
+## Permissions of the Git store
+
+The Git store is a bare repository in a local directory. One operating system user owns it: the user of the Host.
+
+- The store directory: only the user of the Host has write permission for the directory and for each file in it. Use the mode `0700`, so that no other account can read the records. The Git store does not examine or change the mode of the directory. An account with write permission for the directory can change the refs and replace the marker. The Git store gives no protection from such an account.
+- The update marker `lifecycle-root-update.flock`: a regular file of the user of the Host, with the mode `0600`. The Git store makes it with this mode at the first write. At each write and each recovery, the Git store sets a different mode to `0600`. It refuses a marker of a different user, and a marker that is not a regular file, with `invalid_store`. It follows no link.
+- Each Host of one store, and `entelos-unlock`, run as the same user. A Host of a different user cannot open the marker, and its writes fail with `store_error`.
+
+The reason for the mode is the `flock` lock on the marker ([#229](https://github.com/mohanraj00/entelos/issues/229)). A `flock` lock needs no write permission. An account that can open the marker can hold the exclusive lock. Then each write fails with `store_error`, and the recovery gives `update_in_progress`.
+
+A store of v0.8.0 has a marker with the mode `0644`. The first write or recovery of a later version sets the mode `0600`, and no other step is necessary. This change has one limit: it does not close a file that is open. An account that opened the marker before the change can hold the lock until its process stops. If the writes fail as the paragraph above says while no Host is in a write, do these steps:
+
+1. Stop each Host of the store, and make sure that no `git` process of the store is alive.
+2. Remove the file `lifecycle-root-update.flock` from the repository.
+3. Start the Hosts. The next write makes a new marker with the mode `0600`.
+
+Do not remove the marker while a Host of the store runs. A Host that has the old file open and a Host that has the new file do not see the locks of each other, and the recovery can then remove a lock file that is in use.
+
+`TestUpdateMarkerIsPrivate` shows the mode of a new marker and the repair of a wide mode. `TestUpdateMarkerRefusesAnotherAccount` opens the marker as a second account. It runs only as root, because only root can act as a second account, and it skips for each other user. To do the same check by hand, run these commands. The first command shows `-rw-------` and the user of the Host. The second command fails with `Permission denied`.
+
+```sh
+ls -l <store.git>/lifecycle-root-update.flock
+sudo -u <other-account> sh -c 'exec 3< <store.git>/lifecycle-root-update.flock'
+```
+
 ## Sidecar
 
 ```sh
@@ -63,6 +88,7 @@ entelos-sidecar ... --credentials-file <path>
 - The client sends the [token prelude](../protocol/PROTOCOL.md#unix-socket-authentication) before each request. To rotate, create a new token file in the same directory, then rename it over the old file. The sidecar opens the file for each authentication check, including on existing connections. An unavailable or invalid file denies new requests. A request that has passed the token check can finish.
 - With `--credentials-file` in place of `--token-file`, each reviewer has a token of its own. The file format, the checks and the rotation are in [APPROVAL.md](../protocol/approval/APPROVAL.md). The context file then has no `actor` and no `roles`, because each request runs as the principal of its token. The sidecar also reads the approval schemas from `../approval/schema` next to `--schema`, and accepts protocol 1.1.
 - `--http-listen 127.0.0.1:<port>` adds the [HTTP binding](../protocol/approval/APPROVAL.md#http-binding) next to the socket. It needs `--credentials-file`, and one of `--issuer-file <path>` (signed claims) or `--http-local-tokens` (the static tokens of the credentials file, loopback only). The address must be loopback unless `--http-allow-remote` is given. The sidecar has no TLS, so a remote address needs a TLS front proxy. The stdout line then also has `"http":"<address>"`. `--http-static <directory>` serves the public files of that directory with `GET`, so a browser client has the same origin as the API ([static files](../protocol/approval/APPROVAL.md#static-files)).
+- [AUTH.md](cmd/entelos-sidecar/AUTH.md) gives the authentication of each operation of each protocol version on each transport. `TestSidecarAuthMatrix` checks it.
 - `--clock-file <path>` replaces the system clock with the time in that file. Use it only in tests.
 - A Go embedding that serves a listener constructs it with `protocol.NewServer(adapter, tokenFile)` or `protocol.NewCredentialServer(adapter, credentialsFile)`. This replaces construction with a `Server{Adapter: ...}` literal.
 - The socket file has mode 0600. The umask is 0177 while the sidecar makes the socket, so the mode is 0600 from the start.
