@@ -1,242 +1,35 @@
 # Current work
 
-## Name
+This page describes the state after the v0.8.0 release.
 
-The project name is Entelos, with the tagline "Entelos: grow toward the goal." On 2026-10-29, the GitHub repository changed from `mohanraj00/versioned-decision-reference` to `mohanraj00/entelos`. GitHub redirects the old URL. The Go module path and the NOTICE attribution are unchanged. On 2026-10-29, `entelos` was free on PyPI, npm and crates.io, and the .dev and .io domains were free. The GitHub user and the .com, .ai and .org domains were taken. No trademark database was searched.
+## Current release
 
-## Source reference
+The current release is `v0.8.0`, with the Go module tag `src/lifecycle-core/v0.8.0`. The [CHANGELOG](../CHANGELOG.md) gives the changes, the upgrade steps and the limits of each release.
 
-The source reference contains a primitive typed CEL callable, a local qualified Git lifecycle in Go, record-filter and PR CI examples, and an ordinary-function comparison. APIs and record formats are unstable. See [SUPPORT.md](SUPPORT.md) for the tested environment and operating limits.
+[STABILITY.md](STABILITY.md) names the stable surfaces and the experimental surfaces of this release. [SUPPORT.md](SUPPORT.md) gives the tested environment and the operating limits.
 
-Issue [#163](https://github.com/mohanraj00/entelos/issues/163) puts the approval workflow for versioned content first in the README. The [content-update example](../examples/content-update/README.md) embeds the Host with an application runner. It checks files against reviewer plan cases and the candidate manifest. It reads back a failed qualification, records human approval and checks item bytes at the dated read. The example uses an in-memory store. The shipped commands still install the CEL runner.
+## Current work
 
-## Licence
+The current work is the v1.0 release ([milestone v1.0](https://github.com/mohanraj00/entelos/milestone/9)). The open issues of the milestone own the live status:
 
-Project source uses [Apache-2.0](../LICENSE); [NOTICE](../NOTICE) retains project attribution. The [licence decision](LICENSING.md) records the maintainer choice and earlier MIT publication. Runtime/example/dependency bytes are unchanged by that change.
+- [#234](https://github.com/mohanraj00/entelos/issues/234): the v1.0 compatibility statement and the migration from v0.8.
+- [#235](https://github.com/mohanraj00/entelos/issues/235): simple, short and current docs for v1.0.
+- [#236](https://github.com/mohanraj00/entelos/issues/236): a security review of the Go path and the sidecar on the v1.0 release candidate.
 
-## Shared workflow
+The owner creates the `v1.0.0` tag after these issues close. The tag needs a separate owner approval.
 
-Purpose is in [CONSTITUTION.md](../CONSTITUTION.md), workflow in [AGENTS.md](../AGENTS.md). Codex (`AGENTS.md`), Claude Code (`CLAUDE.md`) and agy (`GEMINI.md`) share those files and the same skill source. A different harness reviews each change; see [REVIEW.md](REVIEW.md). `tools/check_project.py` checks that layout, links and source checksums.
+[BACKLOG.md](BACKLOG.md) lists the issues after v1.0.
 
-The `CI` workflow checks the project structure and source inventory on every change. For code changes only, its `standalone` job runs `verify.py` on two runners, `ubuntu-24.04` and `macos-15`. Each run uploads its compact results and command logs for 14 days. See [SUPPORT.md](SUPPORT.md) for the observed toolchain. Two passing runners do not establish broad platform support.
+## How to work here
 
-## Layout
+[CONSTITUTION.md](../CONSTITUTION.md) gives the purpose and the rules. [AGENTS.md](../AGENTS.md) gives the layout, the check command and the review rules. [REVIEW.md](REVIEW.md) gives the review requests. Codex, Claude Code and agy share these files and the same skill source.
 
-On 2026-10-29, the code moved to `src/` and `examples/`, the boundary test moved to `tests/`, and the loose reference docs moved to `docs/` and `licenses/`. `GEMINI.md` replaced `Agent.md`. Behavior did not change; the full suite must pass on the new paths.
+The `CI` workflow checks the project structure and the source inventory on each change. For code changes, its `standalone` job runs `verify.py` on `ubuntu-24.04` and `macos-15`. Two passing runners do not show broad platform support.
 
-## Next work
+## History
 
-Use [BACKLOG.md](BACKLOG.md) and the linked GitHub issues. [M6 Store-neutral core and versioned protocol](https://github.com/mohanraj00/entelos/issues/77) met its exit test on 2026-11-06. The maintainer authorized the `v0.2.0` tag on `8ace59c`. The full suite passed on `ubuntu-24.04` and `macos-15` in [CI run 42164134936](https://github.com/mohanraj00/entelos/actions/runs/42164134936) on that commit. This snapshot does not read v0.1.0 stores.
-
-[#14](https://github.com/mohanraj00/entelos/issues/14) tracks the v0.3.0 announcement candidate with a target of 2026-12-12. The candidate needs the sidecar authentication and copy-proof docs, a working Claude review, and a new security review of the Go approval and record path. Verify the exact candidate on Linux and macOS before asking the maintainer to tag it. The tag, quiet share and public post each need specific authorization.
-
-The Go review in [#136](https://github.com/mohanraj00/entelos/issues/136) found SEC-01 (P2): a malformed checkpoint could publish an unreadable root. PR #137 (merge `9db63e8`) fixed it. The Host checks the types of stored request fields, and both stores refuse state that the decoder cannot read. On 2026-11-11, the maintainer authorized the `v0.3.0` tag.
-
-On 2026-11-13, the maintainer froze the edge executor line until v1.0 ([#162](https://github.com/mohanraj00/entelos/issues/162)): the WASM build, the browser bridge, the IndexedDB log, `ingest` of executor logs and the planned gomobile package. The code and tests stay, and CI still runs them. No open issue belonged to this line. See [SUPPORT.md](SUPPORT.md#edge-executor-freeze).
-
-On 2026-11-14, the v0.4.0 section of the [CHANGELOG](../CHANGELOG.md) got its date, and the owner is to create the `v0.4.0` tag after the docs PR merges. [#126](https://github.com/mohanraj00/entelos/issues/126) and [#153](https://github.com/mohanraj00/entelos/issues/153) are closed. The Host part of #153 is [#175](https://github.com/mohanraj00/entelos/issues/175) (v0.5). [#130](https://github.com/mohanraj00/entelos/issues/130) closes after the tag. From v0.4.0, [STABILITY.md](STABILITY.md) promises the stable surfaces that the pin checks.
-
-On 2026-11-18, the v0.5.0 section of the [CHANGELOG](../CHANGELOG.md) got its date, its upgrade steps and its limits. The owner is to create the `v0.5.0` tag after the docs PR merges. The 13 issues of the snapshot are closed: #155, #161, #129, #180, #175, #106, #105, #127, #128, #163, #104, #158 and #152. v0.5.0 adds protocol 1.2 to the stable surfaces of [STABILITY.md](STABILITY.md), and each new Go declaration is experimental. No open issue tracks this work yet: a Host policy evaluation of POLICY.md with the measure inputs, the wire fields `candidate` of `propose` and `applicability` of `activate`, the full conformance vectors of the verdict binding, and a test that runs a v0.4.0 store on the v0.5.0 Host. The open issues are [#164](https://github.com/mohanraj00/entelos/issues/164), [#113](https://github.com/mohanraj00/entelos/issues/113) and [#112](https://github.com/mohanraj00/entelos/issues/112).
-
-On 2026-11-20, the v0.6.0 section of the [CHANGELOG](../CHANGELOG.md) got its date, its upgrade steps and its limits. The owner is to create the `v0.6.0` tag after the docs PR merges. The issues of the snapshot are closed: [#113](https://github.com/mohanraj00/entelos/issues/113), [#197](https://github.com/mohanraj00/entelos/issues/197), [#198](https://github.com/mohanraj00/entelos/issues/198) and [#201](https://github.com/mohanraj00/entelos/issues/201). The wire protocol, the record format and the pinned stable surfaces do not change, and each new Go declaration is experimental. The kind evidence of #113 is one local run. The test of an earlier store on this Host has no issue. See the agent step section below for the CI job and the test of the runtime.
-
-On 2026-11-26, the v0.7.0 section of the [CHANGELOG](../CHANGELOG.md) got its date, its upgrade steps and its limits. The owner is to create the `v0.7.0` tag after the docs PR merges. The issues of the snapshot are closed: [#207](https://github.com/mohanraj00/entelos/issues/207), [#208](https://github.com/mohanraj00/entelos/issues/208), [#209](https://github.com/mohanraj00/entelos/issues/209), [#215](https://github.com/mohanraj00/entelos/issues/215) and [#112](https://github.com/mohanraj00/entelos/issues/112). The wire protocol, the record format and the pinned stable surfaces do not change. The evidence format stays experimental. Decision 0004 had the status `proposed` at that tag. The maintainer accepted it on 2026-11-27 ([#222](https://github.com/mohanraj00/entelos/issues/222)). The test of an earlier store on this Host has no issue.
-
-On 2026-11-27, the v0.8.0 section of the [CHANGELOG](../CHANGELOG.md) got its date, its upgrade steps and its limits. The owner is to create the `v0.8.0` tag and the `src/lifecycle-core/v0.8.0` tag after the docs PR merges. The issues of the snapshot are closed: [#210](https://github.com/mohanraj00/entelos/issues/210), [#211](https://github.com/mohanraj00/entelos/issues/211), [#212](https://github.com/mohanraj00/entelos/issues/212), [#213](https://github.com/mohanraj00/entelos/issues/213) and [#214](https://github.com/mohanraj00/entelos/issues/214). Wire protocol 1.3 is a new stable surface, and the record format does not change. The new lifecycle build identity of #214 ([decision 0005](decisions/0005-build-identity.md), accepted) makes the Host refuse a report or a receipt of v0.7.0, so each active snapshot needs a new qualification. Two follow-ups are open in the v1.0 milestone: [#229](https://github.com/mohanraj00/entelos/issues/229) restricts the update marker of the Git store to the store owner, and [#231](https://github.com/mohanraj00/entelos/issues/231) sets a rule for a 1.0 to 1.2 `resolve` or `proposal` of a content subject. The test of an earlier store on this Host has no issue.
-
-The v0.4 milestone started with [#126](https://github.com/mohanraj00/entelos/issues/126), typed rule inputs and outputs. The spec [typed-profile-spec.md](../src/cel-lifecycle/typed-profile-spec.md) specifies the profile `cel-typed/v1`, with vectors in [conformance/typed/](../src/cel-lifecycle/conformance/typed/) (#141, `6d92fb2`). The engine implements the profile (#144, `c498611`), and `TestTypedProfileVectors` runs the typed vectors on the engine. The executor and the WASM bridge refuse a typed bundle. `TestTypedPolicyFromProposalToReplay` runs the vector `admission-record.json` (int, date and list inputs) through the lifecycle Host, from the proposal to a pinned replay of each receipt.
-
-### v0.4 approval API
-
-On 2026-11-11, a spec for [#130](https://github.com/mohanraj00/entelos/issues/130) was proposed in [APPROVAL.md](../src/protocol/approval/APPROVAL.md). It adds protocol 1.1 with `proposals`, `proposal`, a `reject` disposition for `decide`, a credentials file for each reviewer and a Host clock. The schemas and vectors are hand-written. `check_spec.py` checks their structure and clock arithmetic. The implementation PR adds 1.1 to the Go Host and the sidecar. The Go test `TestApprovalVectors` runs all vector steps against the sidecar socket (46 steps at first, 57 after #160). The implementation is in the v0.4.0 snapshot. Issue [#156](https://github.com/mohanraj00/entelos/issues/156) adds an HTTP binding with signed claims and local static tokens; the steps also run over HTTP with the same record references.
-
-Issue [#159](https://github.com/mohanraj00/entelos/issues/159) adds the command `entelos-migrate`. It builds the review index for a store from v0.3.0, so that store can get a new report, verdict or activation. The Go tests start from a synthetic store that the v0.3.0 Host made from the tag. They check that the API then lists the open proposal and accepts a verdict, that each record keeps its Git object ID, that a second run and a dry run write nothing, and each refusal code. No vector covers the migration.
-
-Issue [#160](https://github.com/mohanraj00/entelos/issues/160) adds a scope check to `record` and `inspect`. A record of another scope, or without a scope, gives `scope_mismatch`, with no record content. `inspect` gives the state only if each record at the cursor has the Host scope. The vector file `approval-scope.json` runs two Host contexts on one store on each transport. An unknown reference stays `artifact_unavailable`, so the reads still show if a reference is in the store. The scope scan of `inspect` reads the Git objects as a stream, with limits of 16 MiB for one object and 256 MiB in total. The owner accepted the two answers and the change of 1.0 and 1.1 results as a security fix.
-
-Issue [#157](https://github.com/mohanraj00/entelos/issues/157) adds an optional [approval dashboard](../examples/approval-dashboard/README.md). It uses the mugham UI kit at the tag `v0.7.0` (contract format 2, PR #227) and the HTTP binding with a local static token. The sidecar flag `--http-static` serves the page from the origin of the API, because the binding sends no CORS headers. `verify.py` runs a browser test (`approval-dashboard`): the list, the evidence view with the author of each card, one accept after the confirm step and one `duplicate_verdict` refusal. The dashboard does not read a policy verdict, so only unit cases show the policy verdict card.
-
-Issue [#161](https://github.com/mohanraj00/entelos/issues/161) adds approval API 1.2 with the page cursor and the evidence document. Pages pin a store revision and read time. The `proposal` operation returns a producer document attached by `propose`. The synthetic vectors use 250 proposals and cover five pages, a changed list, the last page and invalid cursors. Requests without pagination retain their result shape. The dashboard client is unchanged. The Host checks evidence members and JSON types before storage. The limits are 32 object or array levels and 256 KiB of encoded data. The evidence admission rules remain proposed.
-
-### Signed records
-
-Issue [#155](https://github.com/mohanraj00/entelos/issues/155) adds a signature to each approval record and each activation record. [SIGNED.md](../src/protocol/signed/SIGNED.md) is the spec. The algorithm is Ed25519 from the Go standard library, so the module has no new dependency. The signature covers the exact stored bytes of the record and its kind. The signed record names the key identifier, and a public key set gives each key the status `active`, `retired` or `revoked`. The Host signs only if the embedding host installs a signing key. `entelos-verify` checks a signed record file offline, and `entelos-keygen` makes a key file.
-
-The 47 vectors have expected values that a person wrote from the spec. `check_spec.py` judges them with a separate Ed25519 implementation in Python, which it first checks against two RFC 8032 test vectors. `TestSignedVectors` runs the same vectors on the Go verifier, and `TestSignerReproducesTheValidVectors` shows that the Go signer and the Python signer give the same bytes. `TestHostSignsApprovalAndActivationRecords` runs the Host path. Limits: a signed record has no trusted time, the key set has no signature, and a record from before the key has no signed record. The declarations are experimental.
-
-### Activation record
-
-Issue [#105](https://github.com/mohanraj00/entelos/issues/105) adds a generic activation record in [ACTIVATION.md](../src/protocol/activation/ACTIVATION.md). It is a new record kind `activation`, with the candidate, the base, the receipts, the actors, the partition, the half-open interval and the applicability values of one `enable` event. A table maps each field to the stored record that it comes from. A Host with a signing key writes and signs it in the `activate` write. The optional `Publisher` gets the record before the commit, and a refusal stores nothing. `VerifyActivation` checks the signed record offline. The 30 vector cases have expected values that a person wrote from the spec. `check_spec.py` judges them without a Host, and `TestActivationVectors` runs them on the Go mapping and rules. `ExampleHost_SetPublisher` activates a synthetic update and publishes it to a consumer that verifies it. Limits: the wire protocol and the sidecar have no publisher setting, and the record has no trusted time.
-
-Issue [#211](https://github.com/mohanraj00/entelos/issues/211) adds the suspension record to the same spec. It is a new record kind `suspension`, with the scope, the subject, the half-open interval, the targets, the actor and the event reference of one `suspend` event. A Host with a signing key writes and signs it in the `suspend` write, and the state field `suspensions` gives its reference. The `Publisher` gets the record before the commit with the rules of an activation: a refusal stores nothing, and a retry gives the same bytes. `VerifySuspension` checks the signed record offline. A suspension record never passes as an activation record: the rule tables refuse the other record kind, and the signature covers the record kind. The 25 vector cases have expected values that a person wrote from the spec. `check_spec.py` judges them without a Host, and `TestSuspensionVectors` runs them on the Go mapping and rules. Limits: a suspension before the signing key has no suspension record, and the record does not copy the `reason` of the event.
-
-Issue [#212](https://github.com/mohanraj00/entelos/issues/212) gives the publisher call a time limit and adds a recovery of a stale lock file of the root ref. `Publish` gets a context with a deadline. The default limit is 10 seconds, and `Host.SetPublishTimeout` sets another limit. At the limit, the result is `publish_timeout`, the store commits nothing, and the store lock is free. Each update of the root ref of the Git store holds a shared `flock` lock on a marker file, and its `git` process keeps the file open. `GitStore.RecoverRootLock` and the command `entelos-unlock` take the exclusive lock, so they remove the lock file only when no update is in progress. `TestRecoverAStaleRootLock` stops the `git` process with SIGKILL during a publish, runs the recovery, and shows that the root did not change and that the next write succeeds. Limits: the check sees only a Host of this version or later on the same kernel, it needs a Unix system, and the Host does not stop a publisher that ignores its context.
-
-Issue [#213](https://github.com/mohanraj00/entelos/issues/213) adds wire protocol 1.3 ([PROTOCOL.md](../src/protocol/PROTOCOL.md#version-13)). It carries the content workflow on the socket and on the HTTP binding: `propose.candidate`, `activate.applicability`, the content fields of the `proposal` and `resolve` results, and the reads `evidence`, `promotion` and `approval`. Versions 1.0 to 1.2 refuse them at the protocol stage. The 19 steps of `session-content.json` run through the sidecar and in the Go tests. `TestContentWorkflowOnTheWire` installs a stub content runner and runs one content proposal from `source` to `resolve` through the socket and through the HTTP binding. Limits: a 1.0 to 1.2 `resolve` or `proposal` of a content subject gives fields that its schema does not describe, and the sidecar cannot qualify a content candidate.
-
-### Supersession
-
-Issue [#129](https://github.com/mohanraj00/entelos/issues/129) lets a new activation supersede an earlier one. [SUPERSESSION.md](../src/protocol/supersession/SUPERSESSION.md) is the spec. `activate` takes the optional field `supersedes`, and the activation record names the superseded events. A supersession starts at the `from` date of the new activation and has no end. A mask in `targets` still applies only in the interval of the new event. `replay` uses the selection of the old receipt, so an old answer does not change.
-
-The six vector cases have 56 steps with expected values that a person wrote from the spec. One case is a chain of three updates. `check_spec.py` judges the steps on its own model of the selection. `TestSupersessionVectors` runs the same steps on the Go Host with a fixture runner, a fake engine and a signing key, and it checks that each activation record has a signed record. `TestSupersededUpdateGivesNoStaleAnswer` covers a worker that still has a superseded update. Protocol 1.2 accepts `activate.supersedes` (#180). The protocol session vectors check that a valid array reaches the Host, that malformed values are refused, and that versions 1.0 and 1.1 still refuse the field at the protocol stage. Limits: the vectors do not run a CEL rule.
-
-Issue [#175](https://github.com/mohanraj00/entelos/issues/175) adds the Host support of the content proposal `entelos.content/1` ([CONTENT.md](../src/protocol/content/CONTENT.md)). `propose` takes the Host field `candidate`. A content head has the subject `content:<collection>/<partition>` in the `function` field, so the existing source, interval, approval, supersession and signature rules apply ([decision 0003](decisions/0003-content-kind.md), proposed). A passed report must name the SHA-256 of the exact manifest text. `resolve` gives the selected candidate reference, also at an earlier cursor. `load`, `invoke`, `describe` and `ingest` refuse a content snapshot. Wire protocol 1.3 has the `candidate` field (#213).
-
-Issue [#106](https://github.com/mohanraj00/entelos/issues/106) adds typed applicability values to each item of a content manifest, for example `{"region": ["eu", "de"]}`. Entelos records them and does not interpret them. The `activate` request confirms the values of the snapshot items, and a mismatch refuses the activation with `applicability_mismatch`. The event record and the `resolve` selection name the confirmed values, so the signed activation record names them too. The effective interval stays on the activation. The lifecycle case `two-regions-confirmed` activates two items with different regions. Wire protocol 1.3 has the field (#213).
-
-### v0.4 evidence format
-
-On 2026-11-12, the evidence format `entelos.evidence/1` for [#148](https://github.com/mohanraj00/entelos/issues/148) was proposed in [EVIDENCE.md](../src/protocol/evidence/EVIDENCE.md). It is the first part of #104. It gives the identity, source, spans, producer outcome, data and reviews of the facts that a proposal cites, 14 refusal rules in a fixed order and four bool policy inputs. Attached objects with a digest are the extension point for new producer fields. On 2026-11-12, a check against groundgate 0.14.0 found fields that the first draft lost, and the revision adds them. The 97 vectors are hand-written. `check_spec.py` applies the rules to them. The Host can retain and return a producer document through approval API 1.2 (#161); it does not apply these admission rules.
-
-Issue [#104](https://github.com/mohanraj00/entelos/issues/104) adds the evidence read to the Go lifecycle Host. The read `evidence` applies the 14 rules of [EVIDENCE.md](../src/protocol/evidence/EVIDENCE.md) to the document that a snapshot retains. It gives `absent`, `invalid` with the code and the rule, or `valid` with the four policy inputs. It writes nothing, and the 1.2 `propose` and `proposal` results do not change. `TestEvidenceAdmissionVectors` runs the 97 evidence vectors against the Host rules. The seam test `tests/test_groundgate_seam.py` admits an invented document with groundgate 0.16.0, records one human answer and exports `facts@2`. It maps the export and the store records to `entelos.evidence/1`. The checker and the Host evidence read accept the document, and `evidence_human_reviewed` is true. `verify.py` installs the release by its hashes in a separate virtual environment.
-
-Issue [#207](https://github.com/mohanraj00/entelos/issues/207) checks the evidence of a content proposal at `propose`. The manifest `evidence.digest` is the SHA-256 of the canonical text of the attached document. `propose` refuses a missing or different document and a document that the EVIDENCE.md rules refuse, and writes nothing. An accept `decide` and `activate` apply the same checks to a content snapshot of an earlier Host. A CEL bundle proposal keeps the 1.2 behavior.
-
-Issue [#208](https://github.com/mohanraj00/entelos/issues/208) uses safe integers for evidence admission. [Decision 0004](decisions/0004-evidence-number-domain.md) (accepted on 2026-11-27) sets the units for judgments and boxes and records why protocol 1.2 keeps its number domain. A parity test attaches and reads `valid-full-data` through the Go Host and through the socket and HTTP transports, each in process and on a live listener. `make verify` ran all of these modes. The groundgate seam maps an exported box to thousandths of a point.
-
-### v0.4 policy verdict
-
-On 2026-11-12, the policy verdict `entelos.policy/1` for [#154](https://github.com/mohanraj00/entelos/issues/154) was proposed in [POLICY.md](../src/protocol/policy/POLICY.md). An approved policy gives accept, refuse or route to a person. Nine rules in a fixed order route an item to a person: a policy change, a human head, no policy, a suspend, a policy that is not valid, an unknown input, a missing input, an engine error and an invalid value. The verdict has a receipt with the policy version, the input digest and the build, and an audit draw from a Host nonce. A policy verdict never satisfies a human verdict requirement. The 40 vectors are hand-written. `check_spec.py` applies the rules to them. No Host writes the record, and no CEL engine ran the synthetic policy.
-
-Issue [#210](https://github.com/mohanraj00/entelos/issues/210) adds the policy verdict to the Go lifecycle Host. The Host-only write `policy_decide` applies the nine rules to a qualified report and calls the one policy function of the Host context. It writes a `policy_verdict` record with an `invoke` receipt. An accept or a refuse also writes a decision record of the kind `policy`. A route writes no decision. If the head requires a human verdict, `activate` ignores the policy verdict and refuses with `human_verdict_required`. The Host-only read `policy_replay` runs the stored inputs on the stored policy again. `TestPolicyVectors` runs the 40 vectors on the Go rules. `TestPolicyVerdictLifecycleOnCEL` runs `propose`, `qualify`, `policy_decide`, `activate`, `policy_replay` and `replay` with a typed policy on the CEL engine. A policy reads only the largest bound of a measure summary. The wire protocol does not have the two operations.
-
-### Profile promotion
-
-On 2026-11-18, a typed decision to promote an extraction profile version was proposed in [PROMOTION.md](../src/protocol/promotion/PROMOTION.md) for [#152](https://github.com/mohanraj00/entelos/issues/152). A promotion is a content proposal of a collection in the Host context field `promotion_collections`. Its manifest has the items `profile` and `measure`. The qualification runner gives a measure summary `entelos.measure/1`: the item digests, the gold set and audit label digests, and the bound of each route as an integer in basis points. Nine rules bind the summary to the manifest. If they pass, the Host builds the policy inputs `measure_max_bound_bp` and `measure_gold_digest` of POLICY.md. The limit is in the policy, so a change to a limit needs a human verdict. The activation record does not change: its candidate ref names the manifest, and the manifest names the profile digest. The 49 vectors are hand-written: 16 bound conversions, 24 rule checks, 6 policy verdicts and 3 consumer reads. `check_spec.py` applies the rules to them.
-
-On 2026-11-18, the Go lifecycle Host got the promotion rules. The runner gives the summary in `Verdict.Measure`, and `qualify` stores it as the report field `measure`. The reviewer read `promotion` applies the nine rules to a stored report and its snapshot, and gives the rule or the two measure inputs. It writes nothing. `TestPromotionVectors` runs the 24 rule checks against the Go rules, and `TestPromotionRead` runs the read on reports of a fixture runner. No Host writes a policy verdict, and no CEL engine ran the synthetic policy.
-
-### Decision event export
-
-On 2026-11-15, issue [#158](https://github.com/mohanraj00/entelos/issues/158), part 1, proposes [EVENTS.md](../src/protocol/events/EVENTS.md) and `entelos.decision-event/1`: one event per fact in each recorded verdict, actor kind, a per-fact blind mark and exclusive cursor resume. The schema and hand-written vectors have an offline checker in `make check`. No Host exports events. The later Host job must capture the missing provenance, implement the read and run the vectors on it; the synthetic source decisions do not test a store or transport.
-
-On 2026-11-18, part 2 added the Host export (#194). The protocol 1.2 read `decision_events` needs the role `event_reader`, and `decide.fact_reviews` records the blind marks and the corrections. The first Host write, or `Host.StartDecisionEvents`, saves the stream start in `state.decision_stream`. The vectors run against the Host, and the example `examples/decision-events` saves and resumes its cursor.
-
-Issue [#197](https://github.com/mohanraj00/entelos/issues/197) changes the read for a verdict that cites facts and has no per-fact marks. v0.5.0 refused each page with such a verdict, so a reader could not continue. Now the facts of such a verdict keep their positions and give no events, so the positions have a gap. The Host supplies no mark and no kind. The limit of a page counts events, so no page before the stream end is empty. A page that reached the stream end gives the cursor at the last position, and this cursor shows a gap at the stream end. The event format, the 1.2 schemas and the stream namespace do not change, so a reader that stopped on v0.5.0 continues from its saved cursor. A reader must accept a jump in the positions, and it can count the omitted facts from the cursors. A decision with marks that are not complete or not valid still gives `unexportable_decision`. The rule is in [EVENTS.md](../src/protocol/events/EVENTS.md#unmarked-verdicts), in 19 vector cases and in the Go Host. Tests record such a verdict through protocol 1.1 and read through its gap on the JSONL Host, the socket and the two HTTP modes. The gap gives the count of the omitted facts and not the count of the verdicts. No test starts a v0.5.0 Host.
-
-Issue [#127](https://github.com/mohanraj00/entelos/issues/127) proposes the verdict binding in [VERDICT.md](../src/protocol/verdict/VERDICT.md). A verdict judges the candidate reference of its snapshot, and the decision record does not change. A verdict is stale when the head of its subject has other content. `decide` and `activate` refuse a stale verdict with `stale_verdict`, and the history keeps it. The read operation `approval` answers if a candidate reference has a current approval. The Go lifecycle Host applies these rules. Six minimum vector cases cover an edit after an approval, a return to the old content, three reject cases and the unknown and refused requests. The full conformance vectors are not written yet.
-
-Issue [#128](https://github.com/mohanraj00/entelos/issues/128) proposes verdict kinds in [KINDS.md](../src/protocol/verdict/KINDS.md). The kinds are `human`, `model` and `policy`. The Host context field `actor_kinds` gives the kind of each actor, and the decision record gets the field `kind`. A `policy` or `model` verdict never counts as a `human` verdict. The Host context field `verdict_policy` gives the count of each kind that `activate` requires, with the new code `verdicts_required`. `separation_required` also refuses an actor with a verdict of another kind on the same content. A count is of one snapshot, so verdicts on two snapshots of the same content do not combine. The `approval` read reports the counts. The Go lifecycle Host applies these rules. The 24 vector cases of [kinds-cases.json](../src/protocol/verdict/vectors/kinds-cases.json) cover each combination of the KINDS.md table, a verdict without a kind, a request with a `kind` field and invalid Host context fields. A policy verdict of POLICY.md counts for the kind `policy` (#210).
-
-### Agent step
-
-Issue [#113](https://github.com/mohanraj00/entelos/issues/113) adds the step outcome contract [STEP.md](../src/lifecycle-core/STEP.md) to the Go lifecycle core. A workflow agent step gives a result with a run identity and the digests of the output and the trace. Only a completed result becomes `invoke` inputs, and the receipt binds them. A replay of the receipt runs no step. A failed run or a budget stop gives a fault and no inputs. The Host has no step operation, and the core has no Kubernetes dependency.
-
-The optional adapter [examples/agent-step-koodam](../examples/agent-step-koodam/README.md) runs a step as one koodam Agent run through `kubectl`. Its [contract](../examples/agent-step-koodam/CONTRACT.md) has a core clause for each rule. On 2026-11-20, the seam test passed on a local kind cluster with the koodam release v0.4.0: a completed run, a failed run and a budget stop. The test pins the tag, the chart and the koodam image by digest. Koodam gives the run identity and computes the output digest, and the test has no stand-in for a koodam field.
-
-On 2026-11-25, issue [#209](https://github.com/mohanraj00/entelos/issues/209) added `TestStepGateCEL`. It qualifies and invokes a typed gate with the step inputs and a decoded JSON record. Two completed results give opposite answers, and a failed result gives no inputs. The test uses a fixture step runner.
-
-Issue #215 adds the [Kind seam](../.github/workflows/kind-seam.yml) workflow. It runs the three seam tests on one `ubuntu-24.04` runner. A failure does not block a merge. The workflow passed on the head of PR #220 (`abc1b43`, run 45684730254).
-
-### Finding import
-
-Issue [#112](https://github.com/mohanraj00/entelos/issues/112) adds the finding import contract [FINDING.md](../src/lifecycle-core/FINDING.md) to the Go lifecycle core. The Host-only write `import_finding` reads one nookku finding record of record version 1.0. It stores a candidate case with its origin and the SHA-256 of the input text. The Host-only write `decide_case` records one decision of a reviewer, who is not the importer. The `plan` request imports only a candidate with an accept decision. An import writes no report, no verdict and no event.
-
-The Go tests use hand-written records and a fixture runner. The check `nookku-seam` of `verify.py` gives records of nookku to the Host. In the invented example, the finding of a wrong due date becomes a case that fails on the old catalog snapshot and passes on the corrected one. Before the approval, the candidate has no effect on a qualification.
-
-The seam check runs nookku 0.6.1 from PyPI. [`tests/nookku-seam/requirements.txt`](../tests/nookku-seam/requirements.txt) pins the wheel by its SHA-256, and `verify.py` installs it in a virtual environment with no dependencies. The released tool runs the library example with a local agent and no model. It exports three records: one mismatch, one issue row of a person and one mismatch of a gate run. The check also gives the Host nine changed copies of the mismatch record, and the reader of the release agrees on each refusal. Limits: the seam has no model row, no shipped runner reads the case format, a case decision has no signed record, and the wire protocol does not have the two writes.
-
-### M1 First contact
-
-On 2026-10-30, the M1 work was complete in `main` (merge commit `e844246`):
-
-- [WALKTHROUGH.md](WALKTHROUGH.md) gives the typed caller and the correction (issue #3).
-- [CORRECTION.md](CORRECTION.md) explains a fact correction and a rule restatement (issue #4).
-- `examples/quickstart/demo.py` runs the answer, correction, replay and restatement in one command. `verify.py` compares its results with the fixture and checks the failure evidence (issues #15 and #27).
-- The README states the problem first and shows the [decision path diagram](diagrams/decision-path.svg) (issues #16 and #17).
-
-On 2026-10-30, the maintainer dropped the observed first-contact sessions as the M1 exit test. The scope of that test was not clear, and most of it measured whether the docs were clear enough to run the demo. The maintainer ran the demo and found those problems in one session. The reason and the limits are on [issue #10](https://github.com/mohanraj00/entelos/issues/10). These changes replace the test:
-
-- PR #45 (merge `0375158`, issue #44): a clear error and a README line for the work directory.
-- PR #47 (merge `c3a2ece`, issue #46): a tools table, numbered steps, a demo output that explains each step, a Go and Git check before the build, and an "After the demo" table.
-- A fresh-context adversarial critic read the new README. Its findings are on PR #47.
-
-No engineer who does not know the project ran the demo. Nobody recorded whether the problem matters to an engineer. [FIRST_CONTACT.md](FIRST_CONTACT.md) and the first-contact issue form stay in the repo, but nobody used them.
-
-### M2 Comparison
-
-On 2026-10-30, the M2 work was complete in `main`:
-
-- Five pages in [compare/](compare/): OPA/Rego, Cedar, GoRules ZEN, feature-flag services and ordinary code plus Git (issues #33 to #37). Each page states where the other tool is the better choice.
-- [COMPARISON.md](COMPARISON.md) answers the three questions of the critic pass (PR #48, merge `49d5a7e`, issue #38).
-
-The M2 exit test was "the first three questions from the M1 engineers". The three questions of the critic replace them, because the first-contact sessions did not run.
-
-These parts of M2 were not run:
-
-- The Cedar blocks in [compare/cedar.md](compare/cedar.md) are proposed text from the Cedar docs. Nobody parsed, validated or authorized them.
-- Unleash, the GoRules BRMS and the OpenFeature SDK are described from their docs only.
-- No call cost, speed or effort was measured.
-
-On 2026-10-31, the five critic findings from PR #47 were complete in `main`:
-
-- An example of how a service calls a rule from its own code (issue #50, PR #56).
-- A command that prints a receipt from the demo (issue #51, PR #58).
-- The first-screen order: the problem now comes before the Limits note (issue #52, PR #56).
-- Progress output from `verify.py` on stderr (issue #53, PR #57).
-- Plain definitions in "What the examples show" (issue #54, PR #56).
-
-### M3 Copy proof
-
-On 2026-10-31, the M3 work was complete in `main` (PR #59, merge `f14e2f8`):
-
-- [examples/tier-eligibility/](../examples/tier-eligibility/) adds a third neutral example, `feature.bulk_export`. It reuses `src/` without a copy.
-- The example needed 0 `src/` changes. `verify.py` runs it as the `tier-eligibility` check, and the full run had 20 passed checks and 0 failed checks.
-- [FINDINGS.md](../examples/tier-eligibility/FINDINGS.md) records 9 docs gaps. For each gap, the author read source to continue. Issue #60 owns the docs for these gaps.
-- The [consumer guide](ADD_CONSUMER.md) covers reuse, the record-filter scenario limit and adding an example to the verifier (#66). The [contract map](CONTRACTS.md) covers the author fixture, fixed values, case checks, lifecycle requests, proposal base and content references (#63, #64 and #65). The [CI example README](../examples/ci-trigger/README.md) was added in PR #111, which closed #62.
-
-These are the limits of the M3 result:
-
-- An agent wrote the example from the docs, not an engineer from outside the project.
-- The example uses only the current profile: string/bool inputs and a bool output.
-
-### M4 Contributor path
-
-On 2026-11-03, the M4 exit test was met in `main`:
-
-- PR #67 (merge `1339d71`) adds `CONTRIBUTING.md`, issue templates and a review path for a contributor without an agent harness.
-- PR #68 (merge `6043da4`) runs `verify.py` on `macos-15` in CI, beside `ubuntu-24.04`.
-- PR #69 (merge `718ca52`, issue #64) is the first pull request from an outside contributor. It merged through the documented path.
-- PR #70 (merge `9ee54ed`, issue #63) is a second outside pull request.
-- PR #72 (merge `5616680`) adds a manual security review for when Codex and agy are both not available.
-
-These are the limits of the M4 result:
-
-- The outside pull requests changed only docs. No outside contributor changed code.
-- Starter issues #62, #65 and #66 were open at the M4 exit test. PR #71 later closed #65.
-
-### M6 Store-neutral core and versioned protocol
-
-On 2026-11-05, the maintainer approved the M6 scope in issue #77. Decision [0002](decisions/0002-browser-executor.md) adds a browser executor (#93): the Go executor compiled to WASM, for web delivery with no install. The specs and vectors for #78 to #81 are language-neutral.
-
-On 2026-11-05, the maintainer accepted the [technology decision](decisions/0001-technology.md): Go for the core and the sidecar, JSON with RFC 8785 digests on a Unix socket, and a gomobile executor package for native Swift and Kotlin apps.
-
-Issue #79 adds a storage port spec, 11 JSON storage vectors and an in-memory adapter. The Git adapter and the in-memory adapter pass all vectors. The Go tests run them in the `go-lifecycle-core` check of `verify.py`. The vectors do not show durability or performance.
-
-Issue #78 adds the record format version. Each stored record has `format: "entelos.record/1"`. `View.Get` reads only this major version. A record without a format or with an unknown major version fails closed with `unsupported_record_format`. The `record-format` storage vector and a Host test check this rule. The vector set now has 12 files. Stores from v0.1.0 are not migrated, and there is no migration tool.
-
-Issue #82 adds the fail-closed expiry and revocation mode. Expiry is a date at or after the `until` date of the loaded activation. Revocation is a later mask, usually a `suspend` event. By default, `invoke` then fails closed with `activation_expired` or `activation_revoked`. A proposal can declare `stale_mode` `continue_stale`, so that the reviewer approves the mode with the revision. Then the loaded activation answers, and the receipt has `stale` `true`. A reader finds the stale receipts with `inspect` and `receipt`. Scenario steps show both modes. The Host reads no clock; it compares the invocation date only.
-
-Issue #81 adds receipt provenance and idempotent `ingest` of an executor log. Raw inputs stay with the executor by default. There is no network transport for ingest.
-
-Issue #80 adds the [qualification runner contract](../src/lifecycle-core/RUNNER.md) to the Go core. CEL is the first runner, and a test-only fixture runner shows that runners plug in.
-
-Issue #84 adds the Go sidecar `entelos-sidecar`: wire protocol 1.0 on a Unix socket with mode 0600. It passes all session vectors through the socket (`sidecar-protocol`), and [examples/sidecar-client](../examples/sidecar-client/README.md) completes propose, qualify, decide, activate and invoke through the socket only (`sidecar-client`). There is no authentication beyond the file mode.
-
-Issue #95 removes the Python lifecycle core: the Python Host, its Git and in-memory stores, its JSONL CLI, the protocol reference adapter and the parity tool. The Go core in `src/lifecycle-core` is now the only Host. `scenario_test.go` runs the lifecycle scenario with the fixture values. Each removed Python test has a Go test or a vector with the same expected values. The examples call the Go JSONL host through the Python callers in `src/lifecycle-core/client/`. `src/cel-lifecycle` keeps the specs, the vectors and the fixtures.
-
-Issue #93 (first part) adds the [executor](CONTRACTS.md#executor) to `cel-handoff`. The maintainer amended decision 0002: qualification is for each build, so the WASM module has its own `implementation_ref`. The same command builds for `js/wasm`. In a browser it serves a JavaScript bridge; under Node with arguments it serves the command line. `verify.py` runs 7 executor vector files on the native build, as WASM under Node and through the bridge, and the entries are equal except for the build and bundle identities (`wasm-executor`). The Go lifecycle scenario also passes with the WASM module as the engine (`wasm-qualification`). On macOS arm64 with Go 1.27.2, the module is about 22 MB raw and 4.3 MB with gzip level 9, and the Node cold start was 63 ms. A browser cold start is unmeasured. The IndexedDB receipt log, the headless browser run and the ingest of a browser log are not done yet.
-
-Issue #93 (second part) adds `web/entelos-executor.mjs`: a module integrity check before the module runs, and a receipt log in IndexedDB. `verify.py` runs the executor vectors in headless Chromium, and the entries are equal to the native entries except for the build and bundle identities (`browser-executor-vectors`). [examples/browser-executor](../examples/browser-executor/) runs the complete path: the Host qualifies with the WASM module, the browser answers from a pin of Host records and keeps its log, and the Host ingests that log once (`browser-executor-ingest`). In headless Chrome 156 on macOS arm64, a local fetch of the module took 14 ms and 29 ms, and the start (compile, instantiate and bridge ready) took 109 ms and 131 ms in two page loads. These numbers are for one machine and a local server. They are not a general speed claim.
-
-On 2026-11-06, M6 met its exit test at commit `bf51d0e`. `verify.py` passes on `ubuntu-24.04` and `macos-15`. The ingest item uses the browser executor, not a simulated executor. The `sidecar-client` example does not ingest.
-
-After that exit test, ingest compares the response `implementation_ref` with the snapshot `engine_build`, and a different build gives `artifact_mismatch`. A Go test also plants records with an unknown format in a Git store and reads them through a real Unix socket with the sidecar server code. That test does not run the `entelos-sidecar` binary, and the protocol vectors cannot make such a record.
-
-Issue #125 adds a token check before each request on the sidecar socket. The server reads the operator's token file for each check, so token rotation applies to open connections. A denial reaches neither the request parser nor the Host. The JSON message version remains 1.0.
-
-Keep caller walkthrough and input-correction documentation bounded to the existing examples. Numeric/structured profiles, production DBs, authentication gateways and resident-worker coordination are outside the current implemented scope.
+The [CHANGELOG](../CHANGELOG.md), the [decision records](decisions/) and the closed GitHub issues keep the history of each release. This page does not repeat it.
 
 ## Handoff rule
 
-Record the selected issue, final commit, behavior/checks and unresolved limits. A future worker must be able to identify the next task without reconstructing a conversation. Preserve meaningful failures and mark unmeasured claims as unmeasured.
+At the end of a task, record the issue, the final commit, the checks and the limits that stay. A future worker must find the next task without the conversation. Keep the failed runs, and mark each claim that no check measured.

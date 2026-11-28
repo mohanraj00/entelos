@@ -1,5 +1,7 @@
 # Fact correction versus rule restatement
 
+This page describes the v0.8.0 release.
+
 A recorded answer can be wrong for two different reasons:
 
 - The application supplied a wrong fact. The rule is correct, but an input value is wrong.

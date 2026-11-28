@@ -1,5 +1,7 @@
 # Integration boundary
 
+This page describes the v0.8.0 release.
+
 The host installs actor/role/scope/function/runner/worker context. A request cannot grant itself authority. The local context-file adapter demonstrates that split; another process owned by the same OS user can bypass it. Production authentication, authorization and redaction are application work.
 
 The host also supplies approved source interpretation, independent cases and admission policy. Passing a case set is not evidence that the source is true. A producer cannot submit a passed flag and activate it. Qualification binds its exact snapshot, source, case plan and build before a separate reviewer decision. The host refuses a decision from the producer of the snapshot or the runner of the report with `separation_required`. It compares only the actor names that the host context gives. `load`, `invoke` and restatement also refuse with `implementation_unavailable` if the installed lifecycle build differs from the build in the qualification report.

@@ -7,6 +7,8 @@
 
 # Entelos
 
+This README describes the v0.8.0 release. [STATUS.md](docs/STATUS.md) gives the current work.
+
 Entelos is an approval workflow for versioned content. An author proposes a change. The application qualifies the exact content. A reviewer approves it. An activation makes it effective on a date. Each version keeps its proposal, checks and approval. Rule hosting is one use: each answer has a receipt with its exact rule version and inputs. Replay uses that earlier version. A correction adds a new record and preserves the earlier answer.
 
 > **Limits:** This is local reference code. [STABILITY.md](docs/STABILITY.md) names the stable APIs and records. It is not a hosted service, an authentication boundary or a production database. Content support is experimental. The application supplies content checks and storage. See [Limits](#limits) and [SUPPORT.md](docs/SUPPORT.md).
@@ -150,7 +152,7 @@ This is local reference code. [STABILITY.md](docs/STABILITY.md) names the stable
 
 CI ingress verification is simulated. No webhook is authenticated and no pipeline is launched. Its raw-event audit sidecar is not atomic with the Git receipt. The application supplies source truth, independent expectations, admission/learning policy, authentication, retention and side effects. See [INTEGRATION.md](docs/INTEGRATION.md), [SUPPORT.md](docs/SUPPORT.md) and [SECURITY.md](SECURITY.md).
 
-The `inspect` and `record` reads refuse records from another scope with `scope_mismatch`. A shared store prevents `inspect` in each scope. The `record` read can still show if a reference exists. Use one store for each scope. A `request_key` with a NUL byte gives `store_error` on the Git store. It leaves unused objects but does not change the state. The in-memory store accepts this key. The first security review covered the v0.1.0 Python path. Later security-relevant pull requests had a security review one at a time. A local Codex security review covered the full Go approval and record path at `9b8261d` (#136). It found one P2 issue, and #137 fixed it. It does not cover later changes.
+The `inspect` and `record` reads refuse records from another scope with `scope_mismatch`. A shared store prevents `inspect` in each scope. The `record` read can still show if a reference exists. Use one store for each scope. A `request_key` with a NUL byte gives `store_error` on the Git store. It leaves unused objects but does not change the state. The in-memory store accepts this key. The v1.0 security review of the Go path and the sidecar is open work ([#236](https://github.com/mohanraj00/entelos/issues/236)).
 
 The sidecar serves local Unix sockets and requires a token for each request. A credentials file can give each reviewer a separate actor and roles. The HTTP approval binding accepts signed claims or local static tokens. It needs a TLS front proxy for remote use. An ingested receipt is the statement of the executor: the Host does not run the rule again, and a content reference is not a signature. The Host signs approval and event records only when the embedding application installs a signing key. The browser executor keeps its receipt log in one browser profile. The example does not test storage eviction, private windows or more than one tab. The application must supply the expected module reference and the pin from a source that it trusts.
 
@@ -183,6 +185,6 @@ Start with [CONSTITUTION.md](CONSTITUTION.md), [AGENTS.md](AGENTS.md) and [curre
 
 ## Name, source and license
 
-The tagline is "Entelos: grow toward the goal." Entelos (from Greek *en* + *telos*, "the goal within") is the name of this versioned decision reference. The repository is `mohanraj00/entelos`; its earlier name was `versioned-decision-reference`. [Brand assets](docs/brand/README.md) holds the mark, the logo and the colours.
+The tagline is "Entelos: grow toward the goal." Entelos (from Greek *en* + *telos*, "the goal within") is the name of this versioned decision reference. The repository is `mohanraj00/entelos`. [Brand assets](docs/brand/README.md) holds the mark, the logo and the colours.
 
 The project source is licensed under [Apache-2.0](LICENSE). Keep the [project attribution](NOTICE) and required notices. Dependencies retain their own licenses; see [THIRD_PARTY.md](licenses/THIRD_PARTY.md). The [licence decision](docs/LICENSING.md) records the change from MIT. The workflow examples are neutral invented policies informed by the public sources listed in [PROVENANCE.md](docs/PROVENANCE.md).

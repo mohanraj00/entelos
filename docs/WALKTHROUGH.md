@@ -1,5 +1,7 @@
 # Caller and correction walkthrough
 
+This page describes the v0.8.0 release.
+
 This walkthrough uses the existing neutral record filter, `record.visible`. It goes from the author bundle to a typed call, qualification, activation, correction and pinned replay. It uses only the commands and records that are in this repository. It adds no API.
 
 To run this scenario with one command, use the [quickstart demo](../examples/quickstart/README.md).

@@ -1,5 +1,7 @@
 # Support scope
 
+This page describes the v0.8.0 release.
+
 I maintain this as a source reference and a Go dependency, not a hosted product or package-registry release. [STABILITY.md](STABILITY.md) names the stable surfaces. There is no support SLA or promised upgrade schedule.
 
 The supported work is reproducing the supplied examples, fixing defects in documented contract/lifecycle behavior and reviewing dependency-pin updates with the same checks. Report a small neutral reproducer, source revision, tool versions and expected/actual behavior. Real customer data, credentials and confidential source material do not belong in reports.
