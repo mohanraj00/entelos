@@ -16,7 +16,7 @@ These steps are for a store and a caller of v0.8.0.
 2. Install the new build. The store needs no migration. `entelos-migrate --repo <store.git> --dry-run` gives the action `current`, and it writes nothing.
 3. Start the Hosts. Each read works without a change: `inspect`, `record`, `receipt`, `proposals`, `proposal`, `resolve`, `approval` and `evidence`. Each stored record keeps its bytes and its Git object ID.
 4. Verify the signed records with the same key set. `entelos-verify` and `VerifySigned` accept each signed record of v0.8.0.
-5. Qualify again. The lifecycle build of this release is different from the build of v0.8.0, because core source files changed. The Host refuses `decide`, `activate`, `load`, `invoke` and `replay` for a report or a receipt of the v0.8.0 build with `implementation_unavailable`, until you do these steps:
+5. Qualify again, if the lifecycle build is different. A release that changes a core Go source file has a new lifecycle build ([RUNNER.md](src/lifecycle-core/RUNNER.md#lifecycle-build)). Then the Host refuses `decide`, `activate`, `load`, `invoke` and `replay` for a report or a receipt of the v0.8.0 build with `implementation_unavailable`, until you do these steps:
    - For each active function: run `qualify` with the snapshot and its plan, accept the new report with `decide`, and run `activate` with `supersedes` for the old activation. Then run `load`.
    - For each open proposal that has a report: run `qualify` again, then `decide` on the new report. The list `proposals` shows such a proposal with the refusal `implementation_unavailable`.
 6. A client of the protocol versions 1.0 to 1.3 needs no change. Each stable Go declaration of v0.8.0 stays.
