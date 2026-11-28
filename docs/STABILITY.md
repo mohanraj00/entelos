@@ -152,7 +152,7 @@ A 1.x release does not do these things:
 - Change the schemas or the vectors of an existing version in a way that changes which messages are valid or what the results are.
 - Change the value of `protocol.Version`.
 
-One result of the versions 1.0, 1.1 and 1.2 is different in v1.0.0 from v0.8.0 (#231). A `resolve` or a `proposal` of a content subject gives `unsupported_subject` at the stage `protocol`. The [wire protocol](#wire-protocol) section gives the rule and its vectors. Each 1.x release keeps this rule. If a 1.x minor version adds a subject kind, each earlier version refuses a read of that kind with `unsupported_subject`. Such a refusal changes no result that the earlier version gave before the new kind.
+The refusal of a content subject by the versions 1.0, 1.1 and 1.2 with `unsupported_subject` (#231) is a part of this promise. The [wire protocol](#wire-protocol) section gives the rule and its vectors. For a content subject, a consumer uses version 1.3.
 
 The rule for the cases of the first unsupported minor version stays as the [promise for 0.x releases](#compatibility-promise-for-0x-releases) gives it. The text of a diagnostic message is not a part of a result, as the list of experimental surfaces says.
 
