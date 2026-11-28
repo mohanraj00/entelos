@@ -1,5 +1,7 @@
 # Diagrams
 
+This page describes the v0.8.0 release.
+
 ## Decision path
 
 ![Decision path from source to replay or restatement](decision-path.svg)

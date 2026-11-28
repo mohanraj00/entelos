@@ -1,5 +1,7 @@
 # Comparison: feature-flag services
 
+This page describes the v0.8.0 release.
+
 This page compares the Entelos decision path with two feature-flag services. It uses the `record.visible` record filter from the [quickstart demo](../../examples/quickstart/README.md). It writes the same rule, the correction and the replay question in each service where the service can.
 
 Scope: This page compares rule hosting. Entelos also provides an approval workflow for versioned content, with an application runner and dated activation. The [content example](../../examples/content-update/README.md) uses a manifest without a rule engine. The rule comparison below keeps its stated versions and test limits.
@@ -165,4 +167,4 @@ These are differences in scope. They do not show that Entelos is faster, cheaper
 - The flagd run used six cases and four probes on one machine. It does not test performance, concurrency or sync behavior.
 - The Unleash rule and all Unleash rows come from the docs. I did not check the `DATE_AFTER` boundary or the Enterprise features.
 - A flag service can do more with its paid plans, plugins or integrations than this page shows. The rows describe only the docs that I read.
-- Entelos is a local source reference. Its APIs and records are unstable. See [SUPPORT.md](../SUPPORT.md).
+- Entelos is a local source reference. [STABILITY.md](../STABILITY.md) names its stable surfaces, and [SUPPORT.md](../SUPPORT.md) gives its limits.

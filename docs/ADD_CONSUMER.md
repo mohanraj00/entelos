@@ -1,5 +1,7 @@
 # Add a consumer example
 
+This page describes the v0.8.0 release.
+
 Start with one invented decision, such as whether a document is eligible for
 export. Write the expected answers from the invented requirement before running
 the rule. [Tier eligibility](../examples/tier-eligibility/README.md) is a
