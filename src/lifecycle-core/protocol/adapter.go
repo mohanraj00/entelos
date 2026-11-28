@@ -145,6 +145,11 @@ func (a *Adapter) message(p *Principal, request lifecycle.Object) lifecycle.Obje
 		}
 		return internal(id)
 	}
+	// A content subject needs protocol 1.3. Before 1.3, the schemas of
+	// resolve and proposal do not describe its result.
+	if op == "resolve" && y < 3 && contentSubject(request["body"].(lifecycle.Object)["function"]) {
+		return unsupportedSubject(id)
+	}
 	q := lifecycle.Object{}
 	for k, v := range request["body"].(lifecycle.Object) {
 		q[k] = v
@@ -159,6 +164,10 @@ func (a *Adapter) message(p *Principal, request lifecycle.Object) lifecycle.Obje
 		return failure(id, fault.Code, fault.Stage, fault.Message)
 	case err != nil:
 		return internal(id)
+	}
+	// The read publishes no state, so the adapter can refuse its result.
+	if op == "proposal" && y < 3 && contentSnapshot(result) {
+		return unsupportedSubject(id)
 	}
 	if op == "proposal" && y < 2 {
 		if out, ok := result.(lifecycle.Object); ok {
@@ -184,6 +193,30 @@ func (a *Adapter) message(p *Principal, request lifecycle.Object) lifecycle.Obje
 		result = decideResult10(result)
 	}
 	return lifecycle.Object{"protocol": Version, "request_id": id, "status": "ok", "result": result}
+}
+
+// contentPrefix starts the subject of a content head. CONTENT.md reserves it:
+// the Host refuses a CEL bundle with a function name that starts with it.
+const contentPrefix = "content:"
+
+func contentSubject(function any) bool {
+	name, _ := function.(string)
+	return strings.HasPrefix(name, contentPrefix)
+}
+
+// contentSnapshot is true if the proposal result has the snapshot of a
+// content candidate. A CEL snapshot has no candidate field.
+func contentSnapshot(result any) bool {
+	out, _ := result.(lifecycle.Object)
+	snapshot, _ := out["snapshot"].(lifecycle.Object)
+	_, has := snapshot["candidate"]
+	return has
+}
+
+// unsupportedSubject refuses a resolve or a proposal of a content subject in
+// a version before 1.3.
+func unsupportedSubject(id string) lifecycle.Object {
+	return failure(id, "unsupported_subject", "protocol", "a content subject needs protocol 1.3 or higher")
 }
 
 // decideResult10 keeps only decision_ref in the decide result, so the 1.0

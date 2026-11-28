@@ -1,0 +1,315 @@
+{
+ "description": "Protocol 1.0, 1.1 and 1.2 refuse a resolve and a proposal of a content subject with unsupported_subject at the stage protocol (#231). Expected values are hand-written from PROTOCOL.md. Protocol 1.0 has no proposal read, so it refuses the operation with invalid_request. A 1.3 resolve of the same subject goes to the Host, which has no enabled revision. A 1.2 proposal of an unknown snapshot gets the refusal of the Host, because the adapter refuses only a content result.",
+ "context": {
+  "actor": "author-a",
+  "roles": [
+   "author",
+   "reviewer",
+   "reader"
+  ],
+  "scope": "tenant-example",
+  "runner_actor": "fixture-runner",
+  "worker": "local-worker",
+  "functions": [
+   "content:loan-rules/region-a"
+  ]
+ },
+ "steps": [
+  {
+   "name": "source-1.3",
+   "request": {
+    "protocol": "1.3",
+    "request_id": "c-8",
+    "operation": "source",
+    "body": {
+     "from": "2026-11-01",
+     "until": "2026-12-01",
+     "function": "content:loan-rules/region-a",
+     "text": "The content rules of region a.",
+     "reason": "first",
+     "expected_revision": "",
+     "request_key": "s-1"
+    }
+   },
+   "expect": {
+    "response": {
+     "protocol": "1.3",
+     "request_id": "c-8",
+     "status": "ok",
+     "result": {
+      "cursor": {
+       "$capture": "c1"
+      },
+      "result": {
+       "source_ref": {
+        "$capture": "s1"
+       }
+      },
+      "reused": false
+     }
+    }
+   }
+  },
+  {
+   "name": "propose-content",
+   "request": {
+    "protocol": "1.3",
+    "request_id": "c-9",
+    "operation": "propose",
+    "body": {
+     "from": "2026-11-01",
+     "until": "2026-12-01",
+     "source_ref": {
+      "$use": "s1"
+     },
+     "reason": "first content",
+     "candidate": {
+      "kind": "content",
+      "manifest": "{\"format\":\"entelos.content/1\",\"collection\":\"loan-rules\",\"partition\":\"region-a\",\"base\":\"\",\"items\":[{\"item_id\":\"rules-de\",\"digest\":\"sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd\",\"size\":200,\"applicability\":{\"region\":[\"eu\",\"de\"]}}]}"
+     },
+     "expected_revision": {
+      "$use": "c1"
+     },
+     "request_key": "p-1"
+    }
+   },
+   "expect": {
+    "response": {
+     "protocol": "1.3",
+     "request_id": "c-9",
+     "status": "ok",
+     "result": {
+      "cursor": {
+       "$capture": "c2"
+      },
+      "result": {
+       "snapshot_ref": {
+        "$capture": "p1"
+       },
+       "candidate": {
+        "kind": "content",
+        "ref": "sha256:855bfa697544e23458f73cca2eeea23d52dcb95c3eb1aa5358e6ef1bf620ca6d"
+       },
+       "head": {
+        "kind": "content",
+        "collection": "loan-rules",
+        "partition": "region-a"
+       }
+      },
+      "reused": false
+     }
+    }
+   }
+  },
+  {
+   "name": "proposal-1.0-unknown-operation",
+   "request": {
+    "protocol": "1.0",
+    "request_id": "d-1",
+    "operation": "proposal",
+    "body": {
+     "snapshot_ref": {
+      "$use": "p1"
+     }
+    }
+   },
+   "expect": {
+    "response": {
+     "protocol": "1.0",
+     "request_id": "d-1",
+     "status": "invalid_request",
+     "diagnostic": {
+      "code": "invalid_request",
+      "stage": "protocol",
+      "message": {
+       "$type": "string"
+      }
+     }
+    }
+   }
+  },
+  {
+   "name": "proposal-1.1-content",
+   "request": {
+    "protocol": "1.1",
+    "request_id": "d-2",
+    "operation": "proposal",
+    "body": {
+     "snapshot_ref": {
+      "$use": "p1"
+     }
+    }
+   },
+   "expect": {
+    "response": {
+     "protocol": "1.1",
+     "request_id": "d-2",
+     "status": "unsupported_subject",
+     "diagnostic": {
+      "code": "unsupported_subject",
+      "stage": "protocol",
+      "message": {
+       "$type": "string"
+      }
+     }
+    }
+   }
+  },
+  {
+   "name": "proposal-1.2-content",
+   "request": {
+    "protocol": "1.2",
+    "request_id": "d-3",
+    "operation": "proposal",
+    "body": {
+     "snapshot_ref": {
+      "$use": "p1"
+     }
+    }
+   },
+   "expect": {
+    "response": {
+     "protocol": "1.2",
+     "request_id": "d-3",
+     "status": "unsupported_subject",
+     "diagnostic": {
+      "code": "unsupported_subject",
+      "stage": "protocol",
+      "message": {
+       "$type": "string"
+      }
+     }
+    }
+   }
+  },
+  {
+   "name": "resolve-1.0-content",
+   "request": {
+    "protocol": "1.0",
+    "request_id": "d-4",
+    "operation": "resolve",
+    "body": {
+     "function": "content:loan-rules/region-a",
+     "date": "2026-11-15"
+    }
+   },
+   "expect": {
+    "response": {
+     "protocol": "1.0",
+     "request_id": "d-4",
+     "status": "unsupported_subject",
+     "diagnostic": {
+      "code": "unsupported_subject",
+      "stage": "protocol",
+      "message": {
+       "$type": "string"
+      }
+     }
+    }
+   }
+  },
+  {
+   "name": "resolve-1.1-content",
+   "request": {
+    "protocol": "1.1",
+    "request_id": "d-5",
+    "operation": "resolve",
+    "body": {
+     "function": "content:loan-rules/region-a",
+     "date": "2026-11-15"
+    }
+   },
+   "expect": {
+    "response": {
+     "protocol": "1.1",
+     "request_id": "d-5",
+     "status": "unsupported_subject",
+     "diagnostic": {
+      "code": "unsupported_subject",
+      "stage": "protocol",
+      "message": {
+       "$type": "string"
+      }
+     }
+    }
+   }
+  },
+  {
+   "name": "resolve-1.2-content",
+   "request": {
+    "protocol": "1.2",
+    "request_id": "d-6",
+    "operation": "resolve",
+    "body": {
+     "function": "content:loan-rules/region-a",
+     "date": "2026-11-15"
+    }
+   },
+   "expect": {
+    "response": {
+     "protocol": "1.2",
+     "request_id": "d-6",
+     "status": "unsupported_subject",
+     "diagnostic": {
+      "code": "unsupported_subject",
+      "stage": "protocol",
+      "message": {
+       "$type": "string"
+      }
+     }
+    }
+   }
+  },
+  {
+   "name": "resolve-1.3-content-to-host",
+   "request": {
+    "protocol": "1.3",
+    "request_id": "d-7",
+    "operation": "resolve",
+    "body": {
+     "function": "content:loan-rules/region-a",
+     "date": "2026-11-15"
+    }
+   },
+   "expect": {
+    "response": {
+     "protocol": "1.3",
+     "request_id": "d-7",
+     "status": "out_of_scope",
+     "diagnostic": {
+      "code": "out_of_scope",
+      "stage": "resolve",
+      "message": {
+       "$type": "string"
+      }
+     }
+    }
+   }
+  },
+  {
+   "name": "proposal-1.2-unknown-snapshot",
+   "request": {
+    "protocol": "1.2",
+    "request_id": "d-8",
+    "operation": "proposal",
+    "body": {
+     "snapshot_ref": "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+    }
+   },
+   "expect": {
+    "response": {
+     "protocol": "1.2",
+     "request_id": "d-8",
+     "status": "artifact_unavailable",
+     "diagnostic": {
+      "code": "artifact_unavailable",
+      "stage": "store",
+      "message": {
+       "$type": "string"
+      }
+     }
+    }
+   }
+  }
+ ]
+}

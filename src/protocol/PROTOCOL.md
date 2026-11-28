@@ -129,12 +129,12 @@ A failure:
 | Stage | Source |
 |---|---|
 | `authentication` | The Unix socket token was missing, invalid or unavailable. The Host did not get the request. |
-| `protocol` | The frame, the envelope or the body schema. The Host did not get the request. |
+| `protocol` | The frame, the envelope, the body schema or the version rule of a content subject. The Host did not get the request, except for the `proposal` read of [version 1.3](#version-13). |
 | `authority` | The host roles do not permit the operation. |
 | `host` | The Host failed with an unexpected error (`internal_error`). The message has no exception text and no paths. |
 | `lifecycle`, `admission`, `resolve`, `runtime`, `store`, `codec` | The Host and the store. The codes are the existing `Fault` codes of the lifecycle core in `src/lifecycle-core`. |
 
-The protocol adds `unauthenticated`, `unsupported_version`, `invalid_frame`, `response_too_large` and `internal_error`. The receiver also sends `internal_error` if a Host result is outside the value domain, for example a float or an object key that is not a string. All other codes are the existing `Fault` codes, for example `invalid_request`, `forbidden`, `out_of_scope`, `invalid_interval`, `stale_revision`, `idempotency_conflict`, `artifact_unavailable`, `activation_expired` and `activation_revoked`.
+The protocol adds `unauthenticated`, `unsupported_version`, `unsupported_subject`, `invalid_frame`, `response_too_large` and `internal_error`. The receiver also sends `internal_error` if a Host result is outside the value domain, for example a float or an object key that is not a string. All other codes are the existing `Fault` codes, for example `invalid_request`, `forbidden`, `out_of_scope`, `invalid_interval`, `stale_revision`, `idempotency_conflict`, `artifact_unavailable`, `activation_expired` and `activation_revoked`.
 
 `message` is text for a person. A program must use `code` and `stage`. The vectors do not compare `message`.
 
@@ -191,6 +191,7 @@ These rules apply:
 - Versions 1.0, 1.1 and 1.2 refuse `propose.candidate`, `activate.applicability` and the three reads with `invalid_request` at the stage `protocol`. The Host does not get the request.
 - The three reads have the roles and the scope checks of the Host. They give the same result as the Host-only reads of the earlier Host.
 - A request with the version 1.4 or higher gets `unsupported_version` with `"protocol":"1.0"`.
+- Versions 1.0, 1.1 and 1.2 refuse a `resolve` and a `proposal` of a content subject with `unsupported_subject` at the stage `protocol` ([#231](https://github.com/mohanraj00/entelos/issues/231)). The schemas of these versions do not describe a content result. A `resolve` with a `function` that starts with `content:` gets the refusal before the Host gets the request. A `proposal` goes to the Host, because only the snapshot tells the kind. The read publishes no state, and the adapter refuses a result with a content snapshot. A Host refusal of the read, for example `artifact_unavailable`, comes first. The result of a CEL subject does not change in each version. Protocol 1.0 has no `proposal` read.
 
 These stable files change:
 
@@ -201,13 +202,14 @@ These stable files change:
 | `vectors/session-envelope.json` | Step `higher-minor` sends `"1.4"`. It still expects `unsupported_version` with `"1.0"`. | The same reason. |
 | `approval/vectors/approval-version.json` | Step `minor-3` becomes `minor-4` and sends `"1.4"`. It still expects `unsupported_version` with `"1.0"`. | The same reason. |
 
+[`vectors/session-legacy-content.json`](vectors/session-legacy-content.json) has 10 steps for the `unsupported_subject` rule. They propose a content candidate in 1.3, refuse its `proposal` in 1.1 and 1.2 and a `resolve` of its subject in 1.0, 1.1 and 1.2, and send a 1.3 `resolve` and a 1.2 `proposal` of an unknown snapshot to the Host.
+
 [`vectors/session-content.json`](vectors/session-content.json) has 19 steps. They refuse the new fields and reads in 1.0 and 1.2, run a content `propose` and its retry, give three Host refusals, read `evidence`, `approval` and `promotion`, and refuse three invalid `applicability` values at the protocol stage. The candidate `ref` of the expected values is the SHA-256 digest of the exact manifest text, which a person computed outside the Host. The sidecar has the CEL runner, which does not qualify content, so these steps stop before `qualify`.
 
-`TestContentWorkflowOnTheWire` in `../lifecycle-core/protocol/` installs a stub content runner. It runs one content proposal from `source` to `resolve` through the Unix socket and through the HTTP binding with a static token and with a signed claim. It also shows that a 1.2 `activate` cannot confirm the values, so the Host refuses it with `applicability_mismatch`.
+`TestContentWorkflowOnTheWire` in `../lifecycle-core/protocol/` installs a stub content runner. It runs one content proposal from `source` to `resolve` through the Unix socket and through the HTTP binding with a static token and with a signed claim. It also shows that a 1.2 `activate` cannot confirm the values, so the Host refuses it with `applicability_mismatch`. After the activation, it shows that 1.0 to 1.2 refuse the `resolve` of the subject and 1.1 and 1.2 refuse the `proposal` of the snapshot with `unsupported_subject`.
 
 Limits of 1.3:
 
-- A 1.0, 1.1 or 1.2 `resolve` or `proposal` of a content subject gives the content fields, and the schema of that version does not describe them. The adapter does not change these results, because the results of an existing version must not change. A client of the content workflow uses 1.3.
 - The sidecar installs only the CEL runner. Thus a content proposal through the sidecar gets no passed report. An embedding host installs its own runner, as the test does.
 - The content manifest, the evidence document and the applicability values stay experimental formats. The 1.3 schemas check their shape on the wire, not their rules.
 
