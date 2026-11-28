@@ -1,6 +1,6 @@
 # `source`
 
-This page describes the v0.8.0 release.
+This page describes the v1.0.0 release.
 
 Record an approved source text for one function and one date interval. Later plans and proposals cite it by `source_ref`.
 

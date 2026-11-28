@@ -1,6 +1,6 @@
 # `inspect`
 
-This page describes the v0.8.0 release.
+This page describes the v1.0.0 release.
 
 Read the full lifecycle state at the current cursor.
 

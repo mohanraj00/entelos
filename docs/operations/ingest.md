@@ -1,6 +1,6 @@
 # `ingest`
 
-This page describes the v0.8.0 release.
+This page describes the v1.0.0 release.
 
 Add the receipt log of an edge executor to the store. A second ingest of the same entries adds nothing.
 

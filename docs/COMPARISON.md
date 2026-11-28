@@ -1,6 +1,6 @@
 # Three questions before you compare
 
-This page describes the v0.8.0 release.
+This page describes the v1.0.0 release.
 
 An engineer who reads this project for the first time often asks three questions. This page gives a short answer to each, with a link to the evidence. The full comparisons with other tools are in [docs/compare/](compare/):
 

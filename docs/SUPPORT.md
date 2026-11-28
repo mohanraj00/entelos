@@ -1,6 +1,6 @@
 # Support scope
 
-This page describes the v0.8.0 release.
+This page describes the v1.0.0 release.
 
 I maintain this as a source reference and a Go dependency, not a hosted product or package-registry release. [STABILITY.md](STABILITY.md) names the stable surfaces. There is no support SLA or promised upgrade schedule.
 

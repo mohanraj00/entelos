@@ -1,6 +1,6 @@
 # `resolve`
 
-This page describes the v0.8.0 release.
+This page describes the v1.0.0 release.
 
 Select the active snapshot of a function for a date, at the current cursor or at an earlier `cursor`.
 

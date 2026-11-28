@@ -1,6 +1,6 @@
 # `evidence`
 
-This page describes the v0.8.0 release.
+This page describes the v1.0.0 release.
 
 Read the admission evidence of one proposal and the result of its rules.
 

@@ -1,6 +1,6 @@
 # `describe`
 
-This page describes the v0.8.0 release.
+This page describes the v1.0.0 release.
 
 Give the caller contract of a function for a date: the input schema, the exact bundle reference and the store cursor.
 

@@ -2,7 +2,9 @@
 
 This file lists the changes for each snapshot tag. A tag is a stable snapshot to cite and copy. It is not a package release. Up to v0.3.0, a tag does not promise a stable API or record format. From v0.4.0, [STABILITY.md](docs/STABILITY.md) gives the promise for the surfaces that it names.
 
-## Unreleased
+## v1.0.0 (2026-11-28)
+
+This release starts the [promise for 1.x releases](docs/STABILITY.md#compatibility-promise-for-1x-releases) (#234). The update marker of the Git store is private to the user of the Host (#229). The docs give one page for each operation (#235), and [SECURITY_REVIEW_1.0.md](docs/SECURITY_REVIEW_1.0.md) records the security review of the Go path and the sidecar (#236). The record format does not change.
 
 ### Reference code
 
@@ -13,6 +15,8 @@ This file lists the changes for each snapshot tag. A tag is a stable snapshot to
 - A compatibility promise for 1.x releases (#234): [STABILITY.md](docs/STABILITY.md#compatibility-promise-for-1x-releases). It states, for the Go API, the wire protocol and the record format, what a 1.x release can add, what it cannot change, and the deprecation path. Two fixture files that the v0.8.0 code made check the promise for a store of v0.8.0: `src/lifecycle-core/testdata/migration/v080-store.json` and `v080-wire.json`.
 
 ### Upgrade steps
+
+From v0.7.0: do the [v0.8.0 upgrade steps](#v080-2026-11-27) first.
 
 These steps are for a store and a caller of v0.8.0.
 

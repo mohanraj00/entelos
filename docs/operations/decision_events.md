@@ -1,6 +1,6 @@
 # `decision_events`
 
-This page describes the v0.8.0 release.
+This page describes the v1.0.0 release.
 
 Read the decision events after a cursor, one page at a time.
 
