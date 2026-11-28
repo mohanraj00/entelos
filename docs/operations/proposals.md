@@ -39,7 +39,7 @@ The expected response:
 }
 ```
 
-The step `list-before-propose` of [approval-verdicts.json](../../src/protocol/approval/vectors/approval-verdicts.json) has this request. The Go test `TestApprovalVectors` runs it through the sidecar socket. `<name>` is a value from an earlier step of the same file. Long values are cut.
+The step `list-before-propose` of [approval-verdicts.json](../../src/protocol/approval/vectors/approval-verdicts.json) has this request. The Go test `TestApprovalVectors` runs it through the sidecar socket. `<name>` is a value from an earlier step of the same file. An object of the expected response can have more fields than the vector names. Long values are cut.
 
 On the socket, put the fields without `op` in `body`, and the name in `operation`. [README.md](README.md#two-forms-of-a-request) shows the two forms.
 

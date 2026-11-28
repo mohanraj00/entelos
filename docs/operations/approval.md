@@ -56,7 +56,7 @@ The expected response:
 }
 ```
 
-The step `approval-unknown` of [session-content.json](../../src/protocol/vectors/session-content.json) has this request. `verify.py` runs it through the Go sidecar with `test_protocol.py`. `<name>` is a value from an earlier step of the same file. Long values are cut.
+The step `approval-unknown` of [session-content.json](../../src/protocol/vectors/session-content.json) has this request. `verify.py` runs it through the Go sidecar with `test_protocol.py`. `<name>` is a value from an earlier step of the same file. An object of the expected response can have more fields than the vector names. Long values are cut.
 
 On the socket, put the fields without `op` in `body`, and the name in `operation`. [README.md](README.md#two-forms-of-a-request) shows the two forms.
 

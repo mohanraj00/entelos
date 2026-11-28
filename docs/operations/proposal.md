@@ -53,26 +53,17 @@ The expected response:
    ],
    "decision_refs": [],
    "submitted_at": "2026-11-20T09:00:00Z",
-   "wait_seconds": {
-    "$wait": {
-     "since": "snap-1",
-     "seconds": 172800
-    }
-   }
+   "wait_seconds": 172800
   },
   "snapshot": {
-   "$subset": {
-    "format": "entelos.record/1",
-    "producer": "author-a",
-    "submitted_at": "2026-11-20T09:00:00Z",
-    "bundle_ref": "<bundle-1>"
-   }
+   "format": "entelos.record/1",
+   "producer": "author-a",
+   "submitted_at": "2026-11-20T09:00:00Z",
+   "bundle_ref": "<bundle-1>"
   },
   "source": {
-   "$subset": {
-    "format": "entelos.record/1",
-    "text": "<75 characters>"
-   }
+   "format": "entelos.record/1",
+   "text": "<75 characters>"
   },
   "bundle": {
    "manifest": "<string>",
@@ -88,7 +79,7 @@ The expected response:
 }
 ```
 
-The step `read-evidence` of [approval-verdicts.json](../../src/protocol/approval/vectors/approval-verdicts.json) has this request. The Go test `TestApprovalVectors` runs it through the sidecar socket. `<name>` is a value from an earlier step of the same file. Long values are cut.
+The step `read-evidence` of [approval-verdicts.json](../../src/protocol/approval/vectors/approval-verdicts.json) has this request. The Go test `TestApprovalVectors` runs it through the sidecar socket. `<name>` is a value from an earlier step of the same file. An object of the expected response can have more fields than the vector names. Long values are cut.
 
 On the socket, put the fields without `op` in `body`, and the name in `operation`. [README.md](README.md#two-forms-of-a-request) shows the two forms.
 

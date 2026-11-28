@@ -66,7 +66,7 @@ The expected response:
 }
 ```
 
-The step `first-ingest` of [repeat-ingest.json](../../src/cel-lifecycle/conformance/ingest/repeat-ingest.json) has this request. The Go test `TestIngestVectors` runs it. The vector names the entries `e1` and `e2`. The test puts the entries of the vector in their place, as shown here, and adds the current cursor as `expected_revision`. `<name>` is a value from an earlier step of the same file. Long values are cut.
+The step `first-ingest` of [repeat-ingest.json](../../src/cel-lifecycle/conformance/ingest/repeat-ingest.json) has this request. The Go test `TestIngestVectors` runs it. The vector names the entries `e1` and `e2`. The test puts the entries of the vector in their place, as shown here, and adds the current cursor as `expected_revision`. `<name>` is a value from an earlier step of the same file. An object of the expected response can have more fields than the vector names. Long values are cut.
 
 On the socket, put the fields without `op` in `body`, and the name in `operation`. [README.md](README.md#two-forms-of-a-request) shows the two forms.
 
