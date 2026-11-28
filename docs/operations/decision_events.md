@@ -7,7 +7,7 @@ Read the decision events after a cursor, one page at a time.
 | | |
 |---|---|
 | Kind | Read. |
-| Role | `reviewer` |
+| Role | `event_reader` |
 | Protocol | Wire protocol 1.2 and later |
 | Contract | [EVENTS.md](../../src/protocol/events/EVENTS.md) |
 

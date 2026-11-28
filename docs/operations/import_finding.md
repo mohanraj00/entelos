@@ -19,13 +19,15 @@ The Host request:
 {
  "op": "import_finding",
  "source_ref": "<source_ref>",
- "finding": "<finding record text>"
+ "finding": "<finding record text>",
+ "expected_revision": "<cursor>",
+ "request_key": "<request key>"
 }
 ```
 
 The result has the fields `candidate_ref`.
 
-The Go test `TestImportFindingGivesTheCandidate` in [finding_test.go](../../src/lifecycle-core/finding_test.go) sends this request. A value in angle brackets comes from an earlier step of the test.
+The Go test `TestImportFindingGivesTheCandidate` in [finding_test.go](../../src/lifecycle-core/finding_test.go) sends this request. A value in angle brackets comes from an earlier step of the test. The test helper adds the current cursor as `expected_revision` and a `request_key`, as each write needs.
 
 ## Errors
 

@@ -7,7 +7,7 @@ Read one stored record by its reference and kind.
 | | |
 |---|---|
 | Kind | Read. |
-| Role | `reader` |
+| Role | `reviewer` |
 | Protocol | Wire protocol 1.0 and later |
 | Contract | [record.schema.json](../../src/protocol/schema/record.schema.json) |
 

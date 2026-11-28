@@ -18,13 +18,15 @@ The Host request:
 ```json
 {
  "op": "policy_decide",
- "report_ref": "<report_ref>"
+ "report_ref": "<report_ref>",
+ "expected_revision": "<cursor>",
+ "request_key": "<request key>"
 }
 ```
 
 The result has the fields `policy_verdict_ref`.
 
-The Go test `TestPolicyDecideAcceptActivates` in [policy_test.go](../../src/lifecycle-core/policy_test.go) sends this request. A value in angle brackets comes from an earlier step of the test.
+The Go test `TestPolicyDecideAcceptActivates` in [policy_test.go](../../src/lifecycle-core/policy_test.go) sends this request. A value in angle brackets comes from an earlier step of the test. The test helper adds the current cursor as `expected_revision` and a `request_key`, as each write needs.
 
 ## Errors
 

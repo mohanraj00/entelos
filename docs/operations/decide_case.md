@@ -20,13 +20,15 @@ The Host request:
  "op": "decide_case",
  "candidate_ref": "<candidate_ref>",
  "disposition": "accept",
- "reason": "read"
+ "reason": "read",
+ "expected_revision": "<cursor>",
+ "request_key": "<request key>"
 }
 ```
 
 The contract gives the result.
 
-The Go test `TestFindingCaseFailsOnTheOldSnapshotAndPassesOnTheCorrectedSnapshot` in [finding_test.go](../../src/lifecycle-core/finding_test.go) sends this request. A value in angle brackets comes from an earlier step of the test.
+The Go test `TestFindingCaseFailsOnTheOldSnapshotAndPassesOnTheCorrectedSnapshot` in [finding_test.go](../../src/lifecycle-core/finding_test.go) sends this request. A value in angle brackets comes from an earlier step of the test. The test helper adds the current cursor as `expected_revision` and a `request_key`, as each write needs.
 
 ## Errors
 

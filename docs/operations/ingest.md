@@ -20,9 +20,32 @@ The request:
  "op": "ingest",
  "request_key": "k-1",
  "entries": [
-  "e1",
-  "e2"
- ]
+  {
+   "cursor": 1,
+   "snapshot_ref": "sha256:f15995b04405...",
+   "date": "2026-11-15",
+   "inputs_ref": "sha256:d28ea6c24237...",
+   "response": {
+    "status": "ok",
+    "value": true,
+    "bundle_ref": "sha256:bbbbbbbbbbbb...",
+    "implementation_ref": "sha256:eeeeeeeeeeee..."
+   }
+  },
+  {
+   "cursor": 2,
+   "snapshot_ref": "sha256:f15995b04405...",
+   "date": "2026-11-15",
+   "inputs_ref": "sha256:769c9068dee9...",
+   "response": {
+    "status": "ok",
+    "value": false,
+    "bundle_ref": "sha256:bbbbbbbbbbbb...",
+    "implementation_ref": "sha256:eeeeeeeeeeee..."
+   }
+  }
+ ],
+ "expected_revision": "<cursor>"
 }
 ```
 
@@ -43,7 +66,7 @@ The expected response:
 }
 ```
 
-The step `first-ingest` of [repeat-ingest.json](../../src/cel-lifecycle/conformance/ingest/repeat-ingest.json) has this request. The Go test `TestIngestVectors` runs it. `<name>` is a value from an earlier step of the same file. Long values are cut.
+The step `first-ingest` of [repeat-ingest.json](../../src/cel-lifecycle/conformance/ingest/repeat-ingest.json) has this request. The Go test `TestIngestVectors` runs it. The vector names the entries `e1` and `e2`. The test puts the entries of the vector in their place, as shown here, and adds the current cursor as `expected_revision`. `<name>` is a value from an earlier step of the same file. Long values are cut.
 
 On the socket, put the fields without `op` in `body`, and the name in `operation`. [README.md](README.md#two-forms-of-a-request) shows the two forms.
 
